@@ -1,0 +1,17 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\ProvidesPackage{coralstyle}
+
+\usepackage{fontspec,xltxtra,xunicode,titlesec,titling}
+
+\defaultfontfeatures{Mapping=tex-text}
+\setmainfont[Mapping=tex-text]{Iowan Old Style}
+\setromanfont[Mapping=tex-text]{Iowan Old Style}
+\setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Helvetica Neue Condensed Bold}
+\setmonofont[Scale=MatchLowercase]{Menlo}
+\newfontfamily\headingfont[]{Helvetica Neue Condensed Bold}
+\renewcommand{\maketitlehooka}{\headingfont}
+\renewcommand\abstractname{Preface}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 2pt}
