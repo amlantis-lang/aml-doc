@@ -140,6 +140,13 @@
     numberstyle=\tiny,%
 }
 
+\newcommand{\code}[1]{%
+    \lstinline[%keywordstyle=,%
+               flexiblecolumns=true,%
+               basicstyle=\ttfamily]£#1£}
+
+\usepackage{multicol}
+
 \newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
 
 \newcommand{\syntax}{{\bf Syntax:}}
