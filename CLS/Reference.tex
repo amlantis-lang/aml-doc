@@ -25,8 +25,8 @@ variable_id ::= simple_id | '_'
 constant_id ::= upper [id_rest]
 function_id ::= simple_id [id_rest_ext]
 id_rest     ::= {letter | digit | '_'}
-id_rest_mid ::= id_rest [('/' | '+' | '-') id_rest]
 id_rest_ext ::= id_rest [id_rest_mid] ['?' | '!' | '=']
+id_rest_mid ::= id_rest {('/' | '+' | '-') id_rest}
 \end{lstlisting}
 
 There are three kinds of identifiers.
