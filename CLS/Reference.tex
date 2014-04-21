@@ -19,9 +19,71 @@ Coral programs are written using the Unicode character set; Unicode supplementar
 
 \section{Identifiers}\label{sec:identifiers}
 
+\syntax\begin{lstlisting}
+simple_id   ::= lower [id_rest]
+variable_id ::= simple_id | '_'
+constant_id ::= upper [id_rest]
+function_id ::= simple_id [id_rest_ext]
+id_rest     ::= {letter | digit | '_'}
+id_rest_mid ::= id_rest [('/' | '+' | '-') id_rest]
+id_rest_ext ::= id_rest [id_rest_mid] ['?' | '!' | '=']
+\end{lstlisting}
+
+There are three kinds of identifiers.
+First, \textit{variable identifiers}, which are simply a lower-case letter followed by arbitrary sequence of letters (any-case), digits and underscores, or just one underscore (which has special meaning).
+Second, \textit{constant identifiers}, which are just like variable identifiers, but starting with an upper-case letter and never just an underscore.
+And third, \textit{function identifiers}, which are the most complicated ones. They can start as a variable identifier, then optionally followed by one of ``/'', ``+'' and ``-'', and then optionally ended with ``?'' or ``!''.
+
+Coral programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
+
 \section{Keywords}\label{sec:keywords}
 
+A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in most other languages, keywords are not being recognized inside of paths, except for a few specific cases.
+
+The following names are the reserved words.
+
+\begin{lstlisting}
+alias        annotation   as            begin      bitfield
+break        case         cast          catch      class
+clone        constant     constructor   declare    def
+destructor   do           else          elsif      end
+ensure       enum         for           for-some   function
+goto         if           implements    in         include
+interface    is           let           loop       match
+memoize      message      method        mixin      module
+native       next         nil           no         of
+opaque       operator     out           property   protocol 
+raise        range        record        redo       refine
+rescue       retry        return        self       skip
+struct       super        template      test       then
+this         throw        transparent   type       undef
+unless       until        union         unit-of-measure
+use          val          var           void       yes
+when         while        with          yield
+
+\end{lstlisting}
+
+Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
+
 \section{Newline Characters}\label{sec:newlinecharacters}
+
+\syntax\begin{lstlisting}
+
+semi ::= nl {nl} | ';'
+
+\end{lstlisting}
+
+Coral is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Coral source file is treated as the special separator token \lstinline@nl@ if the following criterion is satisfied:
+
+\begin{enumerate}
+\item The token immediately preceding the newline can terminate an expression.
+\end{enumerate}
+
+Since Coral may be interpreted in a REPL\footnote{Read-Eval-Print Loop} fashion, there are no other suitable criteria. Such a token that can terminate an expression is, for instance, not a binary operator or a message sending operator, which both require further tokens to create an expression. Keywords that expect any following tokens also can not terminate expressions. Coral interpreters and compilers do not look-ahead beyond newlines.
+
+If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Coral still sees that as only a one significant newline, to prevent any confusion.
+
+Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end@, \lstinline@opaque@, \lstinline@native@, \lstinline@next@, \lstinline@nil@, \lstinline@no@, \lstinline@redo@, \lstinline@retry@, \lstinline@return@, \lstinline@self@, \lstinline@skip@, \lstinline@super@, \lstinline@this@, \lstinline@transparent@, \lstinline@void@, \lstinline@yes@, \lstinline@yield@.
 
 \section{Operators}\label{sec:operators}
 
