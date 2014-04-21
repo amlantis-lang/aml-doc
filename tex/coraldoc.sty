@@ -109,8 +109,35 @@
 
 \RequirePackage{listings}
 
-\lstset{% 
-   basicstyle=\ttfamily
+\lstdefinelanguage{Coral}{
+   alsoletter={-},%
+  morekeywords={alias,annotation,as,begin,bitfield,break,case,cast,catch,class,clone,constant,constructor,declare,def,destructor,do,else,elsif,end,ensure,enum,for,for-some,function,goto,if,implements,in,include,interface,is,let,loop,match,memoize,message,method,mixin,module,native,next,nil,no,of,opaque,operator,out,property,protocol,raise,range,record,redo,refine,rescue,retry,return,self,skip,struct,super,template,test,then,this,throw,transparent,type,undef,unless,until,union,unit-of-measure,use,val,var,void,yes,when,while,with,yield},%
+  sensitive,%
+  morecomment=[l]//,%
+  morecomment=[s]{/*}{*/},%
+}[keywords,comments]
+
+% activate the language and predefine settings
+\lstset{
+    language=Coral,%
+    xleftmargin=4mm,%
+    aboveskip=3mm,%
+    belowskip=3mm,%
+    fontadjust=true,%
+    columns=[c]fixed,%
+    keepspaces=true,%
+    basewidth={0.58em, 0.53em},%
+    tabsize=2,%
+    basicstyle=\renewcommand{\baselinestretch}{0.95}\ttfamily,%
+    commentstyle=\itshape,%
+    keywordstyle=\bfseries,%
+    mathescape=true,%
+    escapechar=¤,%
+    captionpos=b,%
+    framerule=0.3pt,%
+    firstnumber=0,%
+    numbersep=1.5mm,%
+    numberstyle=\tiny,%
 }
 
 \newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
