@@ -9,7 +9,17 @@ Coral is also a functional language in the sense that every function is also an 
 
 Coral has been developed from 2012 in a home environment out of pure enthusiasm for programming and out of a desire for a truly versatile language. This document is a work in progress and will stay that way forever. It acts as a reference for the language definition and some core library classes.
 
-Some of the languages that had major influence on the development of Coral, including syntax and behavior patterns, are Ruby, Ada, Scala, Java, C\# and F\#. Coral tries to inherit their good parts and put them together in its own way.
+Some of the languages that had major influence on the development of Coral, including syntax and behavior patterns, are Ruby, Ada, Scala, Java, C\#, F\# and Clojure. Coral tries to inherit their good parts and put them together in its own way.
+
+The vast majority of Coral's syntax is inspired by \emph{Ruby}. Coral uses keyword program parentheses in Ruby fashion. There is \lstinline@class@ … \lstinline@end@, \lstinline@def@ … \lstinline@end@, \lstinline@do@ … \lstinline@end@, \lstinline@loop@ … \lstinline@end@. Ruby itself is inspired by other languages, so this relation is transitive and Coral is inspired by those languages as well (for example, Ada). 
+
+Coral is inspired by \emph{Ada} in the way that user identifiers are formatted: \lstinline@Some_Constant_Name@ and — unlike in Ada, but quite similar to it — \lstinline@some_method_name@. Also, some control structures are inspired by Ada, such as loops, named loops, return expressions and record types. Pretty much like in Ada, Coral's control structures can be usually ended the same way: \lstinline@class@ … \lstinline@end class@ etc. 
+
+\emph{Scala} influenced the type system in Coral. Syntax for existential types comes almost directly from it. However, Coral is a rather dynamically typed language, so the type checks are made eventually in runtime (but some limited type checks can be made during compile time as well). Moreover, the structure of this mere specification is inspired by Scala's specification. 
+
+From \emph{F\#}, Coral borrows some functional syntax (like function composition) and F\# also inspired the feature of~\nameref{sec:unitsofmeasuresyntax}. 
+
+\emph{Clojure} inspired Coral in the way functions can get their names. Coral realizes that turning function names into sentences does not always work, so it is possible to use dashes, plus signs and slashes inside of function names. Therefore, \lstinline@call/cc@ is a legit function identifier. Indeed, binary operators are required to be properly surrounded by whitespace or other non-identifier characters. 
 
 \chapter{Lexical Syntax}
 
@@ -30,9 +40,12 @@ id_rest_mid ::= id_rest {('/' | '+' | '-') id_rest}
 \end{lstlisting}
 
 There are three kinds of identifiers.
-First, \textit{variable identifiers}, which are simply a lower-case letter followed by arbitrary sequence of letters (any-case), digits and underscores, or just one underscore (which has special meaning).
-Second, \textit{constant identifiers}, which are just like variable identifiers, but starting with an upper-case letter and never just an underscore.
-And third, \textit{function identifiers}, which are the most complicated ones. They can start as a variable identifier, then optionally followed by one of ``/'', ``+'' and ``-'', and then optionally ended with ``?'' or ``!''.
+
+First, \textit{variable identifiers}, which are simply a lower-case letter followed by arbitrary sequence of letters (any-case), digits and underscores, or just one underscore (which has special meaning).
+
+Second, \textit{constant identifiers}, which are just like variable identifiers, but starting with an upper-case letter and never just an underscore.
+
+And third, \textit{function identifiers}, which are the most complicated ones. They can start as a variable identifier, then optionally followed by one of ``/'', ``+'' and ``-'', and then optionally ended with ``?'' or ``!''.
 
 Coral programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
 
@@ -95,7 +108,7 @@ Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end
 
 \subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
 
-\subsection{Units of Measure}
+\subsection{Units of Measure}\label{sec:unitsofmeasuresyntax}
 
 \subsection{Boolean Literals}\label{sec:booleanliterals}
 
