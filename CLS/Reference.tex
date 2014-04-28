@@ -3,11 +3,11 @@
 
 \section*{Preface}
 
-Coral is a Ruby-like programming language which enhances advanced object-oriented programming with elements of functional programming. Every value is an object, in this sense it is a pure object-oriented language. Object blueprints are described by classes. Classes can be composed in multiple ways – classic inheritance and/or mixin composition, along with prototype-oriented inheritance.
+Coral is a Ruby-like programming language which enhances advanced object-oriented programming with elements of functional programming. Everything is an object, in this sense it's a pure object-oriented language. Object blueprints are described by classes. Classes can be composed in multiple ways – classic inheritance and/or mixin composition, along with prototype-oriented inheritance.
 
-Coral is also a functional language in the sense that every function is also an object. Therefore, function definitions can be nested and higher-order functions are supported out-of-the-box. Coral also has a limited support for pattern matching, which can emulate the algebraic types used in other functional languages.
+Coral is also a functional language in the sense that every function is also an object, and generally, everything is a value. Therefore, function definitions can be nested and higher-order functions are supported out-of-the-box. Coral also has a limited support for pattern matching, which can emulate the algebraic types used in other functional languages.
 
-Coral has been developed from 2012 in a home environment out of pure enthusiasm for programming and out of a desire for a truly versatile language. This document is a work in progress and will stay that way forever. It acts as a reference for the language definition and some core library classes.
+Coral has been developed since 2012 in a home environment out of pure enthusiasm for programming and out of a desire for a truly versatile language. This document is a work in progress and will stay that way forever. It acts as a reference for the language definition and some core library classes.
 
 Some of the languages that had major influence on the development of Coral, including syntax and behavior patterns, are Ruby, Ada, Scala, Java, C\#, F\# and Clojure. Coral tries to inherit their good parts and put them together in its own way.
 
@@ -100,7 +100,56 @@ Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end
 
 \section{Operators}\label{sec:operators}
 
+A set of identifiers is reserved for language features, some of which may be overridden by user space implementations. Operators have language-defined precedence rules that are supposed to usually comply to user expectations (principle of least surprise), and another desired precedence may be acquired by putting expressions with operators inside of parenthesis pairs. 
+
+\syntax\begin{lstlisting}
+
+operator_expr ::= left_expr binary_op right_expr
+	| unary_op expr
+
+\end{lstlisting}
+
+The following character sequences are the operators recognized by Coral. 
+
+\begin{lstlisting}
+
+:=     +=     -=     *=     **=    /=     %=     ||=    &&=    ^^= 
+|=     &=     |=     &=     ^=     ~=     <<     >>     <<<    >>> 
+<<=    >>=    <<<=   >>>=   ;      =      !=     ==     !==    === 
+!===   =~     !~     <>     <      >      <=     >=     <=>    + 
+-      *      **     /      div    %      mod    ||     or     && 
+and    !      not    ^^     xor    |      &      ^      ~      .. 
+...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
+:>     <<|    |>>    <|     |>     (      )      [      ]      { 
+}      .
+
+\end{lstlisting}
+
+Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
+
+Binary (infix) operators have to be separated by whitespace or non-letter characters on both sides, unary operators on left side – the right side is what they are bound to. 
+
+Unary operators are: \lstinline@+@, \lstinline@-@, \lstinline@&@, \lstinline@not@, \lstinline@!@ and \lstinline@~@. The first three of these are binary as well. The \lstinline@;@ operator is used to separate expressions (see \nameref{sec:newlinecharacters}). Parentheses are postcircumfix operators. Coral has no postfix operators. 
+
+Coral allows for custom user-defined operators, but those have the lowest precedence and need to be parenthesized in order to express any precedence. Such custom operators can't be made of letter characters. 
+
 \section{Literals}\label{sec:literals}
+
+There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
+
+\syntax\begin{lstlisting}
+
+literal ::= integer_literal
+	| floating_point_literal
+	| complex_literal
+	| character_literal
+	| string_literal
+	| symbol_literal
+	| regular_expression_literal
+	| collection_literal
+	| 'nil'
+
+\end{lstlisting}
 
 \subsection{Integer Literals}\label{sec:integerliterals}
 
@@ -109,6 +158,14 @@ Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end
 \subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
 
 \subsection{Units of Measure}\label{sec:unitsofmeasuresyntax}
+
+\subsection{Character Literals}\label{sec:characterliterals}
+
+\syntax\begin{lstlisting}
+
+character_literal ::= '%'' (character | unicode_escape) '''
+
+\end{lstlisting}
 
 \subsection{Boolean Literals}\label{sec:booleanliterals}
 
