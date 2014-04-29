@@ -146,6 +146,66 @@ literal ::= integer_literal
 
 \subsection{Integer Literals}\label{sec:integerliterals}
 
+\syntax\begin{lstlisting}
+
+integer_literal     ::= ['+' | '-'] (decimal_numeral
+	| hexadecimal_numeral
+	| octal_numeral
+	| binary_numeral)
+decimal_numeral     ::= '0' | non_zero_digit {['_'] digit}
+hexadecimal_numeral ::= '0x' | hex_digit {['_'] hex_digit}
+digit               ::= '0' | non_zero_digit
+non_zero_digit      ::= '1' | … | '9'
+hex_digit           ::= '1' | … | '9' | 'a' | … | 'f'
+octal_numeral       ::= '0' oct_digit {'_' oct_digit}
+oct_digit           ::= '0' | … | '7'
+binary_numeral      ::= '0b' bin_digit {['_'] bin_digit}
+bin_digit           ::= '0' | '1'
+
+\end{lstlisting}
+
+Integers are usually of type \lstinline@Number@, which is a class cluster of all classes that can represent numbers. Unlike Java, Coral supports both signed and unsigned integers directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@. Math operations on numbers are handled internally in such a way that the user does't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type. 
+
+Underscores used in integer literals have no special meaning, other than to improve readability of larger literals, i.e., to separate thousands.
+
+Integral members of the \lstinline@Number@ class cluster include the following container types. 
+
+\begin{enumerate}
+
+\item \lstinline@Integer_8@ ($-2^{7}$ to $2^{7}-1$), alias \lstinline@Byte@
+
+\item \lstinline@Integer_8_Unsigned@ ($0$ to $2^{8}$), alias \lstinline@Byte_Unsigned@
+
+\item \lstinline@Integer_16@ ($-2^{15}$ to $2^{15}-1$), alias \lstinline@Short@
+
+\item \lstinline@Integer_16_Unsigned@ ($0$ to $2^{16}$), alias \lstinline@Short_Unsigned@
+
+\item \lstinline@Integer_32@ ($-2^{31}$ to $2^{31}-1$)
+
+\item \lstinline@Integer_32_Unsigned@ ($0$ to $2^{32}$)
+
+\item \lstinline@Integer_64@ ($-2^{63}$ to $2^{63}-1$), alias \lstinline@Long@
+
+\item \lstinline@Integer_64_Unsigned@ ($0$ to $2^{64}$), alias \lstinline@Long_Unsigned@
+
+\item \lstinline@Integer_128@ ($-2^{127}$ to $2^{127}-1$), alias \lstinline@Double_Long@
+
+\item \lstinline@Integer_128_Unsigned@ ($0$ to $2^{128}$), alias \lstinline@Double_Long_Unsigned@
+
+\item \lstinline@Decimal@ ($-\infty$ to $\infty$)
+
+\item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$)
+
+\end{enumerate}
+
+The special \lstinline@Decimal@ \& \lstinline@Decimal_Unsigned@ container types are also for storing arbitrary precision floating point numbers. All the container types are constants defined in the \lstinline@Number@ class and can be imported into scope if needed. 
+
+Moreover, a helper type \lstinline@Number::Unsigned@ exists, which can be used for type casting in cases where an originally signed number needs to be treated as unsigned. 
+
+Weak conformance applies to the inner members of \lstinline@Number@ class. 
+
+For use with range types, \lstinline@Number::Integer@ and \lstinline@Number::Integer_Unsigned@ exist, to allow constraining of the range types to integral numbers.
+
 \subsection{Floating Point Literals}\label{sec:floatliterals}
 
 \subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
