@@ -100,14 +100,7 @@ Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end
 
 \section{Operators}\label{sec:operators}
 
-A set of identifiers is reserved for language features, some of which may be overridden by user space implementations. Operators have language-defined precedence rules that are supposed to usually comply to user expectations (principle of least surprise), and another desired precedence may be acquired by putting expressions with operators inside of parenthesis pairs. 
-
-\syntax\begin{lstlisting}
-
-operator_expr ::= left_expr binary_op right_expr
-	| unary_op expr
-
-\end{lstlisting}
+A set of identifiers is reserved for language features, some of which may be overridden by user space implementations. Operators have language-defined precedence rules that are supposed to usually comply to user expectations (principle of least surprise), and another desired precedence may be obtained by putting expressions with operators inside of parenthesis pairs. 
 
 The following character sequences are the operators recognized by Coral. 
 
