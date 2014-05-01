@@ -213,9 +213,65 @@ For use with range types, \lstinline@Number::Integer@ and \lstinline@Number::Int
 
 \subsection{Floating Point Literals}\label{sec:floatliterals}
 
+\syntax\begin{lstlisting}
+
+float_literal ::= ['+' | '-'] non_zero_digit 
+		{['_'] digit} '.' digit {['_'] digit}
+		[exponent_part] [float_type]
+	| ['+' | '-'] digit {['_'] digit} exponent_part [float_type]
+	| ['+' | '-'] digit {['_'] digit} [exponent_part] [float_type]
+	| ['+' | '-'] '0x' hex_digit
+		{['_'] hex_digit} '.' hex_digit {['_'] hex_digit}
+		[float_type]
+	| ['+' | '-'] '0b' bin_digit
+		{['_'] bin_digit} '.' bin_digit {['_'] bin_digit}
+		[float_type]
+exponent_part ::= 'e' ['+' | '-'] digit {['_'] digit}
+float_type    ::= 'f' | 'd' | 'q'
+
+\end{lstlisting}
+
+Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. 
+
+\begin{enumerate}
+
+\item \lstinline@Float_32@ (IEEE 754 32-bit precision), alias \lstinline@Float@. 
+
+\item \lstinline@Float_64@ (IEEE 754 64-bit precision), alias \lstinline@Double@.
+
+\item \lstinline@Float_128@ (IEEE 754 128-bit precision).
+
+\item \lstinline@Decimal@ ($-\infty$ to $\infty$).
+
+\item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$).
+
+\end{enumerate}
+
+Letters in the exponent type and float type literals have to be lower-case in Coral sources, but functions that parse floating point numbers do support them being upper-case for compatibility. 
+
 \subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
 
+\syntax\begin{lstlisting}
+
+imaginary_literal ::= real_number_literal 'i'
+complex_literal ::= real_number_literal ('+' | '-') imaginary_literal
+	| imaginary_literal ('+' | '-') real_number_literal
+real_number_literal ::= integer_literal | float_literal
+number_literal ::= real_number_literal
+	| imaginary_literal
+	| complex_literal
+
+\end{lstlisting}
+
 \subsection{Units of Measure}\label{sec:unitsofmeasuresyntax}
+
+Coral has an addition to number handling, called \textit{units of measure}. Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
+
+\syntax\begin{lstlisting}
+
+annotated_number ::= number_literal '[<' units_of_measure_expr '>]'
+
+\end{lstlisting}
 
 \subsection{Character Literals}\label{sec:characterliterals}
 
@@ -227,15 +283,91 @@ character_literal ::= '%'' (character | unicode_escape) '''
 
 \subsection{Boolean Literals}\label{sec:booleanliterals}
 
+\syntax\begin{lstlisting}
+
+boolean_literal ::= 'yes' | 'no'
+
+\end{lstlisting}
+
+Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
+
 \subsection{String Literals}\label{sec:stringliterals}
+
+\syntax\begin{lstlisting}
+
+string_literal              ::= simple_string_literal 
+                              | interpolable_string_literal
+simple_string_literal       ::= ''' {string_element} '''
+string_element              ::= printable_char | char_escape_seq
+interpolable_string_literal ::= '"' {int_string_element} '"'
+int_string_element          ::= string_element | interpolated_expr
+interpolated_expr           ::= '#{' expr '}'
+
+\end{lstlisting}
+
+String literals are members of the type \lstinline@String@. Single quotes in simple string literals have to be escaped (\lstinline@\'@) and double quotes in interpolable string literals have to be escaped (\lstinline@\"@). Interpolated expression can be preceded only by an even number of escape characters (backslashes, \lstinline@\@), so that the \lstinline@#@ does't get escaped. This is a special \textit{requirement} for any Coral compiler. 
 
 \subsection{Symbol Literals}\label{sec:symbolliterals}
 
+\syntax\begin{lstlisting}
+
+symbol_literal       ::= simple_symbol | quoted_symbol
+simple_symbol        ::= ':' simple_id
+quoted_symbol        ::= simple_quoted_symbol | interpolable_symbol
+simple_quoted_symbol ::= ':'' {string_element} '''
+interpolable_symbol  ::= ':"' {int_string_element} '"'
+
+Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Coral does not require their ids to be constant in time. 
+
+\end{lstlisting}
+
 \subsection{Type Parameters}\label{sec:typeparameterliterals}
+
+\syntax\begin{lstlisting}[mathescape=false]
+
+type_param ::= '$' (simple_id | constant_id)
+
+\end{lstlisting}
+
+Type parameters are not members of any type, rather they stand-in for a real type, like a variable which only holds types. 
 
 \subsection{Regular Expression Literals}\label{sec:regexpliterals}
 
+\syntax\begin{lstlisting}
+
+regexp_literal ::= '%/' regexp_content_int '/' [regexp_flags]
+	| '%r/' regexp_content_int '/' [regexp_flags]
+	| '%r#' regexp_content '#' [regexp_flags]
+	| '%r~' regexp_content_int '~' [regexp_flags]
+regexp_content_int ::= regexp_element_int {regexp_element_int}
+regexp_element_int ::= string_element | int_string_element
+regexp_content ::= string_element {string_element}
+
+\end{lstlisting}
+
+Regular expression literals are members of the type \lstinline@Regular_Expression@ with alias of \lstinline@Regexp@. 
+
 \subsection{Collection Literals}\label{sec:collectionliterals}
+
+Collection literals are paired syntax tokens and as such, they are a kind of parentheses in Coral sources. 
+
+\syntax\begin{lstlisting}
+
+collection_literal ::= tuple_literal
+	| list_literal
+	| dictionary_literal
+	| bag_literal
+tuple_literal ::= '(' exprs ')'
+list_literal ::= '%' collection_flags '[' exprs ']'
+dictionary_literal ::= '%' collection_flags '{' dict_exprs '}'
+bag_literal ::= '%' collection_flags '(' exprs ')'
+exprs ::= expr {',' expr}
+dict_exprs ::= dict_expr {',' dict_expr}
+dict_expr ::= expr '=>' expr
+	| simple_id ':' expr
+collection_flags ::= printable_char {printable_char}
+
+\end{lstlisting}
 
 \section{Whitespace \& Comments}\label{sec:whitespacecomments}
 
