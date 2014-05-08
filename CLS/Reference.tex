@@ -413,6 +413,34 @@ Documentation comments are multi-line comments that start with \lstinline@/*!@.
 
 \chapter{Identifiers, Names \& Scopes}
 
+Names in Coral identify various types, values, methods and constants, which are the \emph{entities}. Names are introduced by local definitions and declarations, inheritance, use clauses or module clauses, which are the \emph{bindings}. 
+
+Bindings of different kinds have a different precedence defined on them: 
+
+\begin{enumerate}
+\item Definitions and declarations that are local have the highest precedence. 
+\item Inherited definitions and declarations have the next highest precedence. 
+\item Definitions and declarations made available by module clause have the next highest precedence. 
+\item Explicit \lstinline@use@ clauses (imports) have the next highest precedence. 
+\item Definitions and declarations that are not in the same compilation unit (a different script or a different module) have the next highest precedence. 
+\item Definitions and declarations that are not bound have the lowest precedence. This happens when the binding simply can't be found anywhere, and probably will result in a name error (if not resolved dynamically), while being inferred to be of type \lstinline@Object@. 
+\end{enumerate}
+
+There is only one root name space, in which a single fully-qualified binding designates always up to one entity. 
+
+Every binding has a \emph{scope} in which the bound entity can be referenced using a simple name (unqualified). Scopes are nested, inner scopes inherit the same bindings, unless shadowed. A binding in an inner scope \emph{shadows} bindings of lower precedence in the same scope (and nested scopes) as well as bindings of the same or lower precedence in outer scopes. Shadowing is a partial order, and bindings can become ambiguous -- fully qualified names can be used to resolve binding conflicts. This restriction is checked in limited scope during compilation and fully in runtime. 
+
+A reference to an unqualified identifier $x$ is bound by a unique binding, which
+
+\begin{enumerate}
+\item defines an entity with name $x$ in the same scope as the identifier $x$, and
+\item shadows all other bindings that define entities with name $x$ in that name scope.
+\end{enumerate}
+
+It is syntactically not an error if no such binding exists, thanks to the dynamic features of the language (unbound references are implicitly bound to the same scope and are resolved by dynamic method callbacks). The same applies to fully qualified bindings that don't resolve into any entity. However, it is an error if a binding is ambiguous or fails to get resolved dynamically.
+
+If $x$ is bound by explicit \lstinline@use@ import clause, then the simple name $x$ is consided to be equivalent to the fully-qualified name to which $x$ is mapped by the import clause. If $x$ is bound by a definition or declaration, then $x$ refers to the entity introduced by that binding, thus the type of $x$ is the type of the referenced entity. 
+
 \chapter{Types}
 
 \section{Paths}
