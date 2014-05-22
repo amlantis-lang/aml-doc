@@ -419,16 +419,28 @@ Bindings of different kinds have a different precedence defined on them:
 
 \begin{enumerate}
 \item Definitions and declarations that are local have the highest precedence. 
+\item Explicit \lstinline@use@ clauses (imports) have the next highest precedence.\footnote{Explicit imports have such high precedence in order to allow binding of different names than those that would be otherwise inherited.} 
 \item Inherited definitions and declarations have the next highest precedence. 
 \item Definitions and declarations made available by module clause have the next highest precedence. 
-\item Explicit \lstinline@use@ clauses (imports) have the next highest precedence. 
 \item Definitions and declarations that are not in the same compilation unit (a different script or a different module) have the next highest precedence. 
 \item Definitions and declarations that are not bound have the lowest precedence. This happens when the binding simply can't be found anywhere, and probably will result in a name error (if not resolved dynamically), while being inferred to be of type \lstinline@Object@. 
 \end{enumerate}
 
 There is only one root name space, in which a single fully-qualified binding designates always up to one entity. 
 
-Every binding has a \emph{scope} in which the bound entity can be referenced using a simple name (unqualified). Scopes are nested, inner scopes inherit the same bindings, unless shadowed. A binding in an inner scope \emph{shadows} bindings of lower precedence in the same scope (and nested scopes) as well as bindings of the same or lower precedence in outer scopes. Shadowing is a partial order, and bindings can become ambiguous -- fully qualified names can be used to resolve binding conflicts. This restriction is checked in limited scope during compilation and fully in runtime. 
+Every binding has a \emph{scope} in which the bound entity can be referenced using a simple name (unqualified). Scopes are nested, inner scopes inherit the same bindings, unless shadowed. A binding in an inner scope \emph{shadows} bindings of lower precedence in the same scope (and nested scopes) as well as bindings of the same or lower precedence in outer scopes. Shadowing is a partial order, and bindings can become ambiguous -- fully qualified names can be used to resolve binding conflicts. This restriction is checked in limited scope during compilation\footnote{This is due to the hybrid typing system in Coral, to make use of all the available information as soon as possible.} and fully in runtime. 
+
+If at any point of the program execution a binding would change (ie., by introducing a new type in a superclass that is closer in the inheritance tree to the actual class than the previous binding), and such a change would be incompatible with the previous binding, then a warning\footnote{TBD -- shouldn't that be an error?} will be issued by the runtime. Also, if a new binding would be ambiguous\footnote{Coral runtime actually checks for bindings until the binding-candidate would not be able to shadow the already found binding-candidates and caches the result.}, then it is an error. 
+
+As shadowing is only a partial order, in a situation like
+
+\begin{lstlisting}
+var x := 1
+use p::x
+x
+\end{lstlisting}
+
+neither binding of $x$ shadows the other. Consequently, the reference to $x$ on the third line above is ambiguous and the compiler will happily refuse to proceed. 
 
 A reference to an unqualified identifier $x$ is bound by a unique binding, which
 
