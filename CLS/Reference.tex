@@ -455,12 +455,49 @@ If $x$ is bound by explicit \lstinline@use@ import clause, then the simple name 
 
 \chapter{Types}
 
+When we say \textit{type} in the context of Coral, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Coral is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
+
+We distinguish a few different properties of types in Coral. There are first-order types and type constructors, which take type parameters and yield new types. A subset of first-order types called \textit{value types} represents set of first-class values. Value types are either \textit{concrete} or \textit{abstract}. 
+
+Concrete value types can be either a \textit{class type} (ie. referenced with a type designator, referencing a class or maybe a mixin), or a \textit{compound type} representing an intersection of types, possibly with a refinement that further constrains the types of its members. Both class types and compound types may be bound to a constant, but only class types referencing a concrete class can be blueprints of values -- \textit{objects}. Compound types can only constrain bindings to a subset of other types. 
+
+Non-value types capture properties of identifiers that are not values. For instance, a type constructor does not directly specify a type of values, but a type constructor, when applied to the correct type arguments, yields a first-order type, which may be a value type. Non-value types are expressed indirectly in Coral. In example, a method type is described by writing down a method signature, which is not a real type itself, but it creates a corresponding method type. 
 
 \section{Value Types}
 
+Every value in Coral has a type which is of one of the following forms. 
+
 \subsection{Value Type}
 
+To retrieve the actual type of a value, the method \lstinline@.class@ can be used. This method is defined on every object and its return type is covariant -- it is always a \lstinline@Class@ (or a subtype, if any exists). Type projection to ``\lstinline@class@'' can be used as a stable way to reference the real class of any expression that has a value, referred to as ``\lstinline@Value_Expr@'' in the following syntax. This type then applies only to the actual value of the expression, which is only known at runtime, and as such may change with each evaluation. 
+
+\syntax\begin{lstlisting}
+
+Simple_Type ::= Path '.' 'class'
+Simple_Type ::= Simple_Type '##' 'class'
+Simple_Type ::= Value_Expr '##' 'class'
+
+\end{lstlisting}
+
+\example Sample value type references. On the second line, the referenced type is a union type of both \lstinline@a@'s and \lstinline@c@'s types. 
+
+\begin{lstlisting}
+
+var a := b.class
+var c := (a || c) ## class
+var d := Hello_World ## class
+
+\end{lstlisting}
+
 \subsection{Type Projection}
+
+\syntax\begin{lstlisting}
+
+Simple_Type ::= Simple_Type '##' constant_id
+
+\end{lstlisting}
+
+A type projection \lstinline@$T$##$x$@ references type member named $x$ of type $T$. 
 
 \subsection{Type Designators}
 
