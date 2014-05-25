@@ -469,23 +469,21 @@ Every value in Coral has a type which is of one of the following forms.
 
 \subsection{Value Type}
 
-To retrieve the actual type of a value, the method \lstinline@.class@ can be used. This method is defined on every object and its return type is covariant -- it is always a \lstinline@Class@ (or a subtype, if any exists). Type projection to ``\lstinline@class@'' can be used as a stable way to reference the real class of any expression that has a value, referred to as ``\lstinline@Value_Expr@'' in the following syntax. This type then applies only to the actual value of the expression, which is only known at runtime, and as such may change with each evaluation. 
+To retrieve the actual type of a value, the method \lstinline@.class@ can be used. This method is defined on every object and its return type is covariant -- it is always a \lstinline@Class@ (or a subtype, if any exists). 
 
 \syntax\begin{lstlisting}
 
 Simple_Type ::= Path '.' 'class'
-Simple_Type ::= Simple_Type '##' 'class'
-Simple_Type ::= Value_Expr '##' 'class'
+Simple_Type ::= Simple_Type '#' 'class'
 
 \end{lstlisting}
 
-\example Sample value type references. On the second line, the referenced type is a union type of both \lstinline@a@'s and \lstinline@c@'s types. 
+\example Sample value type references. 
 
 \begin{lstlisting}
 
 var a := b.class
-var c := (a || c) ## class
-var d := Hello_World ## class
+var d := Hello_World # class
 
 \end{lstlisting}
 
@@ -493,11 +491,25 @@ var d := Hello_World ## class
 
 \syntax\begin{lstlisting}
 
-Simple_Type ::= Simple_Type '##' constant_id
+Simple_Type ::= Simple_Type '#' constant_id
 
 \end{lstlisting}
 
-A type projection \lstinline@$T$##$x$@ references type member named $x$ of type $T$. 
+A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. 
+
+Type projection operator \lstinline@#@ is a language construct and can't be overridden by user programs. There is a similarity between this construct and the \lstinline@::@ scope operator. The difference is, type projection operator is expected to be rarely needed, but it does provide a type projection and can refer in a stable way to a type of anything. Scope operator, on the other hand, does not care about types, it merely (dynamically) resolves a member of a particular expression. 
+
+\example Difference between scope and type projection operators. 
+
+\begin{lstlisting}
+
+let a := yes::class
+let b := ::Boolean#class
+let c := yes::class#class
+
+\end{lstlisting}
+
+In the above code, the variable \code{a} is a reference to \lstinline@::Boolean::class@ method, the member method \lstinline@.class@ of every \code{Boolean} instance. On the other hand, the variable \code{b} is \lstinline@::Boolean@ class itself. Finally, the variable \code{c} is the class of that instance method. 
 
 \subsection{Type Designators}
 
