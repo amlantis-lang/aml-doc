@@ -151,5 +151,14 @@
 
 \newcommand{\syntax}{{\bf Syntax:}}
 
+\newcounter{Example}[section]
+\newcounter{result}[section]
+ 
+\def\example{
+   \def\theresult{Example~\thesection.\arabic{result}}
+   \refstepcounter{result}
+   \trivlist\item[\hskip
+   \labelsep{\bf \theresult}]}
+\def\endexample{\endtrivlist}
 
 
