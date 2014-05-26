@@ -463,31 +463,32 @@ Concrete value types can be either a \textit{class type} (ie. referenced with a 
 
 Non-value types capture properties of identifiers that are not values. For instance, a type constructor does not directly specify a type of values, but a type constructor, when applied to the correct type arguments, yields a first-order type, which may be a value type. Non-value types are expressed indirectly in Coral. In example, a method type is described by writing down a method signature, which is not a real type itself, but it creates a corresponding method type. 
 
+\section{About Coral's Type System}
+
+There are two main streams of typing systems out there -- statically typed and dynamically typed. Static typing in a language usually means that the language is compiled into an executable with a definite set of types and every operation is type checked. Dynamic typing means that these checks are deferred until needed, in runtime. 
+
+Let's talk about Java. Java uses static typing -- but, in a very limited and unfriendly way, you may use class loaders and a lot of type casts to dynamically load a new class. And then possibly endure a lot of pain using it. 
+
+Let's talk about Ruby. Ruby uses dynamic typing -- but, using types blindly can possibly lead to some confusion. Ruby is amazing though, because you can write programs with it really fast and enjoy the process at the same time. But when it comes to type safety, you need to be careful. 
+
+And now, move on to Coral. Coral uses hybrid typing. In its core, it uses dynamic typing all the way. But, it allows to opt-in for some limited static typing\footnote{This feature is expected to be gradually improved and un-limited.}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and return types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the \textit{public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have mixins, union types and much more. Unlike in Java, you may easily modify classes, even from other modules (\textit{pimp my library!}). You may even easily add more classes if needed, and possibly shadow existing ones. In face of static typing in Coral, \textit{no type} specified is saying that the value is of any type. 
+
+While Coral is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a \textit{cached binding} would change, it is ok -- as long as the new binding would conform to the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Coral interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state), or if the cached version does not match the actual version of the bound type. This mechanism is also used for caching methods, not only types. Moreover, this mechanism ensures that type projections (\sref{sec:type-projection}) are valid at any time of execution, even if their binding changes. 
+
 \section{Value Types}
 
 Every value in Coral has a type which is of one of the following forms. 
 
-\subsection{Value Type}
+\subsection{Value \& Singleton Type}
+\label{sec:value-types}
+\label{sec:singleton-types}
 
-To retrieve the actual type of a value, the method \lstinline@.class@ can be used. This method is defined on every object and its return type is covariant -- it is always a \lstinline@Class@ (or a subtype, if any exists). 
+\textit{TBD}
 
-\syntax\begin{lstlisting}
-
-Simple_Type ::= Path '.' 'class'
-Simple_Type ::= Simple_Type '#' 'class'
-
-\end{lstlisting}
-
-\example Sample value type references. 
-
-\begin{lstlisting}
-
-var a := b.class
-var d := Hello_World # class
-
-\end{lstlisting}
+% invent syntax for something that retrieves a type out of a value, so that the type will represent either nothing or the single value (singleton type), and possibly invent different syntax that will retrieve a type for all values interchangeable with that one value or nothing. #type #singleton_type or #singleton-type
 
 \subsection{Type Projection}
+\label{sec:type-projection}
 
 \syntax\begin{lstlisting}
 
