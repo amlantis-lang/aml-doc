@@ -78,7 +78,6 @@ then         this        throw        transparent  type
 undef        unless      until        union        unit-of-measure
 use          val         var          void         yes
 when         while       with         yield
-
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -86,9 +85,7 @@ Not every reserved word is a keyword in every context, this behavior will be fur
 \section{Newline Characters}\label{sec:newlinecharacters}
 
 \syntax\begin{lstlisting}
-
 semi ::= nl {nl} | ';'
-
 \end{lstlisting}
 
 Coral is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Coral source file is treated as the special separator token \lstinline@nl@ if the following criterion is satisfied:
@@ -110,7 +107,6 @@ A set of identifiers is reserved for language features, some of which may be ove
 The following character sequences are the operators recognized by Coral. 
 
 \begin{lstlisting}
-
 :=     +=     -=     *=     **=    /=     %=     ||=    &&=    ^^= 
 |=     &=     |=     &=     ^=     ~=     <<     >>     <<<    >>> 
 <<=    >>=    <<<=   >>>=   ;      =      !=     ==     !==    === 
@@ -120,7 +116,6 @@ and    !      not    ^^     xor    |      &      ^      ~      ..
 ...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
 :>     <<|    |>>    <|     |>     (      )      [      ]      { 
 }      .
-
 \end{lstlisting}
 
 Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
@@ -136,7 +131,6 @@ Coral allows for custom user-defined operators, but those have the lowest preced
 There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
 
 \syntax\begin{lstlisting}
-
 literal ::= integer_literal
 	| floating_point_literal
 	| complex_literal
@@ -146,13 +140,11 @@ literal ::= integer_literal
 	| regular_expression_literal
 	| collection_literal
 	| 'nil'
-
 \end{lstlisting}
 
 \subsection{Integer Literals}\label{sec:integerliterals}
 
 \syntax\begin{lstlisting}
-
 integer_literal     ::= ['+' | '-'] (decimal_numeral
 	| hexadecimal_numeral
 	| octal_numeral
@@ -166,7 +158,6 @@ octal_numeral       ::= '0' oct_digit {'_' oct_digit}
 oct_digit           ::= '0' | … | '7'
 binary_numeral      ::= '0b' bin_digit {['_'] bin_digit}
 bin_digit           ::= '0' | '1'
-
 \end{lstlisting}
 
 Integers are usually of type \lstinline@Number@, which is a class cluster of all classes that can represent numbers. Unlike Java, Coral supports both signed and unsigned integers directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@. Math operations on numbers are handled internally in such a way that the user does't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type. 
@@ -214,7 +205,6 @@ For use with range types, \lstinline@Number::Integer@ and \lstinline@Number::Int
 \subsection{Floating Point Literals}\label{sec:floatliterals}
 
 \syntax\begin{lstlisting}
-
 float_literal ::= ['+' | '-'] non_zero_digit 
 		{['_'] digit} '.' digit {['_'] digit}
 		[exponent_part] [float_type]
@@ -228,7 +218,6 @@ float_literal ::= ['+' | '-'] non_zero_digit
 		[float_type]
 exponent_part ::= 'e' ['+' | '-'] digit {['_'] digit}
 float_type    ::= 'f' | 'd' | 'q'
-
 \end{lstlisting}
 
 Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. 
@@ -252,7 +241,6 @@ Letters in the exponent type and float type literals have to be lower-case in Co
 \subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
 
 \syntax\begin{lstlisting}
-
 imaginary_literal ::= real_number_literal 'i'
 complex_literal ::= real_number_literal ('+' | '-') imaginary_literal
 	| imaginary_literal ('+' | '-') real_number_literal
@@ -260,7 +248,6 @@ real_number_literal ::= integer_literal | float_literal
 number_literal ::= real_number_literal
 	| imaginary_literal
 	| complex_literal
-
 \end{lstlisting}
 
 \subsection{Units of Measure}\label{sec:unitsofmeasuresyntax}
@@ -268,25 +255,19 @@ number_literal ::= real_number_literal
 Coral has an addition to number handling, called \textit{units of measure}. Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
 
 \syntax\begin{lstlisting}
-
 annotated_number ::= number_literal '[<' units_of_measure_expr '>]'
-
 \end{lstlisting}
 
 \subsection{Character Literals}\label{sec:characterliterals}
 
 \syntax\begin{lstlisting}
-
 character_literal ::= '%'' (character | unicode_escape) '''
-
 \end{lstlisting}
 
 \subsection{Boolean Literals}\label{sec:booleanliterals}
 
 \syntax\begin{lstlisting}
-
 boolean_literal ::= 'yes' | 'no'
-
 \end{lstlisting}
 
 Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
@@ -294,7 +275,6 @@ Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ litera
 \subsection{String Literals}\label{sec:stringliterals}
 
 \syntax\begin{lstlisting}
-
 string_literal              ::= simple_string_literal 
                               | interpolable_string_literal
 simple_string_literal       ::= ''' {string_element} '''
@@ -302,7 +282,6 @@ string_element              ::= printable_char | char_escape_seq
 interpolable_string_literal ::= '"' {int_string_element} '"'
 int_string_element          ::= string_element | interpolated_expr
 interpolated_expr           ::= '#{' expr '}'
-
 \end{lstlisting}
 
 String literals are members of the type \lstinline@String@. Single quotes in simple string literals have to be escaped (\lstinline@\'@) and double quotes in interpolable string literals have to be escaped (\lstinline@\"@). Interpolated expression can be preceded only by an even number of escape characters (backslashes, \lstinline@\@), so that the \lstinline@#@ does't get escaped. This is a special \textit{requirement} for any Coral compiler. 
@@ -310,23 +289,19 @@ String literals are members of the type \lstinline@String@. Single quotes in sim
 \subsection{Symbol Literals}\label{sec:symbolliterals}
 
 \syntax\begin{lstlisting}
-
 symbol_literal       ::= simple_symbol | quoted_symbol
 simple_symbol        ::= ':' simple_id
 quoted_symbol        ::= simple_quoted_symbol | interpolable_symbol
 simple_quoted_symbol ::= ':'' {string_element} '''
 interpolable_symbol  ::= ':"' {int_string_element} '"'
+\end{lstlisting}
 
 Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Coral does not require their ids to be constant in time. 
-
-\end{lstlisting}
 
 \subsection{Type Parameters}\label{sec:typeparameterliterals}
 
 \syntax\begin{lstlisting}[mathescape=false]
-
 type_param ::= '$' (simple_id | constant_id)
-
 \end{lstlisting}
 
 Type parameters are not members of any type, rather they stand-in for a real type, like a variable which only holds types. 
@@ -334,7 +309,6 @@ Type parameters are not members of any type, rather they stand-in for a real typ
 \subsection{Regular Expression Literals}\label{sec:regexpliterals}
 
 \syntax\begin{lstlisting}
-
 regexp_literal ::= '%/' regexp_content_int '/' [regexp_flags]
 	| '%r/' regexp_content_int '/' [regexp_flags]
 	| '%r#' regexp_content '#' [regexp_flags]
@@ -342,7 +316,6 @@ regexp_literal ::= '%/' regexp_content_int '/' [regexp_flags]
 regexp_content_int ::= regexp_element_int {regexp_element_int}
 regexp_element_int ::= string_element | int_string_element
 regexp_content ::= string_element {string_element}
-
 \end{lstlisting}
 
 Regular expression literals are members of the type \lstinline@Regular_Expression@ with alias of \lstinline@Regexp@. 
@@ -352,7 +325,6 @@ Regular expression literals are members of the type \lstinline@Regular_Expressio
 Collection literals are paired syntax tokens and as such, they are a kind of parentheses in Coral sources. 
 
 \syntax\begin{lstlisting}
-
 collection_literal ::= tuple_literal
 	| list_literal
 	| dictionary_literal
@@ -366,7 +338,6 @@ dict_exprs ::= dict_expr {',' dict_expr}
 dict_expr ::= expr '=>' expr
 	| simple_id ':' expr
 collection_flags ::= printable_char {printable_char}
-
 \end{lstlisting}
 
 Tuple literals are members of the \lstinline@Tuple@ type family. List literals are members of the \lstinline@List@ type, usually \lstinline@Array_List@ with alias of \lstinline@Array@. Dictionary literals are members of the \lstinline@Dictionary@ type with alias of \lstinline@Map@, usually \lstinline@Hash_Dictionary@ with alias of \lstinline@Hash_Map@. Bag literals are members of the \lstinline@Bag@ type, usually \lstinline@Hash_Bag@ or \lstinline@Hash_Set@. Collection flags may change the actual class of the literal, along with some other properties, described in the following text. 
@@ -406,10 +377,6 @@ A single-line comment is a sequence of characters that starts with \lstinline@//
 A multi-line comment is a sequence of characters between \lstinline@/*@ and \lstinline@*/@. Multi-line comments may be nested. 
 
 Documentation comments are multi-line comments that start with \lstinline@/*!@. 
-
-\section{Preprocessor Macros}\label{sec:preprocessormacros}
-
-\emph{TBD}
 
 \chapter{Identifiers, Names \& Scopes}
 
@@ -475,24 +442,25 @@ And now, move on to Coral. Coral uses hybrid typing. In its core, it uses dynami
 
 While Coral is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a \textit{cached binding} would change, it is ok -- as long as the new binding would conform to the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Coral interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state), or if the cached version does not match the actual version of the bound type. This mechanism is also used for caching methods, not only types. Moreover, this mechanism ensures that type projections (\sref{sec:type-projection}) are valid at any time of execution, even if their binding changes. 
 
+Types in Coral are represented by objects that are members of the \code{Class} type. 
+
 \section{Paths}
+\label{sec:type-paths}
 
 \syntax\begin{lstlisting}
-
 Path             ::= Stable_Id
                    | 'this'
                    | [constant_id '#'] 'self'
 Stable_Id        ::= constant_id
-                   | Path '::' constant_id
+                   | ['::'] Path '::' constant_id
                    | [constant_id '#'] 'super' [Class_Qualifier] 
                       '::' constant_id
-Class_Qualifier  ::= '<' constant_id '>'
-
+Class_Qualifier  ::= '[' constant_id ']'
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Coral's type system. 
 
-A path is one of the following: 
+A path is one of the following: \footnote{This section might need a review of what a path is, since we claim that the referenced entity is a member, yet the syntax only mentions \code{constant_id}.}
 
 \begin{itemize}
 \item 
@@ -508,7 +476,7 @@ The empty path $\epsilon$ (which can not be written explicitly in user programs)
 \lstinline@$p$::$x$@, where $p$ is a path and $x$ is a member of $p$. Additionally, $p$ allows modules to appear instead of references to classes or mixins, but no module reference can follow a class or a mixin reference: \lstinline@{module_ref '::'} {(class_ref|mixin_ref) '::'} …@. 
 
 \item
-\lstinline@$C$#super::$x$@ or \lstinline@$C$#super<$M$>::$x$@, where $C$ references a class or a mixin and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super<$M$>@ as a shorthand for \lstinline@$C$#super<$M$>@, where $C$ is yet again the name of the class directly enclosing the reference. 
+\lstinline@$C$#super::$x$@ or \lstinline@$C$#super[$M$]::$x$@, where $C$ references a class or a mixin and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$#super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
 \end{itemize}
 
 \section{Value Types}
@@ -519,38 +487,70 @@ Every value in Coral has a type which is of one of the following forms.
 \label{sec:value-types}
 \label{sec:singleton-types}
 
-\textit{TBD}
+\syntax\begin{lstlisting}
+Simple_Type ::= Path '#' 'type'
+Simple_Type ::= Path '#' 'singleton-type'
+\end{lstlisting}
 
-% invent syntax for something that retrieves a type out of a value, so that the type will represent either nothing or the single value (singleton type), and possibly invent different syntax that will retrieve a type for all values interchangeable with that one value or nothing. #type #singleton_type or #singleton-type
+A singleton type is of the form \lstinline@$p$#singleton-type@ and a special type that denotes the set of values consisting of \code{nil} and the value denoted by $p$. A value type, on the other hand, is a special type that denotes the set of values consisting of \code{nil} and every value that conforms to the type of value denoted by $p$.\footnote{This is useful when using a value as prototype of new values.}
 
 \subsection{Type Projection}
 \label{sec:type-projection}
 
 \syntax\begin{lstlisting}
-
 Simple_Type ::= Simple_Type '#' constant_id
-
 \end{lstlisting}
 
-A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. 
-
-Type projection operator \lstinline@#@ is a language construct and can't be overridden by user programs. There is a similarity between this construct and the \lstinline@::@ scope operator. The difference is, type projection operator is expected to be rarely needed, but it does provide a type projection and can refer in a stable way to a type of anything. Scope operator, on the other hand, does not care about types, it merely (dynamically) resolves a member of a particular expression. 
-
-\example Difference between scope and type projection operators. 
-
-\begin{lstlisting}
-
-let a := yes::class
-let b := ::Boolean#class
-let c := yes::class#class
-
-\end{lstlisting}
-
-In the above code, the variable \code{a} is a reference to \lstinline@::Boolean::class@ method, the member method \lstinline@.class@ of every \code{Boolean} instance. On the other hand, the variable \code{b} is \lstinline@::Boolean@ class itself. Finally, the variable \code{c} is the class of that instance method. 
+A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. \footnote{Type projection operator \lstinline@#@ is a language construct and can't be overridden by user programs. There is a similarity between this construct and the \lstinline@::@ scope operator. The difference is, type projection operator is expected to be rarely needed, but it does provide a type projection and can refer in a stable way to a type of anything. Scope operator, on the other hand, does not care about types, it merely resolves a member of a particular expression at runtime.}
 
 \subsection{Type Designators}
 
-\subsection{Parametrized Types}
+\syntax\begin{lstlisting}
+Simple_Type ::= Stable_Id
+\end{lstlisting}
+
+A type designator refers to a named value type. It can be simple or qualified. All such type designators are shorthands for type projections. 
+
+Specifically, the unqualified type name $t$ where $t$ is bound in some class, object or module $C$ is taken as a shorthand for \lstinline@$C$#self#type#$t$@. If $t$ is not bound in a class, object or module, then $t$ is taken as a shorthand for \lstinline@$\epsilon$#type#$t$@. 
+
+A qualified type designator has the form \lstinline@$p$::$t$@, where $p$ is a path (\sref{sec:type-paths}) and $t$ is a type name. Such a type designator is equivalent to the type projection \lstinline@$p$#type#$t$@. 
+
+\subsection{Parameterized Types}
+
+\syntax\begin{lstlisting}
+Simple_Type ::= Simple_Type Type_Args
+Type_Args   ::= '[' Types ']'
+Types       ::= Type {',' Type}
+\end{lstlisting}
+
+A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
+
+Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $L_i <: \sigma T_i <: U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$. 
+
+\example
+\label{example:parameterized-types}
+Given the generic type definitions: 
+
+\begin{lstlisting}[escapechar=@]
+class Tree_Map[@\$@A <: Comparable[@\$@A], @\$@B] $\ldots$ end
+class List[@\$@A] $\ldots$ end
+class I; implements Comparable[I]; $\ldots$ end
+
+class F[@\$@M[_], @\$@X] $\ldots$ end
+class S[@\$@K <: String] $\ldots$ end
+class S[@\$@M[ @\$@Z <: I], I] $\ldots$ end
+\end{lstlisting}
+
+the following parameterized types are well-formed: 
+
+\begin{lstlisting}
+Tree_Map[I, String]
+List[I]
+List[List[Boolean]]
+
+F[List, Number]
+G[S, String]
+\end{lstlisting}
 
 \subsection{Tuple Types}
 
