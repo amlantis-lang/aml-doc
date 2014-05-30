@@ -538,7 +538,7 @@ class I; implements Comparable[I]; $\ldots$ end
 
 class F[@\$@M[_], @\$@X] $\ldots$ end
 class S[@\$@K <: String] $\ldots$ end
-class G[@\$@M[@\$@Z <: Comparable[@\$@I]], @\$@I] $\ldots$ end
+class G[@\$@M[@\$@Z <: @\$@I], @\$@I] $\ldots$ end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
@@ -550,6 +550,25 @@ List[List[Boolean]]
 
 F[List, Number]
 G[S, String]
+\end{lstlisting}
+
+\example
+\label{example:parameterized-types-mal}
+
+Given the type definitions of the previous example, the following types are malformed: 
+
+\begin{lstlisting}
+Tree_Map[I]               // wrong number of parameters
+Tree_Map[List[I], Number] // type parameter List not within bound
+
+F[Number, Boolean]        // Number is not a type constructor
+F[Tree_Map, Number]       // Tree_Map takes two parameters, 
+                          //   F expects a type constructor taking one
+
+G[S, Number]              // type S constrains its parameter to
+                          //   conform to String, 
+                          // G expects type constructor with a parameter
+                          //   that conforms to Number
 \end{lstlisting}
 
 \subsection{Tuple Types}
