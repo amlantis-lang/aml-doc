@@ -525,7 +525,7 @@ Types       ::= Type {',' Type}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
 
-Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $L_i <: \sigma T_i <: U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$. 
+Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $L_i <: \sigma a_i <: U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfil the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
 
 \example
 \label{example:parameterized-types}
