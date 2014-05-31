@@ -516,6 +516,7 @@ Specifically, the unqualified type name $t$ where $t$ is bound in some class, ob
 A qualified type designator has the form \lstinline@$p$::$t$@, where $p$ is a path (\sref{sec:type-paths}) and $t$ is a type name. Such a type designator is equivalent to the type projection \lstinline@$p$#type#$t$@. 
 
 \subsection{Parameterized Types}
+\label{sec:parameterized-types}
 
 \syntax\begin{lstlisting}
 Simple_Type ::= Simple_Type Type_Args
@@ -573,9 +574,39 @@ G[S, Number]              // type S constrains its parameter to
 
 \subsection{Tuple Types}
 
+\syntax\begin{lstlisting}
+Simple_Type ::= '(' Types ')'
+\end{lstlisting}
+
+A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
+
+Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods \lstinline@[1]$ \commadots $[$n$]@ (using an ``offset'' that is outside of the tuple's size results in a method-not-found error, not offset-out-of-bounds -- tuple classes do not implement the operator \lstinline@[i]@ for arbitrary $i$). 
+
+Tuple classes are generated lazily by the runtime as needed, so that the language does not constrain users to tuples of only limited sizes, but allows any size. 
+
+An effort will be made to introduce a simple enough syntax for variable parameterized types, if possible, until then, \lstinline@Tuple_$i$@ are the only such types. 
+
 \subsection{Annotated Types}
 
+\syntax\begin{lstlisting}
+Annot_Type ::= {Annotation} Simple_Type
+\end{lstlisting}
+
+An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ to the type $T$. % TBD: add ref to a chapter about annotations.
+
 \subsection{Compound Types}
+
+\syntax\begin{lstlisting}
+Compound_Type ::= Annot_Type {'with' Annot_Type} [Refinement]
+                | Refinement
+Refinement    ::= 'refine' '{' Refine_Stat {semi Refine_Stat} '}'
+\end{lstlisting} % TBD: define Refine_Stat syntax
+
+A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and type definitions. 
+
+If no refinement is given, the type is implicitly equivalent to the same type having an empty refinement. 
+
+A compound type may also consist of just a refinement \lstinline@{$R$}@ with no preceding component types -- such a type has an implicit component type \code{Object} and describes the member values as ``any value, as long as it has what the refinement requires'', thus it works like an anonymous protocol. 
 
 \subsection{Function Types}
 
