@@ -32,7 +32,7 @@ Grammar of lexical tokens is given in the following sections. These tokens are t
 \section{Identifiers}\label{sec:identifiers}
 
 \syntax\begin{lstlisting}
-simple_id   ::= lower [id_rest]
+simple_id   ::= (lower | '_') [id_rest]
 variable_id ::= simple_id | '_'
 ivar_id     ::= '@' simple_id
 cvar_id     ::= '@@' simple_id
