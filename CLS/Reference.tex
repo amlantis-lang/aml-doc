@@ -610,6 +610,20 @@ A compound type may also consist of just a refinement \lstinline@{$R$}@ with no 
 
 \subsection{Function Types}
 
+\syntax\begin{lstlisting}
+Type ::= Function_Args {'->' Function_Args} '->' Return_Type
+Function_Args ::= '(' [Type {',' Type}] ')'
+Return_Type ::= Type | 'void'
+\end{lstlisting}
+
+The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. Empty arguments list is indeed also possible as \lstinline@() -> $R$@, representing e.g. a call-by-name parameter of type $T$.
+
+Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
+
+Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$:[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Coral library for any $n$. 
+
+Function types are covariant in their result type and contravariant in their argument types. 
+
 \subsection{Existential Types}
 
 \section{Non-Value Types}
