@@ -115,7 +115,7 @@ The following character sequences are the operators recognized by Coral.
 and    !      not    ^^     xor    |      &      ^      ~      .. 
 ...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
 :>     <<|    |>>    <|     |>     (      )      [      ]      { 
-}      .
+}      .      :[
 \end{lstlisting}
 
 Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
@@ -520,11 +520,11 @@ A qualified type designator has the form \lstinline@$p$::$t$@, where $p$ is a pa
 
 \syntax\begin{lstlisting}
 Simple_Type ::= Simple_Type Type_Args
-Type_Args   ::= '[' Types ']'
+Type_Args   ::= ':[' Types ']'
 Types       ::= Type {',' Type}
 \end{lstlisting}
 
-A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
+A parameterized type\footnote{The `\lstinline@:[@' and `\lstinline@]@' token pairs were selected after many considerations. The original idea was to use the same pair as Java or C\#: `\lstinline@<@' and `\lstinline@>@', but this has the drawback of injecting an exception into the parser. Then Scala's `\lstinline@[@' and `\lstinline@]@' were considered, but they kind of collide with an operator that uses the same pair and therefore expressions could become ambiguous. Finally an idea emerged to use `\lstinline@:[@' and `\lstinline@]@', since the `\lstinline@:@' in it hints that it is related to the type system, and `\lstinline@[@' and `\lstinline@]@' lack the drawbacks of `\lstinline@<@' and `\lstinline@>@' (collision with comparison operators).} $T:[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
 
 Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $L_i <: \sigma a_i <: U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfil the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
 
@@ -533,24 +533,24 @@ Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds 
 Given the generic type definitions: 
 
 \begin{lstlisting}[escapechar=@]
-class Tree_Map[@\$@A <: Comparable[@\$@A], @\$@B] $\ldots$ end
-class List[@\$@A] $\ldots$ end
-class I; implements Comparable[I]; $\ldots$ end
+class Tree_Map:[@\$@A <: Comparable:[@\$@A], @\$@B] $\ldots$ end
+class List:[@\$@A] $\ldots$ end
+class I; implements Comparable:[I]; $\ldots$ end
 
-class F[@\$@M[_], @\$@X] $\ldots$ end
-class S[@\$@K <: String] $\ldots$ end
-class G[@\$@M[@\$@Z <: @\$@I], @\$@I] $\ldots$ end
+class F:[@\$@M:[_], @\$@X] $\ldots$ end
+class S:[@\$@K <: String] $\ldots$ end
+class G:[@\$@M:[@\$@Z <: @\$@I], @\$@I] $\ldots$ end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
 
 \begin{lstlisting}
-Tree_Map[I, String]
-List[I]
-List[List[Boolean]]
+Tree_Map:[I, String]
+List:[I]
+List:[List:[Boolean]]
 
-F[List, Number]
-G[S, String]
+F:[List, Number]
+G:[S, String]
 \end{lstlisting}
 
 \example
@@ -559,14 +559,14 @@ G[S, String]
 Given the type definitions of the previous example, the following types are malformed: 
 
 \begin{lstlisting}
-Tree_Map[I]               // wrong number of parameters
-Tree_Map[List[I], Number] // type parameter List not within bound
+Tree_Map:[I]               // wrong number of parameters
+Tree_Map:[List:[I], Number] // type parameter List not within bound
 
-F[Number, Boolean]        // Number is not a type constructor
-F[Tree_Map, Number]       // Tree_Map takes two parameters, 
+F:[Number, Boolean]        // Number is not a type constructor
+F:[Tree_Map, Number]       // Tree_Map takes two parameters, 
                           //   F expects a type constructor taking one
 
-G[S, Number]              // type S constrains its parameter to
+G:[S, Number]              // type S constrains its parameter to
                           //   conform to String, 
                           // G expects type constructor with a parameter
                           //   that conforms to Number
@@ -578,7 +578,7 @@ G[S, Number]              // type S constrains its parameter to
 Simple_Type ::= '(' Types ')'
 \end{lstlisting}
 
-A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
+A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$:[$T_1 \commadots T_n$]@, where $n \geq 2$. 
 
 Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods \lstinline@[1]$ \commadots $[$n$]@ (using an ``offset'' that is outside of the tuple's size results in a method-not-found error, not offset-out-of-bounds -- tuple classes do not implement the operator \lstinline@[i]@ for arbitrary $i$). 
 
