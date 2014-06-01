@@ -626,6 +626,13 @@ Function types are covariant in their result type and contravariant in their arg
 
 \subsection{Existential Types}
 
+\syntax\begin{lstlisting}[escapechar=@]
+Type                ::= Compound_Type Existential_Clauses
+Existential_Clauses ::= {'for-some' '{' Existential_Dcl
+                        {semi Existential_Dcl} '}'}
+Existential_Dcl     ::= 'type' Type_Dcl
+\end{lstlisting}
+
 \section{Non-Value Types}
 
 \subsection{Method Types}
