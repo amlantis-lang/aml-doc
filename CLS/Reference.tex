@@ -115,7 +115,7 @@ The following character sequences are the operators recognized by Coral.
 and    !      not    ^^     xor    |      &      ^      ~      .. 
 ...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
 :>     <<|    |>>    <|     |>     (      )      [      ]      { 
-}      .      [<     >]
+}      .      [<     >]     >:
 \end{lstlisting}
 
 Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
@@ -633,13 +633,9 @@ Existential_Clauses ::= {'for-some' '{' Existential_Dcl
 Existential_Dcl     ::= 'type' Type_Dcl
 \end{lstlisting}
 
-\section{Non-Value Types}
+An existential type has the form \lstinline@$T$ for-some {$Q$}@, where $Q$ is a sequence of type declarations. Let \lstinline@$t_1$:[$tps_1$] >: $L_1$ <: $U_1$ $\commadots$ $t_n$:[$tps_n$] >: $L_n$ <: $U_n$@ be the types declared in $Q$. 
 
-\subsection{Method Types}
-
-\subsection{Polymorphic Method Types}
-
-\subsection{Type Constructors}
+A {\em type instance} of \lstinline@$T$ for-some {$Q$}@ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, \lstinline@$L_i$ <: $t_i$ <: $U_i$@. The set of values denoted by the existential type \lstinline@$T$ for-some {$Q$}@ is the union of the set of values of all its type instances. 
 
 \section{Relations Between Types}
 
