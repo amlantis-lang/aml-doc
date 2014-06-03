@@ -595,6 +595,7 @@ Annot_Type ::= {Annotation} Simple_Type
 An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ to the type $T$. % TBD: add ref to a chapter about annotations.
 
 \subsection{Compound Types}
+\label{ref:compound-types}
 
 \syntax\begin{lstlisting}
 Compound_Type ::= Annot_Type {'with' Annot_Type} [Refinement]
@@ -625,6 +626,7 @@ Function types are shorthands for class types that conform to the \lstinline@Fun
 Function types are covariant in their result type and contravariant in their argument types. 
 
 \subsection{Existential Types}
+\label{ref:existential-types}
 
 \syntax\begin{lstlisting}[escapechar=@]
 Type                ::= Compound_Type Existential_Clauses
@@ -639,9 +641,61 @@ A {\em type instance} of \lstinline@$T$ for-some {$Q$}@ is a type $\sigma T$, wh
 
 \section{Relations Between Types}
 
+We define two relations between types. 
+\begin{quote}\begin{tabular}{l@{\gap}l@{\gap}l}
+\em Type equivalence & $T \equiv U$ & $T$ and $U$ are interchangeable
+in all contexts.
+\\
+\em Conformance & $T \conforms U$ & Type $T$ conforms to type $U$.
+\end{tabular}\end{quote}
+
 \subsection{Type Equivalence}
 
+Equivalence ($\equiv$) between types is the smallest congruence, such that the following statements are true:
+
+\begin{itemize}
+\item
+If $t$ is defined by a type alias \lstinline@type t is T@, then $t$ is equivalent to $T$. 
+
+\item
+If a path $p$ has a singleton type \lstinline@$q$#singleton-type@, then \lstinline@$p$#singleton-type $\equiv$ $q$#singleton-type@. 
+
+\item
+Two compound types (\sref{ref:compound-types}) are equivalent, if the sequences of their components are pairwise equivalent, occur in the same order and their refinements are equivalent.
+
+\item 
+Two refinements (\sref{ref:compound-types} \& TBD: named refinements) are equivalent, if they bind the same names and the modifiers, types and bounds of every declared entity are equivalent in both refinements. Two equivalent refinements, both or one attached to a compound type, do not imply the compound types to be equivalent. This applies to both anonymous and named refinements. 
+
+\item
+Two method types are equivalent, if they have equivalent return types, both have the same number of parameters and corresponding parameters have equivalent types. Names of parameters matter for method type equivalence only with named parameters. 
+
+\item
+Two polymorphic method types are equivalent, if they have the same number of type parameters, the return types are equivalent as well as lower and upper bounds of corresponding type parameters. 
+
+\item
+Two existential types (\sref{ref:existential-types}) are equivalent, if they have the same number of quantifiers and the quantified types as well as lower and upper bounds of corresponding quantifiers are equivalent. 
+
+\item
+Two type constructors are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
+
+\end{itemize}
+
 \subsection{Conformance}
+
+The conformance relation $(\conforms)$ is the smallest transitive relation that satisfies the following conditions:
+
+\begin{itemize}
+
+\item
+Conformance includes equivalence, therefore if $T \equiv U$, then \lstinline@$T \conforms U$@. 
+
+\item
+For every value type $T$, \lstinline@::Nothing $\conforms T \conforms$ ::Object@. 
+
+\item
+For every type constructor $T$ with any number of type parameters, \lstinline@::Nothing $\conforms T \conforms$ ::Object@. 
+
+\end{itemize}
 
 \chapter{Basic Declarations \& Definitions}
 
