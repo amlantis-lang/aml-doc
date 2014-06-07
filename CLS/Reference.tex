@@ -677,7 +677,7 @@ e : (*Integer) $\mapsto$ Integer
 f : (Integer) $\mapsto$ ()
 \end{lstlisting}
 
-\section{Polymorphic Method Types}
+\subsection{Polymorphic Method Types}
 
 A polymorphic method type is the same as a regular method type, but enhanced with a type parameters section. It is denoted internally as \lstinline@:[$tps$]$\mapsto T$@, where \lstinline@:[$tps$]@ is a type parameter section \lstinline@:[a_1 >: L_1 <: U_1 $\commadots$ a_n >: L_n <: U_n]@ for some $n \geq 0$ and $T$ is a (value or method) type. This type represents (only\footnote{Not anonymous.}) named methods that take type arguments $S_1 \commadots S_n$, for which the lower bounds $L_1 \commadots L_n$ conform (\sref{sec:conformance}) to the type arguments and the type arguments conform and the upper bounds $U_1 \commadots U_n$ and that yield results of type $T$. No explicit lower bound implies \code{Nothing} to be the corresponding lower bound, no explicit upper bound implies \code{Object} to be the corresponding upper bound. As usual, lower bound must conform to the corresponding upper bound. 
 
@@ -693,6 +693,9 @@ empty : :[@\$@A >: Nothing <: Object] () $\mapsto$ List:[@\$@A]
 union : :[@\$@A >: Nothing <: Comparable:[@\$@A]] (Set:[@\$@A], 
         Set:[@\$@A]) $\mapsto$ Set:[@\$@A]
 \end{lstlisting}
+
+\subsection{Type Constructors}
+\label{sec:type-constructors}
 
 \section{Relations Between Types}
 
