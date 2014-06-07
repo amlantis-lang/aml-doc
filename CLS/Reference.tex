@@ -678,6 +678,7 @@ f : (Integer) $\mapsto$ ()
 \end{lstlisting}
 
 \subsection{Polymorphic Method Types}
+\label{sec:polymorphic-method-types}
 
 A polymorphic method type is the same as a regular method type, but enhanced with a type parameters section. It is denoted internally as \lstinline@:[$tps$]$ \mapsto T$@, where \lstinline@:[$tps$]@ is a type parameter section \lstinline@:[$a_1$ >: $L_1$ <: $U_1$ $\commadots$ $a_n$ >: $L_n$ <: $U_n$]@ for some $n \geq 0$ and $T$ is a (value or method) type. This type represents (only\footnote{Not anonymous.}) named methods that take type arguments $S_1 \commadots S_n$, for which the lower bounds $L_1 \commadots L_n$ conform (\sref{sec:conformance}) to the type arguments and the type arguments conform and the upper bounds $U_1 \commadots U_n$ and that yield results of type $T$. No explicit lower bound implies \code{Nothing} to be the corresponding lower bound, no explicit upper bound implies \code{Object} to be the corresponding upper bound. As usual, lower bound must conform to the corresponding upper bound. 
 
@@ -696,6 +697,8 @@ union : :[@\$@A >: Nothing <: Comparable:[@\$@A]] (Set:[@\$@A],
 
 \subsection{Type Constructors}
 \label{sec:type-constructors}
+
+A type constructor is in turn represented internally much like a polymorphic method type. \lstinline@:[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto T$@ represents a type that is expected by a type constructor parameter. The difference is that the represented internal entity is not a method, but a type, creating higher-kinded types. 
 
 \section{Relations Between Types}
 
@@ -728,13 +731,13 @@ Two refinements (\sref{sec:compound-types} \& TBD: named refinements) are equiva
 Two method types (\sref{sec:method-types}) are equivalent, if they have equivalent return types, both have the same number of parameters and corresponding parameters have equivalent types and extra properties. Names of parameters matter for method type equivalence only with named parameters. 
 
 \item
-Two polymorphic method types are equivalent, if they have the same number of type parameters, the return types are equivalent as well as lower and upper bounds of corresponding type parameters. 
+Two polymorphic method types (\sref{sec:polymorphic-method-types}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as lower and upper bounds of corresponding type parameters. 
 
 \item
 Two existential types (\sref{sec:existential-types}) are equivalent, if they have the same number of quantifiers and the quantified types as well as lower and upper bounds of corresponding quantifiers are equivalent. 
 
 \item
-Two type constructors are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
+Two type constructors (\sref{sec:type-constructors}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
 
 \end{itemize}
 
