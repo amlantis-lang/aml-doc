@@ -595,7 +595,7 @@ Annot_Type ::= {Annotation} Simple_Type
 An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ to the type $T$. % TBD: add ref to a chapter about annotations.
 
 \subsection{Compound Types}
-\label{ref:compound-types}
+\label{sec:compound-types}
 
 \syntax\begin{lstlisting}
 Compound_Type ::= Annot_Type {'with' Annot_Type} [Refinement]
@@ -610,6 +610,7 @@ If no refinement is given, the type is implicitly equivalent to the same type ha
 A compound type may also consist of just a refinement \lstinline@{$R$}@ with no preceding component types -- such a type has an implicit component type \code{Object} and describes the member values as ``any value, as long as it has what the refinement requires'', thus it works like an anonymous protocol. 
 
 \subsection{Function Types}
+\label{sec:function-types}
 
 \syntax\begin{lstlisting}
 Type ::= Function_Args {'->' Function_Args} '->' Return_Type
@@ -626,7 +627,7 @@ Function types are shorthands for class types that conform to the \lstinline@Fun
 Function types are covariant in their result type and contravariant in their argument types. 
 
 \subsection{Existential Types}
-\label{ref:existential-types}
+\label{sec:existential-types}
 
 \syntax\begin{lstlisting}[escapechar=@]
 Type                ::= Compound_Type Existential_Clauses
@@ -638,6 +639,47 @@ Existential_Dcl     ::= 'type' Type_Dcl
 An existential type has the form \lstinline@$T$ for-some {$Q$}@, where $Q$ is a sequence of type declarations. Let \lstinline@$t_1$:[$tps_1$] >: $L_1$ <: $U_1$ $\commadots$ $t_n$:[$tps_n$] >: $L_n$ <: $U_n$@ be the types declared in $Q$. 
 
 A {\em type instance} of \lstinline@$T$ for-some {$Q$}@ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, \lstinline@$L_i$ <: $t_i$ <: $U_i$@. The set of values denoted by the existential type \lstinline@$T$ for-some {$Q$}@ is the union of the set of values of all its type instances. 
+
+\section{Non-Value Types}
+
+The types explained in the following paragraphs do not appear explicitly in programs, they are internal and do not represent any type of value directly. 
+
+\subsection{Method Types}
+\label{sec:method-types}
+
+A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of parameter names, types and extra properties $(ep_1 : T_1 \commadots ep_n : T_n)$ for some $n \geq 0$ and $R$ is a value or method type. This type represents named or anonymous methods that take arguments named $p_1 \commadots p_n$ of types $T_1 \commadots T_n$, have extra properties $e$ (which is a \lstinline@*@ for variable arguments, \lstinline@**@ for any named arguments and \lstinline@&@ for a captured block argument, or nothing for regular parameters) and return a result of type $R$. Names of parameters are either simple identifiers (for positional argument passing) or symbol literals (\sref{sec:symbolliterals}, for named arguments passing -- they make difference between method types with possibly same parameter types, therefore the name is a part of the method type along with the associated parameter type\footnote{This means that, for simplicity, if we have a method with one parameter, which is a named parameter, represented by having its name expressed with a symbol literal, and the parameters have an equivalent type, but different names, the method types are not equivalent.}). 
+
+Method types associate to the right:\footnote{Like in Haskell or Scala.} \newline
+$(Ps_1) \mapsto (Ps_2) \mapsto R$ is treated as $(Ps_1) \mapsto ((Ps_2) \mapsto R)$. 
+
+A special case are types of methods without any parameters. They are written here as $() \mapsto R$. 
+
+Another special case are types of methods without any return type. They are written here as $(Ps) \mapsto ()$. Methods that have this return type do not have an implicit return expressions and an attempt to return a value from it results in a compile-time error.\footnote{A compile-time error like this may happen during a runtime evaluation as well.}
+
+Method types do not exist as types of values. If a method name is used as a value, its type is implicitly converted to a corresponding function type (\sref{sec:function-types}). 
+
+\example The declarations
+\begin{lstlisting}
+def a -> Integer // or def a () -> Integer
+def b (x : Integer) -> Boolean
+def c (x : Integer) -> (y : String, z : String) -> String
+def d (:x : Integer) -> Integer
+def e (*x : Integer) -> Integer
+def f (Integer) -> ()
+\end{lstlisting}
+produce the typings
+\begin{lstlisting}
+a : () $\mapsto$ Integer
+b : (Integer) $\mapsto$ Boolean
+c : (Integer) $\mapsto$ (String, String) $\mapsto$ String
+d : (:x Integer) $\mapsto$ Integer
+e : (*Integer) $\mapsto$ Integer
+f : (Integer) $\mapsto$ ()
+\end{lstlisting}
+
+\section{Polymorphic Method Types}
+
+
 
 \section{Relations Between Types}
 
@@ -661,19 +703,19 @@ If $t$ is defined by a type alias \lstinline@type t is T@, then $t$ is equivalen
 If a path $p$ has a singleton type \lstinline@$q$#singleton-type@, then \lstinline@$p$#singleton-type $\equiv$ $q$#singleton-type@. 
 
 \item
-Two compound types (\sref{ref:compound-types}) are equivalent, if the sequences of their components are pairwise equivalent, occur in the same order and their refinements are equivalent.
+Two compound types (\sref{sec:compound-types}) are equivalent, if the sequences of their components are pairwise equivalent, occur in the same order and their refinements are equivalent.
 
 \item 
-Two refinements (\sref{ref:compound-types} \& TBD: named refinements) are equivalent, if they bind the same names and the modifiers, types and bounds of every declared entity are equivalent in both refinements. Two equivalent refinements, both or one attached to a compound type, do not imply the compound types to be equivalent. This applies to both anonymous and named refinements. 
+Two refinements (\sref{sec:compound-types} \& TBD: named refinements) are equivalent, if they bind the same names and the modifiers, types and bounds of every declared entity are equivalent in both refinements. Two equivalent refinements, both or one attached to a compound type, do not imply the compound types to be equivalent. This applies to both anonymous and named refinements. 
 
 \item
-Two method types are equivalent, if they have equivalent return types, both have the same number of parameters and corresponding parameters have equivalent types. Names of parameters matter for method type equivalence only with named parameters. 
+Two method types (\sref{sec:method-types}) are equivalent, if they have equivalent return types, both have the same number of parameters and corresponding parameters have equivalent types and extra properties. Names of parameters matter for method type equivalence only with named parameters. 
 
 \item
 Two polymorphic method types are equivalent, if they have the same number of type parameters, the return types are equivalent as well as lower and upper bounds of corresponding type parameters. 
 
 \item
-Two existential types (\sref{ref:existential-types}) are equivalent, if they have the same number of quantifiers and the quantified types as well as lower and upper bounds of corresponding quantifiers are equivalent. 
+Two existential types (\sref{sec:existential-types}) are equivalent, if they have the same number of quantifiers and the quantified types as well as lower and upper bounds of corresponding quantifiers are equivalent. 
 
 \item
 Two type constructors are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
@@ -690,10 +732,10 @@ The conformance relation $(\conforms)$ is the smallest transitive relation that 
 Conformance includes equivalence, therefore if $T \equiv U$, then \lstinline@$T \conforms U$@. 
 
 \item
-For every value type $T$, \lstinline@::Nothing $\conforms T \conforms$ ::Object@. 
+For every value type $T$, \lstinline@Nothing $\conforms T \conforms$ Object@. 
 
 \item
-For every type constructor $T$ with any number of type parameters, \lstinline@::Nothing $\conforms T \conforms$ ::Object@. 
+For every type constructor $T$ with any number of type parameters, \lstinline@Nothing $\conforms T \conforms$ Object@. 
 
 \end{itemize}
 
