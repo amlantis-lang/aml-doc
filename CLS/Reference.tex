@@ -647,7 +647,7 @@ The types explained in the following paragraphs do not appear explicitly in prog
 \subsection{Method Types}
 \label{sec:method-types}
 
-A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of parameter names, types and extra properties $(ep_1 : T_1 \commadots ep_n : T_n)$ for some $n \geq 0$ and $R$ is a value or method type. This type represents named or anonymous methods that take arguments named $p_1 \commadots p_n$ of types $T_1 \commadots T_n$, have extra properties $e$ (which is a \lstinline@*@ for variable arguments, \lstinline@**@ for any named arguments and \lstinline@&@ for a captured block argument, or nothing for regular parameters) and return a result of type $R$. Names of parameters are either simple identifiers (for positional argument passing) or symbol literals (\sref{sec:symbolliterals}, for named arguments passing -- they make difference between method types with possibly same parameter types, therefore the name is a part of the method type along with the associated parameter type\footnote{This means that, for simplicity, if we have a method with one parameter, which is a named parameter, represented by having its name expressed with a symbol literal, and the parameters have an equivalent type, but different names, the method types are not equivalent.}). 
+A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of parameter names, types and extra properties $(ep_1 : T_1 \commadots ep_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments named $p_1 \commadots p_n$ of types $T_1 \commadots T_n$, have extra properties $e$ (which is a \lstinline@*@ for variable arguments, \lstinline@**@ for any named arguments and \lstinline@&@ for a captured block argument, or nothing for regular parameters) and return a result of type $R$. Names of parameters are either simple identifiers (for positional argument passing) or symbol literals (\sref{sec:symbolliterals}, for named arguments passing -- they make difference between method types with possibly same parameter types, therefore the name is a part of the method type along with the associated parameter type\footnote{This means that, for simplicity, if we have a method with one parameter, which is a named parameter, represented by having its name expressed with a symbol literal, and the parameters have an equivalent type, but different names, the method types are not equivalent.}). 
 
 Method types associate to the right:\footnote{Like in Haskell or Scala.} \newline
 $(Ps_1) \mapsto (Ps_2) \mapsto R$ is treated as $(Ps_1) \mapsto ((Ps_2) \mapsto R)$. 
@@ -679,7 +679,20 @@ f : (Integer) $\mapsto$ ()
 
 \section{Polymorphic Method Types}
 
+A polymorphic method type is the same as a regular method type, but enhanced with a type parameters section. It is denoted internally as \lstinline@:[$tps$]$\mapsto T$@, where \lstinline@:[$tps$]@ is a type parameter section \lstinline@:[a_1 >: L_1 <: U_1 $\commadots$ a_n >: L_n <: U_n]@ for some $n \geq 0$ and $T$ is a (value or method) type. This type represents (only\footnote{Not anonymous.}) named methods that take type arguments $S_1 \commadots S_n$, for which the lower bounds $L_1 \commadots L_n$ conform (\sref{sec:conformance}) to the type arguments and the type arguments conform and the upper bounds $U_1 \commadots U_n$ and that yield results of type $T$. No explicit lower bound implies \code{Nothing} to be the corresponding lower bound, no explicit upper bound implies \code{Object} to be the corresponding upper bound. As usual, lower bound must conform to the corresponding upper bound. 
 
+\example The declarations
+\begin{lstlisting}[escapechar=@,deletekeywords={union}]
+def empty:[@\$@A] -> List:[@\$@A]
+def union:[@\$@A <: Comparable:[@\$@A]] (x : Set:[@\$@A], 
+         xs : Set:[@\$@A]) -> Set:[@\$@A]
+\end{lstlisting}
+produce the typings
+\begin{lstlisting}[escapechar=@,deletekeywords={union}]
+empty : :[@\$@A >: Nothing <: Object] () $\mapsto$ List:[@\$@A]
+union : :[@\$@A >: Nothing <: Comparable:[@\$@A]] (Set:[@\$@A], 
+        Set:[@\$@A]) $\mapsto$ Set:[@\$@A]
+\end{lstlisting}
 
 \section{Relations Between Types}
 
@@ -723,6 +736,7 @@ Two type constructors are equivalent, if they have the same number of type param
 \end{itemize}
 
 \subsection{Conformance}
+\label{sec:conformance}
 
 The conformance relation $(\conforms)$ is the smallest transitive relation that satisfies the following conditions:
 
