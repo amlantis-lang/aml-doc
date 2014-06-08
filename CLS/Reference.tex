@@ -647,7 +647,7 @@ The types explained in the following paragraphs do not appear explicitly in prog
 \subsection{Method Types}
 \label{sec:method-types}
 
-A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of parameter names, types and extra properties $(ep_1 : T_1 \commadots ep_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments named $p_1 \commadots p_n$ of types $T_1 \commadots T_n$, have extra properties $e$ (which is a \lstinline@*@ for variable arguments, \lstinline@**@ for any named arguments and \lstinline@&@ for a captured block argument, or nothing for regular parameters) and return a result of type $R$. Names of parameters are either simple identifiers (for positional argument passing) or symbol literals (\sref{sec:symbolliterals}, for named arguments passing -- they make difference between method types with possibly same parameter types, therefore the name is a part of the method type along with the associated parameter type\footnote{This means that, for simplicity, if we have a method with one parameter, which is a named parameter, represented by having its name expressed with a symbol literal, and the parameters have an equivalent type, but different names, the method types are not equivalent.}). 
+A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of parameter names, types and extra properties $(ep_1 : T_1 \commadots ep_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments named $p_1 \commadots p_n$ of types $T_1 \commadots T_n$, have extra properties $e$ and return a result of type $R$. Names of parameters are either simple identifiers (for positional argument passing) or symbol literals (\sref{sec:symbolliterals}, for named arguments passing -- they make difference between method types with possibly same parameter types, therefore the name is a part of the method type along with the associated parameter type\footnote{This means that, for simplicity, if we have a method with one parameter, which is a named parameter, represented by having its name expressed with a symbol literal, and the parameters have an equivalent type, but different names, the method types are not equivalent.}). 
 
 Method types associate to the right:\footnote{Like in Haskell or Scala.} \newline
 $(Ps_1) \mapsto (Ps_2) \mapsto R$ is treated as $(Ps_1) \mapsto ((Ps_2) \mapsto R)$. 
@@ -657,6 +657,8 @@ A special case are types of methods without any parameters. They are written her
 Another special case are types of methods without any return type. They are written here as $(Ps) \mapsto ()$. Methods that have this return type do not have an implicit return expressions and an attempt to return a value from it results in a compile-time error.\footnote{A compile-time error like this may happen during a runtime evaluation as well.}
 
 Method types do not exist as types of values. If a method name is used as a value, its type is implicitly converted to a corresponding function type (\sref{sec:function-types}). 
+
+Extra properties of parameters are as follows: a \lstinline@*@ for variable arguments, \lstinline@**@ for any named arguments and \lstinline@&@ for a captured block argument, or nothing for regular parameters. 
 
 \example The declarations
 \begin{lstlisting}
@@ -757,7 +759,17 @@ For every value type $T$, \lstinline@Nothing $\conforms T \conforms$ Object@.
 \item
 For every type constructor $T$ with any number of type parameters, \lstinline@Nothing $\conforms T \conforms$ Object@. 
 
+\item
+A type variable $t$ conforms to its upper bound and its lower bound conforms to $t$. 
+
+\item
+A class type or a parameterized type conforms to any of its base types. 
+
 \end{itemize}
+
+\subsection{Weak Conformance}
+
+TBD
 
 \chapter{Basic Declarations \& Definitions}
 
