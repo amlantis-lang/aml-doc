@@ -769,7 +769,9 @@ A class type or a parameterized type conforms to any of its base types.
 
 \subsection{Weak Conformance}
 
-TBD
+For now, {\em weak conformance} is a relation defined on members of the \code{Number} type as a relaxation of conformance. The relation is simple: a type $t$ weakly conforms to another type $u$ when $u$'s size contains all values of $t$ (we say that $t$ can be converted to $u$ without precision loss). 
+
+Whether weak conformance will be available to be defined by users is up to further investigation. 
 
 \chapter{Basic Declarations \& Definitions}
 
