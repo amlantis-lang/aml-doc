@@ -805,17 +805,19 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 % let!: immutable values (see async...)
 
 \section{Value Declarations \& Definitions}
+\label{sec:value-dec-dfn}
 
 A value declaration \lstinline@val $x$ : $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$ : $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$ : $T$+ introduces $x$ as a name of a class instance value of type $T$. 
 
-A value definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. 
+A value definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
 
-The value type $T$ may be always omitted, in that case the type is inferred and bound to the name. 
+A value in this sense\footnote{Everything in Coral is a value -- remember, Coral is also a functional language, to some extent.} is an immutable variable. A declared value can be assigned just once\footnote{A similar way that \lstinline[language=Java]@final@ variables or members in Java can be assigned just once, but Java furthermore requires that this assignment will happen in every code path, Coral does not impose such requirement.}, a defined value is already assigned from its definition. 
+
+The value type $T$ may be always omitted, in that case the type is inferred and bound to the name. If a type $T$ is omitted, the type of expression $e$ is assumed. If a type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}). 
 
 Evaluation of the value definition implies evaluation of its right-hand side $e$, unless it has a modifier \code{lazy} -- in that case, evaluation is deferred to the first time the value is accessed. 
 
 A {\em lazy value} is of the form
-
 \begin{quote}\begin{lstlisting}
 lazy val $x$ : $T$ := $e$
 \end{lstlisting}\end{quote}
@@ -823,11 +825,9 @@ lazy val $x$ : $T$ := $e$
 The effect of the value definition is to bind $x$ to the value of $e$ converted to type $T$. 
 
 A {\em constant value definition} is of the form 
-
 \begin{quote}\begin{lstlisting}
 let $x$ : $T$ := $e$
 \end{lstlisting}\end{quote}
-
 where $e$ is an expression that is supposed to be treated as constant in the same block from its occurrence on. Values defined with \code{let} have certain limitations and properties:
 
 \begin{enumerate}
@@ -842,7 +842,6 @@ where $e$ is an expression that is supposed to be treated as constant in the sam
 The type $T$ may be omitted. 
 
 Value declarations \& definitions with the type $T$ omitted are of the form
-
 \begin{quote}\begin{lstlisting}
 val $x$
 val @$x$
@@ -915,11 +914,18 @@ A value declaration ~\lstinline@val $x_1 \commadots x_n$ : $T$@~ is a shorthand 
 
 \section{Variable Declarations \& Definitions}
 
-A variable declaration \lstinline@var $x$ : $T$@ introduces a mutable variable without a defined initial value of type $T$. 
+A variable declaration \lstinline@var $x$ : $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$ : $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$ : $T$+ introduces a mutable class instance variable of type $T$. 
+
+A variable definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
+
+Variable definitions can alternatively have a pattern as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dec-dfn}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
+
+The name of any declared or defined variable must not end with \lstinline@=@. 
+
+A variable declaration ~\lstinline@var $x_1 \commadots x_n$ : $T$@~ is a
+shorthand for the sequence of variable declarations ~\lstinline@var $x_1$ : $T$; $\ldots$; var $x_n$ : $T$@. A variable definition ~\lstinline@var $x_1 \commadots x_n$ = $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ := $e$; $\ldots$; var $x_n$ := $e$@. A variable definition ~\lstinline@var $x_1 \commadots x_n : T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1 : T$ := $e$; $\ldots$; var $x_n : T$ := $e$@.
 
 \section{Property Declarations \& Definitions}
-
-\section{Instance Variable Definitions}
 
 \section{Type Declarations \& Aliases}
 
