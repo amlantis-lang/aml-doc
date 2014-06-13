@@ -822,6 +822,8 @@ A {\em lazy value} is of the form
 lazy val $x$ : $T$ := $e$
 \end{lstlisting}\end{quote}
 
+A lazy value may only be defined, and a value of the same name (binding) may be declared prior to the value definition, but never as a lazy value. 
+
 The effect of the value definition is to bind $x$ to the value of $e$ converted to type $T$. 
 
 A {\em constant value definition} is of the form 
@@ -836,7 +838,7 @@ where $e$ is an expression that is supposed to be treated as constant in the sam
 \item They can't be used in a declaration, only in a definition. 
 \item They can be used to redefine a variable (the name is then treated as a new binding in the scope). 
 \item They can't define (class) instance variables. 
-\item They can be used in workflows.\footnote{A pragma that would turn all values into lazy values might exist, and lazy values should never appear in workflows, so that's why \code{val} should not be allowed in workflows.}
+\item They can be used in workflows (\sref{sec:workflows}).\footnote{A pragma that would turn all values into lazy values might exist, and lazy values should never appear in workflows, so that's why \code{val} should not be allowed in workflows.}
 \end{enumerate}
 
 The type $T$ may be omitted. 
@@ -854,7 +856,7 @@ let $x$ := $e$
 
 A value declaration without any type is basically only declaring the name, so that a binding is introduced and the actual value is for another code to define.\footnote{Usually, that another code should be a \code{constructor} or the class-level block in another file, maybe.}
 
-A value definition can alternatively have a pattern as left-hand side (the name). If $p$ is a pattern other than a simple name or a name followed by a colon and a type, then the value definition \lstinline@val $p$ := $e$@ is expanded as follows: 
+A value definition can alternatively have a pattern (\sref{sec:patterns}) as left-hand side (the name). If $p$ is a pattern other than a simple name or a name followed by a colon and a type, then the value definition \lstinline@val $p$ := $e$@ is expanded as follows: 
 
 \begin{enumerate}
 \item
@@ -918,7 +920,7 @@ A variable declaration \lstinline@var $x$ : $T$@ introduces a mutable variable w
 
 A variable definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
 
-Variable definitions can alternatively have a pattern as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dec-dfn}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
+Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dec-dfn}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
 
 The name of any declared or defined variable must not end with \lstinline@=@. 
 
@@ -1065,11 +1067,15 @@ shorthand for the sequence of variable declarations ~\lstinline@var $x_1$ : $T$;
 
 \subsection{Type Casting}
 
+\section{Workflows}
+\label{sec:workflows}
+
 \chapter{Implicit Parameters \& Views}
 
 \chapter{Pattern Matching}
 
 \section{Patterns}
+\label{sec:patterns}
 
 \subsection{Variable Patterns}
 
