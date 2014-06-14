@@ -805,7 +805,7 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 % let!: immutable values (see async...)
 
 \section{Value Declarations \& Definitions}
-\label{sec:value-dec-dfn}
+\label{sec:value-dcl-def}
 
 A value declaration \lstinline@val $x$ : $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$ : $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$ : $T$+ introduces $x$ as a name of a class instance value of type $T$. 
 
@@ -915,12 +915,13 @@ The name of any declared or defined value must not end with \lstinline@=@.
 A value declaration ~\lstinline@val $x_1 \commadots x_n$ : $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$ : $T$; $\ldots$; val $x_n$ : $T$@. A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1$ := $e$; $\ldots$; val $p_n$ := $e$@. A value definition ~\lstinline@val $p_1 \commadots p_n : T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1 : T$ := $e$; $\ldots$; val $p_n : T$ := $e$@.
 
 \section{Variable Declarations \& Definitions}
+\label{sec:variable-dcl-def}
 
 A variable declaration \lstinline@var $x$ : $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$ : $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$ : $T$+ introduces a mutable class instance variable of type $T$. 
 
 A variable definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
 
-Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dec-dfn}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
+Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dcl-def}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
 
 The name of any declared or defined variable must not end with \lstinline@=@. 
 
@@ -928,8 +929,73 @@ A variable declaration ~\lstinline@var $x_1 \commadots x_n$ : $T$@~ is a
 shorthand for the sequence of variable declarations ~\lstinline@var $x_1$ : $T$; $\ldots$; var $x_n$ : $T$@. A variable definition ~\lstinline@var $x_1 \commadots x_n$ = $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ := $e$; $\ldots$; var $x_n$ := $e$@. A variable definition ~\lstinline@var $x_1 \commadots x_n : T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1 : T$ := $e$; $\ldots$; var $x_n : T$ := $e$@.
 
 \section{Property Declarations \& Definitions}
+\label{sec:property-dec-dfn}
+
+\syntax\begin{lstlisting}
+Prop_Dcl   ::= 'property' ['(' Prop_Specs ')'] simple_id 
+             [':' Type]
+Prop_Specs ::= Prop_Spec {',' Prop_Spec}
+Prop_Spec  ::= ([Access_Modifier] ('get' | 'set')) | 'weak'
+Prop_Def   ::= 'property' ['(' Prop_Specs ')'] simple_id 
+             [':' Type]
+             '{' Prop_Impl {semi Prop_Impl} '}'
+Prop_Impl  ::= ('get' [Prop_Get_Impl])
+             | ('set' [Prop_Set_Impl])
+             | ('val' ':=' Expr)
+             | ('var' ':=' Expr)
+\end{lstlisting} % TBD: syntax of property implementations
+
+A property declaration \lstinline@property $x$ : $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
+
+A property definition \lstinline@property $x$ : $T$ {get $\ldots$; set $\ldots$}@ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behavior and storage of a property, but may as well opt-in for auto-generated implementation, which is: 
+
+\begin{enumerate}
+\item 
+Storage of the property's value is in an instance variable (or a class instance variable in case of class properties) of the same name as is the name of the property: \lstinline@property $x$@ is stored in an instance variable \lstinline+@$x$+. 
+
+\item
+Properties defined with only \code{get} are stored in immutable instance variables (\sref{sec:value-dcl-def}). 
+
+\item
+Properties defined with \code{set}\footnote{It is also possible to declare/define properties that are \code{set}-only. That makes them {\em write-only}, as opposed to {\em read-only} properties with \code{get}-only.} are stored in mutable instance variables (\sref{sec:variable-dcl-def}). 
+
+\item
+Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$ : $T$@ is stored in an instance of type \lstinline@Weak_Reference:[$T$]@. 
+
+\end{enumerate}
+
+Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x=$@, declared as follows:
+
+\begin{lstlisting}
+def $x$ () -> $T$; end
+def $x$= (y : $T$) -> (); end
+\end{lstlisting}
+
+Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation. 
 
 \section{Type Declarations \& Aliases}
+
+\syntax\begin{lstlisting}
+Dcl      ::= 'type' Type_Dcl
+Type_Dcl ::= constant_id [Type_Param_Clause] ['>:' Type] 
+           ['<:' Type]
+Def      ::= 'type' Type_Def
+Type_Def ::= constant_id [Type_Param_Clause] ':=' Type
+\end{lstlisting}
+
+A {\em type declaration} \lstinline@type $t$:[$tps$] >: $L$ <: $U$@ declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@:[$tps$]@ is omitted, $t$ abstracts over first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
+
+A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since for type safety reasons, types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$:[$tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $tps$ itself. 
+
+It is an error if a type alias refers recursively to the defined type constructor itself. 
+
+\example The following are legal type declarations and aliases:
+\begin{lstlisting}[escapechar=@]
+type Integer_List := List:[Integer]
+type T <: Comparable:[T]
+type Two:[@\$@A] := Tuple_2:[@\$@A, @\$@A]
+type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
+\end{lstlisting}
 
 \section{Type Parameters}
 
