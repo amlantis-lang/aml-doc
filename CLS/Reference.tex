@@ -70,18 +70,20 @@ break        case        cast         catch        class
 clone        constant    constructor  declare      def
 destructor   do          else         elsif        end
 ensure       enum        for          for-some     function
-goto         if          implements   in           include
-interface    is          lazy         let          loop
-match        memoize     message      method       mixin
-module       native      next         nil          no           
-of           opaque      operator     out          prepend
-property     protocol    raise        range        record
-redo         refine      rescue       retry        return
-self         skip        struct       super        template
+get          goto        if           implements   implicit
+in           include     interface    is           lazy
+let          loop        match        memoize      message
+method       mixin       module       native       next
+nil          no          of           opaque       operator
+out          prepend     property     protocol     raise
+range        record      redo         refine       rescue
+retry        return      self         set          singleton-type
+skip         step        struct       super        template
 test         then        this         throw        transparent
 type         undef       unless       until        union
 unit-of-measure          use          val          var
-yes          when        while        with         yield
+yes          weak        when         while        with
+yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
