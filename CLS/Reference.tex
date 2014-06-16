@@ -617,18 +617,27 @@ A compound type may also consist of just a refinement \lstinline@{$R$}@ with no 
 \label{sec:function-types}
 
 \syntax\begin{lstlisting}
-Type ::= Function_Args {'->' Function_Args} '->' Return_Type
-Function_Args ::= '(' [Type {',' Type}] ')'
-Return_Type ::= Type | '(' ')'
+Type          ::= [Function_Args {'->' Function_Args}] 
+                '->' Return_Type
+Function_Args ::= Type
+                | '(' [Type {',' Type}] ')'
+Return_Type   ::= Type | '()'
 \end{lstlisting}
 
-The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. Empty arguments list is indeed also possible as \lstinline@() -> $R$@, representing e.g. a call-by-name parameter of type $T$.
+The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. Empty arguments list is indeed also possible as \lstinline@-> $R$@, representing e.g. a call-by-name parameter of type $T$.
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
 
-Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$:[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Coral library for any $n$. 
+Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$:[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Coral library for any $n \ge 0$:
 
-Function types are covariant in their result type and contravariant in their argument types. 
+\begin{lstlisting}[escapechar=`]
+protocol Function_$n$:[-`\$`$T_1 \commadots$ -`\$`$T_n$, +`\$`$R$]
+  message apply ($x_1$ : `\$`$T_1 \commadots x_n$ : `\$`$T_n$): `\$`$R$
+  $\ldots$
+end protocol
+\end{lstlisting}
+
+Function types are covariant in their result type and contravariant in their argument types (\sref{sec:variance-of-type-parameters}).
 
 \subsection{Existential Types}
 \label{sec:existential-types}
@@ -666,12 +675,14 @@ Extra properties of parameters are as follows: a \lstinline@*@ for variable argu
 
 \example The declarations
 \begin{lstlisting}
-def a -> Integer // or def a () -> Integer
-def b (x : Integer) -> Boolean
-def c (x : Integer) -> (y : String, z : String) -> String
-def d (:x : Integer) -> Integer
-def e (*x : Integer) -> Integer
-def f (Integer) -> ()
+def a: -> Integer // or def a () -> Integer
+def b (x : Integer): Boolean
+def c (x : Integer): (y : String, z : String) -> String
+def d (:x : Integer): Integer
+def e (*x : Integer): Integer
+def f (Integer): ()
+def g (Integer): (Integer): Integer
+def h (Integer): (Integer) -> Integer
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}
@@ -681,7 +692,11 @@ c : (Integer) $\mapsto$ (String, String) $\mapsto$ String
 d : (:x Integer) $\mapsto$ Integer
 e : (*Integer) $\mapsto$ Integer
 f : (Integer) $\mapsto$ ()
+g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
+g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
 \end{lstlisting}
+
+The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of return types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
 
 \subsection{Polymorphic Method Types}
 \label{sec:polymorphic-method-types}
@@ -1004,6 +1019,7 @@ type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
 \section{Type Parameters}
 
 \section{Variance of Type Parameters}
+\label{sec:variance-of-type-parameters}
 
 \section{Function Declarations \& Definitions}
 
@@ -1098,6 +1114,7 @@ type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
 \section{Typed Expressions}
 
 \section{Annotated Expressions}
+\label{sec:annotated-exprs}
 
 \section{Assignments}
 
@@ -1184,6 +1201,7 @@ type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
 \section{Programs}
 
 \chapter{Annotations}
+\label{sec:annotations}
 
 \chapter{Naming Guidelines}
 
