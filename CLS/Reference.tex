@@ -683,7 +683,7 @@ def c (x : Integer): (y : String, z : String) -> String
 def d (:x : Integer): Integer
 def e (*x : Integer): Integer
 def f (Integer): ()
-def g (Integer): (Integer): Integer
+def g (Integer)(Integer): Integer
 def h (Integer): (Integer) -> Integer
 \end{lstlisting}
 produce the typings
@@ -1006,7 +1006,7 @@ Type_Def ::= constant_id [Type_Param_Clause] ':=' Type
 
 A {\em type declaration} \lstinline@type $t$:[$tps$] >: $L$ <: $U$@ declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@:[$tps$]@ is omitted, $t$ abstracts over first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
 
-A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since for type safety reasons, types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$:[$tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $tps$ itself. 
+A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$:[$tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $tps$ itself. 
 
 It is an error if a type alias refers recursively to the defined type constructor itself. 
 
@@ -1020,10 +1020,65 @@ type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
 
 \section{Type Parameters}
 
+\syntax\begin{lstlisting}
+Type_Param_Clause  ::= ':[' Variant_Type_Param 
+                     {',' Variant_Type_Param} ']'
+Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
+Type_Param         ::= (constant_id | '_') [Type_param_Clause]
+                     ['>:' Type] ['<:' Type]
+\end{lstlisting}
+
+Type parameters appear in type definitions, class definitions and function definitions. 
+
+The most general form of a first-order type parameter is ~\lstinline!@[$a_1$]$\ldots$@[$a_n]$ $\pm$ $t$ >: $L$ <: $U$!. $L$ is a lower bound and $U$ is an upper bound. These bounds constrain possible type arguments for the parameter. It is an error if $L$ does not conform to $U$.\footnote{This is sometimes detectable as soon as during compilation.} Then, $\pm$ is a {\em variance} (\sref{sec:variance-of-type-parameters}), i.e. an optional prefix of either \lstinline@+@ or \lstinline@-@. The type parameter may be preceded by one or more annotation applications (\sref{sec:annotated-exprs} \& \sref{sec:annotations}).
+
+\example The following are some well-formed type parameter clauses:
+\begin{lstlisting}[escapechar=`]
+:[`\$`S, `\$`T]
+:[@[Specialized] `\$`S, `\$`T]
+:[`\$`Ex <: Raisable]
+:[`\$`A <: Comparable:[`\$`B], `\$`B <: `\$`A]
+\end{lstlisting}
+
+% TBD! Not complete.
+
 \section{Variance of Type Parameters}
 \label{sec:variance-of-type-parameters}
 
+Variance annotations indicate how instances of parameterised types relate with respect to subtyping (\sref{sec:conformance}). A ``\lstinline!+!'' variance indicates a covariant dependency, a ``\lstinline!-!'' variance indicates a contravariant dependency, and an empty variance indicates an invariant dependency. 
+
+A variance annotation constrains the way the annotated type variable may appear in the type or class which binds the type parameter. 
+
+% TBD! Far from complete, variance is a complex topic. 
+
 \section{Function Declarations \& Definitions}
+
+\syntax\begin{lstlisting}
+Dcl           ::= 'def' Fun_Dcl
+                | 'message' Fun_Dcl
+                | 'function' Fun_Dcl
+Fun_Dcl       ::= Fun_Sig ':' Type
+Def           ::= 'def' Fun_Def 'end' ['def']
+                | 'def' Fun_Alt_Def
+                | 'method' Fun_Def 'end' ['method']
+                | 'method' Fun_Alt_Def
+                | 'function' Fun_Def 'end' ['function']
+                | 'function' Fun_Alt_Def
+Fun_Def       ::= Fun_Sig [':' Type] [Fun_Dec] semi Expr
+Fun_Alt_Def   ::= Fun_Sig [':' Type] ':=' Expr
+Fun_Dec       ::= [semi] 'declare' Expr [semi] 'begin'
+Fun_Sig       ::= function_id [Fun_Tpc] Param_Clauses
+Fun_Tpc       ::= ':[' Type_Param {',' Type_Param} ']'
+Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
+Param_Clause  ::= '(' [Params] ')'
+Params        ::= Param {',' Param}
+Param         ::= {Annotation} [Param_Extra] variable_id 
+                [':' Param_Type] [':=' Expr]
+Param_Extra   ::= ('*' | '**' | '&') [':']
+Param_Type    ::= Type
+\end{lstlisting}
+
+A function declaration has the form of \lstinline@def $f$ $psig$: $T$@, where $f$ is the function's name, $psig$ is its parameter signature and $T$ is its return type. 
 
 \subsection{Positional Parameters}
 
