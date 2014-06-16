@@ -33,11 +33,13 @@ Grammar of lexical tokens is given in the following sections. These tokens are t
 
 \syntax\begin{lstlisting}
 simple_id   ::= (lower | '_') [id_rest]
-variable_id ::= simple_id | '_'
+variable_id ::= simple_id | '_' | '`' simple_id '`'
 ivar_id     ::= '@' simple_id
 cvar_id     ::= '@@' simple_id
 function_id ::= simple_id [id_rest_fun]
+              | '`' simple_id [id_rest_fun] '`'
 constant_id ::= upper [id_rest_con]
+              | '`' upper [id_rest_con] '`'
 id_rest     ::= {letter | digit | '_'}
 id_rest_con ::= id_rest [id_rest_mid]
 id_rest_fun ::= id_rest [id_rest_mid] ['?' | '!' | '=']
@@ -46,11 +48,13 @@ id_rest_mid ::= id_rest {('/' | '+' | '-') id_rest}
 
 There are three kinds of identifiers.
 
-First, \textit{variable identifiers}, which are simply a lower-case letter followed by arbitrary sequence of letters (any-case), digits and underscores, or just one underscore (which has special meaning). Additionally, \textit{instance variable identifiers} are just prepended with a ``\lstinline|@|'' sign and \textit{class instance variable identifiers} are just prepended with ``\lstinline|@@|''. 
+First, \textit{variable identifiers}, which are simply a lower-case letter followed by arbitrary sequence of letters (any-case), digits and underscores, or just one underscore (which has special meaning). Additionally, \textit{instance variable identifiers} are just prepended with a ``\lstinline|@|'' sign and \textit{class instance variable identifiers} are just prefixed with ``\lstinline|@@|''. 
 
 Second, \textit{function identifiers}, which are the most complicated ones. They can start as a variable identifier, then optionally followed by one of ``\lstinline@/@'', ``+'' and ``\lstinline@-@'', and then optionally ended with ``\lstinline@?@'', ``\lstinline@!@'' or ``\lstinline@=@''. Furthermore, function identifiers ending with ``\lstinline@=@'' are never used at call site with this last character, but without it and as a target of an assignment expression (they are naming simple setters). 
 
 And third, \textit{constant identifiers}, which are just like function identifiers, but starting with an upper-case letter, never just an underscore and never ending with ``\lstinline@?@'', ``\lstinline@!@'' or ``\lstinline@=@''.
+
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$~$`$~$!''), to resolve possible name clashes with Coral keywords. Instance variable names (\code{ivar_id}) and class instance variable names (\code{cvar_id}) never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
 Coral programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
 
