@@ -707,9 +707,9 @@ A polymorphic method type is the same as a regular method type, but enhanced wit
 
 \example The declarations
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-def empty:[@\$@A] -> List:[@\$@A]
+def empty:[@\$@A]: List:[@\$@A]
 def union:[@\$@A <: Comparable:[@\$@A]] (x : Set:[@\$@A], 
-         xs : Set:[@\$@A]) -> Set:[@\$@A]
+         xs : Set:[@\$@A]): Set:[@\$@A]
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
@@ -1053,7 +1053,7 @@ A variance annotation constrains the way the annotated type variable may appear 
 
 \section{Function Declarations \& Definitions}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[escapechar=`]
 Dcl           ::= 'def' Fun_Dcl
                 | 'message' Fun_Dcl
                 | 'function' Fun_Dcl
@@ -1075,20 +1075,54 @@ Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] variable_id 
                 [':' Param_Type] [':=' Expr]
 Param_Extra   ::= ('*' | '**' | '&') [':']
-Param_Type    ::= Type
+Param_Type    ::= Type | '`\$`' constant_id
 \end{lstlisting}
 
 A function declaration has the form of \lstinline@def $f$ $psig$: $T$@, where $f$ is the function's name, $psig$ is its parameter signature and $T$ is its return type. 
 
+A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@:[$tps$]@, followed by zero or more value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
+
+Multiple parameter clauses render curried functions. 
+
+The type of the function body is expected to conform (\sref{sec:conformance}) to the function's declared result type, if one is given. 
+
+An optional type parameter clause $tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
+
+A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an anonymous function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
+
+The order in which different kinds of value parameters may appear is as follows:\footnote{Originally, Coral was supposed to support the same syntax for named parameters as keys in dictionary literals. However, to make the parameters syntax simpler and more readable, this idea was dropped. Therefore, if there is no whitespace between $x$ and \lstinline@:@ (before $T$), then it is not considered to be a symbol-key literal, but a regular positional argument. However, using that same syntax in function calls actually will be considered as passing named arguments.}
+\begin{enumerate}
+\item $n$ mandatory positional arguments (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
+
+\item $n$ optional positional arguments (\sref{sec:optional-parameters}): \lstinline@$x$: $T$ := $e$@, where $n \ge 0$. 
+
+\item $n$ repeated arguments (\sref{sec:repeated-parameters}): \lstinline@*$x$: $T$@, where $0 \le n \le 1$. 
+
+\item $n$ post mandatory positional arguments (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
+
+\item $n$ named arguments (\sref{sec:named-parameters}): \lstinline@:$x$ : $T$@ or \lstinline@:$x$ : $T$ := $e$@, where $n \ge 0$. 
+
+\item $n$ captured named arguments (\sref{sec:captured-named-parameters}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
+
+\item $n$ captured block arguments (\sref{sec:captured-block-parameter}): \lstinline@&$x$: $T$@, where $0 \le n \le 1$.
+\end{enumerate}
+
 \subsection{Positional Parameters}
+\label{sec:positional-parameters}
 
 \subsection{Optional Parameters}
+\label{sec:optional-parameters}
 
 \subsection{Repeated Parameters}
+\label{sec:repeated-parameters}
 
 \subsection{Named Parameters}
+\label{sec:named-parameters}
+\label{sec:captured-named-parameters}
 
-\subsection{Procedures}
+\subsection{Procedure Parameter \& Captured Block Parameter}
+\label{sec:procedure-parameter}
+\label{sec:captured-block-parameter}
 
 \subsection{Method Return Type Inference}
 
