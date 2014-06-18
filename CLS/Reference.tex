@@ -1074,8 +1074,9 @@ Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] variable_id 
                 [':' Param_Type] [':=' Expr]
-Param_Extra   ::= ('*' | '**' | '&') [':']
-Param_Type    ::= Type | '`\$`' constant_id
+Param_Extra   ::= [Param_Io] ['*' | '**' | '&'] [':']
+Param_Io      ::= 'in' | 'out' | 'in' '+' 'out'
+Param_Type    ::= Type | '`\$`' constant_id | '=>' [Type | '_']
 \end{lstlisting}
 
 A function declaration has the form of \lstinline@def $f$ $psig$: $T$@, where $f$ is the function's name, $psig$ is its parameter signature and $T$ is its return type. 
@@ -1088,33 +1089,103 @@ The type of the function body is expected to conform (\sref{sec:conformance}) to
 
 An optional type parameter clause $tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
 
-A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an anonymous function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
+A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an invisible function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
 
-The order in which different kinds of value parameters may appear is as follows:\footnote{Originally, Coral was supposed to support the same syntax for named parameters as keys in dictionary literals. However, to make the parameters syntax simpler and more readable, this idea was dropped. Therefore, if there is no whitespace between $x$ and \lstinline@:@ (before $T$), then it is not considered to be a symbol-key literal, but a regular positional argument. However, using that same syntax in function calls actually will be considered as passing named arguments.}
+The order in which different kinds of value parameters may appear is as follows:
 \begin{enumerate}
-\item $n$ mandatory positional arguments (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
+\item $n$ mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
 
-\item $n$ optional positional arguments (\sref{sec:optional-parameters}): \lstinline@$x$: $T$ := $e$@, where $n \ge 0$. 
+\item $n$ optional positional parameters (\sref{sec:optional-parameters}): \lstinline@$x$: $T$ := $e$@, where $n \ge 0$. 
 
-\item $n$ repeated arguments (\sref{sec:repeated-parameters}): \lstinline@*$x$: $T$@, where $0 \le n \le 1$. 
+\item $n$ repeated parameters (\sref{sec:repeated-parameters}): \lstinline@*$x$: $T$@, where $0 \le n \le 1$. 
 
-\item $n$ post mandatory positional arguments (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
+\item $n$ post mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
 
-\item $n$ named arguments (\sref{sec:named-parameters}): \lstinline@:$x$ : $T$@ or \lstinline@:$x$ : $T$ := $e$@, where $n \ge 0$. 
+\item $n$ named parameters (\sref{sec:named-parameters}): \lstinline@:$x$ : $T$@ or \lstinline@:$x$ : $T$ := $e$@, where $n \ge 0$. 
 
-\item $n$ captured named arguments (\sref{sec:captured-named-parameters}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
+\item $n$ captured named parameters (\sref{sec:captured-named-parameters}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
 
-\item $n$ captured block arguments (\sref{sec:captured-block-parameter}): \lstinline@&$x$: $T$@, where $0 \le n \le 1$.
+\item $n$ captured block parameters (\sref{sec:captured-block-parameter}): \lstinline@&$x$: $T$@, where $0 \le n \le 1$.
 \end{enumerate}
+
+For every parameter $p_{i,j}$ with a default value expression, a function named 
+\begin{lstlisting}[escapechar=`]
+default`\$`$n$
+\end{lstlisting}
+is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@:[$tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
+
+The scope of a formal value parameter name $x$ comprises all subsequent parameter clauses, as well as the method return type and the function body, if they are given.
+
+\example In the method
+\begin{lstlisting}[escapechar=`]
+def compare:[`\$`T](a: `\$`T := 0)(b: `\$`T := a) := (a = b)
+\end{lstlisting}
+the default expression \code{0} is type-checked with an undefined expected type. When applying \lstinline@compare()@\footnote{Without any explicit arguments.}, the default value \code{0} is inserted and \code{T} is instantiated to \code{Number}. The functions computing the default arguments have the forms\footnote{See, at the moment \lstinline[mathescape=false]!default$2! is called, the parameter \code{a} is already computed and passed as an argument to it.}:
+\begin{lstlisting}[escapechar=`]
+def default`\$`1:[`\$`T]: Number := 0
+def default`\$`2:[`\$`T](a: `\$`T): `\$`T := a
+\end{lstlisting}
+
+\subsection{By-Name Parameters}
+\label{sec:by-name-parameters}
+
+\syntax\begin{lstlisting}
+Param_Type ::= '=>' [Type | '_']
+\end{lstlisting}
+
+The type of a value parameter may be prefixed by \lstinline@=>@, e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function. That is, the argument is evaluated using {\em call-by-name}. 
+
+The by-name modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). 
+
+By-name parameters require a specific application (\sref{sec:by-name-arguments}). A by-name parameter bound to a wildcard type ``\lstinline!_!'' matches any type of by-name argument. 
+
+\subsection{Input \& Output Parameters}
+\label{sec:io-parameters}
+
+\syntax\begin{lstlisting}
+Param_Io ::= 'in' | 'out' | 'in' '+' 'out'
+\end{lstlisting}
+
+If no input/output parameter specifier is explicitly available, then the parameter is implicitly an input parameter. Output parameters require a specific application (\sref{sec:io-arguments}).
 
 \subsection{Positional Parameters}
 \label{sec:positional-parameters}
 
+Positional parameters are of the forms:
+\begin{lstlisting}
+$x$: $T$
+in $x$: $T$
+out $x$: $T$
+in+out $x$: $T$
+$x$: => $T$
+in $x$: => $T$
+\end{lstlisting}
+
+Positional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters}) and by-name (\sref{sec:by-name-parameters}). Positional parameters can't have any default value expressions. 
+
 \subsection{Optional Parameters}
 \label{sec:optional-parameters}
 
+Optional parameters are of the forms:
+\begin{lstlisting}
+$x$: $T$ := $e$
+in $x$: $T$ := $e$
+$x$: => $T$ := $e$
+in $x$: => $T$ := $e$
+\end{lstlisting}
+
+Optional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters}) and by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have default value expressions and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for output parameters. 
+
 \subsection{Repeated Parameters}
 \label{sec:repeated-parameters}
+
+Repeated parameters are of the forms:
+\begin{lstlisting}
+*$x$: $T$
+in $x$: $T$
+$x$: => $T$ := $e$
+in $x$: => $T$ := $e$
+\end{lstlisting}
 
 \subsection{Named Parameters}
 \label{sec:named-parameters}
@@ -1177,10 +1248,16 @@ The order in which different kinds of value parameters may appear is as follows:
 \section{Self, This \& Super}
 
 \section{Function Applications}
+\label{sec:function-applications}
 
 \subsection{Named and Optional Arguments}
+\label{sec:named-optional-arguments}
+
+\subsection{By-Name Arguments}
+\label{sec:by-name-arguments}
 
 \subsection{Input \& Output Arguments}
+\label{sec:io-arguments}
 
 \subsection{Function Compositions \& Pipelines}
 
@@ -1249,6 +1326,13 @@ The order in which different kinds of value parameters may appear is as follows:
 \label{sec:workflows}
 
 \chapter{Implicit Parameters \& Views}
+
+\section{The Implicit Modifier}
+
+\section{Implicit Parameters}
+\label{sec:implicit-parameters}
+
+\section{Views}
 
 \chapter{Pattern Matching}
 
