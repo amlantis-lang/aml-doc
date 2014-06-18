@@ -1079,6 +1079,8 @@ Param_Io      ::= 'in' | 'out' | 'in' '+' 'out'
 Param_Type    ::= Type | '`\$`' constant_id | '=>' [Type | '_']
 \end{lstlisting}
 
+% TBD: update Fun_Def to include the optional rescue ... rescue ... ensure
+
 A function declaration has the form of \lstinline@def $f$ $psig$: $T$@, where $f$ is the function's name, $psig$ is its parameter signature and $T$ is its return type. 
 
 A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@:[$tps$]@, followed by zero or more value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
@@ -1133,7 +1135,7 @@ def default`\$`2:[`\$`T](a: `\$`T): `\$`T := a
 Param_Type ::= '=>' [Type | '_']
 \end{lstlisting}
 
-The type of a value parameter may be prefixed by \lstinline@=>@, e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function. That is, the argument is evaluated using {\em call-by-name}. 
+The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function. That is, the argument is evaluated using {\em call-by-name}. 
 
 The by-name modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). 
 
@@ -1174,7 +1176,7 @@ $x$: => $T$ := $e$
 in $x$: => $T$ := $e$
 \end{lstlisting}
 
-Optional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters}) and by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have default value expressions and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for output parameters. 
+Optional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters})\footnote{Optional parameters are always ``input'', so that declaration is always redundant.} and by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have a {\em default value expressions} and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for output parameters and repeated parameters. 
 
 \subsection{Repeated Parameters}
 \label{sec:repeated-parameters}
@@ -1182,18 +1184,53 @@ Optional parameters may not have any modifiers, except for input/output modifier
 Repeated parameters are of the forms:
 \begin{lstlisting}
 *$x$: $T$
-in $x$: $T$
-$x$: => $T$ := $e$
-in $x$: => $T$ := $e$
+in *$x$: $T$
+\end{lstlisting}
+
+Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em repeated} parameter inside the method is then a list type \lstinline!List:[$T$]!. Methods with repeated parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). 
+
+\example The following method definition computes the sum of the squares of a variable number of integer arguments.
+\begin{lstlisting}
+def sum (*args: Integer): Integer
+declare
+  var result := 0
+begin
+  for arg in args loop
+    result += arg ** 2
+  end loop
+  
+  result
+end
+\end{lstlisting}
+The following applications of this method yield \code{0}, \code{1}, \code{14}, in that order.
+\begin{lstlisting}
+sum
+sum 1
+sum 1, 2, 3
+\end{lstlisting}
+Furthermore, assume the definition:
+\begin{lstlisting}
+val xs := %[1, 2, 3]
+\end{lstlisting}
+The following application of the method \code{sum} is not resolved:\footnote{Unless there is an overloaded version of the method that accepts a list of integers as its parameter.}
+\begin{lstlisting}
+sum xs // Error: method match not found, wrong arguments
+\end{lstlisting}
+By contrast, the following application is well-formed and yields again the result \code{14}:
+\begin{lstlisting}
+sum *xs
 \end{lstlisting}
 
 \subsection{Named Parameters}
 \label{sec:named-parameters}
 \label{sec:captured-named-parameters}
 
-\subsection{Procedure Parameter \& Captured Block Parameter}
-\label{sec:procedure-parameter}
+
+
+\subsection{Captured Block Parameter}
 \label{sec:captured-block-parameter}
+
+\subsection{Parameter Kind Combinations}
 
 \subsection{Method Return Type Inference}
 
