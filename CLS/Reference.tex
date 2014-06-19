@@ -1327,28 +1327,11 @@ Users should design their functions in a way that makes them having as few param
 
 In this spirit, an ideal count of parameters lies between 0 and 2 (nullary, unary and binary functions). Named parameters should be used with only up to one positional\footnote{In this sense, optional and repeated parameters are also positional, because they are applied on a particular numbered position rather than named.} parameter. Functions with more than 4 different parameters should be avoided. 
 
-\subsection{Method Return Type Inference}
-\label{sec:method-return-type-inference}
+\subsection{Method Types Inference}
+\label{sec:method-types-inference}
 
-Functions that are members of a class $C$ may define parameters
-without type annotations. The types of such parameters are inferred as
-follows. Say, a~method $m$ in a class $C$ has a parameter $p$ which
-does not have a type annotation. We first determine methods $m'$ in
-$C$ that might be overridden (\sref{sec:overriding}) by $m$, assuming
-that appropriate types are assigned to all parameters of $m$ whose
-types are missing. If there is exactly one such method, the type of
-the parameter corresponding to $p$ in that method---seen as a member
-of $C$---is assigned to $p$. It is an error if there are
-several such overridden methods $m'$.
-
-A class member definition $m$ that overrides some other function $m'$
-in a base class of $C$ may leave out the return type, even if it is
-recursive. In this case, the return type $R'$ of the overridden
-function $m'$, seen as a member of $C$, is taken as the return type of
-$m$ for each recursive invocation of $m$. That way, a type $R$ for the
-right-hand side of $m$ can be determined, which is then taken as the
-return type of $m$. Note that $R$ may be different from $R'$, as long
-as $R$ conforms to $R'$.
+\paragraph{\em Parameter Type Inference}
+Functions that are members of a class $C$ may define parameters without type annotations. The types of such parameters are inferred as follows. Say, a~method $m$ in a class $C$ has a parameter $p$ which does not have a type annotation. We first determine methods $m'$ in $C$ that might be overridden (\sref{sec:overriding}) by $m$, assuming that appropriate types are assigned to all parameters of $m$ whose types are missing. If there is exactly one such method, the type of the parameter corresponding to $p$ in that method---seen as a member of $C$---is assigned to $p$. It is an error if there are several such overridden methods $m'$. If there is none\footnote{Detected at compile-time. Dynamically added overridden methods are not used with type inference.} ($m$ does not override any $m'$ known at compile-time), then the parameters are inferred to be of type \code{Object}.
 
 \example Assume the following definitions:
 \begin{lstlisting}[escapechar=`]
@@ -1366,6 +1349,9 @@ signature of \lstinline@f@ in \lstinline@C@ is thus inferred to be
 \begin{lstlisting}
   def f(x: Integer)(y: Integer): Integer
 \end{lstlisting}
+
+\paragraph{\em Return Type Inference}
+A class member definition $m$ that overrides some other function $m'$ in a base class of $C$ may leave out the return type, even if it is recursive. In this case, the return type $R'$ of the overridden function $m'$---seen as a member of $C$---is taken as the return type of $m$ for each recursive invocation of $m$. That way, a type $R$ for the right-hand side of $m$ can be determined, which is then taken as the return type of $m$. Note that $R$ may be different from $R'$, as long as $R$ conforms to $R'$. If $m$ does not override any $m'$, then its return type is inferred to be of type \code{Object}. 
 
 \example Assume the following definitions:
 \begin{lstlisting}
@@ -1435,6 +1421,38 @@ double number
 \end{lstlisting}
 
 \section{Use Clauses}
+\label{sec:use-clauses}
+
+\syntax\begin{lstlisting}
+Use             ::= 'use' Use_Expr
+Use_Expr        ::= (Container_Path | Stable_Id) '::' Import_Expr
+Import_Expr     ::= Single_Import
+                  | '{' Import_Exprs '}'
+                  | '_'
+Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
+Single_Import   ::= Stable_Id ['as' [constant_id | '_']]
+Container_Path  ::= Module_Path ['::' Constant_Path]
+                  | Constant_Path
+Module_Path     ::= Module_Selector {'::' Module_Selector}
+Constant_Path   ::= Const_Selector {'::' Const_Selector}
+Module_Selector ::= constant_id [Vendor_Arg]
+Const_Selector  ::= constant_id [Type_Args]
+Vendor_Arg      ::= '~[' vendor_domain ']'
+\end{lstlisting}
+
+A use clause has the form \lstinline!use $p$::$I$!, where $p$ is a path to the containing type of the imported entity (either a module or another class), and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}
+\begin{lstlisting}
+{ $x_1$ as $y_1$ $\commadots$ $x_n$ as $y_n$, _ }
+\end{lstlisting}
+for $n \ge 0$, where the final wildcard ``\lstinline!_!'' may be absent. It makes available each importable member \lstinline!$p$::$x_i$! under the unqualified name $y_i$. I.e. every import selector \lstinline!$x_i$ as $y_i$! renames (aliases) \lstinline!$p$::$x_i$! to $y_i$. If a final wildcard is present, all importable members $z$ of $p$ other than $x_1 \commadots x_n, y_1 \commadots y_n$ are also made available under their own unqualified names. 
+
+Import selectors work only for {\em constant members}. % for now
+
+If the target name in an import selector is a wildcard, the import selector hides access to the source member. For instance, the import selector \lstinline!$x_i$ as _! ``renames'' $x$ to the wildcard symbol, which basically means discarding the name, since \lstinline!_! is not a readable name\footnote{Meaning, it is not possible to use ``\lstinline!_!'' as a variable to read from, it never has any value.}, and thereby effectively prevents unqualified access to $x$. This is useful if there is a final wildcard in the same import selector list, which imports all members not mentioned in previous import selectors. 
+
+The scope of a binding introduced by an import-clause starts immediately after the import clause and extends to the end of the enclosing scope and all nested scopes. 
+
+Several shorthands exists. An import selector may be just a simple name $x$, in which case, $x$ is imported without renaming, so the import selector is equivalent to \lstinline!$x$ as $y$!. Furthermore, it is possible to replace the whole import selector list by a single identifier of wildcard. The use clause \lstinline!use $p$::$x$! is equivalent to \lstinline!use $p$::{$x$}!, i.e. it makes available without qualification the member $x$ of $p$. The use clause \lstinline!use $p$::_! is equivalent to \lstinline!use $p$::{_}!, i.e. it makes available without qualification all importable members of $p$ (this is analogous to \lstinline[language=Java]!import $p$.*! in Java or \lstinline[language=Java]!import $p$._! in Scala). 
 
 \chapter{Classes \& Objects}
 
@@ -1454,6 +1472,7 @@ double number
 \subsection{Inheritance Closure}
 
 \subsection{Modifiers}
+\label{sec:modifiers}
 
 \section{Mixins}
 
