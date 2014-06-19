@@ -32,18 +32,21 @@ Grammar of lexical tokens is given in the following sections. These tokens are t
 \section{Identifiers}\label{sec:identifiers}
 
 \syntax\begin{lstlisting}
-simple_id   ::= (lower | '_') [id_rest]
-variable_id ::= simple_id | '_' | '`' simple_id '`'
-ivar_id     ::= '@' simple_id
-cvar_id     ::= '@@' simple_id
-function_id ::= simple_id [id_rest_fun]
-              | '`' simple_id [id_rest_fun] '`'
-constant_id ::= upper [id_rest_con]
-              | '`' upper [id_rest_con] '`'
-id_rest     ::= {letter | digit | '_'}
-id_rest_con ::= id_rest [id_rest_mid]
-id_rest_fun ::= id_rest [id_rest_mid] ['?' | '!' | '=']
-id_rest_mid ::= id_rest {('/' | '+' | '-') id_rest}
+simple_id     ::= (lower | '_') [id_rest]
+variable_id   ::= simple_id | '_' | '`' simple_id '`'
+ivar_id       ::= '@' simple_id
+cvar_id       ::= '@@' simple_id
+function_id   ::= simple_id [id_rest_fun]
+                | '`' simple_id [id_rest_fun] '`'
+constant_id   ::= upper [id_rest_con]
+                | '`' upper [id_rest_con] '`'
+id_rest       ::= {letter | digit | '_'}
+id_rest_con   ::= id_rest [id_rest_mid]
+id_rest_fun   ::= id_rest [id_rest_mid] ['?' | '!' | '=']
+id_rest_mid   ::= id_rest {('/' | '+' | '-') id_rest}
+importable_id ::= simple_id
+                  | function_id
+                  | constant_id
 \end{lstlisting}
 
 There are three kinds of identifiers.
@@ -74,16 +77,16 @@ get          goto        if           implements   implicit
 in           include     interface    is           lazy
 let          loop        match        memoize      message
 method       mixin       module       native       next
-nil          no          of           opaque       operator
-out          prepend     property     protocol     raise
-range        record      redo         refine       rescue
-retry        return      self         set          singleton-type
-skip         step        struct       super        template
-test         then        this         throw        transparent
-type         undef       unless       until        union
-unit-of-measure          use          val          var
-yes          weak        when         while        with
-yield
+nil          no          object       of           opaque
+operator     out         prepend      property     protocol
+raise        range       record       redo         refine
+rescue       retry       return       self         set
+singleton-type           skip         step         struct
+super        template    test         then         this
+throw        transparent type         undef        unless
+until        union       unit-of-measure           use
+val          var         yes          weak         when
+while        with        yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -1430,7 +1433,7 @@ Import_Expr     ::= Single_Import
                   | '{' Import_Exprs '}'
                   | '_'
 Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
-Single_Import   ::= Stable_Id ['as' [constant_id | '_']]
+Single_Import   ::= importable_id ['as' [constant_id | '_']]
 Container_Path  ::= Module_Path ['::' Constant_Path]
                   | Constant_Path
 Module_Path     ::= Module_Selector {'::' Module_Selector}
@@ -1446,13 +1449,30 @@ A use clause has the form \lstinline!use $p$::$I$!, where $p$ is a path to the c
 \end{lstlisting}
 for $n \ge 0$, where the final wildcard ``\lstinline!_!'' may be absent. It makes available each importable member \lstinline!$p$::$x_i$! under the unqualified name $y_i$. I.e. every import selector \lstinline!$x_i$ as $y_i$! renames (aliases) \lstinline!$p$::$x_i$! to $y_i$. If a final wildcard is present, all importable members $z$ of $p$ other than $x_1 \commadots x_n, y_1 \commadots y_n$ are also made available under their own unqualified names. 
 
-Import selectors work only for {\em constant members}. % for now
+Import selectors work in the same way for type and term members. For instance, a use clause \lstinline!use $p$::{$x$ as $y$}! renames the term name \lstinline!$p$::$x$! to the term name $y$ and the type name \lstinline!$p$::$x$! to the type name $y$. At least one of these two names must reference an importable member of $p$. 
 
-If the target name in an import selector is a wildcard, the import selector hides access to the source member. For instance, the import selector \lstinline!$x_i$ as _! ``renames'' $x$ to the wildcard symbol, which basically means discarding the name, since \lstinline!_! is not a readable name\footnote{Meaning, it is not possible to use ``\lstinline!_!'' as a variable to read from, it never has any value.}, and thereby effectively prevents unqualified access to $x$. This is useful if there is a final wildcard in the same import selector list, which imports all members not mentioned in previous import selectors. 
+If the target name in an import selector is a wildcard, the import selector hides access to the source member. For instance, the import selector \lstinline!$x_i$ as _! ``renames'' $x$ to the wildcard symbol, which basically means discarding the name, since \lstinline!_! is not a readable name\footnote{Meaning, it is not possible to use ``\lstinline!_!'' as a variable to read from, it never has any value.}, and thereby effectively prevents unqualified access to $x$. This is useful if there is a final wildcard in the same import selector list, which imports all members not mentioned in previous import selectors, to selectively not import some members. 
 
 The scope of a binding introduced by an import-clause starts immediately after the import clause and extends to the end of the enclosing scope and all nested scopes. 
 
 Several shorthands exists. An import selector may be just a simple name $x$, in which case, $x$ is imported without renaming, so the import selector is equivalent to \lstinline!$x$ as $y$!. Furthermore, it is possible to replace the whole import selector list by a single identifier of wildcard. The use clause \lstinline!use $p$::$x$! is equivalent to \lstinline!use $p$::{$x$}!, i.e. it makes available without qualification the member $x$ of $p$. The use clause \lstinline!use $p$::_! is equivalent to \lstinline!use $p$::{_}!, i.e. it makes available without qualification all importable members of $p$ (this is analogous to \lstinline[language=Java]!import $p$.*! in Java or \lstinline[language=Java]!import $p$._! in Scala). 
+
+\example Consider the object definition:
+\begin{lstlisting}
+object M
+  def z := 0
+  def one := 1
+  def add (x: Integer, y: Integer): Integer := x + y
+end
+\end{lstlisting}
+Then the block
+\begin{lstlisting}
+{ use M::{one, z as zero, _}; add (zero, one) }
+\end{lstlisting}
+is equivalent to the block
+\begin{lstlisting}
+{ M.add (M.z, M.one) } .
+\end{lstlisting}
 
 \chapter{Classes \& Objects}
 
