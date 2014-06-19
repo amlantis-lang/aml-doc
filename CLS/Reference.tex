@@ -80,13 +80,13 @@ method       mixin       module       native       next
 nil          no          object       of           opaque
 operator     out         prepend      property     protocol
 raise        range       record       redo         refine
-rescue       retry       return       self         set
-singleton-type           skip         step         struct
-super        template    test         then         this
-throw        transparent type         undef        unless
-until        union       unit-of-measure           use
-val          var         yes          weak         when
-while        with        yield
+rescue       retry       return       requires     self
+set          singleton-type           skip         step
+struct       super       template     test         then
+this         throw       transparent  type         undef
+unless       until       union        unit-of-measure           
+use          val         var          yes          weak
+when         while       with         yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -1439,7 +1439,7 @@ Container_Path  ::= Module_Path ['::' Constant_Path]
 Module_Path     ::= Module_Selector {'::' Module_Selector}
 Constant_Path   ::= Const_Selector {'::' Const_Selector}
 Module_Selector ::= constant_id [Vendor_Arg]
-Const_Selector  ::= constant_id [Type_Args]
+Const_Selector  ::= constant_id
 Vendor_Arg      ::= '~[' vendor_domain ']'
 \end{lstlisting}
 
@@ -1474,15 +1474,32 @@ is equivalent to the block
 { M.add (M.z, M.one) } .
 \end{lstlisting}
 
+
 \chapter{Classes \& Objects}
 
+\syntax\begin{lstlisting}
+Const_Def ::= {Annotation} 'class' Class_Def 'end' ['class']
+            | {Annotation} 'object' Obj_Def 'end' ['object']
+            | {Annotation} 'module' Module_Def 'end' ['module']
+            | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+            | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+            | {Annotation} 'interface' Ifc_Def 'end' ['interface']
+            | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}), modules (\sref{sec:module-definitions} \& \sref{sec:modules}), mixins (\sref{sec:mixins}), protocols (\sref{sec:protocols}), interfaces (\sref{sec:interfaces}) and constant types (unions \sref{sec:unions}, enums \sref{sec:enums}, range types \sref{sec:range-types}, units of measure \sref{sec:units-of-measure}, record types \sref{sec:record-types} \& struct types \sref{sec:struct-types}) are all defined in terms of {\em class-level blocks} (\sref{sec:class-level-blocks}). Their definitions are basically a function that handles internally the definition of each type. As such, these class-level blocks can even have local variables that may appear in closures. 
+
 \section{Class Definitions}
+\label{sec:class-definitions}
 
 \subsection{Class Linearization}
 
+\subsection{Class-Level Blocks}
+\label{sec:class-level-blocks}
+
 \subsection{Constructor \& Destructor Definitions}
 
-\subsection{Class Block}
+\subsection{Clone Constructor Definitions}
 
 \subsection{Class Members}
 
@@ -1494,23 +1511,42 @@ is equivalent to the block
 \subsection{Modifiers}
 \label{sec:modifiers}
 
+\section{Object Definitions}
+\label{sec:object-definitions}
+
+\section{Module Definitions}
+\label{sec:module-definitions}
+
 \section{Mixins}
+\label{sec:mixins}
+
+\subsection{Refinements}
+\label{sec:refinements}
+
+\section{Protocols}
+\label{sec:protocols}
+
+\section{Interfaces}
+\label{sec:interfaces}
 
 \section{Unions}
+\label{sec:unions}
 
 \section{Enums}
-
-\section{Compound Types}
+\label{sec:enums}
 
 \section{Range Types}
+\label{sec:range-types}
 
 \section{Units of Measure}
+\label{sec:units-of-measure}
 
 \section{Record Types}
+\label{sec:record-types}
 
 \section{Struct Types}
+\label{sec:struct-types}
 
-\section{Object Definitions}
 
 \chapter{Expressions}
 
@@ -1643,8 +1679,7 @@ is equivalent to the block
 \section{Compilation Units}
 
 \section{Modules}
-
-\section{Module Objects}
+\label{sec:modules}
 
 \section{Module References}
 
