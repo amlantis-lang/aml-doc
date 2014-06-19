@@ -1074,8 +1074,9 @@ Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] variable_id 
                 [':' Param_Type] [':=' Expr]
-Param_Extra   ::= [Param_Io] ['*' | '**' | '&'] [':']
+Param_Extra   ::= [Param_Io] [Param_Rw] ['*' | '**' | '&'] [':']
 Param_Io      ::= 'in' | 'out' | 'in' '+' 'out'
+Param_Rw      ::= 'val' | 'var'
 Param_Type    ::= Type | '`\$`' constant_id | '=>' [Type | '_']
 \end{lstlisting}
 
@@ -1128,6 +1129,8 @@ def default`\$`1:[`\$`T]: Number := 0
 def default`\$`2:[`\$`T](a: `\$`T): `\$`T := a
 \end{lstlisting}
 
+Parameters may be optionally flagged with \code{var} and \code{val} keywords, modifying their mutability inside the method. Some combinations are disallowed, as explained in the following sections. All parameters are implicitly \code{val}-flagged, unless the parameter kind implies a \code{var} flag, such as an output parameter (\sref{sec:io-parameters}).
+
 \subsection{By-Name Parameters}
 \label{sec:by-name-parameters}
 
@@ -1137,9 +1140,13 @@ Param_Type ::= '=>' [Type | '_']
 
 The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function. That is, the argument is evaluated using {\em call-by-name}. 
 
-The by-name modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). 
+The by-name modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). The by-name modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
 
 By-name parameters require a specific application (\sref{sec:by-name-arguments}). A by-name parameter bound to a wildcard type ``\lstinline!_!'' matches any type of by-name argument. 
+
+By-name parameters with default value expressions evaluate the default value expression each time the parameter is accessed, unlike optional parameters that evaluate the default value expression only once. 
+
+By-name parameters imply the \code{val} flag, and disallow the \code{var} flag. 
 
 \subsection{Input \& Output Parameters}
 \label{sec:io-parameters}
@@ -1150,17 +1157,27 @@ Param_Io ::= 'in' | 'out' | 'in' '+' 'out'
 
 If no input/output parameter specifier is explicitly available, then the parameter is implicitly an input parameter. Output parameters require a specific application (\sref{sec:io-arguments}).
 
+Output parameters imply \code{var} parameter and is disallowed for \code{val} parameters. Input parameters that are not output parameters at the same time can be both \code{var} and \code{val}. 
+
 \subsection{Positional Parameters}
 \label{sec:positional-parameters}
 
 Positional parameters are of the forms:
 \begin{lstlisting}
 $x$: $T$
+var $x$: $T$
+val $x$: $T$
 in $x$: $T$
+in var $x$: $T$
+in val $x$: $T$
 out $x$: $T$
+out var $x$: $T$
 in+out $x$: $T$
+in+out var $x$: $T$
 $x$: => $T$
+val $x$: => $T$
 in $x$: => $T$
+in val $x$: => $T$
 \end{lstlisting}
 
 Positional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters}) and by-name (\sref{sec:by-name-parameters}). Positional parameters can't have any default value expressions. 
@@ -1171,9 +1188,15 @@ Positional parameters may not have any modifiers, except for input/output modifi
 Optional parameters are of the forms:
 \begin{lstlisting}
 $x$: $T$ := $e$
+var $x$: $T$ := $e$
+val $x$: $T$ := $e$
 in $x$: $T$ := $e$
+in var $x$: $T$ := $e$
+in val $x$: $T$ := $e$
 $x$: => $T$ := $e$
+val $x$: => $T$ := $e$
 in $x$: => $T$ := $e$
+in val $x$: => $T$ := $e$
 \end{lstlisting}
 
 Optional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters})\footnote{Optional parameters are always ``input'', so that declaration is always redundant.} and by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have a {\em default value expressions} and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for output parameters and repeated parameters. 
@@ -1184,10 +1207,16 @@ Optional parameters may not have any modifiers, except for input/output modifier
 Repeated parameters are of the forms:
 \begin{lstlisting}
 *$x$: $T$
+var *$x$: $T$
+val *$x$: $T$
 in *$x$: $T$
+in var *$x$: $T$
+in val *$x$: $T$
 \end{lstlisting}
 
 Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em repeated} parameter inside the method is then a list type \lstinline!List:[$T$]!. Methods with repeated parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). 
+
+If a repeated parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the list. Repeated parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 
 \example The following method definition computes the sum of the squares of a variable number of integer arguments.
 \begin{lstlisting}
@@ -1225,14 +1254,185 @@ sum *xs
 \label{sec:named-parameters}
 \label{sec:captured-named-parameters}
 
+Named parameters are of the forms:
+\begin{lstlisting}
+:$x$ : $T$
+var :$x$ : $T$
+val :$x$ : $T$
+in :$x$ : $T$
+in var :$x$ : $T$
+in val :$x$ : $T$
+out :$x$ : $T$
+out var :$x$ : $T$
+in+out :$x$ : $T$
+in+out var :$x$ : $T$
+:$x$ : $T$ := $e$
+var :$x$ : $T$ := $e$
+val :$x$ : $T$ := $e$
+in :$x$ : $T$ := $e$
+in var :$x$ : $T$ := $e$
+in val :$x$ : $T$ := $e$
+:$x$ : => $T$
+val :$x$ : => $T$
+in :$x$ : => $T$
+in val :$x$ : => $T$
+:$x$ : => $T$ := $e$
+val :$x$ : => $T$ := $e$
+in :$x$ : => $T$ := $e$
+in val :$x$ : => $T$ := $e$
+\end{lstlisting}
 
+Captured named parameters are of the form: 
+\begin{lstlisting}
+**$x$ : $T$
+var **$x$ : $T$
+val **$x$ : $T$
+in **$x$ : $T$
+in var **$x$ : $T$
+in val **$x$ : $T$
+\end{lstlisting}
+
+Named parameters are a way of allowing users of the method to write down arguments in any order, provided that their name is given at function application (\sref{sec:function-applications} \& \sref{sec:named-optional-arguments}). Named parameters may have a default value expression and may be both input and output. Named parameters are disallowed for repeated parameters. Named parameters inside the method is then accessible the same way as a positional parameter. 
+
+Captured named parameters are capturing any other applied named parameters that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). They are declared after the block of named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary:[Symbol, $T$]!. Methods with captured named parameters take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. Captured named parameters are disallowed for repeated parameters, output parameters and by-name parameters. 
+
+If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. Captured named parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 
 \subsection{Captured Block Parameter}
 \label{sec:captured-block-parameter}
 
+Captured block parameters are of the forms:
+\begin{lstlisting}
+&$x$
+&$x$: $T$
+in &$x$
+in var &$x$
+in val &$x$
+in &$x$: $T$
+in var &$x$: $T$
+in val &$x$: $T$
+\end{lstlisting}
+
+Captured block parameter is a way to capture an applied block that is otherwise passed in implicitly as a function into \code{yield} expressions . The forms of captured block parameters explicitly denote the case without the block's function type, since block parameters receive any arguments and those missing are implicitly set to \code{nil}. The function type of the block may be used to further constrain the applied block argument, but is not used during method resolution (\sref{sec:function-applications}). 
+
+It is an error if a block parameter type $T$ is provided and it is not a function type (\sref{sec:function-types}). It is also an error if the applied block argument does not accept the arguments declared by the type $T$, or if the block would not return a value conforming to the return type required by the type $T$. The applied block argument may accept more arguments than required by $T$, however, these will be set implicitly to \code{nil}. Also, the applied block argument may itself require less constrained parameter types, in which case the arguments applied to it must (and will) always conform (\sref{sec:conformance}) to the block's parameter requirements. Whether the function type $T$ has a return type or not is irrelevant. 
+
+If a block parameter type $T$ is given, then the applied block argument must accept parameters, such that the parameter constrains declared by the function type $T$ conform to the parameter constrains declared by the applied block: the parameters of the applied block must be the same or less restrictive than those declared by $T$ -- they must be pairwise contravariant or invariant, never covariant (\sref{sec:variance-of-type-parameters}). 
+
 \subsection{Parameter Kind Combinations}
 
+This section is {\em normative}. 
+
+Users should design their functions in a way that makes them having as few parameters as possible. 
+
+In this spirit, an ideal count of parameters lies between 0 and 2 (nullary, unary and binary functions). Named parameters should be used with only up to one positional\footnote{In this sense, optional and repeated parameters are also positional, because they are applied on a particular numbered position rather than named.} parameter. Functions with more than 4 different parameters should be avoided. 
+
 \subsection{Method Return Type Inference}
+\label{sec:method-return-type-inference}
+
+Functions that are members of a class $C$ may define parameters
+without type annotations. The types of such parameters are inferred as
+follows. Say, a~method $m$ in a class $C$ has a parameter $p$ which
+does not have a type annotation. We first determine methods $m'$ in
+$C$ that might be overridden (\sref{sec:overriding}) by $m$, assuming
+that appropriate types are assigned to all parameters of $m$ whose
+types are missing. If there is exactly one such method, the type of
+the parameter corresponding to $p$ in that method---seen as a member
+of $C$---is assigned to $p$. It is an error if there are
+several such overridden methods $m'$.
+
+A class member definition $m$ that overrides some other function $m'$
+in a base class of $C$ may leave out the return type, even if it is
+recursive. In this case, the return type $R'$ of the overridden
+function $m'$, seen as a member of $C$, is taken as the return type of
+$m$ for each recursive invocation of $m$. That way, a type $R$ for the
+right-hand side of $m$ can be determined, which is then taken as the
+return type of $m$. Note that $R$ may be different from $R'$, as long
+as $R$ conforms to $R'$.
+
+\example Assume the following definitions:
+\begin{lstlisting}[escapechar=`]
+protocol I:[`\$`A]
+  def f(x: `\$`A)(y: `\$`A): `\$`A
+end
+class C
+  implements I:[Integer]
+  def f(x)(y) := x + y
+end
+\end{lstlisting}
+Here, the parameter and return types of \lstinline@f@ in \lstinline@C@ are
+inferred from the corresponding types of \lstinline@f@ in \lstinline@I@. The 
+signature of \lstinline@f@ in \lstinline@C@ is thus inferred to be
+\begin{lstlisting}
+  def f(x: Integer)(y: Integer): Integer
+\end{lstlisting}
+
+\example Assume the following definitions:
+\begin{lstlisting}
+protocol I
+  def factorial(x: Integer): Integer
+end
+class C 
+  implements I
+  def factorial(x: Integer) := {
+    if x = 0 then 1 else x * factorial(x - 1) end
+  }
+end
+\end{lstlisting}
+Here, it is ok to leave out the return type of \lstinline@factorial@
+in \lstinline@C@, even though the method is recursive. 
+
+For any index $i$ let $fsig_i$ be a function signature consisting of a function
+name, an optional type parameter section, and zero or more parameter
+sections. Then a function declaration 
+~\lstinline@def $fsig_1 \commadots fsig_n$: $T$@~ 
+is a shorthand for the sequence of function
+declarations ~\lstinline@def $fsig_1$: $T$; $\ldots$; def $fsig_n$: $T$@.  
+A function definition ~\lstinline@def $fsig_1 \commadots fsig_n$ := $e$@~ is a
+shorthand for the sequence of function definitions 
+~\lstinline@def $fsig_1$ := $e$; $\ldots$; def $fsig_n$ := $e$@.  
+A function definition
+~\lstinline@def $fsig_1 \commadots fsig_n: T$ = $e$@~ is a shorthand for the
+sequence of function definitions 
+~\lstinline@def $fsig_1: T$ := $e$; $\ldots$; def $fsig_n: T$ := $e$@.
+
+\section{Overloaded Declarations \& Definitions}
+\label{sec:overloaded-definitions}
+
+An overloaded definition is a set of $n > 1$ function
+definitions in the same statement sequence that define the same name,
+binding it to types ~\lstinline@$T_1 \commadots T_n$@, respectively.
+The individual definitions are called {\em alternatives}. Overloaded
+definitions may only appear in the expression sequence of a class-level block.
+Alternatives always need not to specify the type of the defined entity
+completely.
+
+Overloaded function definitions have strong impact on method resolution. It is an error if a single set of arguments may be applied type-safely to multiple overloaded functions -- to resolve this, explicit argument types have to be applied (\sref{sec:function-applications}).
+
+Overloaded functions generate new functions that internally merge the overloaded functions into one, which then resolves the correct overloaded function based on the applied types.
+
+\example Assume the following overloaded declarations
+\begin{lstlisting}
+def double (arg: Number): Number
+def double (arg: Integer): Integer
+\end{lstlisting}
+Now, the following method application is invalid, because two functions resolve to the same arguments set: 
+\begin{lstlisting}
+// variable-less:
+double 42
+\end{lstlisting}
+Now, with explicitly applied argument types, the following method applications are correct:
+\begin{lstlisting}
+// variable-less:
+double 42 as Integer
+
+// with a variable:
+var number: Integer := 42
+double number
+
+var number := 42 // the type is inferred
+double number
+\end{lstlisting}
 
 \section{Use Clauses}
 
@@ -1249,6 +1449,7 @@ sum *xs
 \subsection{Class Members}
 
 \subsection{Overriding}
+\label{sec:overriding}
 
 \subsection{Inheritance Closure}
 
