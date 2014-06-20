@@ -1492,6 +1492,34 @@ Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}),
 \section{Class Definitions}
 \label{sec:class-definitions}
 
+\syntax\begin{lstlisting}
+Class_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi]
+               {Class_Expr}
+Superclass ::= ':' Annotated_Type
+Class_Expr ::= Ctor_Expr
+             | Dtor_Expr
+             | Clone_Expr
+             | Includes_Expr
+             | Prepend_Expr
+             | Implements_Expr
+             | Expr
+             | {Annotation} 'class' Class_Def 'end' ['class']
+             | {Annotation} 'object' Obj_Def 'end' ['object']
+             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+             | {Annotation} 'interface' Ifc_Def 'end' ['interface']
+             | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
+
+A class' type signature consists of the class name (the first \code{constant_id} before type parameters clause), the type parameters, the superclass, included and prepended mixins and implemented protocols. 
+
+Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
+
+\subsection{Metaclasses}
+\label{sec:metaclasses}
+
 \subsection{Class Linearization}
 
 \subsection{Class-Level Blocks}
