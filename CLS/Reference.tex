@@ -1495,7 +1495,7 @@ Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}),
 \syntax\begin{lstlisting}
 Class_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi]
                {Class_Expr}
-Superclass ::= ':' Annotated_Type
+Superclass ::= ':' Compound_Type
 Class_Expr ::= Ctor_Expr
              | Dtor_Expr
              | Clone_Expr
@@ -1516,6 +1516,31 @@ A class definition defines the type signature, behavior and initial state of a c
 A class' type signature consists of the class name (the first \code{constant_id} before type parameters clause), the type parameters, the superclass, included and prepended mixins and implemented protocols. 
 
 Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
+
+For superclasses, the following statements hold:
+\begin{itemize}
+\item The superclass is implicitly \code{Object}, if no explicit superclass is given. 
+\item Explicitly given superclass $T$, if $T$ is a single class, is that single class. 
+\item Explicitly given superclass $T$, if $T$ is a compound type with a class member (\sref{sec:compound-types}), is the class member of $T$ and all other members of the compound type are mixed in (\sref{sec:mixins}). 
+\item Explicitly given superclass $T$, if $T$ is a compound type without a class member (\sref{sec:compound-types}), is implicitly \code{Object} and all other members of the compound type are mixed in (\sref{sec:mixins}) if no member of the compound type has a class as its superclass, or that superclass of one of the members. If there are more members with a class-superclass, there must exist an ordering of these class-superclasses $C_1 \commadots C_n$, such that for each $i, 1 \le i \le n-1$: \lstinline!$C_i$ <: $C_{i+1}$!. It is an error if no such ordering exists. If such ordering exists, the superclass is implied to be $C_1$. 
+\item Superclass is never a function type (\sref{sec:function-types}). 
+\item Superclass is never a special type, i.e. unions (\sref{sec:unions}), enums (\sref{sec:enums}), range types (\sref{sec:range-types}), units of measure (\sref{sec:units-of-measure}), record types (\sref{sec:record-types}) \& struct types (\sref{sec:struct-types}). 
+\item Superclass is always a class, never a mixin (\sref{sec:mixins}), a protocol (\sref{sec:protocols}) or an interface (\sref{sec:interfaces}). 
+\item Every single class has at most one direct superclass. Only one class has no superclass: \code{Object}, no other class can be without a superclass. 
+\end{itemize}
+
+It is an error if any of the mixed in mixins from a compound type has a class-superclass and yet the defined class does not conform to that superclass. 
+
+\example Consider the following class definitions:
+\begin{lstlisting}
+class Base : Object refine {}
+mixin Mixin : Base refine {}
+object O : Mixin refine {}
+\end{lstlisting}
+In this case, the definition of \code{O} is implied to be:
+\begin{lstlisting}
+object O : Base with Mixin refine {}
+\end{lstlisting}
 
 \subsection{Metaclasses}
 \label{sec:metaclasses}
