@@ -1070,13 +1070,17 @@ Def           ::= 'def' Fun_Def 'end' ['def']
 Fun_Def       ::= Fun_Sig [':' Type] [Fun_Dec] semi Expr
 Fun_Alt_Def   ::= Fun_Sig [':' Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Expr [semi] 'begin'
-Fun_Sig       ::= function_id [Fun_Tpc] Param_Clauses
+Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
 Fun_Tpc       ::= ':[' Type_Param {',' Type_Param} ']'
+Function_Path ::= function_id
+                | 'self' '.' function_id
+                | variable_id '.' function_id
 Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
 Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] variable_id 
                 [':' Param_Type] [':=' Expr]
+                | Literal
 Param_Extra   ::= [Param_Io] [Param_Rw] ['*' | '**' | '&'] [':']
 Param_Io      ::= 'in' | 'out' | 'in' '+' 'out'
 Param_Rw      ::= 'val' | 'var'
@@ -1150,6 +1154,29 @@ By-name parameters require a specific application (\sref{sec:by-name-arguments})
 By-name parameters with default value expressions evaluate the default value expression each time the parameter is accessed, unlike optional parameters that evaluate the default value expression only once. 
 
 By-name parameters imply the \code{val} flag, and disallow the \code{var} flag. 
+
+\subsection{With-Value Parameters}
+\label{sec:with-value-parameters}
+
+\syntax\begin{lstlisting}
+Param ::= Literal
+\end{lstlisting}
+
+The parameter may be specified by its literal value. Such parameters may only appear where positional parameters may appear. The type of the parameter is the type of the literal value. Methods with value parameters are preferred during method resolution to methods with the same parameter types (\sref{sec:function-applications}), but it is an error if more than one method with value parameters match the function application. 
+
+The recommendation for usage of these parameters are: 
+\begin{itemize}
+\item Use with-value parameters with unary methods only. 
+\item If the value is a collection, use an empty collection literal only. 
+\end{itemize}
+
+\example Sample methods that use with-value parameters:
+\begin{lstlisting}
+def factorial (0) := 1
+def factorial (x) := x * factorial(x - 1)
+\end{lstlisting}
+
+Since the parameter has no name to bind to, it is not accessible inside the method body. 
 
 \subsection{Input \& Output Parameters}
 \label{sec:io-parameters}
@@ -1640,6 +1667,8 @@ Class \code{E} uses a similar recommended approach, utilizing standard ways of a
 
 \subsection{Class Linearization}
 \label{sec:class-linearization}
+
+The classes reachable through transitive closure of the direct inheritance relation from a class $C$ are called the {\em base classes} of $C$. Because of mixins, the inheritance relationship on base classes forms in general a directed acyclic graph. 
 
 \subsection{Class-Level Blocks}
 \label{sec:class-level-blocks}
