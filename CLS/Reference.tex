@@ -1057,9 +1057,9 @@ A variance annotation constrains the way the annotated type variable may appear 
 \section{Function Declarations \& Definitions}
 
 \syntax\begin{lstlisting}[escapechar=`]
-Dcl           ::= 'def' Fun_Dcl
-                | 'message' Fun_Dcl
-                | 'function' Fun_Dcl
+Dcl           ::= 'def' Fun_Dcl 'end' ['def']
+                | 'message' Fun_Dcl 'end' ['message']
+                | 'function' Fun_Dcl 'end' ['function']
 Fun_Dcl       ::= Fun_Sig ':' Type
 Def           ::= 'def' Fun_Def 'end' ['def']
                 | 'def' Fun_Alt_Def
@@ -1542,10 +1542,104 @@ In this case, the definition of \code{O} is implied to be:
 object O : Base with Mixin refine {}
 \end{lstlisting}
 
-\subsection{Metaclasses}
+\subsection{Metaclasses \& Eigenclasses}
 \label{sec:metaclasses}
+\label{sec:eigenclasses}
+
+\paragraph{\em Metaclasses}
+A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behavior and properties of its instances, a metaclass defines the behavior of its class. Classes are first-class citizens in Coral. 
+
+Everything is an object in Coral. Every object has a class that defines the structure (i.e. the instance variables) and behavior of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
+
+Class methods actually belong to the metaclass, just as instance methods actually belong to the class. All metaclasses are instances of only one class called \code{Metaclass}, which is a subclass of the class \code{Class}. 
+
+In Coral, every class (except for the root class \code{Object}) has a superclass. The base superclass of all metaclasses is the class \code{Class}, which describes the general nature of classes. 
+
+The superclass hierarchy for metaclasses parallels that for classes, except for the class \code{Object}. The following holds for the class \code{Object}:
+\begin{lstlisting}[deletekeywords={class}]
+Object.class = Class
+Object.superclass = nil
+\end{lstlisting}
+
+Classes and metaclasses are ``born together''. Every \code{Metaclass} instance has a method \code{this_class}, which returns the conjoined class. 
+
+\paragraph{\em Eigenclasses}
+Coral further purifies the concept of metaclasses by introducing {\em eigenclasses}, borrowed from Ruby, but keeping the \code{Metaclass} known from Smalltalk-80. Every metaclass is an eigenclass, either to a class, to a terminal object, or to another eigenclass\footnote{Eigenclasses of eigenclasses (``higher-order'' eigenclasses) are supposed to be rarely needed, but are there for conceptual integrity, establishing infinite regress.}. 
+
+\begin{table}[ht]
+  \centering
+  \caption{Of objects, classes \& eigenclasses}
+  \renewcommand{\arraystretch}{1.7}
+  \begin{tabular}{ | >{\centering}m{4cm} | >{\centering}m{4cm} | >{\centering\arraybackslash}m{6.5cm} | }
+  	\hline
+    Classes & Eigenclasses of classes & \multirow{2}{*}{Eigenclasses of eigenclasses} \\ \cline{1-2}
+    Terminal objects & Eigenclasses of terminal objects & \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Eigenclasses are manipulated indirectly through various syntax features of Coral, or directly using the \code{eigenclass} method. This method can possibly trigger creation of an eigenclass, if the receiver of the \code{eigenclass} message did not previously have its own (singleton) eigenclass (because it was a terminal object whose eigenclass was a regular class, or the reciever was an eigenclass itself). 
+
+Another way to access an eigenclass is to use the \lstinline!class << obj; $\ldots$; end! construct. The block of code inside runs is evaluated in the scope of the eigenclass of \code{obj}. 
+
+\example Direct access to the eigenclass of any object, here a class' eigenclass:
+\begin{lstlisting}
+class A
+  class << self
+    def a_class_method
+      "A.a_class_method"
+    end def
+  end
+end class
+\end{lstlisting}
+Class \code{A} uses the \lstinline!class << obj; $\ldots$; end! construct to get direct access to the eigenclass. The keyword \code{self} inside the block is bound to the eigenclass object. 
+
+\example Alternative direct access to the eigenclass of any object, here a class' eigenclass:
+\begin{lstlisting}
+class B
+  self.eigenclass do
+    def a_class_method
+      "B.a_class_method"
+    end def
+  end
+end class
+\end{lstlisting}
+Class \code{B} uses the \code{eigenclass} method, which---given a block---evaluates the block in the scope of the eigenclass of \code{self}, which is bound to the class \code{B}. The keyword \code{self} inside the block is again bound directly to the eigenclass object. 
+
+\example Indirect access to the eigenclass using a singleton method definition:
+\begin{lstlisting}
+class C
+  def self.a_class_method
+    "C.a_class_method"
+  end def
+end class
+\end{lstlisting}
+Class \code{C} uses singleton method definition to add methods to the eigenclass of the class \code{C}. The keyword \code{self} is bound to the class object in the class-level block and in the new method as well, but the eigenclass is accessed only indirectly. 
+
+\example Indirect access to the eigenclass using a class object definition:
+\begin{lstlisting}
+class D
+  object D
+    def a_class_method
+      "D.a_class_method"
+    end def
+  end object
+end class
+\end{lstlisting}
+Class \code{D} uses the recommended approach, utilizing standard ways of adding methods to the eigenclass of the class \code{D}. Here, the eigenclass instance itself is not accessed directly.  
+
+\example Alternative indirect access to the eigenclass using a class object definition:
+\begin{lstlisting}
+object E
+  def a_class_method
+    "E.a_class_method"
+  end def
+end object
+\end{lstlisting}
+Class \code{E} uses a similar recommended approach, utilizing standard ways of adding methods to the eigenclass of the class \code{E} and neither declaring nor defining anything for its own instances. Here, the eigenclass instance itself is not accessed directly. 
 
 \subsection{Class Linearization}
+\label{sec:class-linearization}
 
 \subsection{Class-Level Blocks}
 \label{sec:class-level-blocks}
