@@ -169,4 +169,15 @@
    \labelsep{\bf \theresult}]}
 \def\endexample{\endtrivlist}
 
+\def\definition{
+   \def\theresult{Definition~\thesection.\arabic{result}}
+   \refstepcounter{result}
+   \trivlist\item[\hskip
+   \labelsep{\bf \theresult}]}
+\def\enddefinition{\endtrivlist}
+
+\newcommand{\ba}{\begin{array}}
+\newcommand{\ea}{\end{array}}
+\newcommand{\bda}{\[\ba}
+\newcommand{\eda}{\ea\]}
 
