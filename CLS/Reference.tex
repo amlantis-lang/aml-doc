@@ -629,7 +629,7 @@ Function_Args ::= Type
 Return_Type   ::= Type | '()'
 \end{lstlisting}
 
-The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. Empty arguments list is indeed also possible as \lstinline@-> $R$@, representing e.g. a call-by-name parameter of type $T$.
+The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. Empty arguments list is indeed also possible as \lstinline@-> $R$@, equivalent to \lstinline@() -> $R$@.
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
 
@@ -988,11 +988,11 @@ Properties defined with \code{weak} are stored as weak references. A property \l
 
 \end{enumerate}
 
-Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x=$@, declared as follows:
+Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x$=@, declared as follows:
 
 \begin{lstlisting}
-def $x$ () -> $T$; end
-def $x$= (y : $T$) -> (); end
+def $x$ (): $T$; end
+def $x$= (y: $T$): (); end
 \end{lstlisting}
 
 Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation. 
@@ -1155,22 +1155,22 @@ By-name parameters with default value expressions evaluate the default value exp
 
 By-name parameters imply the \code{val} flag, and disallow the \code{var} flag. 
 
-\subsection{With-Value Parameters}
-\label{sec:with-value-parameters}
+\subsection{Explicit Parameters}
+\label{sec:explicit-parameters}
 
 \syntax\begin{lstlisting}
 Param ::= Literal
 \end{lstlisting}
 
-The parameter may be specified by its literal value. Such parameters may only appear where positional parameters may appear. The type of the parameter is the type of the literal value. Methods with value parameters are preferred during method resolution to methods with the same parameter types (\sref{sec:function-applications}), but it is an error if more than one method with value parameters match the function application. 
+The parameter may be specified by its literal value. Such parameters may only appear where positional parameters may appear. The type of the parameter is the type of the literal value. Methods with explicit parameters are preferred during method resolution to methods with the same parameter types (\sref{sec:function-applications}), but it is an error if more than one method with explicit parameters match the function application. 
 
 The recommendation for usage of these parameters are: 
 \begin{itemize}
-\item Use with-value parameters with unary methods only. 
+\item Use explicit parameters with unary methods only. 
 \item If the value is a collection, use an empty collection literal only. 
 \end{itemize}
 
-\example Sample methods that use with-value parameters:
+\example Sample methods that use explicit parameters:
 \begin{lstlisting}
 def factorial (0) := 1
 def factorial (x) := x * factorial(x - 1)
