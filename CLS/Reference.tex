@@ -1698,7 +1698,7 @@ Then the linearization of class \code{Iterator} is
   Object }
 \end{lstlisting}
 
-Note that the linearization of a class refines the inheritance relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any linearization where both $C$ and $D$ occur. 
+Note that the linearization of a class refines the inheritance relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any linearization where both $C$ and $D$ occur. Also note that whether a mixin is included or prepended is irrelevant to linearization, but essential to function applications (\sref{sec:function-applications}).
 
 \subsection{Inheritance Trees \& Include Classes}
 \label{sec:inheritance-trees}
@@ -1710,7 +1710,9 @@ A mechanism that allows arbitrary including and prepending of mixins into classe
 Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Object} class is encountered, which has no superclass. 
 
 \paragraph{\em Included mixins}
-When a mixin $M$ is included into a class, a new include class $Im_i$ is injected between the target class and the include class $Is$ that holds a link to its superclass (or to a previously included mixin $Im_{i+1}$). This include class $Im_i$ then holds a link to the included mixin. Every class that includes the mixin $M$ is available via the \code{included_in} method of $M$. 
+When a mixin $M$ is included into a class, a new include class $Im_i$ is inserted between the target class and the include class $Is$ that holds a link to its superclass (or to a previously included mixin $Im_{i+1}$). This include class $Im_i$ then holds a link to the included mixin. Every class that includes the mixin $M$ is available via the \code{included_in} method of $M$. 
+
+If a mixin $M$ is already (included in or prepended to)\footnote{This is important since both included and prepended mixins act like superclasses to every subclass.} any of the superclasses, then it is not included again. Included mixins act like superclasses of the class they are included in, and they {\em overlay} the superclasses. 
 
 \example A sample mixin schema:
 \begin{lstlisting}
@@ -1723,35 +1725,24 @@ D $\rightarrow$ [Object]
 Include classes are depicted by the brackets, with their link value inside. Note that include classes only know their super-type (depicted by the arrow ``$\rightarrow$'') and their link value (inside brackets). 
 
 \paragraph{\em Prepended mixins}
-When a mixin $P$ is prepended to a class, a new include class $Ip_i$ is injected between the target class and its last prepended mixin, if any. Prepended mixins are stored in a secondary inheritance chain just for prepended mixins, forming an inheritance tree. Every class that has $P$ prepended is available via the \code{prepended_in} method of $P$. 
+When a mixin $M$ is prepended to a class, a new include class $Im_i$ is inserted between the target class and its last prepended mixin, if any. Prepended mixins are stored in a secondary inheritance chain just for prepended mixins, forming an inheritance tree. Every class that has $M$ prepended is available via the \code{prepended_in} method of $M$. The effect of prepending a mixin in a class or a mixin is named {\em overlaying}. 
 
-\paragraph{\em Nested includes/prepends}
-When a mixin itself has included one or more mixins, these mixins are injected into its inheritance chain the same way as mixins are injected into inheritance chains of classes. When such mixin is included/prepended to a class, all of its included mixins are injected again into the class' inheritance chain. Include classes themselves are roots for chains of prepended mixins and included mixins/superclasses.
+If a mixin $M$ is already prepended to any of the superclasses, it has to be prepended again, since the already prepended mixins of superclasses are in super-position to the class or mixin that gets $M$ prepended. Prepended mixins of superclasses do not {\em overlay} child classes. Prepended mixins are inserted into the inheritance tree more like subclasses than superclasses. 
 
-\example Consider the following class definitions:
-\begin{lstlisting}
-mixin A
-  prepend B
-  include C
-end
-mixin E; end
-class D
-  prepend A
-  include E
-end
-\end{lstlisting}
-The inheritance tree would look like following. The arrow ``$\leftarrow$'' depicts ``prepended'' chains: \lstinline![$a$]$\leftarrow$[$b$]! depicts that $b$ is prepended in $a$. 
-\begin{lstlisting}
-D $\leftarrow$ [A] $\leftarrow$ [B]
-         $\rightarrow$ [C]
-  $\rightarrow$ [E] $\rightarrow$ [Object]
-\end{lstlisting}
-The order of method resolution would be, following the arrows from the schema from the top right corner: 
-\begin{lstlisting}
-{ B $\rightarrow$ A $\rightarrow$ C $\rightarrow$ D $\rightarrow$ E $\rightarrow$ Object }
-\end{lstlisting}
+\paragraph{\em Nested includes}
+When a mixin $M$ itself includes one or more mixins $M_1 \commadots M_n$, then these included mixins are inserted between the included mixin $M$ and the superclass, unless they are already respectively included by any of the superclasses. If $M$ with included $M_1 \commadots M_n$ is prepended to $C$, then $M_1 \commadots M_n$ are inserted before the superclass of $C$, if not already included in any of the superclasses. It is an error if nested includes form a dependency cycle: any {\em auto-included}\footnote{Unlike in Ruby, Coral does not need concerns to employ automatic injection of dependencies. Every mixin in Coral is a concern.} mixin must not require to include a mixin that triggered the auto-include. 
 
-The order and rules of function resolution are further explained in \sref{sec:function-applications}. 
+\paragraph{\em Nested prepends}
+When a mixin $M$ itself prepends one or more mixins $M_1 \commadots M_n$, then nothing happens to the class or the mixin that $M$ is included in. If $M$ is prepended to $C$, then every prepended mixin in $M_1 \commadots M_n$ is prepended to $C$ in this way:
+\begin{enumerate}
+\item $M$ is inserted as the head of the prepend chain in an include class. 
+\item For each $1 \le i \le n$, $M$ is switched with previously prepended mixins until $M_i$ is closer to the chain head than $M$, if $M_i$ is contained in the chain, or else $M_i$ is inserted as the head of the prepend chain. 
+\item If $M_i$ includes any other mixins, these are included in the same way as nested included mixins. 
+\item Check for prepend cycles -- if any {\em auto-prepended}\footnote{Again, this is unlike in Ruby, which does not automatically prepend mixins.} mixin requires to prepend a mixin that triggered the auto-prepend, then it is an error. 
+\end{enumerate}
+
+\paragraph{\em Mixins \& Metaclasses}
+Since mixins may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses. 
 
 \subsection{Class Members}
 \label{sec:class-members}
