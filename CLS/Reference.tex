@@ -78,15 +78,16 @@ in           include     interface    is           lazy
 let          loop        match        memoize      message
 method       mixin       module       native       next
 nil          no          object       of           opaque
-operator     out         prepend      property     protocol
-raise        range       record       redo         refine
-rescue       retry       return       requires     self
-set          singleton-type           skip         step
-struct       super       template     test         then
-this         throw       transparent  type         undef
-unless       until       union        unit-of-measure           
-use          val         var          yes          weak
-when         while       with         yield
+operator     out         prepend      private      property
+protected    protocol    public       raise        range
+record       redo        refine       rescue       retry
+return       requires    self         set          singleton-type
+skip         step        struct       super        template
+test         then        this         throw        transparent
+type         undef       unless       until        union
+unit-of-measure          use          val          var
+yes          weak        when         while        with
+yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -1705,7 +1706,7 @@ Note that the linearization of a class refines the inheritance relation: if $C$ 
 \label{sec:include-classes}
 
 \paragraph{\em Include classes}
-A mechanism that allows arbitrary including and prepending of mixins into classes and inheritance binary trees\footnote{Yes, trees, not chains: prepended mixins make the inheritance game stronger by forking the inheritance chain at each class with prepended mixins.} uses a transparent structure called {\em include class}. Include classes are always defined indirectly.
+A mechanism that allows arbitrary including and prepending of mixins into classes and inheritance binary trees\footnote{Yes, trees, not chains: prepended mixins make the inheritance game stronger by forking the inheritance chain at each class with prepended mixins, forming a shape similar to a rake.} uses a transparent structure called {\em include class}. Include classes are always defined indirectly.
 
 Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Object} class is encountered, which has no superclass. 
 
@@ -1742,20 +1743,140 @@ When a mixin $M$ itself prepends one or more mixins $M_1 \commadots M_n$, then n
 \end{enumerate}
 
 \paragraph{\em Mixins \& Metaclasses}
-Since mixins may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses. 
+Since mixins may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses.\footnote{This makes Coral in no need of constructs like \lstinline[language=Ruby]!module ClassMethods!, known from Ruby.}
 
 \subsection{Class Members}
 \label{sec:class-members}
 
+A class $C$ defined by class definition can define members in its class-level block, can inherit members from all parent classes\footnote{Including an interface and any number of protocols.} and included mixins, and can have its members overlayed by all prepended mixins. 
+
+Member definitions fall basically into two categories: {\em concrete} \& {\em abstract}. Members of the class $C$ are either {\em directly defined}, {\em overlayed} or {\em inherited}. 
+
+Concrete members are those that have a definition, abstract members are those that are only declared without any subsequent or preceding definition.\footnote{There is a special case, when a protocol introduces an abstract member, but the class that implements this protocol already inherited or directly defined the matching member.}
+
+Members are instance variables, class instance variables, methods \& messages. 
+
 \subsection{Class-Level Blocks}
 \label{sec:class-level-blocks}
 
+Class-level blocks are multi-constructors for class objects. A single class may have one or more class-level blocks spread across multiple source files. A single class may have multiple class-level blocks in the same source file as well. 
+
+Class-level blocks work like functions that construct the class object, including declarations and definitions of its instances as well as the class object itself, and can work with metaclasses (\sref{sec:metaclasses}) like any other function. Their execution order is derived from the order in which the containing source files are executed (\sref{sec:compilation-units}). 
+
+An object definition (\sref{sec:object-definitions}) inside a class-level block for the same name as the name of the enclosing class defines the object of the enclosing class itself. 
+
+\example Given the following object definition inside a class definition:
+\begin{lstlisting}
+class $C$
+  object $C$
+    $\ldots$
+  end object
+end class
+\end{lstlisting}
+The object definition for $C$ does \textbf{not} create an object \lstinline!$C$::$C$!, but defines the class object of the class $C$. However, the following object definition:
+\begin{lstlisting}
+class $C$
+  object $D$
+    $\ldots$
+  end object
+end class
+\end{lstlisting}
+does define an object \lstinline!$C$::$D$!, because it has a different name. 
+
+Since class-level blocks are basically functions, the members defined inside of them can closure local variables inside the block (\sref{sec:local-variable-closure}). Any member defined outside of the class-level block can not closure its local variables. 
+
 \subsection{Constructor \& Destructor Definitions}
+\label{sec:constructor-destructor-def}
+
+Constructors and destructors can only be defined inside of class-level blocks (\sref{sec:class-level-blocks}). Constructors are functions that can never be called by a name, instead, they are invoked indirectly by creating a new instance of a class (an object value), from the \lstinline!allocate! method of \code{Class}. Destructors are invoked indirectly when an object is to be deallocated, that is, when its reference count reaches \code{0} and all its soft references are released. 
+
+Constructors can have any number of parameters, including none at all. Every constructor has a special behavior that invokes its super-constructor with matching parameters before any other code, unless explicitly invoked. It is an error if a constructor invokes a super-constructor more than 1 times. If a constructor does not have a matching super-constructor, then a {\em default constructor} or an {\em implicit constructor} is used.
+
+\paragraph{\em Default constructor}
+A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
+
+\paragraph{\em Implicit constructor}
+An implicit constructor is an automatically generated bridge constructor to the parameterless default constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions). 
+
+\paragraph{\em Convenience constructor}
+A convenience constructor is any other constructor than the parameterless default constructor. 
+
+\paragraph{\em Accessibility of constructors}
+Constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
+
+\example An example of a convenience constructor of class $C$.
+\begin{lstlisting}
+class $C$
+  constructor (param)
+    // super is invoked implicitly here
+    val @resource := param
+  end constructor
+end class
+\end{lstlisting}
+
+\paragraph{\em Explicit destructor}
+An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. 
+
+\paragraph{\em Implicit destructor}
+An implicit destructor is an automatically generated bridge destructor to the parameterless super-destructor. An implicit destructor ``does nothing'' but release all members specific to the destructed object and invoke super-destructor afterwards. The destructor of \code{Object} releases every remaining member of the destructed object. A class can only have a single destructor, either an explicit or an implicit one. 
+
+\paragraph{\em Accessibility of destructors}
+Destructors, unlike constructors, can not have any accessibility modifiers. They ignore the current accessibility flag of their class-block and trigger a warning if a modifier is used directly with the destructor. Destructors may be invoked independently on the context in which the object is destructed. 
+
+\example An example of an explicit destructor of class $C$. 
+\begin{lstlisting}
+class $C$
+  destructor
+    @resource.close unless @resource.closed?
+    // super is invoked implicitly here
+  end destructor
+end class
+\end{lstlisting}
 
 \subsection{Clone Constructor Definitions}
+\label{sec:clone-def}
+
+Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. 
+
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available as the \code{clone} keyword. 
+
+Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
+
+\paragraph{\em Default clone constructor}
+A default clone constructor of a class is the explicit parameterless clone constructor. 
+
+\paragraph{\em Implicit clone constructor}
+An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
+
+\paragraph{\em Convenience clone constructor}
+A convenience clone constructor is any other clone constructor than the parameterless default clone constructor. The \code{clone} method of objects can accept any number of arguments that are then passed into the clone constructor and the clone constructor is resolved based on these passed arguments. 
+
+\paragraph{\em Accessibility of clone constructors}
+Clone constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
+
+\example An example of a default clone constructor of class $C$, performing a deep copy. 
+\begin{lstlisting}
+class $C$
+  clone
+    // super is invoked implicitly here
+    clone.resource := self.resource.clone
+  end constructor
+end class
+\end{lstlisting}
 
 \subsection{Overriding}
 \label{sec:overriding}
+
+A member $M$ of a class $C$ that matches a member $M'$ of a base class of $C$ is said to override that member. In this case the binding of the overriding member $M$ must conform (\sref{sec:conformance}) to the binding of the overridden member $M'$. Furthermore, the following restrictions on modifiers apply to $M$ and $M'$: 
+\begin{itemize}
+\item If $M$ is labeled \lstinline!private:[$C$]! for some enclosing class or module $C$, then $M'$ must be labeled \lstinline!private:[$C'$]!, where $C'$ equals $C$ or $C$ is contained in $C'$. % review the last few words
+\item If $M$ is labeled \lstinline!protected!, then $M'$ must also be labeled \lstinline!protected!. 
+\item If $M'$ is labeled \lstinline!protected!, then $M'$ must also be labeled \lstinline!protected! or \lstinline!public!. 
+\item If $M'$ is labeled \lstinline!private!, then $M'$ must be labeled \lstinline!private!, \lstinline!protected! or \lstinline!public!. 
+\item If $M'$ is not an abstract member, then $M$ may be annotated with \lstinline!@[Override]!. 
+\end{itemize}
+
+To generalize the conditions, the modifier of $M$ must be the same or less restrictive than the modifier of $M'$. 
 
 \subsection{Inheritance Closure}
 
@@ -1834,6 +1955,9 @@ Since mixins may contain ``class'' methods as well as instance methods, all the 
 \section{Instance Creation Expressions}
 
 \section{Blocks}
+
+\subsection{Local Variable Closure}
+\label{sec:local-variable-closure}
 
 \section{Prefix \& Infix Operations}
 
@@ -1928,6 +2052,7 @@ Since mixins may contain ``class'' methods as well as instance methods, all the 
 \chapter{Top-Level Definitions}
 
 \section{Compilation Units}
+\label{sec:compilation-units}
 
 \section{Modules}
 \label{sec:modules}
