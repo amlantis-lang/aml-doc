@@ -1763,7 +1763,12 @@ Class-level blocks are multi-constructors for class objects. A single class may 
 
 Class-level blocks work like functions that construct the class object, including declarations and definitions of its instances as well as the class object itself, and can work with metaclasses (\sref{sec:metaclasses}) like any other function. Their execution order is derived from the order in which the containing source files are executed (\sref{sec:compilation-units}). 
 
-An object definition (\sref{sec:object-definitions}) inside a class-level block for the same name as the name of the enclosing class defines the object of the enclosing class itself. 
+An object definition (\sref{sec:object-definitions}) inside a class-level block for the same name as the name of the enclosing class defines the object of the enclosing class itself, and moreover, does not need to need to specify the superclass. It is an error if the enclosing class does not need specify a superclass and the nested object definition does specify a superclass -- it must be the other way around. The nested object definition has \lstinline!include $M$!, \lstinline!prepend $M$! and \lstinline!implements $M$! expressions relative to the defined object, not to the enclosing class, which has several implications: 
+\begin{itemize}
+\item There is no way to include (or prepend) only class methods from a mixin directly into the defined object -- the instance methods of the mixin are included in the defined object and the class methods go to the metaclass of the defined object. 
+\item Since the defined object is always an instance of \lstinline!Class:[$C$]!, the mixin must require any class of the receiver or a class that conforms to \lstinline!Class:[$C$]!, not $C$ directly. 
+\item It is advised to not give any class methods to mixins (or protocols) that are to be included (prepended, or implemented) in a defined object, since methods from its metaclass are not easy to invoke. 
+\end{itemize}
 
 \example Given the following object definition inside a class definition:
 \begin{lstlisting}
@@ -1781,7 +1786,7 @@ class $C$
   end object
 end class
 \end{lstlisting}
-does define an object \lstinline!$C$::$D$!, because it has a different name. 
+does define an object \lstinline!$C$::$D$!, because it has a different name, and is thus unrelated to $C$ in any other way than being enclosed in $C$ (and having inheritance closure in $C$ -- \sref{sec:inheritance-closure}). 
 
 Since class-level blocks are basically functions, the members defined inside of them can closure local variables inside the block (\sref{sec:local-variable-closure}). Any member defined outside of the class-level block can not closure its local variables. 
 
@@ -1879,9 +1884,62 @@ A member $M$ of a class $C$ that matches a member $M'$ of a base class of $C$ is
 To generalize the conditions, the modifier of $M$ must be the same or less restrictive than the modifier of $M'$. 
 
 \subsection{Inheritance Closure}
+\label{sec:inheritance-closure}
+
+\newcommand{\inheritclosure}{{\cal S}}
+
+Let $C$ be a class type. The {\em inheritance closure} of $C$ is the smallest set $\inheritclosure$ of types such that
+\begin{itemize}
+\item If $T$ is in $\inheritclosure$, then every type $T'$ which forms syntactically a part of $T$ is also in $\inheritclosure$. 
+\item If $T$ is a class type in $\inheritclosure$, then all parents of $T$ are also in $\inheritclosure$. 
+\end{itemize}
+It is an error if the inheritance closure of a class type consists of an infinite number of types. 
 
 \subsection{Modifiers}
 \label{sec:modifiers}
+
+\syntax\begin{lstlisting}
+Modifier ::= 'public'
+           | 'protected' [Access_Qualifier]
+           | 'private' [Access_Qualifier]
+           | 'implicit'
+           | 'lazy'
+Access_Qualifier ::= ':[' (constant_id | 'self') ']'
+\end{lstlisting}
+
+Modifiers may appear in two forms:
+
+\paragraph{\em Accessibility flag modifier}
+Such a modifier appears in a class-level block (\sref{sec:class-level-blocks}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Modifiers \code{implicit} and \code{lazy} can not be used this way. 
+
+\paragraph{\em Directly applied modifier}
+Such a modifier appears on a line preceding a member to which the modifier is solely applied, or a list of arguments with symbols that the modifier will be applied to. A directly applied modifier expression has a return type of \code{Symbol}, so that it may be used as a regular function and chained. 
+
+\example An example of an accessibility flag modifier:
+\begin{lstlisting}
+class C
+  public
+    def hello; end
+  private
+    def private_hello; end
+end class
+\end{lstlisting}
+
+\example An example of directly applied modifier:
+\begin{lstlisting}
+class C
+  def hello; end
+  def private_hello; end
+  def salute; end
+  public :hello
+  private :private_hello, :salute
+  protected def goodbye; end
+end class
+\end{lstlisting}
+
+By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private:[self]!). 
+
+Modifiers affect the accessibility and usage of the identifiers bound by them. If several modifiers are given, their order does not matter, but the same modifier may not occur more than once and combinations of \code{public}, \code{protected} \& \code{private} are not allowed (using them as accessibility flag modifiers overwrites the previous accessibility, not combines them). If a member declaration has a modifier applied to it, then the subsequent member definition has the same modifier already applied to it as well, without the need to explicitly state that. It is an error if the modifier applied to the member definition would contradict the modifier applied to the member declaration. 
 
 \section{Object Definitions}
 \label{sec:object-definitions}
