@@ -68,26 +68,26 @@ A set of identifiers is reserved for language features instead of for user ident
 The following names are the reserved words.
 
 \begin{lstlisting}
-alias        annotation  as           begin        bitfield
-break        case        cast         catch        class
-clone        constant    constructor  declare      def
-destructor   do          else         elsif        end
-ensure       enum        for          for-some     function
-get          goto        if           implements   implicit
-in           include     interface    is           lazy
-let          loop        match        memoize      message
-method       mixin       module       native       next
-nil          no          object       of           opaque
-operator     out         prepend      private      property
-protected    protocol    public       raise        range
-record       redo        refine       rescue       retry
-return       requires    self         set          singleton-type
-skip         step        struct       super        template
-test         then        this         throw        transparent
-type         undef       unless       until        union
-unit-of-measure          use          val          var
-yes          weak        when         while        with
-yield
+alias       annotation  as          begin       bitfield
+break       case        cast        catch       class
+clone       cloned      constant    constructor declare
+def         destructor  do          else        elsif
+end         ensure      enum        for         for-some
+function    get         goto        if          implements
+implicit    in          include     interface   is
+lazy        let         loop        match       memoize
+message     method      mixin       module      native
+next        nil         no          object      of
+opaque      operator    out         prepend     private
+property    protected   protocol    public      raise
+range       record      redo        refine      rescue
+retry       return      requires    self        set
+singleton-type          skip        step        struct
+super       template    test        then        this
+throw       transparent type        undef       unless
+until       union       unit-of-measure         use
+val         var         yes         weak        when
+while       with        yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -1793,9 +1793,20 @@ Since class-level blocks are basically functions, the members defined inside of 
 \subsection{Constructor \& Destructor Definitions}
 \label{sec:constructor-destructor-def}
 
+\syntax\begin{lstlisting}
+Ctor_Def     ::= 'constructor' Ctor_Fun_Def 'end' ['constructor']
+               | 'constructor' Ctor_Alt_Def
+Ctor_Fun_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] semi Expr
+Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] ':=' Expr
+Dtor_Def     ::= 'destructor' Dtor_Fun_Def 'end' ['destructor']
+Dtor_Fun_Def ::= [Fun_Dec] semi Expr
+\end{lstlisting}
+
 Constructors and destructors can only be defined inside of class-level blocks (\sref{sec:class-level-blocks}). Constructors are functions that can never be called by a name, instead, they are invoked indirectly by creating a new instance of a class (an object value), from the \lstinline!allocate! method of \code{Class}. Destructors are invoked indirectly when an object is to be deallocated, that is, when its reference count reaches \code{0} and all its soft references are released. 
 
 Constructors can have any number of parameters, including none at all. Every constructor has a special behavior that invokes its super-constructor with matching parameters before any other code, unless explicitly invoked. It is an error if a constructor invokes a super-constructor more than 1 times. If a constructor does not have a matching super-constructor, then a {\em default constructor} or an {\em implicit constructor} is used.
+
+A different constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a constructor invokes a different constructor of the same class this way, the super-constructor is not implicitly invoked (since it is invoked in the other constructors). 
 
 \paragraph{\em Default constructor}
 A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
@@ -1812,6 +1823,17 @@ Constructors may have modified accessibility, so that only certain functions can
 \example An example of a convenience constructor of class $C$.
 \begin{lstlisting}
 class $C$
+  constructor (param)
+    // super is invoked implicitly here
+    val @resource := param
+  end constructor
+end class
+\end{lstlisting}
+
+\example An example of a pair of constructors of class $C$. 
+\begin{lstlisting}
+class $C$
+  constructor := self(42)
   constructor (param)
     // super is invoked implicitly here
     val @resource := param
@@ -1841,11 +1863,20 @@ end class
 \subsection{Clone Constructor Definitions}
 \label{sec:clone-def}
 
-Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. 
+\syntax\begin{lstlisting}
+CCtor_Def     ::= 'clone' CCtor_Fun_Def 'end' ['clone']
+                | 'clone' CCtor_Alt_Def
+CCtor_Fun_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] semi Expr
+CCtor_Alt_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] ':=' Expr
+\end{lstlisting}
 
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available as the \code{clone} keyword. 
+Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
+
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available as the \code{cloned} keyword. The \code{cloned} keyword is only recognized as a keyword in a body of the clone constructor. 
 
 Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
+
+A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). 
 
 \paragraph{\em Default clone constructor}
 A default clone constructor of a class is the explicit parameterless clone constructor. 
@@ -1864,7 +1895,7 @@ Clone constructors may have modified accessibility, so that only certain functio
 class $C$
   clone
     // super is invoked implicitly here
-    clone.resource := self.resource.clone
+    cloned.resource := self.resource.clone
   end constructor
 end class
 \end{lstlisting}
