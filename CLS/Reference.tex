@@ -1535,7 +1535,8 @@ Class_Expr ::= Ctor_Expr
              | {Annotation} 'object' Obj_Def 'end' ['object']
              | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
              | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
-             | {Annotation} 'interface' Ifc_Def 'end' ['interface']
+             | {Annotation} 'interface' Ifc_Def 'end' 
+               ['interface']
              | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
@@ -1974,6 +1975,31 @@ Modifiers affect the accessibility and usage of the identifiers bound by them. I
 
 \section{Object Definitions}
 \label{sec:object-definitions}
+
+\syntax\begin{lstlisting}
+Obj_Def  ::= constant_id [Superclass] [semi]
+           | {Object_Expr}
+Obj_Expr ::= Clone_Expr
+           | Includes_Expr
+           | Prepend_Expr
+           | Implements_Expr
+           | Expr
+           | {Annotation} 'class' Class_Def 'end' ['class']
+           | {Annotation} 'object' Obj_Def 'end' ['object']
+           | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+           | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+           | {Annotation} 'interface' Ifc_Def 'end' 
+             ['interface']
+           | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+Object definitions emphasize the fact that classes in Coral are also objects. Every object defined by an object definition $C$ is a singleton instance of \lstinline!Class:[$C$]!. Such an object may itself implement protocols and include mixins, if desirable. The class defined by an object definition is empty and inherits from its superclasses. 
+
+Object definition is almost the same as a class definition, except that members defined in it and \code{clone}, \code{include}, \code{prepend} and \code{implements} expressions are relative to the class object, and not the class itself -- that is, every member defined in an object definition is a class member, not a class instance member. Types defined in the object definition are equivalent to types defined in a class definition. 
+
+Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. 
+
+If an object definition is preceded by a class definition of the same name in the same source file, the superclass is transferred from the class definition and need not be explicitly stated. It is an error if the superclasses differ. It is also an error if the object definition has no explicit superclass (which is then implicitly \code{Object}), and a class with an explicit superclass other than \code{Object} is loaded dynamically -- since then the superclasses would differ again. 
 
 \section{Module Definitions}
 \label{sec:module-definitions}
