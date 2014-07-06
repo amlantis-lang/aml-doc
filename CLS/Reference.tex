@@ -68,26 +68,27 @@ A set of identifiers is reserved for language features instead of for user ident
 The following names are the reserved words.
 
 \begin{lstlisting}
-alias       annotation  as          begin       bitfield
-break       case        cast        catch       class
-clone       cloned      constant    constructor declare
-def         destructor  do          else        elsif
-end         ensure      enum        for         for-some
-function    get         goto        if          implements
-implicit    in          include     interface   is
-lazy        let         loop        match       memoize
-message     method      mixin       module      native
-next        nil         no          object      of
-opaque      operator    out         prepend     private
-property    protected   protocol    public      raise
-range       record      redo        refine      rescue
-retry       return      requires    self        set
-singleton-type          skip        step        struct
-super       template    test        then        this
-throw       transparent type        undef       unless
-until       union       unit-of-measure         use
-val         var         yes         weak        when
-while       with        yield
+abstract    alias       annotation  as          begin
+bitfield    break       case        cast        catch
+class       clone       cloned      constant    constructor
+declare     def         destructor  do          else
+elsif       end         ensure      enum        final
+for         for-some    function    get         goto
+if          implements  implicit    in          include
+interface   is          lazy        let         loop
+match       memoize     message     method      mixin
+module      native      next        nil         no
+object      of          opaque      operator    out
+override    prepend     private     property    protected
+protocol    public      raise       range       record
+redo        refine      rescue      retry       return
+requires    sealed      self        set         singleton-type
+skip        step        struct      super       template
+test        then        this        throw       transparent
+type        undef       unless      until       union
+unit-of-measure         use         val         var
+yes         weak        when        while       with
+yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -1931,15 +1932,20 @@ It is an error if the inheritance closure of a class type consists of an infinit
 \label{sec:modifiers}
 
 \syntax\begin{lstlisting}
-Modifier ::= 'public'
-           | 'protected' [Access_Qualifier]
-           | 'private' [Access_Qualifier]
-           | 'implicit'
-           | 'lazy'
+Modifier         ::= Local_Modifier
+                   | Access_Modifier
+                   | 'override'
+Local_Modifier   ::= 'implicit'
+                   | 'lazy'
+                   | 'final'
+                   | 'sealed'
+                   | 'abstract'
+Access_Modifier  ::= 'public'
+                   | ('protected' | 'private') [Access_Qualifier]
 Access_Qualifier ::= ':[' (constant_id | 'self') ']'
 \end{lstlisting}
 
-Modifiers may appear in two forms:
+Access modifiers may appear in two forms:
 
 \paragraph{\em Accessibility flag modifier}
 Such a modifier appears in a class-level block (\sref{sec:class-level-blocks}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Modifiers \code{implicit} and \code{lazy} can not be used this way. 
@@ -1969,9 +1975,50 @@ class C
 end class
 \end{lstlisting}
 
-By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private:[self]!). 
+By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} access modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private:[self]!). 
 
 Modifiers affect the accessibility and usage of the identifiers bound by them. If several modifiers are given, their order does not matter, but the same modifier may not occur more than once and combinations of \code{public}, \code{protected} \& \code{private} are not allowed (using them as accessibility flag modifiers overwrites the previous accessibility, not combines them). If a member declaration has a modifier applied to it, then the subsequent member definition has the same modifier already applied to it as well, without the need to explicitly state that. It is an error if the modifier applied to the member definition would contradict the modifier applied to the member declaration. 
+
+Accessibility modifiers can not be applied to instance variables and class instance variables (both declarations and definitions). These are by default {\em instance-private}. This is a sort of relaxation in access restriction, say, every method that is at least {\em public} and at most {\em object-private} restricted, and that has the instance as a receiver, can access the instance variable or the class instance variable. Any other method that does not have the particular instance as the receiver, does not have any access to the instance variable or the class instance variable, even if the method is a method of the same class as the particular instance. 
+
+The rules governing the validity and meaning of a modifier are as follows: 
+\begin{itemize}
+\item
+The \code{private} access modifier can be used with any declaration or definition in a class. Such members can be accessed only from within the directly enclosing class, the class object (\sref{sec:object-definitions}) and any member of the directly enclosing class, including inner classes. They are not inherited by subclasses and they may not override definitions in parent classes. 
+
+The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private:[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$. 
+
+A different form of qualification is \lstinline!private:[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self}. Moreover, the restrictions for unqualified \code{private} apply as well. 
+
+Members marked \code{private} without any qualifier are called {\em class-private}. A member {\em is private} if it is either class-private or object-private, but not if it is marked \lstinline!private:[$C$]!, where $C$ is an identifier, in the latter case the member is called {\em qualified private}. 
+
+Class-private and object-private members must not be \code{abstract}, since there is no way to provide a concrete implementation for them, as private members are not inherited. Moreover, modifiers \code{protected} \& \code{public} can not be applied to them (that would be a contradiction\footnote{E.g., a member can not be public and private at the same time.}), and the modifier \code{override} can not be applied to them as well\footnote{Otherwise, if a private member could override an inherited member, that would mean there is an inherited member that could be overridden, but private members can not override anything: only protected and public members can be overridden. If a member was overriding an inherited member, the parent class would {\em lose access} to it.}. 
+
+\item
+The \code{protected} access modifier can be used with any declaration or definition in a class. Protected members of a class can be accessed from within: 
+\begin{itemize}
+\item the defining class
+\item all classes that have the defining class as a base class
+\item all class objects of any of those classes
+\end{itemize}
+
+\end{itemize}
+
+A rule for access modifiers in scope of overriding: Any overriding member may be defined with the same access modifier, or with a less restrictive access modifier. No overriding member can have more restrictive access modifier, since the parent class would {\em lose access} to the member, and that is unacceptable. 
+\begin{itemize}
+\item Modifier \code{public} is less restrictive than any other access modifier. 
+\item Qualified modifier \code{protected} is less restrictive than an unqualified \code{protected}, only if the class that the modifier is qualified with is among base classes of the original class -- the original class must not lose access. 
+\item Qualified modifier \code{protected} is less restrictive than object-protected, only if the class that the modifier is qualified with is among base classes of the original class -- the original class must not lose access. 
+\item While \code{protected} is certainly less restrictive than \code{private}, private members are not inherited and thus can not be overridden. 
+\item While qualified \code{private} is certainly less restrictive than unqualified \code{private}, private members are not inherited and thus can not be overridden. 
+\end{itemize}
+The relaxations of access modifiers for overriding members are then available as follows: 
+\begin{itemize}
+\item \lstinline!protected:[self] $\rightarrow$ {protected, protected:[$C$], public}!
+\item \lstinline!protected $\rightarrow$ {protected:[$C$], public}!
+\item \lstinline!protected:[$C$] $\rightarrow$ {public}!
+\item \lstinline!public $\rightarrow$ {public}!
+\end{itemize}
 
 \section{Object Definitions}
 \label{sec:object-definitions}
@@ -1993,7 +2040,7 @@ Obj_Expr ::= Clone_Expr
            | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
-Object definitions emphasize the fact that classes in Coral are also objects. Every object defined by an object definition $C$ is a singleton instance of \lstinline!Class:[$C$]!. Such an object may itself implement protocols and include mixins, if desirable. The class defined by an object definition is empty and inherits from its superclasses. 
+Object definitions emphasize the fact that classes in Coral are also objects. Every object defined by an object definition $C$ is a singleton instance of \lstinline!Class:[$C$]!. Such an object may itself implement protocols and include mixins, if desirable. The class defined by an object definition is empty and inherits from its superclasses. When accompanied by a non-empty class, the object definition is also called the {\em class object}, and may have methods defined by other means as well (see examples in \sref{sec:metaclasses}).
 
 Object definition is almost the same as a class definition, except that members defined in it and \code{clone}, \code{include}, \code{prepend} and \code{implements} expressions are relative to the class object, and not the class itself -- that is, every member defined in an object definition is a class member, not a class instance member. Types defined in the object definition are equivalent to types defined in a class definition. 
 
