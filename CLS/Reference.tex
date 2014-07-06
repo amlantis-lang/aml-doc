@@ -2017,6 +2017,9 @@ The relaxations of access modifiers for overriding members are then available as
 \item \lstinline!protected:[self] $\rightarrow$ {protected, protected:[$C$], public}!
 \item \lstinline!protected $\rightarrow$ {protected:[$C$], public}!
 \item \lstinline!protected:[$C$] $\rightarrow$ {public}!
+\item \lstinline!protected:[$C$] $\rightarrow$ {protected:[$D$], public}!
+
+This is only for the case where $C$ is accessible from within $D$. 
 \item \lstinline!public $\rightarrow$ {public}!
 \end{itemize}
 
