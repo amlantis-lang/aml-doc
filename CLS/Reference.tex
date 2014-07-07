@@ -1986,9 +1986,9 @@ The rules governing the validity and meaning of a modifier are as follows:
 \item
 The \code{private} access modifier can be used with any declaration or definition in a class. Such members can be accessed only from within the directly enclosing class, the class object (\sref{sec:object-definitions}) and any member of the directly enclosing class, including inner classes. They are not inherited by subclasses and they may not override definitions in parent classes. 
 
-The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private:[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$. 
+The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private:[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$ (\sref{sec:object-definitions}). 
 
-A different form of qualification is \lstinline!private:[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self}. Moreover, the restrictions for unqualified \code{private} apply as well. 
+A different form of qualification is \lstinline!private:[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self} and starts with $O$ for some class $O$ enclosing the reference. . Moreover, the restrictions for unqualified \code{private} apply as well. 
 
 Members marked \code{private} without any qualifier are called {\em class-private}. A member {\em is private} if it is either class-private or object-private, but not if it is marked \lstinline!private:[$C$]!, where $C$ is an identifier, in the latter case the member is called {\em qualified private}. 
 
@@ -2001,6 +2001,53 @@ The \code{protected} access modifier can be used with any declaration or definit
 \item all classes that have the defining class as a base class
 \item all class objects of any of those classes
 \end{itemize}
+
+A \code{protected} access modifier can be qualified with an identifier $C$ (e.g. \lstinline!protected:[$C$]!) that must denote a class or module enclosing the definition. Members labeled with such a modifier are also accessible respectively from all code inside the module $C$ or from all code inside the class $C$ and its class object $C$ (\sref{sec:object-definitions}). 
+
+A protected identifier $x$ can be used as a member name in a selection \lstinline!$r$.$x$! only if one of the following applies: 
+\begin{itemize}
+\item The access is within the class defining the member, or, if a qualification $C$ is given, inside the module $C$, the class $C$ or the class object $C$, or
+\item $r$ ends with one of the keywords \code{this}, \code{self} or \code{super}, or
+\item $r$'s type conforms to a type-instance of the class which has the access to $x$. 
+\end{itemize}
+
+A different form of qualification is \lstinline!protected:[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
+
+\item
+The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Coral is virtual, so Coral has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
+
+\item
+The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of mixins. 
+
+We call a member $M$ of a class or mixin {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
+
+The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behavior can be turned off only in tests, if needed, and is implicitly turned on. 
+
+The \code{abstract override} modifier combination can be thus used with a full definition in a mixin and yet affect the class or mixin with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
+
+Additionally, an annotation \lstinline!@[Override]! exists for class members that triggers only warnings in case the member has no inherited member to override, but does not prevent the class from being created. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{abstract} local modifier is used in class declarations. It is never mandatory for classes with incomplete members or for declarations and definitions. It is implied (and therefore redundant) for mixins. Abstract classes can not be instantiated (an exception is raised if tried to do so), unless provided with mixins and/or a refinement which override all incomplete members of the class. Only abstract classes and (all) mixins can have abstract term members. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
+
+The \code{abstract} local modifier can be used with conjunction with \code{override} modifier for class member definitions. 
+
+Additionally, an annotation \lstinline!@[Abstract]! exists for classes and class members that triggers only warnings in case of instantiation, but does not prevent the instantiation. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{final} local modifier applies to class members definitions and to class definitions. Every \code{final} class member can not be overridden in subclasses. Every \code{final} class can not be inherited by a class or mixin. Members of final classes are implicitly also final. Note that \code{final} may not be applied to incomplete members, and can not be combined in one modifier list with the \code{sealed} local modifier. 
+
+Additionally, an annotation \lstinline!@[Final]! exists for classes and class members that triggers only warnings in case of inheriting or overriding respectively, but does not prevent the inheritance or overriding respectively. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or mixin is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
+
+Additionally, an annotation \lstinline!@[Sealed]! exists for classes and class members that triggers only warnings in case of inheriting outside the same source file, but does not prevent the inheritance. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{lazy} local modifier applies to value definitions. A \code{lazy} value is initialized the first time it is accessed (which might eventually never happen). Attempting to access a lazy value during its initialization is a blocking invocation until the value is initialized of failed to initialize. If an exception is thrown during initialization, the value is considered uninitialized and the initialization is restarted on later access, re-evaluating its right hand side. 
+
+% TODO: add examples
 
 \end{itemize}
 
