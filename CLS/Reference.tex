@@ -614,7 +614,7 @@ Compound_Type ::= Annot_Type {'with' Annot_Type} [Refinement]
 Refinement    ::= 'refine' '{' Refine_Stat {semi Refine_Stat} '}'
 \end{lstlisting} % TBD: define Refine_Stat syntax
 
-A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and type definitions. 
+A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
 
 If no refinement is given, the type is implicitly equivalent to the same type having an empty refinement. 
 
@@ -1470,6 +1470,7 @@ Constant_Path   ::= Const_Selector {'::' Const_Selector}
 Module_Selector ::= constant_id [Vendor_Arg]
 Const_Selector  ::= constant_id
 Vendor_Arg      ::= '~[' vendor_domain ']'
+vendor_domain   ::= variable_id {'.' variable_id}
 \end{lstlisting}
 
 A use clause has the form \lstinline!use $p$::$I$!, where $p$ is a path to the containing type of the imported entity (either a module or another class), and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}
@@ -2118,9 +2119,8 @@ If an object definition is preceded by a class definition of the same name in th
 \label{sec:module-definitions}
 
 \syntax\begin{lstlisting}
-Module_Def  ::= constant_id [Vendor] {'::' constant_id} 
+Module_Def  ::= constant_id [Vendor_Arg] {'::' constant_id} 
                 [semi] {Module_Expr}
-Vendor      ::= '~[' variable_id {'.' variable_id} ']'
 Module_Expr ::= Expr
               | Implements_Expr
               | Const_Def
@@ -2141,10 +2141,7 @@ Modifiers (\sref{sec:modifiers}) are available in the same way as in class defin
 \syntax\begin{lstlisting}
 Mixin_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi] 
                {Mixin_Expr}
-Mixin_Expr ::= Ctor_Expr
-             | Dtor_Expr
-             | Clone_Expr
-             | Includes_Expr
+Mixin_Expr ::= Includes_Expr
              | Prepend_Expr
              | Implements_Expr
              | Expr
@@ -2158,15 +2155,58 @@ Mixin_Expr ::= Ctor_Expr
              | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
+A mixin is a class that is meant to be injected into some other class as a mixin (including another mixins). Unlike normal classes, mixins can not be instantiated alone. 
+
+Assume a mixin $D$ defines some aspect of an instance $x$ of type $C$ (i.e. $D$ is a base class of $C$). Then the {\em actual supertype} of $D$ in $x$ is the compound type consisting of all the base classes in $\lin{C}$ that succeed $D$. The actual super type gives the context for resolving a \code{super} reference in a mixin (\sref{sec:self-this-super}). Note that the actual supertype depends on the type to which the mixin is added in a mixin composition; it is not statically known at the time the mixin is defined (the mixin must exist before being added anywhere). 
+
+If $D$ is not a mixin, then its actual supertype is simply its least proper supertype (which is statically known). 
+
+\example The following mixin defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The mixin also requires the self-type to be \lstinline[mathescape=false]!$T!. 
+\begin{lstlisting}[mathescape=false]
+mixin Comparable:[$T <: Comparable:[$T]]
+  requires $T
+  operator < (that: $T): Boolean end
+  operator <=(that: $T): Boolean := self < that || self = that
+  operator > (that: $T): Boolean := that < self
+  operator >=(that: $T): Boolean := that <= self
+end mixin
+\end{lstlisting}
 
 \subsection{Refinements}
 \label{sec:refinements}
 
+Syntax of refinements is given in section about compound types (\sref{sec:compound-types}). 
+
+Refinements in Coral are a special kind of mixins. There are two cases in which refinements may appear -- as nameless extensions to other types, or as a named mixin that has the ability to locally override or extend another type. The actual meaning depends on the usage of a refinement (see also \sref{sec:use-expressions}).
+
+% TODO: clear the syntaxes of declarations & definitions to be able to specify on a syntax level what can appear in a refinement
+
 \section{Protocols}
 \label{sec:protocols}
 
+\syntax\begin{lstlisting}
+Pro_Def         ::= constant_id [Type_Param_Clause]
+                    [Superclass] [semi] {Pro_Expr}
+Pro_Expr        ::= Dcl
+Implements_Expr ::= 'implements' Pro_Arg {',' Pro_Arg}
+Pro_Arg         ::= Simple_Type [Type_Args]
+\end{lstlisting}
+
+% TODO: after syntaxes are cleared, replace Dcl with a subset with only function declarations
+
+Protocols are classes that are abstract and can contain only abstract member declarations. Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}''. 
+
 \section{Interfaces}
 \label{sec:interfaces}
+
+\syntax\begin{lstlisting}
+Ifc_Def  ::= '[' Ifc_Kind ']' constant_id [Type_Param_Clause] 
+             [Superclass] [semi] {Ifc_Expr}
+Ifc_Kind ::= 'class' | 'mixin'
+Ifc_Expr ::= Dcl
+\end{lstlisting}
+
+Interfaces are filtered versions of classes with only declarations. Interfaces can be generated from classes or mixins by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols. 
 
 \section{Unions}
 \label{sec:unions}
@@ -2198,6 +2238,10 @@ Mixin_Expr ::= Ctor_Expr
 \section{Designators}
 
 \section{Self, This \& Super}
+\label{sec:self-this-super}
+
+\section{Use Expressions}
+\label{sec:use-expressions}
 
 \section{Function Applications}
 \label{sec:function-applications}
