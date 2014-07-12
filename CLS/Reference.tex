@@ -2290,7 +2290,7 @@ Indexed_Class_Expr ::= Class_Expr
                      | Indexed_By_Clause
 Indexed_By_Clause  ::= 'indexed-with' Indexing_Expr
 Indexing_Expr      ::= '{|' Index_Param {',' Index_Param} '|'
-                       Index_Exprs '}'
+                       [Index_Exprs] '}'
 Index_Exprs        ::= Index_Expr {[semi] Index_Expr}
 Index_Expr         ::= Index_Var Index_Op Index_Val
                      | Index_Val Index_Op Index_Var
@@ -2332,6 +2332,8 @@ See references of these ``sort'' types for more details on their particular orde
 ``Sorts'' are the types allowed as types of {\em indexing variables} (see \code{Index_Param} syntax). If no type is specified, \code{Integer} ``sort'' is implied. 
 
 For the mentioned reasons, \code{Dep_Sort_Val} (used in \sref{sec:dependent-types}) are values that are members of ``sorts''. 
+
+Note that the \code{Index_Exprs} are optional -- meaning that the entire ``sort'' is used for indexing, not only a subset of it. 
 
 \paragraph{\em Indexing Operators}
 Indexing operators used to declare indexing constraints are the following for the \code{Index_Op} syntax:
