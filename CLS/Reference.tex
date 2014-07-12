@@ -74,21 +74,21 @@ class       clone       cloned      constant    constructor
 declare     def         destructor  do          else
 elsif       end         ensure      enum        final
 for         for-some    function    get         goto
-if          implements  implicit    in          include
-interface   is          lazy        let         loop
-match       memoize     message     method      mixin
-module      native      next        nil         no
-object      of          opaque      operator    out
-override    prepend     private     property    protected
-protocol    public      raise       range       record
-redo        refine      rescue      retry       return
-requires    sealed      self        set         singleton-type
-skip        step        struct      super       template
-test        then        this        throw       transparent
-type        undef       unless      until       union
-unit-of-measure         use         val         var
-yes         weak        when        while       with
-yield
+if          indexed-with            implements  implicit
+in          include     interface   is          lazy
+let         loop        match       memoize     message
+method      mixin       module      native      next
+nil         no          object      of          opaque
+operator    out         override    prepend     private
+property    protected   protocol    public      raise
+range       record      redo        refine      rescue
+retry       return      requires    sealed      self
+set         singleton-type          skip        step
+struct      super       template    test        then
+this        throw       transparent type        undef
+unless      until       union       unit-of-measure
+use         val         var         yes         weak
+when        while       with        yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -126,7 +126,7 @@ The following character sequences are the operators recognized by Coral.
 and    !      not    ^^     xor    |      &      ^      ~      .. 
 ...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
 :>     <<|    |>>    <|     |>     (      )      [      ]      { 
-}      .      [<     >]     >:     .?     .!
+}      .      [<     >]     >:     .?     .!     @{
 \end{lstlisting}
 
 Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
@@ -670,9 +670,26 @@ Nullable_Mod  ::= '?' | '!'
 
 A nullable type has the form \lstinline!$T$?! or \lstinline@$T$!@, where ``\code{?}'' denotes explicitly a nullable type, and ``\code{!}'' denotes explicitly not-nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Coral types are implicitly not-nullable, meaning it's not possible to pass \code{nil} where an instance of $T$ is expected, unless $T$ is of course \code{Nothing}. Nullability (\sref{sec:nullability}) is one of the intrinsic properties of every class type. 
 
-Explicitly nullable types are shorthands for \lstinline!Option:[$T$]!. Explicitly not-nullable types are given special care and are handled by an intrinsic anonymous subtype of $T$, which is explicitly not-nullable, overriding the preference of $T$. Explicit nullability of already nullable types is redundant, as is explicit non-nullability of already not-nullable types. 
+Explicitly nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly nullable, overriding the preference of $T$. Explicitly not-nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly not-nullable, overriding the preference of $T$. Explicit nullability of already nullable types is redundant, as is explicit non-nullability of already not-nullable types. Explicit nullability of the \code{Option} type is also redundant and is in fact ignored. 
 
 Nullable types in this form can appear as types of variables, parameters and return types. 
+
+\subsection{Dependent Types}
+\label{sec:dependent-types}
+
+\syntax\begin{lstlisting}
+Dep_Type ::= Simple_Type Dep_Args
+Dep_Args ::= '@{' Dep_Arg {',' Dep_Arg} '}'
+Dep_Arg  ::= variable_id | Dep_Sort_Val
+\end{lstlisting}
+
+Dependent types in Coral are implemented by simple indexed types. Dependent types are explained in greater detail in \sref{sec:dependent-types-decl}. 
+
+\example The following are examples of dependent types representing the number 42 and all strings of length 42:
+\begin{lstlisting}
+Integer@{42}
+String@{42}
+\end{lstlisting}
 
 \section{Non-Value Types}
 
@@ -2236,19 +2253,208 @@ Union types represent multiple types, possibly unrelated. Union types are abstra
 \label{sec:enums}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= constant_id [Superclass] 'is' ['bitfield'] 'enum' 'of'
-                   '(' Enum_Field {semi Enum_Field} ')'
+Const_Type_Def ::= constant_id [Superclass] 'is' ['bitfield'] 
+                   'enum' '(' Enum_Field {semi Enum_Field} ')'
 Enum_Field     ::= constant_id [':=' scalar_literal]
 \end{lstlisting}
 
-% TODO: if class formal parameters will be introduced, add them to enums as well
+% TODO: when primary constructors are introduced, add them to enums as well
 
-Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. 
+Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
 
-\section{Range Types}
+\section{Dependent Type Declarations}
+\label{sec:dependent-types-decl}
+
+Dependent types consist of three kinds of types in Coral. First, there are {\em indexed types} (\sref{sec:indexed-types}), that are at the core of dependent types. Not every type in Coral is indexed. Secondly, there are two types that are similar and sometimes interchangeable: {\em constrained types} (\sref{sec:constrained-types}) and {\em range types} (\sref{sec:range-types}), each making use of indexed types in a specific way. Arguments applied to these types are then described in \sref{sec:dependent-types}. 
+
+Dependent types are neither concrete nor abstract. They only add a way of indexing existing types and defining subsets of all instances. As a side-effect of this restriction, variables involved in dependent type declarations are not involved in the rest of the class declarations and definitions, and for that reason don't need to be distinguished from other variables. 
+
+Dependent types (\sref{sec:dependent-types}) are allowed in these positions: 
+\begin{enumerate}
+\item Function parameters. 
+\item Function return types. 
+\item Variable declarations and definitions. 
+\item Type conversions. 
+\end{enumerate}
+
+\subsection{Indexed Types}
+\label{sec:indexed-types}
+
+\syntax\begin{lstlisting}
+Class_Def          ::= constant_id [Type_Param_Clause] 
+                       {Dep_Params} [Superclass] [semi] 
+                       {Indexed_Class_Expr}
+Dep_Params         ::= '@{' Index_Param {',' Index_Param} '}'
+Index_Param        ::= variable_id [':' Simple_Type]
+Indexed_Class_Expr ::= Class_Expr
+                     | Indexed_By_Clause
+Indexed_By_Clause  ::= 'indexed-with' Indexing_Expr
+Indexing_Expr      ::= '{|' Index_Param {',' Index_Param} '|'
+                       Index_Exprs '}'
+Index_Exprs        ::= Index_Expr {[semi] Index_Expr}
+Index_Expr         ::= Index_Var Index_Op Index_Val
+                     | Index_Val Index_Op Index_Var
+                     | '(' Index_Var Index_Op Index_Var ')'
+                     | '(' Index_Expr [Index_Con Index_Expr] ')'
+Index_Var          ::= variable_id 
+                     | ivar_id
+                     | 'self'
+Index_Val          ::= variable_id 
+                     | ivar_id 
+                     | literal
+                     | constant_id
+                     | Index_Fun '(' Index_Var {',' Index_Var} ')'
+\end{lstlisting}
+
+Indexed types declare what their index is, based on combinations of their input (indexing) variables, instance variables and operators and functions working with these. Since the scope of testing these {\em indexing constraints} is limited to cases listed in \sref{sec:dependent-types-decl}, independent on the intrinsic state of the instances, the instances may appear in states that do not conform to the constraints in between each indexing constraint test, but to pass as the dependent type, they must conform to the indexing constraint at the time the test is invoked, that is: 
+\begin{enumerate}
+\item Method resolution time (function parameters). 
+\item Returning from a function (function return types). 
+\item Getting assigned to a variable. 
+\item Getting converted to a type (unless the conversion is implicit to a different type). 
+\end{enumerate}
+
+Note that implicit conversions (\sref{sec:implicit-conversions}) can't apply to dependent types, since that would be a conversion from the same type to a subset of the same type. 
+
+\paragraph{\em Sorts}
+This part of Coral is inspired by the ATS language. ``Sorts'' are a types for which the language knows ordering of their values implicitly:
+\begin{itemize}
+\item \code{Boolean}.
+\item \code{Integer}.
+\item \code{Float}.
+\item \code{Char}.
+\item Every \code{enum} type (\sref{sec:enums}), where the ordering is given by the order in which each enumerated value appears. 
+\item Every type constrained from a pre-existing sort (\sref{sec:constrained-types}).
+\end{itemize}
+
+See references of these ``sort'' types for more details on their particular ordering. 
+
+``Sorts'' are the types allowed as types of {\em indexing variables} (see \code{Index_Param} syntax). If no type is specified, \code{Integer} ``sort'' is implied. 
+
+For the mentioned reasons, \code{Dep_Sort_Val} (used in \sref{sec:dependent-types}) are values that are members of ``sorts''. 
+
+\paragraph{\em Indexing Operators}
+Indexing operators used to declare indexing constraints are the following for the \code{Index_Op} syntax:
+\begin{itemize}
+\item \lstinline!~! (bitwise negation): \lstinline!(Number) $\mapsto$ Number!
+\item \lstinline!+! (addition): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!-! (subtraction): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!*! (multiplication): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!**! (exponentiation): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!/! (division): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!>! (greater than): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!>=! (greater than or equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!<! (less than): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!<=! (less than or equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!=! (equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!)
+\item \lstinline!<>! (not equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline@!=@ (not equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline@!@ (boolean negation): \lstinline!(Boolean) $\mapsto$ Boolean!
+\item \lstinline!||! (boolean disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!&&! (boolean conjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!^^! (boolean exclusive disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!|! (bitwise or): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!&! (bitwise and): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!^! (bitwise xor): \lstinline!(Number, Number) $\mapsto$ Number!
+\end{itemize}
+These operators are static\footnote{That is, not overridable by user programs.}. In the list, \code{Number} can also be replaced by \code{Char}, but not by \code{Complex}. 
+
+\paragraph{\em Indexing Functions}
+Functions that can be used to constrain the indexing are also static and limited to work only with a restricted number of types:
+\begin{itemize}
+\item \lstinline!size: (List) $\mapsto$ Number!
+\item \lstinline!length: (String) $\mapsto$ Number!
+\item \lstinline!empty?: (List) $\mapsto$ Boolean!
+\item \lstinline!empty?: (String) $\mapsto$ Boolean!
+\item \lstinline!max: (*Number) $\mapsto$ Number!
+\item \lstinline!min: (*Number) $\mapsto$ Number!
+\item \lstinline!avg: (*Number) $\mapsto$ Number!
+\item \lstinline!sum: (*Number) $\mapsto$ Number!
+\item \lstinline!abs: (*Number) $\mapsto$ Number!
+\item \lstinline!sgn: (Number) $\mapsto$ Number!
+\item \lstinline!log: (Number, Number) $\mapsto$ Number!
+\item \lstinline!ln: (Number) $\mapsto$ Number!
+\item \lstinline!even?: (Number) $\mapsto$ Boolean!
+\item \lstinline!odd?: (Number) $\mapsto$ Boolean!
+\item \lstinline!concat: (*String) $\mapsto$ String!
+\end{itemize}
+
+\paragraph{\em Indexing Constraint Concatenation}
+If there are multiple indexing constraints separated by the \lstinline![semi]! syntax, boolean conjunction is implied. Indexing constraints may be joined by a different boolean operations (\code{Index_Con}): 
+\begin{itemize}
+\item \lstinline!||! (boolean disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!&&! (boolean conjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!^^! (boolean exclusive disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\end{itemize}
+
+\example The following is an example on how a \code{String} type might index itself: 
+\begin{lstlisting}
+class String @{length: Integer}
+  indexed-with {|length| @length = length}
+end
+\end{lstlisting}
+
+\subsection{Constrained Types}
+\label{sec:constrained-types}
+
+\syntax\begin{lstlisting}
+Type_Def      ::= constant_id [Type_Param_Clause] ':=' 
+                  Type [Dep_Params_Constr]
+Dep_Params_C  ::= '@{|' Index_Param {','} Index_Param '|'
+                  [Index_Exprs_C] '}'
+Index_Exprs_C ::= Index_Expr_C {[semi] Index_Expr_C}
+Index_Expr_C  ::= Index_Var_C Index_Op Index_Val_C
+                | Index_Val_C Index_Op Index_Var_C
+                | '(' Index_Var_C Index_Op Index_Var_C ')'
+                | '(' Index_Expr_C 
+                  [Index_Con Index_Expr_C] ')'
+Index_Var_C   ::= variable_id
+Index_Val_C   ::= variable_id
+                | literal
+                | constant_id
+                | Index_Fun '(' Index_Var_C 
+                  {',' Index_Var_C} ')'
+\end{lstlisting}
+
+Constrained types are basically aliases to indexed types with optionally further restricted indexing, which can only make use of the existing indexing constraints of the base type, using the indexing variables. No additional instance variable can be constrained by a constrained type directly. 
+
+The type of the indexing variable is implied to be the same as of the indexed type. 
+
+\example Here is an example of how Coral might declare the \code{Char} type:
+\begin{lstlisting}
+type Char := String @{|length| length = 1}
+\end{lstlisting}
+Notice how the constraint only uses the already existing indexing variable. 
+
+\example Here is an example of a different constrained type: 
+\begin{lstlisting}
+type Even_Positive_Ints ::= Integer @{|i| even?(i); i >= 0}
+\end{lstlisting}
+This constrained type declares \code{Even_Positive_Ints} to be positive integers that are even at the same time. 
+
+\subsection{Range Types}
 \label{sec:range-types}
 
+\syntax\begin{lstlisting}
+Const_Type_Def ::= constant_id 'is' 'range' 
+                   (Range_Expr 
+                 | '(' Range_Expr ')' [':' constant_id])
+\end{lstlisting}
 
+Range types are similar to constrained types, but limited in a few ways: they can constrain only indexed types that are indexed with exactly one indexing variable. The range expression is converted into the corresponding indexing constraint. 
+
+\example An example of a constrained type interchangeable with a range type:
+\begin{lstlisting}
+type Positive_Ints ::= Integer @{|i| i >= 0}
+type Positive_Ints is range 
+  (0 .. Integer::Max) : Integer 
+end type
+type Positive_Ints is range
+  0 .. Integer::Max
+end type
+\end{lstlisting}
+
+Types that do not require the ``\code{constant_id}'' are those that are ``sorts'' at the same time, so that the indexed type can be inferred. 
 
 \section{Units of Measure}
 \label{sec:units-of-measure}
@@ -2348,6 +2554,7 @@ Enums (short for Enumerations) are types that contain constants. Bitfield enums 
 
 \section{Rescue \& Ensure Expressions}
 
+
 \section{Throw \& Catch Expressions}
 
 \section{Anonymous Functions}
@@ -2357,6 +2564,7 @@ Enums (short for Enumerations) are types that contain constants. Bitfield enums 
 \subsection{Explicit Conversions}
 
 \subsection{Implicit Conversions}
+\label{sec:implicit-conversions}
 
 \section{Workflows}
 \label{sec:workflows}
