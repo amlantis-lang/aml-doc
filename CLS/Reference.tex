@@ -2293,7 +2293,7 @@ Indexing_Expr      ::= '{|' Index_Param {',' Index_Param} '|'
                        [Index_Exprs] '}'
 Index_Exprs        ::= Index_Expr {[semi] Index_Expr}
 Index_Expr         ::= Index_Var Index_Op Index_Val
-                     | Index_Val Index_Op Index_Var
+                     | Index_Val [Index_Op Index_Var]
                      | '(' Index_Var Index_Op Index_Var ')'
                      | '(' Index_Expr [Index_Con Index_Expr] ')'
 Index_Var          ::= variable_id 
@@ -2379,6 +2379,9 @@ Functions that can be used to constrain the indexing are also static and limited
 \item \lstinline!even?: (Number) $\mapsto$ Boolean!
 \item \lstinline!odd?: (Number) $\mapsto$ Boolean!
 \item \lstinline!concat: (*String) $\mapsto$ String!
+\item \lstinline!coalesce: (*Object) $\mapsto$ Object!
+\item \lstinline!lowercase: (String) $\mapsto$ String!
+\item \lstinline!uppercase: (String) $\mapsto$ String!
 \end{itemize}
 
 \paragraph{\em Indexing Constraint Concatenation}
@@ -2406,7 +2409,7 @@ Dep_Params_C  ::= '@{|' Index_Param {','} Index_Param '|'
                   [Index_Exprs_C] '}'
 Index_Exprs_C ::= Index_Expr_C {[semi] Index_Expr_C}
 Index_Expr_C  ::= Index_Var_C Index_Op Index_Val_C
-                | Index_Val_C Index_Op Index_Var_C
+                | Index_Val_C [Index_Op Index_Var_C]
                 | '(' Index_Var_C Index_Op Index_Var_C ')'
                 | '(' Index_Expr_C 
                   [Index_Con Index_Expr_C] ')'
