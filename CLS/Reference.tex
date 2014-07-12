@@ -228,10 +228,10 @@ float_literal ::= ['+' | '-'] non_zero_digit
 		{['_'] bin_digit} '.' bin_digit {['_'] bin_digit}
 		[float_type]
 exponent_part ::= 'e' ['+' | '-'] digit {['_'] digit}
-float_type    ::= 'f' | 'd' | 'q'
+float_type    ::= 'f' | 'd' | 'q' | 'df'
 \end{lstlisting}
 
-Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. 
+Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Floating point literals that have \lstinline@float_type@ of ``\code{dp}'' are decimal fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly fixed point literals. From user's perspective, this is only an implementation detail. 
 
 \begin{enumerate}
 
