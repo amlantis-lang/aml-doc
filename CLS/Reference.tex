@@ -2344,6 +2344,7 @@ Indexing operators used to declare indexing constraints are the following for th
 \item \lstinline!*! (multiplication): \lstinline!(Number, Number) $\mapsto$ Number!
 \item \lstinline!**! (exponentiation): \lstinline!(Number, Number) $\mapsto$ Number!
 \item \lstinline!/! (division): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!%! (modulo): \lstinline!(Number, Number) $\mapsto$ Number!
 \item \lstinline!>! (greater than): \lstinline!(Number, Number) $\mapsto$ Boolean!
 \item \lstinline!>=! (greater than or equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
 \item \lstinline!<! (less than): \lstinline!(Number, Number) $\mapsto$ Boolean!
@@ -2433,7 +2434,7 @@ Notice how the constraint only uses the already existing indexing variable.
 
 \example Here is an example of a different constrained type: 
 \begin{lstlisting}
-type Even_Positive_Ints ::= Integer @{|i| even?(i); i >= 0}
+type Even_Positive_Integers ::= Integer @{|i| even?(i); i >= 0}
 \end{lstlisting}
 This constrained type declares \code{Even_Positive_Ints} to be positive integers that are even at the same time. 
 
@@ -2450,12 +2451,12 @@ Range types are similar to constrained types, but limited in a few ways: they ca
 
 \example An example of a constrained type interchangeable with a range type:
 \begin{lstlisting}
-type Positive_Ints ::= Integer @{|i| i >= 0}
-type Positive_Ints is range 
-  (0 .. Integer::Max) : Integer 
+type Positive_Integers ::= Integer @{|i| i >= 0}
+type Positive_Integers is range 
+  (0 .. +Integer::Infinity) : Integer 
 end type
-type Positive_Ints is range
-  0 .. Integer::Max
+type Positive_Integers is range
+  0 .. +Integer::Infinity
 end type
 \end{lstlisting}
 
