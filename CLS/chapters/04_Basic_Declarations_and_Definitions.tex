@@ -1,0 +1,712 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Basic Declarations \& Definitions}
+
+\syntax\begin{lstlisting}
+Dcl         ::= [Val_Mod] 'val' Val_Dcl
+              | 'var' Var_Dcl
+              | 'def' Def_Dcl
+              | 'type' Type_Dcl
+Pat_Var_Def ::= [Val_Mod] 'val' Pat_Def
+              | 'var' Var_Def
+              | 'let' ['!'] Let_Def
+Def         ::= Pat_Var_Def
+              | 'def' Fun_Def
+              | 'type' Type_Def
+\end{lstlisting}
+
+A {\em declaration} introduces names and assigns them types. Using another words, declarations are abstract members, working sort of like header files in C. 
+
+A {\em definition} introduces names that denote terms or types. Definitions are the implementations of declarations. 
+
+Both declarations and definitions produce {\em bindings} that associate type names with type definitions or bounds, and that associate term names with types. 
+
+Even more simply put, declarations declare a binding with a type (or type-less), and definition defines the term behind that binding (along with the binding). 
+
+% TBD: differences between val, var, def, type, let
+% val: values, immutable variables, patterns, lazy values, constant values, parameterless functions that return a value
+% var: mutable variables, patterns
+% def: functions
+% type: types, aliases
+% let: immutable values, patterns
+% let!: immutable values (see async...)
+
+\section{Value Declarations \& Definitions}
+\label{sec:value-dcl-def}
+
+A value declaration \lstinline@val $x$ : $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$ : $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$ : $T$+ introduces $x$ as a name of a class instance value of type $T$. 
+
+A value definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
+
+A value in this sense\footnote{Everything in Coral is a value -- remember, Coral is also a functional language, to some extent.} is an immutable variable. A declared value can be assigned just once\footnote{A similar way that \lstinline[language=Java]@final@ variables or members in Java can be assigned just once, but Java furthermore requires that this assignment will happen in every code path, Coral does not impose such requirement.}, a defined value is already assigned from its definition. 
+
+The value type $T$ may be always omitted, in that case the type is inferred and bound to the name. If a type $T$ is omitted, the type of expression $e$ is assumed. If a type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}). 
+
+Evaluation of the value definition implies evaluation of its right-hand side $e$, unless it has a modifier \code{lazy} -- in that case, evaluation is deferred to the first time the value is accessed. 
+
+A {\em lazy value} is of the form
+\begin{quote}\begin{lstlisting}
+lazy val $x$ : $T$ := $e$
+\end{lstlisting}\end{quote}
+
+A lazy value may only be defined, and a value of the same name (binding) may be declared prior to the value definition, but never as a lazy value. 
+
+The effect of the value definition is to bind $x$ to the value of $e$ converted to type $T$. 
+
+A {\em constant value definition} is of the form 
+\begin{quote}\begin{lstlisting}
+let $x$ : $T$ := $e$
+\end{lstlisting}\end{quote}
+where $e$ is an expression that is supposed to be treated as constant in the same block from its occurrence on. Values defined with \code{let} have certain limitations and properties:
+
+\begin{enumerate}
+\item They can't use patterns as a name. 
+\item They can't be lazy. 
+\item They can't be used in a declaration, only in a definition. 
+\item They can be used to redefine a variable (the name is then treated as a new binding in the scope). 
+\item They can't define (class) instance variables. 
+\item They can be used in workflows (\sref{sec:workflows}).\footnote{A pragma that would turn all values into lazy values might exist, and lazy values should never appear in workflows, so that's why \code{val} should not be allowed in workflows.}
+\end{enumerate}
+
+The type $T$ may be omitted. 
+
+Value declarations \& definitions with the type $T$ omitted are of the form
+\begin{quote}\begin{lstlisting}
+val $x$
+val @$x$
+val @@$x$
+val $x$ := $e$
+val @$x$ := $e$
+val @@$x$ := $e$
+let $x$ := $e$
+\end{lstlisting}\end{quote}
+
+A value declaration without any type is basically only declaring the name, so that a binding is introduced and the actual value is for another code to define.\footnote{Usually, that another code should be a \code{constructor} or the class-level block in another file, maybe.}
+
+A value definition can alternatively have a pattern (\sref{sec:patterns}) as left-hand side (the name). If $p$ is a pattern other than a simple name or a name followed by a colon and a type, then the value definition \lstinline@val $p$ := $e$@ is expanded as follows: 
+
+\begin{enumerate}
+\item
+If the pattern $p$ has bound variables $x_1 \commadots x_n$ for some $n > 1$:
+\begin{lstlisting}[escapechar=@]
+val $x$@\$@ := match $e$
+  when $p$ then ($x_1 \commadots x_n$)
+end match
+val $x_1$ := $x$@\$@[$1$]
+$\ldots$
+val $x_n$ := $x$@\$@[$n$]
+\end{lstlisting}
+
+\item
+If $p$ has exactly one unique bound variable $x$:
+\begin{lstlisting}
+val $x$ := match $e$
+  when $p$ then $x$
+end match
+\end{lstlisting}
+
+\item
+If $p$ has no bound variables:
+\begin{lstlisting}
+match $e$
+  when $p$ then ()
+end match
+\end{lstlisting}
+\end{enumerate}
+
+\example The following are examples of value definitions. 
+
+\begin{lstlisting}
+val pi := 3.14159
+val pi : Double := 3.14159
+val Some(x) := f()
+val x ~> xs := my_list
+\end{lstlisting}
+
+The last two definitions have the following expansions:
+
+\begin{lstlisting}[escapechar=@]
+val x := match f()
+  when Some(x) then x
+end match
+
+val x@\$@ := match my_list
+  when x ~> xs then (x, xs)
+end match
+val x := x@\$@[1]
+val xs := x@\$@[2]
+\end{lstlisting}
+
+The name of any declared or defined value must not end with \lstinline@=@. 
+
+A value declaration ~\lstinline@val $x_1 \commadots x_n$ : $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$ : $T$; $\ldots$; val $x_n$ : $T$@. A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1$ := $e$; $\ldots$; val $p_n$ := $e$@. A value definition ~\lstinline@val $p_1 \commadots p_n : T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1 : T$ := $e$; $\ldots$; val $p_n : T$ := $e$@.
+
+\section{Variable Declarations \& Definitions}
+\label{sec:variable-dcl-def}
+
+A variable declaration \lstinline@var $x$ : $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$ : $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$ : $T$+ introduces a mutable class instance variable of type $T$. 
+
+A variable definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
+
+Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dcl-def}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
+
+The name of any declared or defined variable must not end with \lstinline@=@. 
+
+A variable declaration ~\lstinline@var $x_1 \commadots x_n$ : $T$@~ is a
+shorthand for the sequence of variable declarations ~\lstinline@var $x_1$ : $T$; $\ldots$; var $x_n$ : $T$@. A variable definition ~\lstinline@var $x_1 \commadots x_n$ = $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ := $e$; $\ldots$; var $x_n$ := $e$@. A variable definition ~\lstinline@var $x_1 \commadots x_n : T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1 : T$ := $e$; $\ldots$; var $x_n : T$ := $e$@.
+
+\section{Property Declarations \& Definitions}
+\label{sec:property-dec-dfn}
+
+\syntax\begin{lstlisting}
+Prop_Dcl   ::= 'property' ['(' Prop_Specs ')'] simple_id 
+             [':' Type]
+Prop_Specs ::= Prop_Spec {',' Prop_Spec}
+Prop_Spec  ::= ([Access_Modifier] ('get' | 'set')) | 'weak'
+Prop_Def   ::= 'property' ['(' Prop_Specs ')'] simple_id 
+             [':' Type]
+             '{' Prop_Impl {semi Prop_Impl} '}'
+Prop_Impl  ::= ('get' [Prop_Get_Impl])
+             | ('set' [Prop_Set_Impl])
+             | ('val' ':=' Expr)
+             | ('var' ':=' Expr)
+\end{lstlisting} % TBD: syntax of property implementations
+
+A property declaration \lstinline@property $x$ : $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
+
+A property definition \lstinline@property $x$ : $T$ {get $\ldots$; set $\ldots$}@ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behavior and storage of a property, but may as well opt-in for auto-generated implementation, which is: 
+
+\begin{enumerate}
+\item 
+Storage of the property's value is in an instance variable (or a class instance variable in case of class properties) of the same name as is the name of the property: \lstinline@property $x$@ is stored in an instance variable \lstinline+@$x$+. 
+
+\item
+Properties defined with only \code{get} are stored in immutable instance variables (\sref{sec:value-dcl-def}). 
+
+\item
+Properties defined with \code{set}\footnote{It is also possible to declare/define properties that are \code{set}-only. That makes them {\em write-only}, as opposed to {\em read-only} properties with \code{get}-only.} are stored in mutable instance variables (\sref{sec:variable-dcl-def}). 
+
+\item
+Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$ : $T$@ is stored in an instance of type \lstinline@Weak_Reference:[$T$]@. 
+
+\end{enumerate}
+
+Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x$=@, declared as follows:
+
+\begin{lstlisting}
+def $x$ (): $T$; end
+def $x$= (y: $T$): (); end
+\end{lstlisting}
+
+Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation. 
+
+\section{Type Declarations \& Aliases}
+
+\syntax\begin{lstlisting}
+Dcl      ::= 'type' Type_Dcl
+Type_Dcl ::= constant_id [Type_Param_Clause] ['>:' Type] 
+           ['<:' Type]
+Def      ::= 'type' Type_Def
+Type_Def ::= constant_id [Type_Param_Clause] ':=' Type
+\end{lstlisting}
+
+A {\em type declaration} \lstinline@type $t$:[$tps$] >: $L$ <: $U$@ declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@:[$tps$]@ is omitted, $t$ abstracts over first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
+
+A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$:[$tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $tps$ itself. 
+
+It is an error if a type alias refers recursively to the defined type constructor itself. 
+
+\example The following are legal type declarations and aliases:
+\begin{lstlisting}[escapechar=@]
+type Integer_List := List:[Integer]
+type T <: Comparable:[T]
+type Two:[@\$@A] := Tuple_2:[@\$@A, @\$@A]
+type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
+\end{lstlisting}
+
+\section{Type Parameters}
+
+\syntax\begin{lstlisting}
+Type_Param_Clause  ::= ':[' Variant_Type_Param 
+                     {',' Variant_Type_Param} ']'
+Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
+Type_Param         ::= (constant_id | '_') [Type_param_Clause]
+                     ['>:' Type] ['<:' Type]
+\end{lstlisting}
+
+Type parameters appear in type definitions, class definitions and function definitions. 
+
+The most general form of a first-order type parameter is ~\lstinline!@[$a_1$]$\ldots$@[$a_n]$ $\pm$ $t$ >: $L$ <: $U$!. $L$ is a lower bound and $U$ is an upper bound. These bounds constrain possible type arguments for the parameter. It is an error if $L$ does not conform to $U$.\footnote{This is sometimes detectable as soon as during compilation.} Then, $\pm$ is a {\em variance} (\sref{sec:variance-of-type-parameters}), i.e. an optional prefix of either \lstinline@+@ or \lstinline@-@. The type parameter may be preceded by one or more annotation applications (\sref{sec:annotated-exprs} \& \sref{sec:annotations}).
+
+\example The following are some well-formed type parameter clauses:
+\begin{lstlisting}[escapechar=`]
+:[`\$`S, `\$`T]
+:[@[Specialized] `\$`S, `\$`T]
+:[`\$`Ex <: Raisable]
+:[`\$`A <: Comparable:[`\$`B], `\$`B <: `\$`A]
+\end{lstlisting}
+
+% TBD! Not complete.
+
+\section{Variance of Type Parameters}
+\label{sec:variance-of-type-parameters}
+
+Variance annotations indicate how instances of parameterised types relate with respect to subtyping (\sref{sec:conformance}). A ``\lstinline!+!'' variance indicates a covariant dependency, a ``\lstinline!-!'' variance indicates a contravariant dependency, and an empty variance indicates an invariant dependency. 
+
+A variance annotation constrains the way the annotated type variable may appear in the type or class which binds the type parameter. 
+
+% TBD! Far from complete, variance is a complex topic. 
+
+\section{Function Declarations \& Definitions}
+
+\syntax\begin{lstlisting}[escapechar=`]
+Dcl           ::= 'def' Fun_Dcl 'end' ['def']
+                | 'message' Fun_Dcl 'end' ['message']
+                | 'function' Fun_Dcl 'end' ['function']
+Fun_Dcl       ::= Fun_Sig ':' Type
+Def           ::= 'def' Fun_Def 'end' ['def']
+                | 'def' Fun_Alt_Def
+                | 'method' Fun_Def 'end' ['method']
+                | 'method' Fun_Alt_Def
+                | 'function' Fun_Def 'end' ['function']
+                | 'function' Fun_Alt_Def
+Fun_Def       ::= Fun_Sig [':' Type] [Fun_Dec] semi Expr
+Fun_Alt_Def   ::= Fun_Sig [':' Type] ':=' Expr
+Fun_Dec       ::= [semi] 'declare' Expr [semi] 'begin'
+Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
+Fun_Tpc       ::= ':[' Type_Param {',' Type_Param} ']'
+Function_Path ::= function_id
+                | 'self' '.' function_id
+                | variable_id '.' function_id
+Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
+Param_Clause  ::= '(' [Params] ')'
+Params        ::= Param {',' Param}
+Param         ::= {Annotation} [Param_Extra] variable_id 
+                [':' Param_Type] [':=' Expr]
+                | Literal
+Param_Extra   ::= [Param_Io] [Param_Rw] ['*' | '**' | '&'] [':']
+Param_Io      ::= 'in' | 'out' | 'in' '+' 'out'
+Param_Rw      ::= 'val' | 'var'
+Param_Type    ::= Type | '`\$`' constant_id | '=>' [Type | '_']
+\end{lstlisting}
+
+% TBD: update Fun_Def to include the optional rescue ... rescue ... ensure
+
+A function declaration has the form of \lstinline@def $f$ $psig$: $T$@, where $f$ is the function's name, $psig$ is its parameter signature and $T$ is its return type. 
+
+A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@:[$tps$]@, followed by zero or more value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
+
+Multiple parameter clauses render curried functions. 
+
+The type of the function body is expected to conform (\sref{sec:conformance}) to the function's declared result type, if one is given. 
+
+An optional type parameter clause $tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
+
+A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an invisible function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
+
+The order in which different kinds of value parameters may appear is as follows:
+\begin{enumerate}
+\item $n$ mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
+
+\item $n$ optional positional parameters (\sref{sec:optional-parameters}): \lstinline@$x$: $T$ := $e$@, where $n \ge 0$. 
+
+\item $n$ repeated parameters (\sref{sec:repeated-parameters}): \lstinline@*$x$: $T$@, where $0 \le n \le 1$. 
+
+\item $n$ post mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
+
+\item $n$ named parameters (\sref{sec:named-parameters}): \lstinline@:$x$ : $T$@ or \lstinline@:$x$ : $T$ := $e$@, where $n \ge 0$. 
+
+\item $n$ captured named parameters (\sref{sec:captured-named-parameters}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
+
+\item $n$ captured block parameters (\sref{sec:captured-block-parameter}): \lstinline@&$x$: $T$@, where $0 \le n \le 1$.
+\end{enumerate}
+
+For every parameter $p_{i,j}$ with a default value expression, a function named 
+\begin{lstlisting}[escapechar=`]
+default`\$`$n$
+\end{lstlisting}
+is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@:[$tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
+
+The scope of a formal value parameter name $x$ comprises all subsequent parameter clauses, as well as the method return type and the function body, if they are given.
+
+\example In the method
+\begin{lstlisting}[escapechar=`]
+def compare:[`\$`T](a: `\$`T := 0)(b: `\$`T := a) := (a = b)
+\end{lstlisting}
+the default expression \code{0} is type-checked with an undefined expected type. When applying \lstinline@compare()@\footnote{Without any explicit arguments.}, the default value \code{0} is inserted and \code{T} is instantiated to \code{Number}. The functions computing the default arguments have the forms\footnote{See, at the moment \lstinline[mathescape=false]!default$2! is called, the parameter \code{a} is already computed and passed as an argument to it.}:
+\begin{lstlisting}[escapechar=`]
+def default`\$`1:[`\$`T]: Number := 0
+def default`\$`2:[`\$`T](a: `\$`T): `\$`T := a
+\end{lstlisting}
+
+Parameters may be optionally flagged with \code{var} and \code{val} keywords, modifying their mutability inside the method. Some combinations are disallowed, as explained in the following sections. All parameters are implicitly \code{val}-flagged, unless the parameter kind implies a \code{var} flag, such as an output parameter (\sref{sec:io-parameters}).
+
+\subsection{By-Name Parameters}
+\label{sec:by-name-parameters}
+
+\syntax\begin{lstlisting}
+Param_Type ::= '=>' [Type | '_']
+\end{lstlisting}
+
+The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function. That is, the argument is evaluated using {\em call-by-name}. 
+
+The by-name modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). The by-name modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
+
+By-name parameters require a specific application (\sref{sec:by-name-arguments}). A by-name parameter bound to a wildcard type ``\lstinline!_!'' matches any type of by-name argument. 
+
+By-name parameters with default value expressions evaluate the default value expression each time the parameter is accessed, unlike optional parameters that evaluate the default value expression only once. 
+
+By-name parameters imply the \code{val} flag, and disallow the \code{var} flag. 
+
+\subsection{Explicit Parameters}
+\label{sec:explicit-parameters}
+
+\syntax\begin{lstlisting}
+Param ::= Literal
+\end{lstlisting}
+
+The parameter may be specified by its literal value. Such parameters may only appear where positional parameters may appear. The type of the parameter is the type of the literal value. Methods with explicit parameters are preferred during method resolution to methods with the same parameter types (\sref{sec:function-applications}), but it is an error if more than one method with explicit parameters match the function application. 
+
+The recommendation for usage of these parameters are: 
+\begin{itemize}
+\item Use explicit parameters with unary methods only. 
+\item If the value is a collection, use an empty collection literal only. 
+\end{itemize}
+
+\example Sample methods that use explicit parameters:
+\begin{lstlisting}
+def factorial (0) := 1
+def factorial (x) := x * factorial(x - 1)
+\end{lstlisting}
+
+Since the parameter has no name to bind to, it is not accessible inside the method body. 
+
+\subsection{Input \& Output Parameters}
+\label{sec:io-parameters}
+
+\syntax\begin{lstlisting}
+Param_Io ::= 'in' | 'out' | 'in' '+' 'out'
+\end{lstlisting}
+
+If no input/output parameter specifier is explicitly available, then the parameter is implicitly an input parameter. Output parameters require a specific application (\sref{sec:io-arguments}).
+
+Output parameters imply \code{var} parameter and is disallowed for \code{val} parameters. Input parameters that are not output parameters at the same time can be both \code{var} and \code{val}. 
+
+\subsection{Positional Parameters}
+\label{sec:positional-parameters}
+
+Positional parameters are of the forms:
+\begin{lstlisting}
+$x$: $T$
+var $x$: $T$
+val $x$: $T$
+in $x$: $T$
+in var $x$: $T$
+in val $x$: $T$
+out $x$: $T$
+out var $x$: $T$
+in+out $x$: $T$
+in+out var $x$: $T$
+$x$: => $T$
+val $x$: => $T$
+in $x$: => $T$
+in val $x$: => $T$
+\end{lstlisting}
+
+Positional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters}) and by-name (\sref{sec:by-name-parameters}). Positional parameters can't have any default value expressions. 
+
+\subsection{Optional Parameters}
+\label{sec:optional-parameters}
+
+Optional parameters are of the forms:
+\begin{lstlisting}
+$x$: $T$ := $e$
+var $x$: $T$ := $e$
+val $x$: $T$ := $e$
+in $x$: $T$ := $e$
+in var $x$: $T$ := $e$
+in val $x$: $T$ := $e$
+$x$: => $T$ := $e$
+val $x$: => $T$ := $e$
+in $x$: => $T$ := $e$
+in val $x$: => $T$ := $e$
+\end{lstlisting}
+
+Optional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters})\footnote{Optional parameters are always ``input'', so that declaration is always redundant.} and by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have a {\em default value expressions} and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for output parameters and repeated parameters. 
+
+\subsection{Repeated Parameters}
+\label{sec:repeated-parameters}
+
+Repeated parameters are of the forms:
+\begin{lstlisting}
+*$x$: $T$
+var *$x$: $T$
+val *$x$: $T$
+in *$x$: $T$
+in var *$x$: $T$
+in val *$x$: $T$
+\end{lstlisting}
+
+Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em repeated} parameter inside the method is then a list type \lstinline!List:[$T$]!. Methods with repeated parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). 
+
+If a repeated parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the list. Repeated parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
+
+\example The following method definition computes the sum of the squares of a variable number of integer arguments.
+\begin{lstlisting}
+def sum (*args: Integer): Integer
+declare
+  var result := 0
+begin
+  for arg in args loop
+    result += arg ** 2
+  end loop
+  
+  result
+end
+\end{lstlisting}
+The following applications of this method yield \code{0}, \code{1}, \code{14}, in that order.
+\begin{lstlisting}
+sum
+sum 1
+sum 1, 2, 3
+\end{lstlisting}
+Furthermore, assume the definition:
+\begin{lstlisting}
+val xs := %[1, 2, 3]
+\end{lstlisting}
+The following application of the method \code{sum} is not resolved:\footnote{Unless there is an overloaded version of the method that accepts a list of integers as its parameter.}
+\begin{lstlisting}
+sum xs // Error: method match not found, wrong arguments
+\end{lstlisting}
+By contrast, the following application is well-formed and yields again the result \code{14}:
+\begin{lstlisting}
+sum *xs
+\end{lstlisting}
+
+\subsection{Named Parameters}
+\label{sec:named-parameters}
+\label{sec:captured-named-parameters}
+
+Named parameters are of the forms:
+\begin{lstlisting}
+:$x$ : $T$
+var :$x$ : $T$
+val :$x$ : $T$
+in :$x$ : $T$
+in var :$x$ : $T$
+in val :$x$ : $T$
+out :$x$ : $T$
+out var :$x$ : $T$
+in+out :$x$ : $T$
+in+out var :$x$ : $T$
+:$x$ : $T$ := $e$
+var :$x$ : $T$ := $e$
+val :$x$ : $T$ := $e$
+in :$x$ : $T$ := $e$
+in var :$x$ : $T$ := $e$
+in val :$x$ : $T$ := $e$
+:$x$ : => $T$
+val :$x$ : => $T$
+in :$x$ : => $T$
+in val :$x$ : => $T$
+:$x$ : => $T$ := $e$
+val :$x$ : => $T$ := $e$
+in :$x$ : => $T$ := $e$
+in val :$x$ : => $T$ := $e$
+\end{lstlisting}
+
+Captured named parameters are of the form: 
+\begin{lstlisting}
+**$x$ : $T$
+var **$x$ : $T$
+val **$x$ : $T$
+in **$x$ : $T$
+in var **$x$ : $T$
+in val **$x$ : $T$
+\end{lstlisting}
+
+Named parameters are a way of allowing users of the method to write down arguments in any order, provided that their name is given at function application (\sref{sec:function-applications} \& \sref{sec:named-optional-arguments}). Named parameters may have a default value expression and may be both input and output. Named parameters are disallowed for repeated parameters. Named parameters inside the method is then accessible the same way as a positional parameter. 
+
+Captured named parameters are capturing any other applied named parameters that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). They are declared after the block of named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary:[Symbol, $T$]!. Methods with captured named parameters take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. Captured named parameters are disallowed for repeated parameters, output parameters and by-name parameters. 
+
+If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. Captured named parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
+
+\subsection{Captured Block Parameter}
+\label{sec:captured-block-parameter}
+
+Captured block parameters are of the forms:
+\begin{lstlisting}
+&$x$
+&$x$: $T$
+in &$x$
+in var &$x$
+in val &$x$
+in &$x$: $T$
+in var &$x$: $T$
+in val &$x$: $T$
+\end{lstlisting}
+
+Captured block parameter is a way to capture an applied block that is otherwise passed in implicitly as a function into \code{yield} expressions . The forms of captured block parameters explicitly denote the case without the block's function type, since block parameters receive any arguments and those missing are implicitly set to \code{nil}. The function type of the block may be used to further constrain the applied block argument, but is not used during method resolution (\sref{sec:function-applications}). 
+
+It is an error if a block parameter type $T$ is provided and it is not a function type (\sref{sec:function-types}). It is also an error if the applied block argument does not accept the arguments declared by the type $T$, or if the block would not return a value conforming to the return type required by the type $T$. The applied block argument may accept more arguments than required by $T$, however, these will be set implicitly to \code{nil}. Also, the applied block argument may itself require less constrained parameter types, in which case the arguments applied to it must (and will) always conform (\sref{sec:conformance}) to the block's parameter requirements. Whether the function type $T$ has a return type or not is irrelevant. 
+
+If a block parameter type $T$ is given, then the applied block argument must accept parameters, such that the parameter constrains declared by the function type $T$ conform to the parameter constrains declared by the applied block: the parameters of the applied block must be the same or less restrictive than those declared by $T$ -- they must be pairwise contravariant or invariant, never covariant (\sref{sec:variance-of-type-parameters}). 
+
+\subsection{Parameter Kind Combinations}
+
+This section is {\em normative}. 
+
+Users should design their functions in a way that makes them having as few parameters as possible. 
+
+In this spirit, an ideal count of parameters lies between 0 and 2 (nullary, unary and binary functions). Named parameters should be used with only up to one positional\footnote{In this sense, optional and repeated parameters are also positional, because they are applied on a particular numbered position rather than named.} parameter. Functions with more than 4 different parameters should be avoided. 
+
+\subsection{Method Types Inference}
+\label{sec:method-types-inference}
+
+\paragraph{\em Parameter Type Inference}
+Functions that are members of a class $C$ may define parameters without type annotations. The types of such parameters are inferred as follows. Say, a~method $m$ in a class $C$ has a parameter $p$ which does not have a type annotation. We first determine methods $m'$ in $C$ that might be overridden (\sref{sec:overriding}) by $m$, assuming that appropriate types are assigned to all parameters of $m$ whose types are missing. If there is exactly one such method, the type of the parameter corresponding to $p$ in that method---seen as a member of $C$---is assigned to $p$. It is an error if there are several such overridden methods $m'$. If there is none\footnote{Detected at compile-time. Dynamically added overridden methods are not used with type inference.} ($m$ does not override any $m'$ known at compile-time), then the parameters are inferred to be of type \code{Object}.
+
+\example Assume the following definitions:
+\begin{lstlisting}[escapechar=`]
+protocol I:[`\$`A]
+  def f(x: `\$`A)(y: `\$`A): `\$`A
+end
+class C
+  implements I:[Integer]
+  def f(x)(y) := x + y
+end
+\end{lstlisting}
+Here, the parameter and return types of \lstinline@f@ in \lstinline@C@ are
+inferred from the corresponding types of \lstinline@f@ in \lstinline@I@. The 
+signature of \lstinline@f@ in \lstinline@C@ is thus inferred to be
+\begin{lstlisting}
+  def f(x: Integer)(y: Integer): Integer
+\end{lstlisting}
+
+\paragraph{\em Return Type Inference}
+A class member definition $m$ that overrides some other function $m'$ in a base class of $C$ may leave out the return type, even if it is recursive. In this case, the return type $R'$ of the overridden function $m'$---seen as a member of $C$---is taken as the return type of $m$ for each recursive invocation of $m$. That way, a type $R$ for the right-hand side of $m$ can be determined, which is then taken as the return type of $m$. Note that $R$ may be different from $R'$, as long as $R$ conforms to $R'$. If $m$ does not override any $m'$, then its return type is inferred to be of type \code{Object}. 
+
+\example Assume the following definitions:
+\begin{lstlisting}
+protocol I
+  def factorial(x: Integer): Integer
+end
+class C 
+  implements I
+  def factorial(x: Integer) := {
+    if x = 0 then 1 else x * factorial(x - 1) end
+  }
+end
+\end{lstlisting}
+Here, it is ok to leave out the return type of \lstinline@factorial@
+in \lstinline@C@, even though the method is recursive. 
+
+For any index $i$ let $fsig_i$ be a function signature consisting of a function
+name, an optional type parameter section, and zero or more parameter
+sections. Then a function declaration 
+~\lstinline@def $fsig_1 \commadots fsig_n$: $T$@~ 
+is a shorthand for the sequence of function
+declarations ~\lstinline@def $fsig_1$: $T$; $\ldots$; def $fsig_n$: $T$@.  
+A function definition ~\lstinline@def $fsig_1 \commadots fsig_n$ := $e$@~ is a
+shorthand for the sequence of function definitions 
+~\lstinline@def $fsig_1$ := $e$; $\ldots$; def $fsig_n$ := $e$@.  
+A function definition
+~\lstinline@def $fsig_1 \commadots fsig_n: T$ = $e$@~ is a shorthand for the
+sequence of function definitions 
+~\lstinline@def $fsig_1: T$ := $e$; $\ldots$; def $fsig_n: T$ := $e$@.
+
+\section{Overloaded Declarations \& Definitions}
+\label{sec:overloaded-definitions}
+
+% TBD! override keyword was added, review this section
+
+An overloaded definition is a set of $n > 1$ function
+definitions in the same statement sequence that define the same name,
+binding it to types ~\lstinline@$T_1 \commadots T_n$@, respectively.
+The individual definitions are called {\em alternatives}. Overloaded
+definitions may only appear in the expression sequence of a class-level block.
+Alternatives always need not to specify the type of the defined entity
+completely.
+
+Overloaded function definitions have strong impact on method resolution. It is an error if a single set of arguments may be applied type-safely to multiple overloaded functions -- to resolve this, explicit argument types have to be applied (\sref{sec:function-applications}).
+
+Overloaded functions generate new functions that internally merge the overloaded functions into one, which then resolves the correct overloaded function based on the applied types.
+
+\example Assume the following overloaded declarations
+\begin{lstlisting}
+def double (arg: Number): Number
+def double (arg: Integer): Integer
+\end{lstlisting}
+Now, the following method application is invalid, because two functions resolve to the same arguments set: 
+\begin{lstlisting}
+// variable-less:
+double 42
+\end{lstlisting}
+Now, with explicitly applied argument types, the following method applications are correct:
+\begin{lstlisting}
+// variable-less:
+double 42 as Integer
+
+// with a variable:
+var number: Integer := 42
+double number
+
+var number := 42 // the type is inferred
+double number
+\end{lstlisting}
+
+\section{Use Clauses}
+\label{sec:use-clauses}
+
+\syntax\begin{lstlisting}
+Use             ::= 'use' Use_Expr
+Use_Expr        ::= (Container_Path | Stable_Id) '::' Import_Expr
+Import_Expr     ::= Single_Import
+                  | '{' Import_Exprs '}'
+                  | '_'
+Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
+Single_Import   ::= importable_id ['as' [constant_id | '_']]
+Container_Path  ::= Module_Path ['::' Constant_Path]
+                  | Constant_Path
+Module_Path     ::= Module_Selector {'::' Module_Selector}
+Constant_Path   ::= Const_Selector {'::' Const_Selector}
+Module_Selector ::= constant_id [Vendor_Arg]
+Const_Selector  ::= constant_id
+Vendor_Arg      ::= '~[' vendor_domain ']'
+vendor_domain   ::= variable_id {'.' variable_id}
+\end{lstlisting}
+
+A use clause has the form \lstinline!use $p$::$I$!, where $p$ is a path to the containing type of the imported entity (either a module or another class), and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}
+\begin{lstlisting}
+{ $x_1$ as $y_1$ $\commadots$ $x_n$ as $y_n$, _ }
+\end{lstlisting}
+for $n \ge 0$, where the final wildcard ``\lstinline!_!'' may be absent. It makes available each importable member \lstinline!$p$::$x_i$! under the unqualified name $y_i$. I.e. every import selector \lstinline!$x_i$ as $y_i$! renames (aliases) \lstinline!$p$::$x_i$! to $y_i$. If a final wildcard is present, all importable members $z$ of $p$ other than $x_1 \commadots x_n, y_1 \commadots y_n$ are also made available under their own unqualified names. 
+
+Import selectors work in the same way for type and term members. For instance, a use clause \lstinline!use $p$::{$x$ as $y$}! renames the term name \lstinline!$p$::$x$! to the term name $y$ and the type name \lstinline!$p$::$x$! to the type name $y$. At least one of these two names must reference an importable member of $p$. 
+
+If the target name in an import selector is a wildcard, the import selector hides access to the source member. For instance, the import selector \lstinline!$x_i$ as _! ``renames'' $x$ to the wildcard symbol, which basically means discarding the name, since \lstinline!_! is not a readable name\footnote{Meaning, it is not possible to use ``\lstinline!_!'' as a variable to read from, it never has any value.}, and thereby effectively prevents unqualified access to $x$. This is useful if there is a final wildcard in the same import selector list, which imports all members not mentioned in previous import selectors, to selectively not import some members. 
+
+The scope of a binding introduced by an import-clause starts immediately after the import clause and extends to the end of the enclosing scope and all nested scopes. 
+
+Several shorthands exists. An import selector may be just a simple name $x$, in which case, $x$ is imported without renaming, so the import selector is equivalent to \lstinline!$x$ as $y$!. Furthermore, it is possible to replace the whole import selector list by a single identifier of wildcard. The use clause \lstinline!use $p$::$x$! is equivalent to \lstinline!use $p$::{$x$}!, i.e. it makes available without qualification the member $x$ of $p$. The use clause \lstinline!use $p$::_! is equivalent to \lstinline!use $p$::{_}!, i.e. it makes available without qualification all importable members of $p$ (this is analogous to \lstinline[language=Java]!import $p$.*! in Java or \lstinline[language=Java]!import $p$._! in Scala). 
+
+\example Consider the object definition:
+\begin{lstlisting}
+object M
+  def z := 0
+  def one := 1
+  def add (x: Integer, y: Integer): Integer := x + y
+end
+\end{lstlisting}
+Then the block
+\begin{lstlisting}
+{ use M::{one, z as zero, _}; add (zero, one) }
+\end{lstlisting}
+is equivalent to the block
+\begin{lstlisting}
+{ M.add (M.z, M.one) } .
+\end{lstlisting}
+
+
+

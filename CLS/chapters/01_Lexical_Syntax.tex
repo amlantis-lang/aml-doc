@@ -1,0 +1,373 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Lexical Syntax}
+
+Coral programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Coral programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs might use may not support the full Unicode character set.
+
+Grammar of lexical tokens is given in the following sections. These tokens are then used as terminal symbols of the semantical grammar. 
+
+\newpage
+
+\section{Identifiers}
+\label{sec:identifiers}
+
+\syntax\begin{lstlisting}
+simple_id     ::= (lower | '_') [id_rest]
+variable_id   ::= simple_id | '_' | '`' simple_id '`'
+ivar_id       ::= '@' simple_id
+cvar_id       ::= '@@' simple_id
+function_id   ::= simple_id [id_rest_fun]
+                | '`' simple_id [id_rest_fun] '`'
+constant_id   ::= upper [id_rest_con]
+                | '`' upper [id_rest_con] '`'
+id_rest       ::= {letter | digit | '_'}
+id_rest_con   ::= id_rest [id_rest_mid]
+id_rest_fun   ::= id_rest [id_rest_mid] ['?' | '!' | '=']
+id_rest_mid   ::= id_rest {('/' | '+' | '-') id_rest}
+importable_id ::= simple_id
+                | function_id
+                | constant_id
+\end{lstlisting}
+
+There are three kinds of identifiers.
+
+First, \textit{variable identifiers}, which are simply a lower-case letter followed by arbitrary sequence of letters (any-case), digits and underscores, or just one underscore (which has special meaning). Additionally, \textit{instance variable identifiers} are just prepended with a ``\lstinline|@|'' sign and \textit{class instance variable identifiers} are just prefixed with ``\lstinline|@@|''. 
+
+Second, \textit{function identifiers}, which are the most complicated ones. They can start as a variable identifier, then optionally followed by one of ``\lstinline@/@'', ``+'' and ``\lstinline@-@'', and then optionally ended with ``\lstinline@?@'', ``\lstinline@!@'' or ``\lstinline@=@''. Furthermore, function identifiers ending with ``\lstinline@=@'' are never used at call site with this last character, but without it and as a target of an assignment expression (they are naming simple setters). 
+
+And third, \textit{constant identifiers}, which are just like function identifiers, but starting with an upper-case letter, never just an underscore and never ending with ``\lstinline@?@'', ``\lstinline@!@'' or ``\lstinline@=@''.
+
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$~$`$~$!''), to resolve possible name clashes with Coral keywords. Instance variable names (\code{ivar_id}) and class instance variable names (\code{cvar_id}) never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
+
+Coral programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
+
+\section{Keywords}\label{sec:keywords}
+A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in most other languages, keywords are not being recognized inside of paths, except for a few specific cases.
+
+The following names are the reserved words.
+
+\begin{lstlisting}
+abstract    alias       annotation  as          begin
+bitfield    break       case        cast        catch
+class       clone       cloned      constant    constructor
+declare     def         destructor  do          else
+elsif       end         ensure      enum        final
+for         for-some    function    get         goto
+if          indexed-with            implements  implicit
+in          include     interface   is          lazy
+let         loop        match       memoize     message
+method      mixin       module      native      next
+nil         no          object      of          opaque
+operator    out         override    prepend     private
+property    protected   protocol    public      raise
+range       record      redo        refine      rescue
+retry       return      requires    sealed      self
+set         singleton-type          skip        step
+struct      super       template    test        then
+this        throw       transparent type        undef
+unless      until       union       unit-of-measure
+use         val         var         yes         weak
+when        while       with        yield
+\end{lstlisting}
+
+Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
+
+\section{Newline Characters}\label{sec:newlinecharacters}
+
+\syntax\begin{lstlisting}
+semi ::= nl {nl} | ';'
+\end{lstlisting}
+
+Coral is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Coral source file is treated as the special separator token \lstinline@nl@ if the following criterion is satisfied:
+
+\begin{enumerate}
+\item The token immediately preceding the newline can terminate an expression.
+\end{enumerate}
+
+Since Coral may be interpreted in a REPL\footnote{Read-Eval-Print Loop} fashion, there are no other suitable criteria. Such a token that can terminate an expression is, for instance, not a binary operator or a message sending operator, which both require further tokens to create an expression. Keywords that expect any following tokens also can not terminate expressions. Coral interpreters and compilers do not look-ahead beyond newlines.
+
+If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Coral still sees that as only a one significant newline, to prevent any confusion.
+
+Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end@, \lstinline@opaque@, \lstinline@native@, \lstinline@next@, \lstinline@nil@, \lstinline@no@, \lstinline@redo@, \lstinline@retry@, \lstinline@return@, \lstinline@self@, \lstinline@skip@, \lstinline@super@, \lstinline@this@, \lstinline@transparent@, \lstinline@yes@, \lstinline@yield@.
+
+\section{Operators}\label{sec:operators}
+A set of identifiers is reserved for language features, some of which may be overridden by user space implementations. Operators have language-defined precedence rules that are supposed to usually comply to user expectations (principle of least surprise), and another desired precedence may be obtained by putting expressions with operators inside of parenthesis pairs. 
+
+The following character sequences are the operators recognized by Coral. 
+
+\begin{lstlisting}
+:=     +=     -=     *=     **=    /=     %=     ||=    &&=    ^^= 
+|=     &=     |=     :[     ^=     ~=     <<     >>     <<<    >>> 
+<<=    >>=    <<<=   >>>=   ;      =      !=     ==     !==    === 
+!===   =~     !~     <>     <      >      <=     >=     <=>    + 
+-      *      **     /      div    %      mod    ||     or     && 
+and    !      not    ^^     xor    |      &      ^      ~      .. 
+...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
+:>     <<|    |>>    <|     |>     (      )      [      ]      { 
+}      .      [<     >]     >:     .?     .!     @{
+\end{lstlisting}
+
+Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
+
+Binary (infix) operators have to be separated by whitespace or non-letter characters on both sides, unary operators on left side – the right side is what they are bound to. 
+
+Unary operators are: \lstinline@+@, \lstinline@-@, \lstinline@&@, \lstinline@not@, \lstinline@!@ and \lstinline@~@. The first three of these are binary as well. The \lstinline@;@ operator is used to separate expressions (see \nameref{sec:newlinecharacters}). Parentheses are postcircumfix operators. Coral has no postfix operators. 
+
+Coral allows for custom user-defined operators, but those have the lowest precedence and need to be parenthesized in order to express any precedence. Such custom operators can't be made of letter characters. 
+
+\section{Literals}\label{sec:literals}
+
+There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
+
+\syntax\begin{lstlisting}
+literal ::= integer_literal
+	| floating_point_literal
+	| complex_literal
+	| character_literal
+	| string_literal
+	| symbol_literal
+	| regular_expression_literal
+	| collection_literal
+	| 'nil'
+\end{lstlisting}
+
+\subsection{Integer Literals}\label{sec:integerliterals}
+
+\syntax\begin{lstlisting}
+integer_literal     ::= ['+' | '-'] (decimal_numeral
+	| hexadecimal_numeral
+	| octal_numeral
+	| binary_numeral)
+decimal_numeral     ::= '0' | non_zero_digit {['_'] digit}
+hexadecimal_numeral ::= '0x' | hex_digit {['_'] hex_digit}
+digit               ::= '0' | non_zero_digit
+non_zero_digit      ::= '1' | … | '9'
+hex_digit           ::= '1' | … | '9' | 'a' | … | 'f'
+octal_numeral       ::= '0' oct_digit {'_' oct_digit}
+oct_digit           ::= '0' | … | '7'
+binary_numeral      ::= '0b' bin_digit {['_'] bin_digit}
+bin_digit           ::= '0' | '1'
+\end{lstlisting}
+Integers are usually of type \lstinline@Number@, which is a class cluster of all classes that can represent numbers. Unlike Java, Coral supports both signed and unsigned integers directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@. Math operations on numbers are handled internally in such a way that the user does't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type. 
+
+Underscores used in integer literals have no special meaning, other than to improve readability of larger literals, i.e., to separate thousands.
+
+Integral members of the \lstinline@Number@ class cluster include the following container types. 
+
+\begin{enumerate}
+
+\item \lstinline@Integer_8@ ($-2^{7}$ to $2^{7}-1$), alias \lstinline@Byte@
+
+\item \lstinline@Integer_8_Unsigned@ ($0$ to $2^{8}$), alias \lstinline@Byte_Unsigned@
+
+\item \lstinline@Integer_16@ ($-2^{15}$ to $2^{15}-1$), alias \lstinline@Short@
+
+\item \lstinline@Integer_16_Unsigned@ ($0$ to $2^{16}$), alias \lstinline@Short_Unsigned@
+
+\item \lstinline@Integer_32@ ($-2^{31}$ to $2^{31}-1$)
+
+\item \lstinline@Integer_32_Unsigned@ ($0$ to $2^{32}$)
+
+\item \lstinline@Integer_64@ ($-2^{63}$ to $2^{63}-1$), alias \lstinline@Long@
+
+\item \lstinline@Integer_64_Unsigned@ ($0$ to $2^{64}$), alias \lstinline@Long_Unsigned@
+
+\item \lstinline@Integer_128@ ($-2^{127}$ to $2^{127}-1$), alias \lstinline@Double_Long@
+
+\item \lstinline@Integer_128_Unsigned@ ($0$ to $2^{128}$), alias \lstinline@Double_Long_Unsigned@
+
+\item \lstinline@Decimal@ ($-\infty$ to $\infty$)
+
+\item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$)
+
+\end{enumerate}
+
+The special \lstinline@Decimal@ \& \lstinline@Decimal_Unsigned@ container types are also for storing arbitrary precision floating point numbers. All the container types are constants defined in the \lstinline@Number@ class and can be imported into scope if needed. 
+
+Moreover, a helper type \lstinline@Number::Unsigned@ exists, which can be used for type casting in cases where an originally signed number needs to be treated as unsigned. 
+
+Weak conformance applies to the inner members of \lstinline@Number@ class. 
+
+For use with range types, \lstinline@Number::Integer@ and \lstinline@Number::Integer_Unsigned@ exist, to allow constraining of the range types to integral numbers.
+
+\subsection{Floating Point Literals}\label{sec:floatliterals}
+
+\syntax\begin{lstlisting}
+float_literal ::= ['+' | '-'] non_zero_digit 
+		{['_'] digit} '.' digit {['_'] digit}
+		[exponent_part] [float_type]
+	| ['+' | '-'] digit {['_'] digit} exponent_part [float_type]
+	| ['+' | '-'] digit {['_'] digit} [exponent_part] [float_type]
+	| ['+' | '-'] '0x' hex_digit
+		{['_'] hex_digit} '.' hex_digit {['_'] hex_digit}
+		[float_type]
+	| ['+' | '-'] '0b' bin_digit
+		{['_'] bin_digit} '.' bin_digit {['_'] bin_digit}
+		[float_type]
+exponent_part ::= 'e' ['+' | '-'] digit {['_'] digit}
+float_type    ::= 'f' | 'd' | 'q' | 'df'
+\end{lstlisting}
+
+Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Floating point literals that have \lstinline@float_type@ of ``\code{dp}'' are decimal fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly fixed point literals. From user's perspective, this is only an implementation detail. 
+
+\begin{enumerate}
+
+\item \lstinline@Float_32@ (IEEE 754 32-bit precision), alias \lstinline@Float@. 
+
+\item \lstinline@Float_64@ (IEEE 754 64-bit precision), alias \lstinline@Double@.
+
+\item \lstinline@Float_128@ (IEEE 754 128-bit precision).
+
+\item \lstinline@Decimal@ ($-\infty$ to $\infty$).
+
+\item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$).
+
+\end{enumerate}
+
+Letters in the exponent type and float type literals have to be lower-case in Coral sources, but functions that parse floating point numbers do support them being upper-case for compatibility. 
+
+\subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
+
+\syntax\begin{lstlisting}
+imaginary_literal ::= real_number_literal 'i'
+complex_literal ::= real_number_literal ('+' | '-') imaginary_literal
+	| imaginary_literal ('+' | '-') real_number_literal
+real_number_literal ::= integer_literal | float_literal
+number_literal ::= real_number_literal
+	| imaginary_literal
+	| complex_literal
+\end{lstlisting}
+
+\subsection{Units of Measure}
+\label{sec:unitsofmeasuresyntax}
+
+Coral has an addition to number handling, called {\em units of measure} (\sref{sec:units-of-measure}). Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
+
+\syntax\begin{lstlisting}
+annotated_number ::= number_literal '[<' uom_expr '>]'
+uom_expr         ::= Unit_Conv {',' Unit_Conv}
+\end{lstlisting}
+
+\subsection{Character Literals}\label{sec:characterliterals}
+
+\syntax\begin{lstlisting}
+character_literal ::= '%'' (character | unicode_escape) '''
+\end{lstlisting}
+
+\subsection{Boolean Literals}\label{sec:booleanliterals}
+
+\syntax\begin{lstlisting}
+boolean_literal ::= 'yes' | 'no'
+\end{lstlisting}
+
+Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
+
+\subsection{String Literals}\label{sec:stringliterals}
+
+\syntax\begin{lstlisting}
+string_literal              ::= simple_string_literal 
+                              | interpolable_string_literal
+simple_string_literal       ::= ''' {string_element} '''
+string_element              ::= printable_char | char_escape_seq
+interpolable_string_literal ::= '"' {int_string_element} '"'
+int_string_element          ::= string_element | interpolated_expr
+interpolated_expr           ::= '#{' expr '}'
+\end{lstlisting}
+
+String literals are members of the type \lstinline@String@. Single quotes in simple string literals have to be escaped (\lstinline@\'@) and double quotes in interpolable string literals have to be escaped (\lstinline@\"@). Interpolated expression can be preceded only by an even number of escape characters (backslashes, \lstinline@\@), so that the \lstinline@#@ does't get escaped. This is a special \textit{requirement} for any Coral compiler. 
+
+\subsection{Symbol Literals}\label{sec:symbolliterals}
+
+
+\syntax\begin{lstlisting}
+symbol_literal       ::= simple_symbol | quoted_symbol
+simple_symbol        ::= ':' simple_id
+quoted_symbol        ::= simple_quoted_symbol | interpolable_symbol
+simple_quoted_symbol ::= ':'' {string_element} '''
+interpolable_symbol  ::= ':"' {int_string_element} '"'
+\end{lstlisting}
+
+Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Coral does not require their ids to be constant in time. 
+
+\subsection{Type Parameters}\label{sec:typeparameterliterals}
+
+\syntax\begin{lstlisting}[mathescape=false]
+type_param ::= '$' (simple_id | constant_id)
+\end{lstlisting}
+
+Type parameters are not members of any type, rather they stand-in for a real type, like a variable which only holds types. 
+
+\subsection{Regular Expression Literals}\label{sec:regexpliterals}
+
+\syntax\begin{lstlisting}
+regexp_literal ::= '%/' regexp_content_int '/' [regexp_flags]
+	| '%r/' regexp_content_int '/' [regexp_flags]
+	| '%r#' regexp_content '#' [regexp_flags]
+	| '%r~' regexp_content_int '~' [regexp_flags]
+regexp_content_int ::= regexp_element_int {regexp_element_int}
+regexp_element_int ::= string_element | int_string_element
+regexp_content ::= string_element {string_element}
+\end{lstlisting}
+
+Regular expression literals are members of the type \lstinline@Regular_Expression@ with alias of \lstinline@Regexp@. 
+
+\subsection{Collection Literals}\label{sec:collectionliterals}
+
+Collection literals are paired syntax tokens and as such, they are a kind of parentheses in Coral sources. 
+
+\syntax\begin{lstlisting}
+collection_literal ::= tuple_literal
+	| list_literal
+	| dictionary_literal
+	| bag_literal
+tuple_literal ::= '(' exprs ')'
+list_literal ::= '%' collection_flags '[' exprs ']'
+dictionary_literal ::= '%' collection_flags '{' dict_exprs '}'
+bag_literal ::= '%' collection_flags '(' exprs ')'
+exprs ::= expr {',' expr}
+dict_exprs ::= dict_expr {',' dict_expr}
+dict_expr ::= expr '=>' expr
+	| simple_id ':' expr
+collection_flags ::= printable_char {printable_char}
+\end{lstlisting}
+
+Tuple literals are members of the \lstinline@Tuple@ type family. List literals are members of the \lstinline@List@ type, usually \lstinline@Array_List@ with alias of \lstinline@Array@. Dictionary literals are members of the \lstinline@Dictionary@ type with alias of \lstinline@Map@, usually \lstinline@Hash_Dictionary@ with alias of \lstinline@Hash_Map@. Bag literals are members of the \lstinline@Bag@ type, usually \lstinline@Hash_Bag@ or \lstinline@Hash_Set@. Collection flags may change the actual class of the literal, along with some other properties, described in the following text. 
+
+List literal collection flags: 
+
+\begin{enumerate}
+\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the list frozen. 
+\item Flag \lstinline@l@ = \textbf{l}inked, makes the list a member of \lstinline@Linked_List@. 
+\item Flag \lstinline@w@ = \textbf{w}ords, the following expressions are treated as words, converted to strings for each word separated by whitespace. 
+\end{enumerate}
+
+Dictionary literals collection flags:
+
+
+\begin{enumerate}
+\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the dictionary frozen. 
+\item Flag \lstinline@l@ = \textbf{l}inked, makes the dictionary a member of \lstinline@Linked_Hash_Dictionary@ (also has alias \lstinline@Linked_Hash_Map@).
+\item Flag \lstinline@m@ = \textbf{m}ulti-map, the dictionary items are then either the items themselves, if there is only one for a particular key, or a set of items, if there is more than one item for a particular key. The dictionary is then a member of \lstinline@Multi_Hash_Dictionary@ (alias \lstinline@Multi_Hash_Map@) or \lstinline@Linked_Multi_Hash_Dictionary@ (alias \lstinline@Linked_Multi_Hash_Map@). 
+\end{enumerate}
+
+Bag literal collection flags:
+
+\begin{enumerate}
+\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the bag frozen. 
+\item Flag \lstinline@s@ = \textbf{s}et, the collection is a set instead of a bag (a specific bag, such that for each item, its tally is always $0$ or $1$, thus each item is in the collection up to once). 
+\item Flag \lstinline@l@ = \textbf{l}inked, makes the collection linked, so either a member of \lstinline@Linked_Hash_Bag@ in case of a regular bag, or \lstinline@Linked_Hash_Set@ in case of a set. 
+\end{enumerate}
+
+Linked collections have a predictable iteration order in case of bags and dictionaries, or are simply stored differently in case of lists.  
+
+\section{Whitespace \& Comments}\label{sec:whitespacecomments}
+
+Tokens may be separated by whitespace characters and/or comments. Comments come in two forms: 
+
+A single-line comment is a sequence of characters that starts with \lstinline@//@ and extends to the end of the line. 
+
+A multi-line comment is a sequence of characters between \lstinline@/*@ and \lstinline@*/@. Multi-line comments may be nested. 
+
+Documentation comments are multi-line comments that start with \lstinline@/*!@. 
+

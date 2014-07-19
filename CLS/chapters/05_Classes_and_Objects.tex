@@ -1,0 +1,992 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Classes \& Objects}
+
+\syntax\begin{lstlisting}
+Const_Def ::= {Annotation} 'class' Class_Def 'end' ['class']
+            | {Annotation} 'object' Obj_Def 'end' ['object']
+            | {Annotation} 'module' Module_Def 'end' ['module']
+            | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+            | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+            | {Annotation} 'interface' Ifc_Def 'end' ['interface']
+            | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}), modules (\sref{sec:module-definitions} \& \sref{sec:modules}), mixins (\sref{sec:mixins}), protocols (\sref{sec:protocols}), interfaces (\sref{sec:interfaces}) and constant types (unions \sref{sec:unions}, enums \sref{sec:enums}, range types \sref{sec:range-types}, units of measure \sref{sec:units-of-measure}, record types \sref{sec:record-types} \& struct types \sref{sec:struct-types}) are all defined in terms of {\em class-level blocks} (\sref{sec:class-level-blocks}). Their definitions are basically a function that handles internally the definition of each type. As such, these class-level blocks can even have local variables that may appear in closures. 
+
+\section{Class Definitions}
+\label{sec:class-definitions}
+
+\syntax\begin{lstlisting}
+Class_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi]
+               {Class_Expr}
+Superclass ::= ':' Compound_Type
+Class_Expr ::= Ctor_Expr
+             | Dtor_Expr
+             | Clone_Expr
+             | Includes_Expr
+             | Prepend_Expr
+             | Implements_Expr
+             | Expr
+             | {Annotation} 'class' Class_Def 'end' ['class']
+             | {Annotation} 'object' Obj_Def 'end' ['object']
+             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+             | {Annotation} 'interface' Ifc_Def 'end' 
+               ['interface']
+             | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
+
+A class' type signature consists of the class name (the first \code{constant_id} before type parameters clause), the type parameters, the superclass, included and prepended mixins and implemented protocols. 
+
+Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
+
+For superclasses, the following statements hold:
+\begin{itemize}
+\item The superclass is implicitly \code{Object}, if no explicit superclass is given. 
+\item Explicitly given superclass $T$, if $T$ is a single class, is that single class. 
+\item Explicitly given superclass $T$, if $T$ is a compound type with a class member (\sref{sec:compound-types}), is the class member of $T$ and all other members of the compound type are mixed in (\sref{sec:mixins}). 
+\item Explicitly given superclass $T$, if $T$ is a compound type without a class member (\sref{sec:compound-types}), is implicitly \code{Object} and all other members of the compound type are mixed in (\sref{sec:mixins}) if no member of the compound type has a class as its superclass, or that superclass of one of the members. If there are more members with a class-superclass, there must exist an ordering of these class-superclasses $C_1 \commadots C_n$, such that for each $i, 1 \le i \le n-1$: \lstinline!$C_i$ <: $C_{i+1}$!. It is an error if no such ordering exists. If such ordering exists, the superclass is implied to be $C_1$. 
+\item Superclass is never a function type (\sref{sec:function-types}). 
+\item Superclass is never a special type, i.e. unions (\sref{sec:unions}), enums (\sref{sec:enums}), range types (\sref{sec:range-types}), units of measure (\sref{sec:units-of-measure}), record types (\sref{sec:record-types}) \& struct types (\sref{sec:struct-types}). 
+\item Superclass is always a class, never a mixin (\sref{sec:mixins}), a protocol (\sref{sec:protocols}) or an interface (\sref{sec:interfaces}). 
+\item Every single class has at most one direct superclass. Only one class has no superclass: \code{Object}, no other class can be without a superclass. 
+\end{itemize}
+
+It is an error if any of the mixed in mixins from a compound type has a class-superclass and yet the defined class does not conform to that superclass. 
+
+\example Consider the following class definitions:
+\begin{lstlisting}
+class Base : Object refine {}
+mixin Mixin : Base refine {}
+object O : Mixin refine {}
+\end{lstlisting}
+In this case, the definition of \code{O} is implied to be:
+\begin{lstlisting}
+object O : Base with Mixin refine {}
+\end{lstlisting}
+
+\subsection{Metaclasses \& Eigenclasses}
+\label{sec:metaclasses}
+\label{sec:eigenclasses}
+
+\paragraph{\em Metaclasses}
+A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behavior and properties of its instances, a metaclass defines the behavior of its class. Classes are first-class citizens in Coral. 
+
+Everything is an object in Coral. Every object has a class that defines the structure (i.e. the instance variables) and behavior of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
+
+Class methods actually belong to the metaclass, just as instance methods actually belong to the class. All metaclasses are instances of only one class called \code{Metaclass}, which is a subclass of the class \code{Class}. 
+
+In Coral, every class (except for the root class \code{Object}) has a superclass. The base superclass of all metaclasses is the class \code{Class}, which describes the general nature of classes. 
+
+The superclass hierarchy for metaclasses parallels that for classes, except for the class \code{Object}. The following holds for the class \code{Object}:
+\begin{lstlisting}[deletekeywords={class}]
+Object.class = Class
+Object.superclass = nil
+\end{lstlisting}
+
+Classes and metaclasses are ``born together''. Every \code{Metaclass} instance has a method \code{this_class}, which returns the conjoined class. 
+
+\paragraph{\em Eigenclasses}
+Coral further purifies the concept of metaclasses by introducing {\em eigenclasses}, borrowed from Ruby, but keeping the \code{Metaclass} known from Smalltalk-80. Every metaclass is an eigenclass, either to a class, to a terminal object, or to another eigenclass\footnote{Eigenclasses of eigenclasses (``higher-order'' eigenclasses) are supposed to be rarely needed, but are there for conceptual integrity, establishing infinite regress.}. 
+
+\begin{table}[ht]
+  \centering
+  \caption{Of objects, classes \& eigenclasses}
+  \renewcommand{\arraystretch}{1.7}
+  \begin{tabular}{ | >{\centering}m{3.5cm} | >{\centering}m{3.5cm} | >{\centering\arraybackslash}m{6cm} | }
+  	\hline
+    Classes & Eigenclasses of classes & \multirow{2}{*}{Eigenclasses of eigenclasses} \\ \cline{1-2}
+    Terminal objects & Eigenclasses of terminal objects & \\
+    \hline
+  \end{tabular}
+\end{table}
+
+Eigenclasses are manipulated indirectly through various syntax features of Coral, or directly using the \code{eigenclass} method. This method can possibly trigger creation of an eigenclass, if the receiver of the \code{eigenclass} message did not previously have its own (singleton) eigenclass (because it was a terminal object whose eigenclass was a regular class, or the reciever was an eigenclass itself). 
+
+Another way to access an eigenclass is to use the \lstinline!class << obj; $\ldots$; end! construct. The block of code inside runs is evaluated in the scope of the eigenclass of \code{obj}. 
+
+\example Direct access to the eigenclass of any object, here a class' eigenclass:
+\begin{lstlisting}
+class A
+  class << self
+    def a_class_method
+      "A.a_class_method"
+    end def
+  end
+end class
+\end{lstlisting}
+Class \code{A} uses the \lstinline!class << obj; $\ldots$; end! construct to get direct access to the eigenclass. The keyword \code{self} inside the block is bound to the eigenclass object. 
+
+\example Alternative direct access to the eigenclass of any object, here a class' eigenclass:
+\begin{lstlisting}
+class B
+  self.eigenclass do
+    def a_class_method
+      "B.a_class_method"
+    end def
+  end
+end class
+\end{lstlisting}
+Class \code{B} uses the \code{eigenclass} method, which---given a block---evaluates the block in the scope of the eigenclass of \code{self}, which is bound to the class \code{B}. The keyword \code{self} inside the block is again bound directly to the eigenclass object. 
+
+\example Indirect access to the eigenclass using a singleton method definition:
+\begin{lstlisting}
+class C
+  def self.a_class_method
+    "C.a_class_method"
+  end def
+end class
+\end{lstlisting}
+Class \code{C} uses singleton method definition to add methods to the eigenclass of the class \code{C}. The keyword \code{self} is bound to the class object in the class-level block and in the new method as well, but the eigenclass is accessed only indirectly. 
+
+\example Indirect access to the eigenclass using a class object definition:
+\begin{lstlisting}
+class D
+  object D
+    def a_class_method
+      "D.a_class_method"
+    end def
+  end object
+end class
+\end{lstlisting}
+Class \code{D} uses the recommended approach, utilizing standard ways of adding methods to the eigenclass of the class \code{D}. Here, the eigenclass instance itself is not accessed directly.  
+
+\example Alternative indirect access to the eigenclass using a class object definition:
+\begin{lstlisting}
+object E
+  def a_class_method
+    "E.a_class_method"
+  end def
+end object
+\end{lstlisting}
+Class \code{E} uses a similar recommended approach, utilizing standard ways of adding methods to the eigenclass of the class \code{E} and neither declaring nor defining anything for its own instances. Here, the eigenclass instance itself is not accessed directly. 
+
+\subsection{Class Linearization}
+\label{sec:class-linearization}
+
+The classes reachable through transitive closure of the direct inheritance relation from a class $C$ are called the {\em base classes} of $C$. Because of mixins, the inheritance relationship on base classes forms in general a directed acyclic graph. A linearization of this graph is defined as follows. 
+
+\newcommand{\uright}{\;\vec +\;}
+\newcommand{\lin}[1]{{\cal L}(#1)}
+
+\begin{definition}
+Let base classes of a class $C$ be the list of every superclass of $C$ with every mixin that these classes include and/or prepend and every protocol that these classes implement. Let $C$ be a class with base classes ~\lstinline!$C_1$ with $C_2$ with $\ldots$ with $C_n$!. The {\em linearization} of $C$, $\lin C$ is defined as follows:
+\bda{rcl}
+\lin C &=& C\ , \ \lin{C_n} \uright \ldots \uright \lin{C_1}
+\eda
+Here $\uright$ denotes concatenation, where elements of the right operand replace identical elements of the left operand:
+\bda{lcll}
+\{a, A\} \uright B &=& a, (A \uright B)  &{\bf if}~a \not\in B \\
+                 &=& A \uright B       &{\bf if}~a \in B
+\eda
+\end{definition}
+
+\example Consider the following class definitions.\footnote{Here we say ``class'', but that term includes now mixins as well.}
+\begin{lstlisting}
+class Abstract_Iterator : Object; $\ldots$ end
+mixin Rich_Iterator : Abstract_Iterator; $\ldots$ end
+class String_Iterator : Abstract_Iterator; $\ldots$ end
+class Iterator : String_Iterator with Rich_Iterator; $\ldots$ end
+\end{lstlisting}
+Then the linearization of class \code{Iterator} is
+\begin{lstlisting}
+{ Iterator, Rich_Iterator, String_Iterator, Abstract_Iterator, 
+  Object }
+\end{lstlisting}
+
+Note that the linearization of a class refines the inheritance relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any linearization where both $C$ and $D$ occur. Also note that whether a mixin is included or prepended is irrelevant to linearization, but essential to function applications (\sref{sec:function-applications}).
+
+\subsection{Inheritance Trees \& Include Classes}
+\label{sec:inheritance-trees}
+\label{sec:include-classes}
+
+\paragraph{\em Include classes}
+A mechanism that allows arbitrary including and prepending of mixins into classes and inheritance binary trees\footnote{Yes, trees, not chains: prepended mixins make the inheritance game stronger by forking the inheritance chain at each class with prepended mixins, forming a shape similar to a rake.} uses a transparent structure called {\em include class}. Include classes are always defined indirectly.
+
+Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Object} class is encountered, which has no superclass. 
+
+\paragraph{\em Included mixins}
+When a mixin $M$ is included into a class, a new include class $Im_i$ is inserted between the target class and the include class $Is$ that holds a link to its superclass (or to a previously included mixin $Im_{i+1}$). This include class $Im_i$ then holds a link to the included mixin. Every class that includes the mixin $M$ is available via the \code{included_in} method of $M$. 
+
+If a mixin $M$ is already (included in or prepended to)\footnote{This is important since both included and prepended mixins act like superclasses to every subclass.} any of the superclasses, then it is not included again. Included mixins act like superclasses of the class they are included in, and they {\em overlay} the superclasses. 
+
+\example A sample mixin schema:
+\begin{lstlisting}
+class C : D with Some_Mixin
+end
+
+C $\rightarrow$ [Some_Mixin] $\rightarrow$ [D]
+D $\rightarrow$ [Object]
+\end{lstlisting}
+Include classes are depicted by the brackets, with their link value inside. Note that include classes only know their super-type (depicted by the arrow ``$\rightarrow$'') and their link value (inside brackets). 
+
+\paragraph{\em Prepended mixins}
+When a mixin $M$ is prepended to a class, a new include class $Im_i$ is inserted between the target class and its last prepended mixin, if any. Prepended mixins are stored in a secondary inheritance chain just for prepended mixins, forming an inheritance tree. Every class that has $M$ prepended is available via the \code{prepended_in} method of $M$. The effect of prepending a mixin in a class or a mixin is named {\em overlaying}. 
+
+If a mixin $M$ is already prepended to any of the superclasses, it has to be prepended again, since the already prepended mixins of superclasses are in super-position to the class or mixin that gets $M$ prepended. Prepended mixins of superclasses do not {\em overlay} child classes. Prepended mixins are inserted into the inheritance tree more like subclasses than superclasses. 
+
+\paragraph{\em Nested includes}
+When a mixin $M$ itself includes one or more mixins $M_1 \commadots M_n$, then these included mixins are inserted between the included mixin $M$ and the superclass, unless they are already respectively included by any of the superclasses. If $M$ with included $M_1 \commadots M_n$ is prepended to $C$, then $M_1 \commadots M_n$ are inserted before the superclass of $C$, if not already included in any of the superclasses. It is an error if nested includes form a dependency cycle: any {\em auto-included}\footnote{Unlike in Ruby, Coral does not need concerns to employ automatic injection of dependencies. Every mixin in Coral is a concern.} mixin must not require to include a mixin that triggered the auto-include. 
+
+\paragraph{\em Nested prepends}
+When a mixin $M$ itself prepends one or more mixins $M_1 \commadots M_n$, then nothing happens to the class or the mixin that $M$ is included in. If $M$ is prepended to $C$, then every prepended mixin in $M_1 \commadots M_n$ is prepended to $C$ in this way:
+\begin{enumerate}
+\item $M$ is inserted as the head of the prepend chain in an include class. 
+\item For each $1 \le i \le n$, $M$ is switched with previously prepended mixins until $M_i$ is closer to the chain head than $M$, if $M_i$ is contained in the chain, or else $M_i$ is inserted as the head of the prepend chain. 
+\item If $M_i$ includes any other mixins, these are included in the same way as nested included mixins. 
+\item Check for prepend cycles -- if any {\em auto-prepended}\footnote{Again, this is unlike in Ruby, which does not automatically prepend mixins.} mixin requires to prepend a mixin that triggered the auto-prepend, then it is an error. 
+\end{enumerate}
+
+\paragraph{\em Mixins \& Metaclasses}
+Since mixins may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses.\footnote{This makes Coral in no need of constructs like \lstinline[language=Ruby]!module ClassMethods!, known from Ruby.}
+
+\subsection{Class Members}
+\label{sec:class-members}
+
+A class $C$ defined by class definition can define members in its class-level block, can inherit members from all parent classes\footnote{Including an interface and any number of protocols.} and included mixins, and can have its members overlayed by all prepended mixins. 
+
+Member definitions fall basically into two categories: {\em concrete} \& {\em abstract}. Members of the class $C$ are either {\em directly defined}, {\em overlayed} or {\em inherited}. 
+
+Concrete members are those that have a definition, abstract members are those that are only declared without any subsequent or preceding definition.\footnote{There is a special case, when a protocol introduces an abstract member, but the class that implements this protocol already inherited or directly defined the matching member.}
+
+Members are instance variables, class instance variables, methods \& messages. 
+
+\subsection{Class-Level Blocks}
+\label{sec:class-level-blocks}
+
+Class-level blocks are multi-constructors for class objects. A single class may have one or more class-level blocks spread across multiple source files. A single class may have multiple class-level blocks in the same source file as well. 
+
+Class-level blocks work like functions that construct the class object, including declarations and definitions of its instances as well as the class object itself, and can work with metaclasses (\sref{sec:metaclasses}) like any other function. Their execution order is derived from the order in which the containing source files are executed (\sref{sec:compilation-units}). 
+
+An object definition (\sref{sec:object-definitions}) inside a class-level block for the same name as the name of the enclosing class defines the object of the enclosing class itself, and moreover, does not need to need to specify the superclass. It is an error if the enclosing class does not need specify a superclass and the nested object definition does specify a superclass -- it must be the other way around. The nested object definition has \lstinline!include $M$!, \lstinline!prepend $M$! and \lstinline!implements $M$! expressions relative to the defined object, not to the enclosing class, which has several implications: 
+\begin{itemize}
+\item There is no way to include (or prepend) only class methods from a mixin directly into the defined object -- the instance methods of the mixin are included in the defined object and the class methods go to the metaclass of the defined object. 
+\item Since the defined object is always an instance of \lstinline!Class:[$C$]!, the mixin must require any class of the receiver or a class that conforms to \lstinline!Class:[$C$]!, not $C$ directly. 
+\item It is advised to not give any class methods to mixins (or protocols) that are to be included (prepended, or implemented) in a defined object, since methods from its metaclass are not easy to invoke. 
+\end{itemize}
+
+\example Given the following object definition inside a class definition:
+\begin{lstlisting}
+class $C$
+  object $C$
+    $\ldots$
+  end object
+end class
+\end{lstlisting}
+The object definition for $C$ does \textbf{not} create an object \lstinline!$C$::$C$!, but defines the class object of the class $C$. However, the following object definition:
+\begin{lstlisting}
+class $C$
+  object $D$
+    $\ldots$
+  end object
+end class
+\end{lstlisting}
+does define an object \lstinline!$C$::$D$!, because it has a different name, and is thus unrelated to $C$ in any other way than being enclosed in $C$ (and having inheritance closure in $C$ -- \sref{sec:inheritance-closure}). 
+
+Since class-level blocks are basically functions, the members defined inside of them can closure local variables inside the block (\sref{sec:local-variable-closure}). Any member defined outside of the class-level block can not closure its local variables. 
+
+\subsection{Constructor \& Destructor Definitions}
+\label{sec:constructor-destructor-def}
+
+\syntax\begin{lstlisting}
+Ctor_Def     ::= 'constructor' Ctor_Fun_Def 'end' ['constructor']
+               | 'constructor' Ctor_Alt_Def
+Ctor_Fun_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] semi Expr
+Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] ':=' Expr
+Dtor_Def     ::= 'destructor' Dtor_Fun_Def 'end' ['destructor']
+Dtor_Fun_Def ::= [Fun_Dec] semi Expr
+\end{lstlisting}
+
+Constructors and destructors can only be defined inside of class-level blocks (\sref{sec:class-level-blocks}). Constructors are functions that can never be called by a name, instead, they are invoked indirectly by creating a new instance of a class (an object value), from the \lstinline!allocate! method of \code{Class}. Destructors are invoked indirectly when an object is to be deallocated, that is, when its reference count reaches \code{0} and all its soft references are released. 
+
+Constructors can have any number of parameters, including none at all. Every constructor has a special behavior that invokes its super-constructor with matching parameters before any other code, unless explicitly invoked. It is an error if a constructor invokes a super-constructor more than 1 times. If a constructor does not have a matching super-constructor, then a {\em default constructor} or an {\em implicit constructor} is used.
+
+A different constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a constructor invokes a different constructor of the same class this way, the super-constructor is not implicitly invoked (since it is invoked in the other constructors). 
+
+\paragraph{\em Default constructor}
+A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
+
+\paragraph{\em Implicit constructor}
+An implicit constructor is an automatically generated bridge constructor to the parameterless default constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions). 
+
+\paragraph{\em Convenience constructor}
+A convenience constructor is any other constructor than the parameterless default constructor. 
+
+\paragraph{\em Accessibility of constructors}
+Constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
+
+\example An example of a convenience constructor of class $C$.
+\begin{lstlisting}
+class $C$
+  constructor (param)
+    // super is invoked implicitly here
+    val @resource := param
+  end constructor
+end class
+\end{lstlisting}
+
+\example An example of a pair of constructors of class $C$. 
+\begin{lstlisting}
+class $C$
+  constructor := self(42)
+  constructor (param)
+    // super is invoked implicitly here
+    val @resource := param
+  end constructor
+end class
+\end{lstlisting}
+
+\paragraph{\em Explicit destructor}
+An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. 
+
+\paragraph{\em Implicit destructor}
+An implicit destructor is an automatically generated bridge destructor to the parameterless super-destructor. An implicit destructor ``does nothing'' but release all members specific to the destructed object and invoke super-destructor afterwards. The destructor of \code{Object} releases every remaining member of the destructed object. A class can only have a single destructor, either an explicit or an implicit one. 
+
+\paragraph{\em Accessibility of destructors}
+Destructors, unlike constructors, can not have any accessibility modifiers. They ignore the current accessibility flag of their class-block and trigger a warning if a modifier is used directly with the destructor. Destructors may be invoked independently on the context in which the object is destructed. 
+
+\example An example of an explicit destructor of class $C$. 
+\begin{lstlisting}
+class $C$
+  destructor
+    @resource.close unless @resource.closed?
+    // super is invoked implicitly here
+  end destructor
+end class
+\end{lstlisting}
+
+\subsection{Clone Constructor Definitions}
+\label{sec:clone-def}
+
+\syntax\begin{lstlisting}
+CCtor_Def     ::= 'clone' CCtor_Fun_Def 'end' ['clone']
+                | 'clone' CCtor_Alt_Def
+CCtor_Fun_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] semi Expr
+CCtor_Alt_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] ':=' Expr
+\end{lstlisting}
+
+Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
+
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available as the \code{cloned} keyword. The \code{cloned} keyword is only recognized as a keyword in a body of the clone constructor. 
+
+Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
+
+A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). 
+
+\paragraph{\em Default clone constructor}
+A default clone constructor of a class is the explicit parameterless clone constructor. 
+
+\paragraph{\em Implicit clone constructor}
+An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
+
+\paragraph{\em Convenience clone constructor}
+A convenience clone constructor is any other clone constructor than the parameterless default clone constructor. The \code{clone} method of objects can accept any number of arguments that are then passed into the clone constructor and the clone constructor is resolved based on these passed arguments. 
+
+\paragraph{\em Accessibility of clone constructors}
+Clone constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
+
+\example An example of a default clone constructor of class $C$, performing a deep copy. 
+\begin{lstlisting}
+class $C$
+  clone
+    // super is invoked implicitly here
+    cloned.resource := self.resource.clone
+  end constructor
+end class
+\end{lstlisting}
+
+\subsection{Overriding}
+\label{sec:overriding}
+
+A member $M$ of a class $C$ that matches a member $M'$ of a base class of $C$ is said to override that member. In this case the binding of the overriding member $M$ must conform (\sref{sec:conformance}) to the binding of the overridden member $M'$. Furthermore, the following restrictions on modifiers apply to $M$ and $M'$: 
+\begin{itemize}
+\item If $M$ is labeled \lstinline!private:[$C$]! for some enclosing class or module $C$, then $M'$ must be labeled \lstinline!private:[$C'$]!, where $C'$ equals $C$ or $C$ is contained in $C'$. % review the last few words
+\item If $M$ is labeled \lstinline!protected!, then $M'$ must also be labeled \lstinline!protected!. 
+\item If $M'$ is labeled \lstinline!protected!, then $M'$ must also be labeled \lstinline!protected! or \lstinline!public!. 
+\item If $M'$ is labeled \lstinline!private!, then $M'$ must be labeled \lstinline!private!, \lstinline!protected! or \lstinline!public!. 
+\item If $M'$ is not an abstract member, then $M$ may be annotated with \lstinline!@[Override]!. 
+\end{itemize}
+
+To generalize the conditions, the modifier of $M$ must be the same or less restrictive than the modifier of $M'$. 
+
+\subsection{Inheritance Closure}
+\label{sec:inheritance-closure}
+
+\newcommand{\inheritclosure}{{\cal S}}
+
+Let $C$ be a class type. The {\em inheritance closure} of $C$ is the smallest set $\inheritclosure$ of types such that
+\begin{itemize}
+\item If $T$ is in $\inheritclosure$, then every type $T'$ which forms syntactically a part of $T$ is also in $\inheritclosure$. 
+\item If $T$ is a class type in $\inheritclosure$, then all parents of $T$ are also in $\inheritclosure$. 
+\end{itemize}
+It is an error if the inheritance closure of a class type consists of an infinite number of types. 
+
+\subsection{Modifiers}
+\label{sec:modifiers}
+
+\syntax\begin{lstlisting}
+Modifier         ::= Local_Modifier
+                   | Access_Modifier
+                   | 'override'
+Local_Modifier   ::= 'implicit'
+                   | 'lazy'
+                   | 'final'
+                   | 'sealed'
+                   | 'abstract'
+Access_Modifier  ::= 'public'
+                   | ('protected' | 'private') [Access_Qualifier]
+Access_Qualifier ::= ':[' (constant_id | 'self') ']'
+\end{lstlisting}
+
+Access modifiers may appear in two forms:
+
+\paragraph{\em Accessibility flag modifier}
+Such a modifier appears in a class-level block (\sref{sec:class-level-blocks}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Only access modifiers can be used this way. 
+
+\paragraph{\em Directly applied modifier}
+Such a modifier appears on a line preceding a member to which the modifier is solely applied, or a list of arguments with symbols that the modifier will be applied to. A directly applied modifier expression has a return type of \code{Symbol}, so that it may be used as a regular function and chained. 
+
+\example An example of an accessibility flag modifier:
+\begin{lstlisting}
+class C
+  public
+    def hello; end
+  private
+    def private_hello; end
+end class
+\end{lstlisting}
+
+\example An example of directly applied modifier:
+\begin{lstlisting}
+class C
+  def hello; end
+  def private_hello; end
+  def salute; end
+  public :hello
+  private :private_hello, :salute
+  protected def goodbye; end
+end class
+\end{lstlisting}
+
+By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} access modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private:[self]!). 
+
+Modifiers affect the accessibility and usage of the identifiers bound by them. If several modifiers are given, their order does not matter, but the same modifier may not occur more than once and combinations of \code{public}, \code{protected} \& \code{private} are not allowed (using them as accessibility flag modifiers overwrites the previous accessibility, not combines them). If a member declaration has a modifier applied to it, then the subsequent member definition has the same modifier already applied to it as well, without the need to explicitly state that. It is an error if the modifier applied to the member definition would contradict the modifier applied to the member declaration. 
+
+Accessibility modifiers can not be applied to instance variables and class instance variables (both declarations and definitions). These are by default {\em instance-private}. This is a sort of relaxation in access restriction, say, every method that is at least {\em public} and at most {\em object-private} restricted, and that has the instance as a receiver, can access the instance variable or the class instance variable. Any other method that does not have the particular instance as the receiver, does not have any access to the instance variable or the class instance variable, even if the method is a method of the same class as the particular instance. 
+
+The rules governing the validity and meaning of a modifier are as follows: 
+\begin{itemize}
+\item
+The \code{private} access modifier can be used with any declaration or definition in a class. Such members can be accessed only from within the directly enclosing class, the class object (\sref{sec:object-definitions}) and any member of the directly enclosing class, including inner classes. They are not inherited by subclasses and they may not override definitions in parent classes. 
+
+The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private:[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$ (\sref{sec:object-definitions}). 
+
+A different form of qualification is \lstinline!private:[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self} and starts with $O$ for some class $O$ enclosing the reference. . Moreover, the restrictions for unqualified \code{private} apply as well. 
+
+Members marked \code{private} without any qualifier are called {\em class-private}. A member {\em is private} if it is either class-private or object-private, but not if it is marked \lstinline!private:[$C$]!, where $C$ is an identifier, in the latter case the member is called {\em qualified private}. 
+
+Class-private and object-private members must not be \code{abstract}, since there is no way to provide a concrete implementation for them, as private members are not inherited. Moreover, modifiers \code{protected} \& \code{public} can not be applied to them (that would be a contradiction\footnote{E.g., a member can not be public and private at the same time.}), and the modifier \code{override} can not be applied to them as well\footnote{Otherwise, if a private member could override an inherited member, that would mean there is an inherited member that could be overridden, but private members can not override anything: only protected and public members can be overridden. If a member was overriding an inherited member, the parent class would {\em lose access} to it.}. 
+
+\item
+The \code{protected} access modifier can be used with any declaration or definition in a class. Protected members of a class can be accessed from within: 
+\begin{itemize}
+\item the defining class
+\item all classes that have the defining class as a base class
+\item all class objects of any of those classes
+\end{itemize}
+
+A \code{protected} access modifier can be qualified with an identifier $C$ (e.g. \lstinline!protected:[$C$]!) that must denote a class or module enclosing the definition. Members labeled with such a modifier are {\em also}\footnote{In addition to unqualified \code{protected} access.} accessible respectively from all code inside the module $C$ or from all code inside the class $C$ and its class object $C$ (\sref{sec:object-definitions}). 
+
+A protected identifier $x$ can be used as a member name in a selection \lstinline!$r$.$x$! only if one of the following applies: 
+\begin{itemize}
+\item The access is within the class defining the member, or, if a qualification $C$ is given, inside the module $C$, the class $C$ or the class object $C$, or
+\item $r$ ends with one of the keywords \code{this}, \code{self} or \code{super}, or
+\item $r$'s type conforms to a type-instance of the class which has the access to $x$. 
+\end{itemize}
+
+A different form of qualification is \lstinline!protected:[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
+
+\item
+The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Coral is virtual, so Coral has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
+
+\item
+The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of mixins. 
+
+We call a member $M$ of a class or mixin {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
+
+The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behavior can be turned off only in tests, if needed, and is implicitly turned on. 
+
+The \code{abstract override} modifier combination can be thus used with a full definition in a mixin and yet affect the class or mixin with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
+
+Additionally, an annotation \lstinline!@[Override]! exists for class members that triggers only warnings in case the member has no inherited member to override, but does not prevent the class from being created. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{abstract} local modifier is used in class declarations. It is never mandatory for classes with incomplete members or for declarations and definitions. It is implied (and therefore redundant) for mixins. Abstract classes can not be instantiated (an exception is raised if tried to do so), unless provided with mixins and/or a refinement which override all incomplete members of the class. Only abstract classes and (all) mixins can have abstract term members. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
+
+The \code{abstract} local modifier can be used with conjunction with \code{override} modifier for class member definitions. 
+
+Additionally, an annotation \lstinline!@[Abstract]! exists for classes and class members that triggers only warnings in case of instantiation, but does not prevent the instantiation. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{final} local modifier applies to class members definitions and to class definitions. Every \code{final} class member can not be overridden in subclasses. Every \code{final} class can not be inherited by a class or mixin. Members of final classes are implicitly also final. Note that \code{final} may not be applied to incomplete members, and can not be combined in one modifier list with the \code{sealed} local modifier. 
+
+Additionally, an annotation \lstinline!@[Final]! exists for classes and class members that triggers only warnings in case of inheriting or overriding respectively, but does not prevent the inheritance or overriding respectively. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or mixin is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
+
+Additionally, an annotation \lstinline!@[Sealed]! exists for classes and class members that triggers only warnings in case of inheriting outside the same source file, but does not prevent the inheritance. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+
+\item
+The \code{lazy} local modifier applies to value definitions. A \code{lazy} value is initialized the first time it is accessed (which might eventually never happen). Attempting to access a lazy value during its initialization is a blocking invocation until the value is initialized of failed to initialize. If an exception is thrown during initialization, the value is considered uninitialized and the initialization is restarted on later access, re-evaluating its right hand side. 
+
+\example The following code illustrates the use of qualified and unqualified private: 
+\begin{lstlisting}
+module Outer_Mod::Inner_Mod
+  class Outer
+    class Inner
+      private:[self] def e() end def
+      private def f() end def
+      private:[Outer] def g() end def
+      private:[Inner_Mod] def h() end def
+      private:[Outer_Mod] def i() end def
+    end class
+  end class
+end module
+\end{lstlisting}
+Here, accesses to the method \code{e} can appear anywhere within the instance of \code{Inner}, provided that the instance is also the receiver at the same time. Accesses to the method \code{f} can appear anywhere within the class \code{Inner}, including all receivers of the same class. Accesses to the method \code{g} can appear anywhere within the class \code{Outer}, but not outside of it. Accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod::Inner_Mod}, but not outside of it, similar to package-private methods in Java. Finally, accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod}, including modules and classes contained in it, but not outside of these.
+
+\end{itemize}
+
+A rule for access modifiers in scope of overriding: Any overriding member may be defined with the same access modifier, or with a less restrictive access modifier. No overriding member can have more restrictive access modifier, since the parent class would {\em lose access} to the member, and that is unacceptable. 
+\begin{itemize}
+\item Modifier \code{public} is less restrictive than any other access modifier. 
+\item Qualified modifier \code{protected} is less restrictive than an unqualified \code{protected}, only if the class that the modifier is qualified with is among base classes of the original class -- the original class must not lose access. 
+\item Qualified modifier \code{protected} is less restrictive than object-protected, only if the class that the modifier is qualified with is among base classes of the original class -- the original class must not lose access. 
+\item While \code{protected} is certainly less restrictive than \code{private}, private members are not inherited and thus can not be overridden. 
+\item While qualified \code{private} is certainly less restrictive than unqualified \code{private}, private members are not inherited and thus can not be overridden. 
+\end{itemize}
+The relaxations of access modifiers for overriding members are then available as follows: 
+\begin{itemize}
+\item \lstinline!protected:[self] $\rightarrow$ { protected, protected:[$C$], public }!
+\item \lstinline!protected $\rightarrow$ { protected:[$C$], public }!
+\item \lstinline!protected:[$C$] $\rightarrow$ { protected:[$D$], public }!
+
+This is only for the case where $C$ is accessible from within $D$. 
+\item \lstinline!protected:[$C$] $\rightarrow$ { public }!
+\item \lstinline!public $\rightarrow$ { public }!
+
+This is just for the sake of completeness, since change from public to public is not much of a relaxation. 
+\end{itemize}
+
+\section{Object Definitions}
+\label{sec:object-definitions}
+
+\syntax\begin{lstlisting}
+Obj_Def  ::= constant_id [Superclass] [semi]
+             {Obj_Expr}
+Obj_Expr ::= Clone_Expr
+           | Includes_Expr
+           | Prepend_Expr
+           | Implements_Expr
+           | Expr
+           | {Annotation} 'class' Class_Def 'end' ['class']
+           | {Annotation} 'object' Obj_Def 'end' ['object']
+           | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+           | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+           | {Annotation} 'interface' Ifc_Def 'end' 
+             ['interface']
+           | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied, only abstract compound types without class may appear as superclass, and it is an error if a concrete class appears as a superclass (even if that would be \lstinline!Class:[$C$]!, as it is prohibited to inherit from this class in user programs). If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}).
+
+Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. 
+
+\section{Module Definitions}
+\label{sec:module-definitions}
+
+\syntax\begin{lstlisting}
+Module_Def  ::= constant_id [Vendor_Arg] {'::' constant_id} 
+                [semi] {Module_Expr}
+Module_Expr ::= Expr
+              | Implements_Expr
+              | Const_Def
+\end{lstlisting}
+
+Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Coral's approach to modules solves these issues: 
+\begin{itemize}
+\item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
+\item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
+\item {\em Dependencies}. Module may define a tree of dependencies, including module vendor resolution, if a module of the same name is provided by different vendors. 
+\end{itemize}
+
+Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
+
+\section{Mixins}
+\label{sec:mixins}
+
+\syntax\begin{lstlisting}
+Mixin_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi] 
+               {Mixin_Expr}
+Mixin_Expr ::= Includes_Expr
+             | Prepend_Expr
+             | Implements_Expr
+             | Expr
+             | Requires_Expr
+             | {Annotation} 'class' Class_Def 'end' ['class']
+             | {Annotation} 'object' Obj_Def 'end' ['object']
+             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+             | {Annotation} 'interface' Ifc_Def 'end' 
+               ['interface']
+             | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+A mixin is a class that is meant to be injected into some other class as a mixin (including another mixins). Unlike normal classes, mixins can not be instantiated alone. 
+
+Assume a mixin $D$ defines some aspect of an instance $x$ of type $C$ (i.e. $D$ is a base class of $C$). Then the {\em actual supertype} of $D$ in $x$ is the compound type consisting of all the base classes in $\lin{C}$ that succeed $D$. The actual super type gives the context for resolving a \code{super} reference in a mixin (\sref{sec:self-this-super}). Note that the actual supertype depends on the type to which the mixin is added in a mixin composition; it is not statically known at the time the mixin is defined (the mixin must exist before being added anywhere). 
+
+If $D$ is not a mixin, then its actual supertype is simply its least proper supertype (which is statically known). 
+
+\example The following mixin defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The mixin also requires the self-type to be \lstinline[mathescape=false]!$T!. 
+\begin{lstlisting}[mathescape=false]
+mixin Comparable:[$T <: Comparable:[$T]]
+  requires $T
+  operator < (that: $T): Boolean end
+  operator <=(that: $T): Boolean := self < that || self = that
+  operator > (that: $T): Boolean := that < self
+  operator >=(that: $T): Boolean := that <= self
+end mixin
+\end{lstlisting}
+
+\subsection{Refinements}
+\label{sec:refinements}
+
+Syntax of refinements is given in section about compound types (\sref{sec:compound-types}). 
+
+Refinements in Coral are a special kind of mixins. There are two cases in which refinements may appear -- as nameless extensions to other types, or as a named mixin that has the ability to locally override or extend another type. The actual meaning depends on the usage of a refinement (see also \sref{sec:use-expressions}).
+
+% TODO: clear the syntaxes of declarations & definitions to be able to specify on a syntax level what can appear in a refinement
+
+\section{Protocols}
+\label{sec:protocols}
+
+\syntax\begin{lstlisting}
+Pro_Def         ::= constant_id [Type_Param_Clause]
+                    [Superclass] [semi] {Pro_Expr}
+Pro_Expr        ::= Dcl
+Implements_Expr ::= 'implements' Pro_Arg {',' Pro_Arg}
+Pro_Arg         ::= Simple_Type [Type_Args]
+\end{lstlisting}
+
+% TODO: after syntaxes are cleared, replace Dcl with a subset with only function declarations
+
+Protocols are classes that are abstract and can contain only abstract member declarations. Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}''. 
+
+\section{Interfaces}
+\label{sec:interfaces}
+
+\syntax\begin{lstlisting}
+Ifc_Def  ::= '[' Ifc_Kind ']' constant_id [Type_Param_Clause] 
+             [Superclass] [semi] {Ifc_Expr}
+Ifc_Kind ::= 'class' | 'mixin'
+Ifc_Expr ::= Dcl
+\end{lstlisting}
+
+Interfaces are filtered versions of classes with only declarations. Interfaces can be generated from classes or mixins by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols. 
+
+\section{Unions}
+\label{sec:unions}
+
+\syntax\begin{lstlisting}
+Const_Type_Def ::= constant_id 'is' 'union' 'of'
+                   '(' Type {semi Type} ')'
+\end{lstlisting}
+
+Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
+
+\section{Enums}
+\label{sec:enums}
+
+\syntax\begin{lstlisting}
+Const_Type_Def ::= constant_id [Superclass] 'is' ['bitfield'] 
+                   'enum' '(' Enum_Field {semi Enum_Field} ')'
+Enum_Field     ::= constant_id [':=' scalar_literal]
+\end{lstlisting}
+
+% TODO: when primary constructors are introduced, add them to enums as well
+
+Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
+
+\section{Dependent Type Declarations}
+\label{sec:dependent-types-decl}
+
+Dependent types consist of three kinds of types in Coral. First, there are {\em indexed types} (\sref{sec:indexed-types}), that are at the core of dependent types. Not every type in Coral is indexed. Secondly, there are two types that are similar and sometimes interchangeable: {\em constrained types} (\sref{sec:constrained-types}) and {\em range types} (\sref{sec:range-types}), each making use of indexed types in a specific way. Arguments applied to these types are then described in \sref{sec:dependent-types}. 
+
+Dependent types are neither concrete nor abstract. They only add a way of indexing existing types and defining subsets of all instances. As a side-effect of this restriction, variables involved in dependent type declarations are not involved in the rest of the class declarations and definitions, and for that reason don't need to be distinguished from other variables. 
+
+Dependent types (\sref{sec:dependent-types}) are allowed in these positions: 
+\begin{enumerate}
+\item Function parameters. 
+\item Function return types. 
+\item Variable declarations and definitions. 
+\item Type conversions. 
+\end{enumerate}
+
+\subsection{Indexed Types}
+\label{sec:indexed-types}
+
+\syntax\begin{lstlisting}
+Class_Def          ::= constant_id [Type_Param_Clause] 
+                       [Dep_Params] [Superclass] [semi] 
+                       {Indexed_Class_Expr}
+Dep_Params         ::= '@{' Index_Param {',' Index_Param} '}'
+Index_Param        ::= variable_id [':' Simple_Type]
+Indexed_Class_Expr ::= Class_Expr
+                     | Indexed_By_Clause
+Indexed_By_Clause  ::= 'indexed-with' Indexing_Expr
+Indexing_Expr      ::= '{|' Index_Param {',' Index_Param} '|'
+                       [Index_Exprs] '}'
+Index_Exprs        ::= Index_Expr {[semi] Index_Expr}
+Index_Expr         ::= Index_Var Index_Op Index_Val
+                     | Index_Val [Index_Op Index_Var]
+                     | '(' Index_Var Index_Op Index_Var ')'
+                     | '(' Index_Expr [Index_Con Index_Expr] ')'
+Index_Var          ::= variable_id 
+                     | ivar_id
+                     | 'self'
+Index_Val          ::= variable_id 
+                     | ivar_id 
+                     | literal
+                     | constant_id
+                     | Index_Fun '(' Index_Var {',' Index_Var} ')'
+\end{lstlisting}
+
+Indexed types declare what their index is, based on combinations of their input (indexing) variables, instance variables and operators and functions working with these. Since the scope of testing these {\em indexing constraints} is limited to cases listed in \sref{sec:dependent-types-decl}, independent on the intrinsic state of the instances, the instances may appear in states that do not conform to the constraints in between each indexing constraint test, but to pass as the dependent type, they must conform to the indexing constraint at the time the test is invoked, that is: 
+\begin{enumerate}
+\item Method resolution time (function parameters). 
+\item Returning from a function (function return types). 
+\item Getting assigned to a variable. 
+\item Getting converted to a type (unless the conversion is implicit to a different type). 
+\end{enumerate}
+
+Note that implicit conversions (\sref{sec:implicit-conversions}) can't apply to dependent types, since that would be a conversion from the same type to a subset of the same type. 
+
+\paragraph{\em Sorts}
+This part of Coral is inspired by the ATS language. ``Sorts'' are a types for which the language knows ordering of their values implicitly:
+\begin{itemize}
+\item \code{Boolean}.
+\item \code{Integer}.
+\item \code{Float}.
+\item \code{Char}.
+\item Every \code{enum} type (\sref{sec:enums}), where the ordering is given by the order in which each enumerated value appears. 
+\item Every type constrained from a pre-existing sort (\sref{sec:constrained-types}).
+\end{itemize}
+
+See references of these ``sort'' types for more details on their particular ordering. 
+
+``Sorts'' are the types allowed as types of {\em indexing variables} (see \code{Index_Param} syntax). If no type is specified, \code{Integer} ``sort'' is implied. 
+
+For the mentioned reasons, \code{Dep_Sort_Val} (used in \sref{sec:dependent-types}) are values that are members of ``sorts''. 
+
+Note that the \code{Index_Exprs} are optional -- meaning that the entire ``sort'' is used for indexing, not only a subset of it. 
+
+\paragraph{\em Indexing Operators}
+Indexing operators used to declare indexing constraints are the following for the \code{Index_Op} syntax:
+\begin{itemize}
+\item \lstinline!~! (bitwise negation): \lstinline!(Number) $\mapsto$ Number!
+\item \lstinline!+! (addition): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!-! (subtraction): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!*! (multiplication): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!**! (exponentiation): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!/! (division): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!%! (modulo): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!>! (greater than): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!>=! (greater than or equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!<! (less than): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!<=! (less than or equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline!=! (equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!)
+\item \lstinline!<>! (not equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline@!=@ (not equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
+\item \lstinline@!@ (boolean negation): \lstinline!(Boolean) $\mapsto$ Boolean!
+\item \lstinline!||! (boolean disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!&&! (boolean conjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!^^! (boolean exclusive disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!|! (bitwise or): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!&! (bitwise and): \lstinline!(Number, Number) $\mapsto$ Number!
+\item \lstinline!^! (bitwise xor): \lstinline!(Number, Number) $\mapsto$ Number!
+\end{itemize}
+These operators are static\footnote{That is, not overridable by user programs.}. In the list, \code{Number} can also be replaced by \code{Char}, but not by \code{Complex}. 
+
+\paragraph{\em Indexing Functions}
+Functions that can be used to constrain the indexing are also static and limited to work only with a restricted number of types:
+\begin{itemize}
+\item \lstinline!size: (List) $\mapsto$ Number!
+\item \lstinline!length: (String) $\mapsto$ Number!
+\item \lstinline!empty?: (List) $\mapsto$ Boolean!
+\item \lstinline!empty?: (String) $\mapsto$ Boolean!
+\item \lstinline!max: (*Number) $\mapsto$ Number!
+\item \lstinline!min: (*Number) $\mapsto$ Number!
+\item \lstinline!avg: (*Number) $\mapsto$ Number!
+\item \lstinline!sum: (*Number) $\mapsto$ Number!
+\item \lstinline!abs: (*Number) $\mapsto$ Number!
+\item \lstinline!sgn: (Number) $\mapsto$ Number!
+\item \lstinline!log: (Number, Number) $\mapsto$ Number!
+\item \lstinline!ln: (Number) $\mapsto$ Number!
+\item \lstinline!even?: (Number) $\mapsto$ Boolean!
+\item \lstinline!odd?: (Number) $\mapsto$ Boolean!
+\item \lstinline!concat: (*String) $\mapsto$ String!
+\item \lstinline!coalesce: (*Object) $\mapsto$ Object!
+\item \lstinline!lowercase: (String) $\mapsto$ String!
+\item \lstinline!uppercase: (String) $\mapsto$ String!
+\end{itemize}
+
+\paragraph{\em Indexing Constraint Concatenation}
+If there are multiple indexing constraints separated by the \lstinline![semi]! syntax, boolean conjunction is implied. Indexing constraints may be joined by a different boolean operations (\code{Index_Con}): 
+\begin{itemize}
+\item \lstinline!||! (boolean disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!&&! (boolean conjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\item \lstinline!^^! (boolean exclusive disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
+\end{itemize}
+
+\example The following is an example on how a \code{String} type might index itself: 
+\begin{lstlisting}
+class String @{length: Integer}
+  indexed-with {|length| @length = length}
+end
+\end{lstlisting}
+
+\subsection{Constrained Types}
+\label{sec:constrained-types}
+
+\syntax\begin{lstlisting}
+Type_Def      ::= constant_id [Type_Param_Clause] ':=' 
+                  Type [Dep_Params_Constr]
+Dep_Params_C  ::= '@{|' Index_Param {','} Index_Param '|'
+                  [Index_Exprs_C] '}'
+Index_Exprs_C ::= Index_Expr_C {[semi] Index_Expr_C}
+Index_Expr_C  ::= Index_Var_C Index_Op Index_Val_C
+                | Index_Val_C [Index_Op Index_Var_C]
+                | '(' Index_Var_C Index_Op Index_Var_C ')'
+                | '(' Index_Expr_C 
+                  [Index_Con Index_Expr_C] ')'
+Index_Var_C   ::= variable_id
+Index_Val_C   ::= variable_id
+                | literal
+                | constant_id
+                | Index_Fun '(' Index_Var_C 
+                  {',' Index_Var_C} ')'
+\end{lstlisting}
+
+Constrained types are basically aliases to indexed types with optionally further restricted indexing, which can only make use of the existing indexing constraints of the base type, using the indexing variables. No additional instance variable can be constrained by a constrained type directly. 
+
+The type of the indexing variable is implied to be the same as of the indexed type. 
+
+\example Here is an example of how Coral might declare the \code{Char} type:
+\begin{lstlisting}
+type Char := String @{|length| length = 1}
+\end{lstlisting}
+Notice how the constraint only uses the already existing indexing variable. 
+
+\example Here is an example of a different constrained type: 
+\begin{lstlisting}
+type Even_Positive_Integers ::= Integer @{|i| even?(i); i >= 0}
+\end{lstlisting}
+This constrained type declares \code{Even_Positive_Ints} to be positive integers that are even at the same time. 
+
+\subsection{Range Types}
+\label{sec:range-types}
+
+\syntax\begin{lstlisting}
+Const_Type_Def ::= constant_id 'is' 'range' 
+                   (Range_Expr 
+                 | '(' Range_Expr ')' [':' constant_id])
+\end{lstlisting}
+
+Range types are similar to constrained types, but limited in a few ways: they can constrain only indexed types that are indexed with exactly one indexing variable. The range expression is converted into the corresponding indexing constraint. 
+
+\example An example of a constrained type interchangeable with a range type:
+\begin{lstlisting}
+type Positive_Integers ::= Integer @{|i| i >= 0}
+type Positive_Integers is range 
+  (0 .. +Integer::Infinity) : Integer 
+end type
+type Positive_Integers is range
+  0 .. +Integer::Infinity
+end type
+\end{lstlisting}
+
+Types that do not require the ``\code{constant_id}'' are those that are ``sorts'' at the same time, so that the indexed type can be inferred. 
+
+\section{Units of Measure}
+\label{sec:units-of-measure}
+
+\syntax\begin{lstlisting}
+Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'unit-of-measure' 
+                   [semi Unit_Convs {semi Unit_Convs}]
+Unit_Name      ::= variable_id | constant_id
+                   [':' Superunit_Name]
+Superunit_Name ::= variable_id | constant_id
+Unit_Convs     ::= Unit_Name ':=' Unit_Conv
+Unit_Conv      ::= '(' Unit_Conv ')'
+                 | Unit_Elem [Unit_Op Unit_Elem]
+                 | Unit_Conv Unit_Op Unit_Conv
+Unit_Elem      ::= number_literal | Unit_Name
+\end{lstlisting}
+
+Numbers in Coral can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
+
+\example The following defines the measure \code{cm} (centimeter).
+\begin{lstlisting}
+type cm is unit-of-measure
+end type
+\end{lstlisting}
+
+\example The following defines the measure \code{ml} (milliliter) as a cubic centimeter (\lstinline!cm ** 3!).
+\begin{lstlisting}
+type ml is unit-of-measure
+  ml := cm ** 3
+end type
+\end{lstlisting}
+
+Every unit of measure is defined in the same scope as any other type would be, but the application of units of measure to numbers or {\em aggregated unit types} require to import units of measure by name into the scope where a unit of measure from a different unrelated module would be used. 
+
+\paragraph{\em Types Aggregated with Units of Measure}
+In addition to type parameters and dependency parameters of each type, every type may be parameterized with a units of measure aggregation. It is recommended to avoid mixing these three together. 
+
+\syntax\begin{lstlisting}[mathescape=false]
+Class_Def  ::= constant_id [Type_Param_Clause]
+               [Dep_Params] [UoM_Params] [Superclass] [semi]
+               {Indexed_Class_Expr}
+UoM_Params ::= '[<' UoM_Param {',' UoM_Param} '>]'
+UoM_Param  ::= '$' Unit_Name
+\end{lstlisting}
+
+Names of unit of measure parameters must not clash with names of type parameters, otherwise it is a compile-time error. 
+
+\paragraph{\em Persistence of Units of Measure}
+There is a huge difference between the way F\# handles units of measure and Coral's way. In F\#, the unit of measure information is lost after compilation, but persists in Coral in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
+
+\section{Record Types}
+\label{sec:record-types}
+
+\section{Struct Types}
+\label{sec:struct-types}
+
+\section{Nullability}
+\label{sec:nullability}
+
+
+
+
+
+
+
+
+
+
