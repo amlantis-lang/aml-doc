@@ -1,25 +1,7 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
-\section*{Preface}
-
-Coral is a Ruby-like programming language which enhances advanced object-oriented programming with elements of functional programming. Everything is an object, in this sense it's a pure object-oriented language. Object blueprints are described by classes. Classes can be composed in multiple ways – classic inheritance and/or mixin composition, along with prototype-oriented inheritance.
-
-Coral is also a functional language in the sense that every function is also an object, and generally, everything is a value. Therefore, function definitions can be nested and higher-order functions are supported out-of-the-box. Coral also has a limited support for pattern matching, which can emulate the algebraic types used in other functional languages.
-
-Coral has been developed since 2012 in a home environment out of pure enthusiasm for programming and out of a desire for a truly versatile language. This document is a work in progress and will stay that way forever. It acts as a reference for the language definition and some core library classes.
-
-Some of the languages that had major influence on the development of Coral, including syntax and behavior patterns, are Ruby, Ada, Scala, Java, C\#, F\# and Clojure. Coral tries to inherit their good parts and put them together in its own way.
-
-The vast majority of Coral's syntax is inspired by \emph{Ruby}. Coral uses keyword program parentheses in Ruby fashion. There is \lstinline@class@ \ldots \lstinline@end@, \lstinline@def@ \ldots \lstinline@end@, \lstinline@do@ \ldots \lstinline@end@, \lstinline@loop@ \ldots \lstinline@end@. Ruby itself is inspired by other languages, so this relation is transitive and Coral is inspired by those languages as well (for example, Ada). 
-
-Coral is inspired by \emph{Ada} in the way that user identifiers are formatted: \lstinline@Some_Constant_Name@ and — unlike in Ada, but quite similar to it — \lstinline@some_method_name@. Also, some control structures are inspired by Ada, such as loops, named loops, return expressions and record types. Pretty much like in Ada, Coral's control structures can be usually ended the same way: \lstinline@class@ \ldots \lstinline@end class@ etc. 
-
-\emph{Scala} influenced the type system in Coral. Syntax for existential types comes almost directly from it. However, Coral is a rather dynamically typed language, so the type checks are made eventually in runtime (but some limited type checks can be made during compile time as well). Moreover, the structure of this mere specification is inspired by Scala's specification. 
-
-From \emph{F\#}, Coral borrows some functional syntax (like function composition) and F\# also inspired the feature of~\nameref{sec:unitsofmeasuresyntax}. 
-
-\emph{Clojure} inspired Coral in the way functions can get their names. Coral realizes that turning function names into sentences does not always work, so it is possible to use dashes, plus signs and slashes inside of function names. Therefore, \lstinline@call/cc@ is a legit function identifier. Indeed, binary operators are required to be properly surrounded by whitespace or other non-identifier characters. 
+\input{chapters/00_Preface}
 
 \chapter{Lexical Syntax}
 
@@ -45,8 +27,8 @@ id_rest_con   ::= id_rest [id_rest_mid]
 id_rest_fun   ::= id_rest [id_rest_mid] ['?' | '!' | '=']
 id_rest_mid   ::= id_rest {('/' | '+' | '-') id_rest}
 importable_id ::= simple_id
-                  | function_id
-                  | constant_id
+                | function_id
+                | constant_id
 \end{lstlisting}
 
 There are three kinds of identifiers.
@@ -261,12 +243,14 @@ number_literal ::= real_number_literal
 	| complex_literal
 \end{lstlisting}
 
-\subsection{Units of Measure}\label{sec:unitsofmeasuresyntax}
+\subsection{Units of Measure}
+\label{sec:unitsofmeasuresyntax}
 
-Coral has an addition to number handling, called \textit{units of measure}. Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
+Coral has an addition to number handling, called {\em units of measure} (\sref{sec:units-of-measure}). Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
 
 \syntax\begin{lstlisting}
-annotated_number ::= number_literal '[<' units_of_measure_expr '>]'
+annotated_number ::= number_literal '[<' uom_expr '>]'
+uom_expr         ::= Unit_Conv {',' Unit_Conv}
 \end{lstlisting}
 
 \subsection{Character Literals}\label{sec:characterliterals}
@@ -619,6 +603,8 @@ A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ {$R$}@ represents valu
 If no refinement is given, the type is implicitly equivalent to the same type having an empty refinement. 
 
 A compound type may also consist of just a refinement \lstinline@{$R$}@ with no preceding component types -- such a type has an implicit component type \code{Object} and describes the member values as ``any value, as long as it has what the refinement requires'', thus it works like an anonymous protocol. 
+
+If a compound type does not contain a concrete class type, then \code{Object} is implied in case the type is used as a concrete class\footnote{Meaning that the compound type is used as an ad-hoc (possibly anonymous) class, e.g. to create new instances of it.}.
 
 \subsection{Function Types}
 \label{sec:function-types}
@@ -2138,13 +2124,9 @@ Obj_Expr ::= Clone_Expr
            | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
-Object definitions emphasize the fact that classes in Coral are also objects. Every object defined by an object definition $C$ is a singleton instance of \lstinline!Class:[$C$]!. Such an object may itself implement protocols and include mixins, if desirable. The class defined by an object definition is empty and inherits from its superclasses. When accompanied by a non-empty class, the object definition is also called the {\em class object}, and may have methods defined by other means as well (see examples in \sref{sec:metaclasses}).
-
-Object definition is almost the same as a class definition, except that members defined in it and \code{clone}, \code{include}, \code{prepend} and \code{implements} expressions are relative to the class object, and not the class itself -- that is, every member defined in an object definition is a class member, not a class instance member. Types defined in the object definition are equivalent to types defined in a class definition. 
+Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied, only abstract compound types without class may appear as superclass, and it is an error if a concrete class appears as a superclass (even if that would be \lstinline!Class:[$C$]!, as it is prohibited to inherit from this class in user programs). If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}).
 
 Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. 
-
-If an object definition is preceded by a class definition of the same name in the same source file, the superclass is transferred from the class definition and need not be explicitly stated. It is an error if the superclasses differ. It is also an error if the object definition has no explicit superclass (which is then implicitly \code{Object}), and a class with an explicit superclass other than \code{Object} is loaded dynamically -- since then the superclasses would differ again. 
 
 \section{Module Definitions}
 \label{sec:module-definitions}
@@ -2282,7 +2264,7 @@ Dependent types (\sref{sec:dependent-types}) are allowed in these positions:
 
 \syntax\begin{lstlisting}
 Class_Def          ::= constant_id [Type_Param_Clause] 
-                       {Dep_Params} [Superclass] [semi] 
+                       [Dep_Params] [Superclass] [semi] 
                        {Indexed_Class_Expr}
 Dep_Params         ::= '@{' Index_Param {',' Index_Param} '}'
 Index_Param        ::= variable_id [':' Simple_Type]
@@ -2464,6 +2446,52 @@ Types that do not require the ``\code{constant_id}'' are those that are ``sorts'
 
 \section{Units of Measure}
 \label{sec:units-of-measure}
+
+\syntax\begin{lstlisting}
+Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'unit-of-measure' 
+                   [semi Unit_Convs {semi Unit_Convs}]
+Unit_Name      ::= variable_id | constant_id
+                   [':' Superunit_Name]
+Superunit_Name ::= variable_id | constant_id
+Unit_Convs     ::= Unit_Name ':=' Unit_Conv
+Unit_Conv      ::= '(' Unit_Conv ')'
+                 | Unit_Elem [Unit_Op Unit_Elem]
+                 | Unit_Conv Unit_Op Unit_Conv
+Unit_Elem      ::= number_literal | Unit_Name
+\end{lstlisting}
+
+Numbers in Coral can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
+
+\example The following defines the measure \code{cm} (centimeter).
+\begin{lstlisting}
+type cm is unit-of-measure
+end type
+\end{lstlisting}
+
+\example The following defines the measure \code{ml} (milliliter) as a cubic centimeter (\lstinline!cm ** 3!).
+\begin{lstlisting}
+type ml is unit-of-measure
+  ml := cm ** 3
+end type
+\end{lstlisting}
+
+Every unit of measure is defined in the same scope as any other type would be, but the application of units of measure to numbers or {\em aggregated unit types} require to import units of measure by name into the scope where a unit of measure from a different unrelated module would be used. 
+
+\paragraph{\em Types Aggregated with Units of Measure}
+In addition to type parameters and dependency parameters of each type, every type may be parameterized with a units of measure aggregation. It is recommended to avoid mixing these three together. 
+
+\syntax\begin{lstlisting}[mathescape=false]
+Class_Def  ::= constant_id [Type_Param_Clause]
+               [Dep_Params] [UoM_Params] [Superclass] [semi]
+               {Indexed_Class_Expr}
+UoM_Params ::= '[<' UoM_Param {',' UoM_Param} '>]'
+UoM_Param  ::= '$' Unit_Name
+\end{lstlisting}
+
+Names of unit of measure parameters must not clash with names of type parameters, otherwise it is a compile-time error. 
+
+\paragraph{\em Persistence of Units of Measure}
+There is a huge difference between the way F\# handles units of measure and Coral's way. In F\#, the unit of measure information is lost after compilation, but persists in Coral in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
 
 \section{Record Types}
 \label{sec:record-types}
