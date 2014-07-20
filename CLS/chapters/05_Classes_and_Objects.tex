@@ -19,8 +19,19 @@ Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}),
 \label{sec:class-definitions}
 
 \syntax\begin{lstlisting}
-Class_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi]
+Class_Def  ::= constant_id [Type_Param_Clause] 
+               [Class_Param_Clauses] [Superclass] [semi]
                {Class_Expr}
+Class_Param_Clauses 
+           ::= {Annotation} [Access_Modifier] {Class_Param_Clause}
+               ['(' 'implicit' Class_Params ')']
+Class_Param_Clause
+           ::= '(' [Class_Params] ')'
+Class_Params 
+           ::= Class_Param {',' Class_Param}
+Class_Param 
+           ::= {Annotation} [{Modifier} ('val' | 'var')]
+               variable_id [':' Param_Type] [':=' Expr]
 Superclass ::= ':' Compound_Type
 Class_Expr ::= Ctor_Expr
              | Dtor_Expr
@@ -40,7 +51,7 @@ Class_Expr ::= Ctor_Expr
 
 A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
 
-A class' type signature consists of the class name (the first \code{constant_id} before type parameters clause), the type parameters, the superclass, included and prepended mixins and implemented protocols. 
+A class' type signature consists of the class name (the first \code{constant_id} before type parameters clause), the type parameters, the formal value parameter clauses for the {\em primary constructor}, the superclass, included and prepended mixins and implemented protocols. 
 
 Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
 
@@ -295,17 +306,22 @@ Since class-level blocks are basically functions, the members defined inside of 
 \syntax\begin{lstlisting}
 Ctor_Def     ::= 'constructor' Ctor_Fun_Def 'end' ['constructor']
                | 'constructor' Ctor_Alt_Def
-Ctor_Fun_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] semi Expr
-Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] ':=' Expr
+Ctor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
+Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
 Dtor_Def     ::= 'destructor' Dtor_Fun_Def 'end' ['destructor']
 Dtor_Fun_Def ::= [Fun_Dec] semi Expr
 \end{lstlisting}
 
 Constructors and destructors can only be defined inside of class-level blocks (\sref{sec:class-level-blocks}). Constructors are functions that can never be called by a name, instead, they are invoked indirectly by creating a new instance of a class (an object value), from the \lstinline!allocate! method of \code{Class}. Destructors are invoked indirectly when an object is to be deallocated, that is, when its reference count reaches \code{0} and all its soft references are released. 
 
-Constructors can have any number of parameters, including none at all. Every constructor has a special behavior that invokes its super-constructor with matching parameters before any other code, unless explicitly invoked. It is an error if a constructor invokes a super-constructor more than 1 times. If a constructor does not have a matching super-constructor, then a {\em default constructor} or an {\em implicit constructor} is used.
+Constructors can have any number of parameters, including none at all. Every constructor has a special behavior that invokes its super-constructor with matching parameters before any other code, unless explicitly invoked. It is an error if a constructor invokes a super-constructor more than 1 times. If a constructor does not have a matching super-constructor, then a {\em default constructor} or an {\em implicit constructor} is used. It is an error if the same constructor is invoked multiple times during construction of the same object. 
 
 A different constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a constructor invokes a different constructor of the same class this way, the super-constructor is not implicitly invoked (since it is invoked in the other constructors). 
+
+Constructors create instances that have reference count of \code{1}. If a constructor has multiple parameter lists, then the last curried function is the one that sets the reference count to \code{1}. 
+
+\paragraph{\em Primary constructor}
+A primary constructor is defined by the formal value parameters of the class. Unlike in Scala, there is no requirement for each {\em auxiliary constructor} (every other constructor than the primary one) to invoke this constructor. However, if value and variable declarations of instance variables use as the default value a parameter of a primary constructor, then indeed auxiliary constructor must take care of initializing these values and variables. Also, constructors are inherited in subclasses. There is no block of code dedicated only to the primary constructor: instead, the class-level block may utilize its parameters to initialize each new instance. Moreover, if a formal value parameter of the class is prefixed with a \code{val} keyword, then a getter function is added to the class. If a formal value parameter of the class is prefixed with a \code{var} keyword, then in addition to a getter function, a setter function is added to the class as well. Annotations before the formal value parameters apply to the primary constructor. Modifiers from the formal value parameters are carried over to the generated accessor functions. A formal parameter prefixed by \code{val} or \code{var} may not at the same time be a call-by-name parameter (\sref{sec:by-name-parameters}). If no formal value parameters are given to the class, a parameterless primary constructor is added implicitly, corresponding to the implicit constructor of the class. 
 
 \paragraph{\em Default constructor}
 A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
@@ -365,8 +381,8 @@ end class
 \syntax\begin{lstlisting}
 CCtor_Def     ::= 'clone' CCtor_Fun_Def 'end' ['clone']
                 | 'clone' CCtor_Alt_Def
-CCtor_Fun_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] semi Expr
-CCtor_Alt_Def ::= [Fun_Tpc] [Param_Clause] [Fun_Dec] ':=' Expr
+CCtor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
+CCtor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
 \end{lstlisting}
 
 Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
@@ -1037,6 +1053,14 @@ The implicit preference may be changed in two levels. These levels are {\em pref
 Preferred nullability is switched by annotations on each class: \code{Nullable}. The annotation has one positional parameter of type \code{Boolean} defining what the nullability will be (\code{yes} for nullable types, \code{no} for not-nullable types), and a named parameter \lstinline[deletekeywords={override}]!:override! of type \code{Boolean}, defining whether subclasses may override this preference, and implicitly set to \code{yes}, meaning that subclasses may override this preference by default. 
 
 All types in Coral are not-nullable implicitly to prevent \code{Method_Not_Found_Error}s, resulting from sending messages to \code{nil}. But it is clear that for some cases, nullability of types may be desired, such as with dictionaries, so that \code{nil} can be returned for keys that have no value in the dictionary. However, it is preferred to use the \code{Option} type wherever possible to indicate that the value may not be present, and moreover, the \code{Option} type can be used in pattern matching even for values that are not of the \code{Option} type, utilizing an extractor pattern (\sref{sec:extractor-patterns}) with \code{Some} and a constant pattern (\sref{sec:constant-patterns}) with \code{None}, instead of constructor patterns (\sref{sec:constructor-patterns}). This is again different from Scala, where \code{Some} and \code{None} can't be used to match any value, only \code{Option} values. This difference in Coral makes nullable types and the \code{Option} type interoperable in pattern matching. 
+
+\example Here are all four versions of the nullability annotation. 
+\begin{lstlisting}[deletekeywords={override}]
+@[Nullable yes, override: yes]
+@[Nullable yes, override: no]
+@[Nullable no, override: yes]
+@[Nullable no, override: no]
+\end{lstlisting}
 
 % TBD: case classes after primary constructors are available
 % TBD: when safe navigation is introduced, make a note that it has the same effect on nils as on None
