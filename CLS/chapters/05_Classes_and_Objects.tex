@@ -51,7 +51,40 @@ Class_Expr ::= Ctor_Expr
 
 A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
 
-A class' type signature consists of the class name (the first \code{constant_id} before type parameters clause), the type parameters, the formal value parameter clauses for the {\em primary constructor}, the superclass, included and prepended mixins and implemented protocols. 
+The most general form of a class definition is
+\begin{lstlisting}
+$cas$
+class $c$ :[$tps$] @{$dps$} [<$uomps$>] 
+  $as$ $m$($ps_1$)$\ldots$($ps_n$)
+  : $t$
+  $exprs \ldots$
+end class
+\end{lstlisting}
+for $n \geq 0$. 
+
+Here, 
+\begin{itemize}
+\item[]
+$cas$ is a possibly empty sequence of annotations (\sref{sec:annotations}) that are applied to the whole class. 
+
+\item[]
+$c$ is the name of the class to be defined. 
+
+\item[]
+$tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline!:[$tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
+
+\item[]
+$dps$ is a non-empty list of indexing parameters for dependent types (\sref{sec:dependent-types-decl}). The indexing parameter section \lstinline!@{$tps$}! may be omitted. A class with an indexing parameter section is called {\em indexed}. Indexing arguments are reified in Coral, i.e. indexing arguments are preserved in runtime. 
+
+\item[]
+$uomps$ is a non-empty list of unit of measure parameters for aggregated types (\sref{sec:units-of-measure}). The unit of measure parameter section \lstinline![<$uomps$>]! may be omitted. A class with a unit of measure parameter section is called {\em aggregated with units of measure}. Units of measure arguments are reified in Coral, i.e. units of measure arguments are preserved in runtime. 
+
+\item[]
+$as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If any annotations are given at this point, they apply to the primary constructor of the class. 
+
+% TBD: explain the other sections
+% TBD: add explicit primary `constructor (_)`
+\end{itemize}
 
 Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
 
@@ -311,6 +344,8 @@ Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
 Dtor_Def     ::= 'destructor' Dtor_Fun_Def 'end' ['destructor']
 Dtor_Fun_Def ::= [Fun_Dec] semi Expr
 \end{lstlisting}
+
+% TBD: rework this section, restrict constructor invocations, forbid inheritance of constructors
 
 Constructors and destructors can only be defined inside of class-level blocks (\sref{sec:class-level-blocks}). Constructors are functions that can never be called by a name, instead, they are invoked indirectly by creating a new instance of a class (an object value), from the \lstinline!allocate! method of \code{Class}. Destructors are invoked indirectly when an object is to be deallocated, that is, when its reference count reaches \code{0} and all its soft references are released. 
 
