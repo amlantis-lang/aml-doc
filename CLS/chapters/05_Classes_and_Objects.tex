@@ -5,10 +5,15 @@
 
 \syntax\begin{lstlisting}
 Const_Def ::= {Annotation} 'class' Class_Def 'end' ['class']
+            | {Annotation} 'class' Class_Alt_Def
             | {Annotation} 'object' Obj_Def 'end' ['object']
+            | {Annotation} 'object' Obj_Alt_Def
             | {Annotation} 'module' Module_Def 'end' ['module']
+            | {Annotation} 'module' Module_Alt_Def
             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+            | {Annotation} 'mixin' Mixin_Alt_Def
             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+            | {Annotation} 'protocol' Pro_Alt_Def
             | {Annotation} 'interface' Ifc_Def 'end' ['interface']
             | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
@@ -20,8 +25,12 @@ Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}),
 
 \syntax\begin{lstlisting}
 Class_Def  ::= constant_id [Type_Param_Clause] 
-               [Class_Param_Clauses] [Superclass] [semi]
+               [Class_Param_Clauses] (Superclass [semi] | 'begin')
                {Class_Expr}
+Class_Alt_Def
+           ::= constant_id [Type_Param_Clause] 
+               [Class_Param_Clauses] [Superclass] '{'
+               {Class_Expr} '}'
 Class_Param_Clauses 
            ::= {Annotation} [Access_Modifier] {Class_Param_Clause}
                ['(' 'implicit' Class_Params ')']
@@ -57,6 +66,7 @@ $cas$
 class $c$ :[$tps$] @[$dps$] [<$uomps$>] 
   $as$ $m$($ps_1$)$\ldots$($ps_n$)
   extends $t$
+begin
   $exprs \ldots$
 end class
 \end{lstlisting}
@@ -90,12 +100,13 @@ Expressions in the class-level block may define new members or overwrite members
 
 For superclasses, the following statements hold:
 \begin{itemize}
-\item The superclass is implicitly \code{Object}, if no explicit superclass is given. 
+\item The superclass is implicitly \code{Object}, if no explicit superclass is given.
+\item Only \code{Object} can state `\lstinline!()!' as its superclass, since it has no superclass. 
 \item Explicitly given superclass $T$, if $T$ is a single class, is that single class. 
 \item Explicitly given superclass $T$, if $T$ is a compound type with a class member (\sref{sec:compound-types}), is the class member of $T$ and all other members of the compound type are mixed in (\sref{sec:mixins}). 
 \item Explicitly given superclass $T$, if $T$ is a compound type without a class member (\sref{sec:compound-types}), is implicitly \code{Object} and all other members of the compound type are mixed in (\sref{sec:mixins}) if no member of the compound type has a class as its superclass, or that superclass of one of the members. If there are more members with a class-superclass, there must exist an ordering of these class-superclasses $C_1 \commadots C_n$, such that for each $i, 1 \le i \le n-1$: \lstinline!$C_i$ <: $C_{i+1}$!. It is an error if no such ordering exists. If such ordering exists, the superclass is implied to be $C_1$. 
 \item Superclass is never a function type (\sref{sec:function-types}). 
-\item Superclass is never a special type, i.e. unions (\sref{sec:unions}), enums (\sref{sec:enums}), range types (\sref{sec:range-types}), units of measure (\sref{sec:units-of-measure}), record types (\sref{sec:record-types}) \& struct types (\sref{sec:struct-types}). 
+\item Superclass is never a special type, i.e. unions (\sref{sec:unions}), enums (\sref{sec:enums}), range types (\sref{sec:range-types}), units of measure (\sref{sec:units-of-measure}) \& record types (\sref{sec:record-types}).. 
 \item Superclass is always a class, never a mixin (\sref{sec:mixins}), a protocol (\sref{sec:protocols}) or an interface (\sref{sec:interfaces}). 
 \item Every single class has at most one direct superclass. Only one class has no superclass: \code{Object}, no other class can be without a superclass. 
 \end{itemize}
@@ -104,13 +115,13 @@ It is an error if any of the mixed in mixins from a compound type has a class-su
 
 \example Consider the following class definitions:
 \begin{lstlisting}
-class Base : Object refine {}
-mixin Mixin : Base refine {}
-object O : Mixin refine {}
+class Base extends Object refine {}
+mixin Mixin extends Base refine {}
+object O extends Mixin refine {}
 \end{lstlisting}
 In this case, the definition of \code{O} is implied to be:
 \begin{lstlisting}
-object O : Base with Mixin refine {}
+object O extends Base with Mixin refine {}
 \end{lstlisting}
 
 \subsection{Metaclasses \& Eigenclasses}
@@ -156,6 +167,7 @@ Another way to access an eigenclass is to use the \lstinline!class << obj; $\ldo
 \example Direct access to the eigenclass of any object, here a class' eigenclass:
 \begin{lstlisting}
 class A
+begin
   class << self
     def a_class_method
       "A.a_class_method"
@@ -168,6 +180,7 @@ Class \code{A} uses the \lstinline!class << obj; $\ldots$; end! construct to get
 \example Alternative direct access to the eigenclass of any object, here a class' eigenclass:
 \begin{lstlisting}
 class B
+begin
   self.eigenclass do
     def a_class_method
       "B.a_class_method"
@@ -180,6 +193,7 @@ Class \code{B} uses the \code{eigenclass} method, which---given a block---evalua
 \example Indirect access to the eigenclass using a singleton method definition:
 \begin{lstlisting}
 class C
+begin
   def self.a_class_method
     "C.a_class_method"
   end def
@@ -190,6 +204,7 @@ Class \code{C} uses singleton method definition to add methods to the eigenclass
 \example Indirect access to the eigenclass using a class object definition:
 \begin{lstlisting}
 class D
+begin
   object D
     def a_class_method
       "D.a_class_method"
@@ -231,10 +246,10 @@ Here $\uright$ denotes concatenation, where elements of the right operand replac
 
 \example Consider the following class definitions.\footnote{Here we say ``class'', but that term includes now mixins as well.}
 \begin{lstlisting}
-class Abstract_Iterator : Object; $\ldots$ end
-mixin Rich_Iterator : Abstract_Iterator; $\ldots$ end
-class String_Iterator : Abstract_Iterator; $\ldots$ end
-class Iterator : String_Iterator with Rich_Iterator; $\ldots$ end
+class Abstract_Iterator extends Object; $\ldots$ end
+mixin Rich_Iterator extends Abstract_Iterator; $\ldots$ end
+class String_Iterator extends Abstract_Iterator; $\ldots$ end
+class Iterator extends String_Iterator with Rich_Iterator; $\ldots$ end
 \end{lstlisting}
 Then the linearization of class \code{Iterator} is
 \begin{lstlisting}
@@ -260,7 +275,7 @@ If a mixin $M$ is already (included in or prepended to)\footnote{This is importa
 
 \example A sample mixin schema:
 \begin{lstlisting}
-class C : D with Some_Mixin
+class C extends D with Some_Mixin
 end
 
 C $\rightarrow$ [Some_Mixin] $\rightarrow$ [D]
