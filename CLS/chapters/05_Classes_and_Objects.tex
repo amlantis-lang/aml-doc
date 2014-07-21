@@ -32,7 +32,7 @@ Class_Params
 Class_Param 
            ::= {Annotation} [{Modifier} ('val' | 'var')]
                variable_id [':' Param_Type] [':=' Expr]
-Superclass ::= ':' Compound_Type
+Superclass ::= 'extends' Compound_Type
 Class_Expr ::= Ctor_Expr
              | Dtor_Expr
              | Clone_Expr
@@ -54,9 +54,9 @@ A class definition defines the type signature, behavior and initial state of a c
 The most general form of a class definition is
 \begin{lstlisting}
 $cas$
-class $c$ :[$tps$] @{$dps$} [<$uomps$>] 
+class $c$ :[$tps$] @[$dps$] [<$uomps$>] 
   $as$ $m$($ps_1$)$\ldots$($ps_n$)
-  : $t$
+  extends $t$
   $exprs \ldots$
 end class
 \end{lstlisting}

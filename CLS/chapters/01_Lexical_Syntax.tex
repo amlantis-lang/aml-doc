@@ -1,11 +1,35 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
+\newcommand{\Unicode}[1]{\mbox{$\backslash$u{#1}}}
+\newcommand{\UnicodeRange}[2]{\mbox{$\backslash$u{#1}-$\backslash$u{#2}}}
+
 \chapter{Lexical Syntax}
 
 Coral programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Coral programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs might use may not support the full Unicode character set.
 
 Grammar of lexical tokens is given in the following sections. These tokens are then used as terminal symbols of the semantical grammar. 
+
+To construct tokens, characters are distinguished according to the following classes (Unicode general category given in parentheses):
+\begin{itemize}
+\item 
+Whitespace characters. \Unicode{0020} | \Unicode{0009} | \Unicode{000D} | \Unicode{000A} (space, tab character, carriage return, line feed)
+
+\item
+Letters, which include lower case letters (Ll), upper case letters (Lu), title-case letters (Lt), other letters (Lo), letter numerals (Nl), modifier letters (Lm) and the two characters \Unicode{0024} `\lstinline[mathescape=false]!$!' and \Unicode{005F} `\lstinline!_!', which both count as upper case letters. 
+
+\item
+Digits `\lstinline!0!' | \ldots \thinspace | `\lstinline!9!'. 
+
+\item
+Parentheses. `\lstinline!(!' | `\lstinline!)!' | `\lstinline![!' | `\lstinline!]!' | `\lstinline!{!' | `\lstinline!}!'
+
+\item
+Delimiter characters. `\lstinline!'!' | `\lstinline!"!' | `\lstinline!.!' | `\lstinline!;!' | '\lstinline!,!'
+
+\item
+Operator characters. These consist of all printable ASCII characters \UnicodeRange{0020}{007F} that are in none of the sets above, mathematical symbols (Sm) and other symbols (So). 
+\end{itemize}
 
 \newpage
 
@@ -17,17 +41,19 @@ simple_id     ::= (lower | '_') [id_rest]
 variable_id   ::= simple_id | '_' | '`' simple_id '`'
 ivar_id       ::= '@' simple_id
 cvar_id       ::= '@@' simple_id
+op_id         ::= opchar {opchar}
 function_id   ::= simple_id [id_rest_fun]
                 | '`' simple_id [id_rest_fun] '`'
 constant_id   ::= upper [id_rest_con]
                 | '`' upper [id_rest_con] '`'
 id_rest       ::= {letter | digit | '_'}
 id_rest_con   ::= id_rest [id_rest_mid]
-id_rest_fun   ::= id_rest [id_rest_mid] ['?' | '!' | '=']
+id_rest_fun   ::= id_rest [id_rest_mid] [['_'] op_id]
 id_rest_mid   ::= id_rest {('/' | '+' | '-') id_rest}
 importable_id ::= simple_id
                 | function_id
                 | constant_id
+                | '`' op_id '`'
 \end{lstlisting}
 
 There are three kinds of identifiers.
@@ -52,19 +78,19 @@ abstract    alias       annotation  as          begin
 bitfield    break       case        cast        catch
 class       clone       cloned      constant    constructor
 declare     def         destructor  do          else
-elsif       end         ensure      enum        final
-for         for-some    function    get         goto
-if          indexed-with            implements  implicit
-in          include     interface   is          lazy
-let         loop        match       memoize     message
-method      mixin       module      native      next
-nil         no          object      of          opaque
-operator    out         override    prepend     private
-property    protected   protocol    public      raise
-range       record      redo        refine      rescue
-retry       return      requires    sealed      self
-set         singleton-type          skip        step
-struct      super       template    test        then
+elsif       end         ensure      enum        extends 
+final       for         for-some    function    get
+goto        if          indexed-with            implements
+implicit    in          include     interface   is
+lazy        let         loop        match       memoize
+message     method      mixin       module      native
+next        nil         no          object      of
+opaque      operator    out         override    prepend
+private     property    protected   protocol    public
+raise       range       record      redo        refine
+rescue      retry       return      requires    sealed
+self        set         singleton-type          skip
+step        super       template    test        then
 this        throw       transparent type        undef
 unless      until       union       unit-of-measure
 use         val         var         yes         weak
@@ -122,30 +148,30 @@ There are literals for numbers (including integer, floating point and complex), 
 
 \syntax\begin{lstlisting}
 literal ::= integer_literal
-	| floating_point_literal
-	| complex_literal
-	| character_literal
-	| string_literal
-	| symbol_literal
-	| regular_expression_literal
-	| collection_literal
-	| 'nil'
+	      | floating_point_literal
+	      | complex_literal
+	      | character_literal
+	      | string_literal
+	      | symbol_literal
+	      | regular_expression_literal
+	      | collection_literal
+	      | 'nil'
 \end{lstlisting}
 
 \subsection{Integer Literals}\label{sec:integerliterals}
 
 \syntax\begin{lstlisting}
 integer_literal     ::= ['+' | '-'] (decimal_numeral
-	| hexadecimal_numeral
-	| octal_numeral
-	| binary_numeral)
+	                  | hexadecimal_numeral
+	                  | octal_numeral
+	                  | binary_numeral)
 decimal_numeral     ::= '0' | non_zero_digit {['_'] digit}
 hexadecimal_numeral ::= '0x' | hex_digit {['_'] hex_digit}
 digit               ::= '0' | non_zero_digit
-non_zero_digit      ::= '1' | … | '9'
-hex_digit           ::= '1' | … | '9' | 'a' | … | 'f'
+non_zero_digit      ::= '1' | $\cdots$ | '9'
+hex_digit           ::= '1' | $\cdots$ | '9' | 'a' | $\cdots$ | 'f'
 octal_numeral       ::= '0' oct_digit {'_' oct_digit}
-oct_digit           ::= '0' | … | '7'
+oct_digit           ::= '0' | $\cdots$ | '7'
 binary_numeral      ::= '0b' bin_digit {['_'] bin_digit}
 bin_digit           ::= '0' | '1'
 \end{lstlisting}
@@ -195,16 +221,18 @@ For use with range types, \lstinline@Number::Integer@ and \lstinline@Number::Int
 
 \syntax\begin{lstlisting}
 float_literal ::= ['+' | '-'] non_zero_digit 
-		{['_'] digit} '.' digit {['_'] digit}
-		[exponent_part] [float_type]
-	| ['+' | '-'] digit {['_'] digit} exponent_part [float_type]
-	| ['+' | '-'] digit {['_'] digit} [exponent_part] [float_type]
-	| ['+' | '-'] '0x' hex_digit
-		{['_'] hex_digit} '.' hex_digit {['_'] hex_digit}
-		[float_type]
-	| ['+' | '-'] '0b' bin_digit
-		{['_'] bin_digit} '.' bin_digit {['_'] bin_digit}
-		[float_type]
+		          {['_'] digit} '.' digit {['_'] digit}
+		          [exponent_part] [float_type]
+	            | ['+' | '-'] digit {['_'] digit} exponent_part 
+	              [float_type]
+	            | ['+' | '-'] digit {['_'] digit} [exponent_part] 
+	              float_type
+	            | ['+' | '-'] '0x' hex_digit
+		          {['_'] hex_digit} '.' hex_digit 
+		          {['_'] hex_digit} [float_type]
+	            | ['+' | '-'] '0b' bin_digit
+		          {['_'] bin_digit} '.' bin_digit 
+		          {['_'] bin_digit} [float_type]
 exponent_part ::= 'e' ['+' | '-'] digit {['_'] digit}
 float_type    ::= 'f' | 'd' | 'q' | 'df'
 \end{lstlisting}

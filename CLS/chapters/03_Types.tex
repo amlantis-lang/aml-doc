@@ -251,7 +251,7 @@ Nullable types in this form can appear as types of variables, parameters and ret
 
 \syntax\begin{lstlisting}
 Dep_Type ::= Simple_Type Dep_Args
-Dep_Args ::= '@{' Dep_Arg {',' Dep_Arg} '}'
+Dep_Args ::= '@[' Dep_Arg {',' Dep_Arg} ']'
 Dep_Arg  ::= variable_id | Dep_Sort_Val
 \end{lstlisting}
 
@@ -259,8 +259,8 @@ Dependent types in Coral are implemented by simple indexed types. Dependent type
 
 \example The following are examples of dependent types representing the number 42 and all strings of length 42:
 \begin{lstlisting}
-Integer@{42}
-String@{42}
+Integer@[42]
+String@[42]
 \end{lstlisting}
 
 \section{Non-Value Types}

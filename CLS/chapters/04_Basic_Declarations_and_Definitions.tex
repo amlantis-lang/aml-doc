@@ -35,9 +35,9 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 \section{Value Declarations \& Definitions}
 \label{sec:value-dcl-def}
 
-A value declaration \lstinline@val $x$ : $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$ : $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$ : $T$+ introduces $x$ as a name of a class instance value of type $T$. 
+A value declaration \lstinline@val $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
 
-A value definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
+A value definition \lstinline@val $x$: $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
 
 A value in this sense\footnote{Everything in Coral is a value -- remember, Coral is also a functional language, to some extent.} is an immutable variable. A declared value can be assigned just once\footnote{A similar way that \lstinline[language=Java]@final@ variables or members in Java can be assigned just once, but Java furthermore requires that this assignment will happen in every code path, Coral does not impose such requirement.}, a defined value is already assigned from its definition. 
 
@@ -47,7 +47,7 @@ Evaluation of the value definition implies evaluation of its right-hand side $e$
 
 A {\em lazy value} is of the form
 \begin{quote}\begin{lstlisting}
-lazy val $x$ : $T$ := $e$
+lazy val $x$: $T$ := $e$
 \end{lstlisting}\end{quote}
 
 A lazy value may only be defined, and a value of the same name (binding) may be declared prior to the value definition, but never as a lazy value. 
@@ -56,7 +56,7 @@ The effect of the value definition is to bind $x$ to the value of $e$ converted 
 
 A {\em constant value definition} is of the form 
 \begin{quote}\begin{lstlisting}
-let $x$ : $T$ := $e$
+let $x$: $T$ := $e$
 \end{lstlisting}\end{quote}
 where $e$ is an expression that is supposed to be treated as constant in the same block from its occurrence on. Values defined with \code{let} have certain limitations and properties:
 
@@ -140,21 +140,21 @@ val xs := x@\$@[2]
 
 The name of any declared or defined value must not end with \lstinline@=@. 
 
-A value declaration ~\lstinline@val $x_1 \commadots x_n$ : $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$ : $T$; $\ldots$; val $x_n$ : $T$@. A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1$ := $e$; $\ldots$; val $p_n$ := $e$@. A value definition ~\lstinline@val $p_1 \commadots p_n : T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1 : T$ := $e$; $\ldots$; val $p_n : T$ := $e$@.
+A value declaration ~\lstinline@val $x_1 \commadots x_n$: $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$: $T$; $\ldots$; val $x_n$: $T$@. A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1$ := $e$; $\ldots$; val $p_n$ := $e$@. A value definition ~\lstinline@val $p_1 \commadots p_n: T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1: T$ := $e$; $\ldots$; val $p_n: T$ := $e$@.
 
 \section{Variable Declarations \& Definitions}
 \label{sec:variable-dcl-def}
 
-A variable declaration \lstinline@var $x$ : $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$ : $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$ : $T$+ introduces a mutable class instance variable of type $T$. 
+A variable declaration \lstinline@var $x$: $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$: $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$: $T$+ introduces a mutable class instance variable of type $T$. 
 
-A variable definition \lstinline@val $x$ : $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
+A variable definition \lstinline@val $x$: $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
 
 Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dcl-def}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
 
 The name of any declared or defined variable must not end with \lstinline@=@. 
 
-A variable declaration ~\lstinline@var $x_1 \commadots x_n$ : $T$@~ is a
-shorthand for the sequence of variable declarations ~\lstinline@var $x_1$ : $T$; $\ldots$; var $x_n$ : $T$@. A variable definition ~\lstinline@var $x_1 \commadots x_n$ = $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ := $e$; $\ldots$; var $x_n$ := $e$@. A variable definition ~\lstinline@var $x_1 \commadots x_n : T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1 : T$ := $e$; $\ldots$; var $x_n : T$ := $e$@.
+A variable declaration ~\lstinline@var $x_1 \commadots x_n$: $T$@~ is a
+shorthand for the sequence of variable declarations ~\lstinline@var $x_1$: $T$; $\ldots$; var $x_n$: $T$@. A variable definition ~\lstinline@var $x_1 \commadots x_n$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ := $e$; $\ldots$; var $x_n$ := $e$@. A variable definition ~\lstinline@var $x_1 \commadots x_n$: $T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$: $T$ := $e$; $\ldots$; var $x_n$: $T$ := $e$@.
 
 \section{Property Declarations \& Definitions}
 \label{sec:property-dec-dfn}
@@ -173,9 +173,9 @@ Prop_Impl  ::= ('get' [Prop_Get_Impl])
              | ('var' ':=' Expr)
 \end{lstlisting} % TBD: syntax of property implementations
 
-A property declaration \lstinline@property $x$ : $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
+A property declaration \lstinline@property $x$: $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
 
-A property definition \lstinline@property $x$ : $T$ {get $\ldots$; set $\ldots$}@ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behavior and storage of a property, but may as well opt-in for auto-generated implementation, which is: 
+A property definition \lstinline@property $x$: $T$ {get $\ldots$; set $\ldots$}@ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behavior and storage of a property, but may as well opt-in for auto-generated implementation, which is: 
 
 \begin{enumerate}
 \item 
@@ -188,15 +188,15 @@ Properties defined with only \code{get} are stored in immutable instance variabl
 Properties defined with \code{set}\footnote{It is also possible to declare/define properties that are \code{set}-only. That makes them {\em write-only}, as opposed to {\em read-only} properties with \code{get}-only.} are stored in mutable instance variables (\sref{sec:variable-dcl-def}). 
 
 \item
-Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$ : $T$@ is stored in an instance of type \lstinline@Weak_Reference:[$T$]@. 
+Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference:[$T$]@. 
 
 \end{enumerate}
 
-Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x$=@, declared as follows:
+Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x$_=@, declared as follows:
 
 \begin{lstlisting}
 def $x$ (): $T$; end
-def $x$= (y: $T$): (); end
+def $x$_= (y: $T$): (); end
 \end{lstlisting}
 
 Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation. 
@@ -206,7 +206,7 @@ Assignment to properties is translated automatically into a setter function call
 \syntax\begin{lstlisting}
 Dcl      ::= 'type' Type_Dcl
 Type_Dcl ::= constant_id [Type_Param_Clause] ['>:' Type] 
-           ['<:' Type]
+             ['<:' Type]
 Def      ::= 'type' Type_Def
 Type_Def ::= constant_id [Type_Param_Clause] ':=' Type
 \end{lstlisting}
@@ -229,20 +229,20 @@ type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
 
 \syntax\begin{lstlisting}
 Type_Param_Clause  ::= ':[' Variant_Type_Param 
-                     {',' Variant_Type_Param} ']'
+                       {',' Variant_Type_Param} ']'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
 Type_Param         ::= (constant_id | '_') [Type_param_Clause]
-                     ['>:' Type] ['<:' Type]
+                       ['>:' Type] ['<:' Type]
 \end{lstlisting}
 
 Type parameters appear in type definitions, class definitions and function definitions. 
 
-The most general form of a first-order type parameter is ~\lstinline!@[$a_1$]$\ldots$@[$a_n]$ $\pm$ $t$ >: $L$ <: $U$!. $L$ is a lower bound and $U$ is an upper bound. These bounds constrain possible type arguments for the parameter. It is an error if $L$ does not conform to $U$.\footnote{This is sometimes detectable as soon as during compilation.} Then, $\pm$ is a {\em variance} (\sref{sec:variance-of-type-parameters}), i.e. an optional prefix of either \lstinline@+@ or \lstinline@-@. The type parameter may be preceded by one or more annotation applications (\sref{sec:annotated-exprs} \& \sref{sec:annotations}).
+The most general form of a first-order type parameter is ~\lstinline!@{$a_1$}$\ldots$@{$a_n$} $\pm$ $t$ >: $L$ <: $U$!. $L$ is a lower bound and $U$ is an upper bound. These bounds constrain possible type arguments for the parameter. It is an error if $L$ does not conform to $U$.\footnote{This is sometimes detectable as soon as during compilation.} Then, $\pm$ is a {\em variance} (\sref{sec:variance-of-type-parameters}), i.e. an optional prefix of either \lstinline@+@ or \lstinline@-@. The type parameter may be preceded by one or more annotation applications (\sref{sec:annotated-exprs} \& \sref{sec:annotations}).
 
 \example The following are some well-formed type parameter clauses:
 \begin{lstlisting}[escapechar=`]
 :[`\$`S, `\$`T]
-:[@[Specialized] `\$`S, `\$`T]
+:[@{Specialized} `\$`S, `\$`T]
 :[`\$`Ex <: Raisable]
 :[`\$`A <: Comparable:[`\$`B], `\$`B <: `\$`A]
 \end{lstlisting}
