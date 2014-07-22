@@ -18,111 +18,15 @@ Const_Def ::= {Annotation} 'class' Class_Def 'end' ['class']
             | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
-Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}), modules (\sref{sec:module-definitions} \& \sref{sec:modules}), mixins (\sref{sec:mixins}), protocols (\sref{sec:protocols}), interfaces (\sref{sec:interfaces}) and constant types (unions \sref{sec:unions}, enums \sref{sec:enums}, range types \sref{sec:range-types}, units of measure \sref{sec:units-of-measure}, record types \sref{sec:record-types} \& struct types \sref{sec:struct-types}) are all defined in terms of {\em class-level blocks} (\sref{sec:class-level-blocks}). Their definitions are basically a function that handles internally the definition of each type. As such, these class-level blocks can even have local variables that may appear in closures. 
+Classes (\sref{sec:class-definitions}), objects (\sref{sec:object-definitions}), modules (\sref{sec:module-definitions} \& \sref{sec:modules}), traits (\sref{sec:traits}), protocols (\sref{sec:protocols}), interfaces (\sref{sec:interfaces}) and constant types (unions \sref{sec:unions}, enums \sref{sec:enums}, range types \sref{sec:range-types}, units of measure \sref{sec:units-of-measure} \& record types \sref{sec:record-types} are all defined in terms of {\em templates} (\sref{sec:templates}). Their definitions are basically a function that handles internally the definition of each type. As such, these class-level blocks can even have local variables that may appear in closures. 
 
-\section{Class Definitions}
-\label{sec:class-definitions}
+\section{Templates}
+\label{sec:templates}
 
-\syntax\begin{lstlisting}
-Class_Def  ::= constant_id [Type_Param_Clause] 
-               [Class_Param_Clauses] (Superclass [semi] | 'begin')
-               {Class_Expr}
-Class_Alt_Def
-           ::= constant_id [Type_Param_Clause] 
-               [Class_Param_Clauses] [Superclass] '{'
-               {Class_Expr} '}'
-Class_Param_Clauses 
-           ::= {Annotation} [Access_Modifier] {Class_Param_Clause}
-               ['(' 'implicit' Class_Params ')']
-Class_Param_Clause
-           ::= '(' [Class_Params] ')'
-Class_Params 
-           ::= Class_Param {',' Class_Param}
-Class_Param 
-           ::= {Annotation} [{Modifier} ('val' | 'var')]
-               variable_id [':' Param_Type] [':=' Expr]
-Superclass ::= 'extends' Compound_Type
-Class_Expr ::= Ctor_Expr
-             | Dtor_Expr
-             | Clone_Expr
-             | Includes_Expr
-             | Prepend_Expr
-             | Implements_Expr
-             | Expr
-             | {Annotation} 'class' Class_Def 'end' ['class']
-             | {Annotation} 'object' Obj_Def 'end' ['object']
-             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
-             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
-             | {Annotation} 'interface' Ifc_Def 'end' 
-               ['interface']
-             | {Annotation} 'type' Const_Type_Def 'end' ['type']
-\end{lstlisting}
+\subsection{Constructor Invocations \& Primary Constructor}
+\label{sec:constructor-invocations}
+\label{sec:primary-constructor}
 
-A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
-
-The most general form of a class definition is
-\begin{lstlisting}
-$cas$
-class $c$ :[$tps$] @[$dps$] [<$uomps$>] 
-  $as$ $m$($ps_1$)$\ldots$($ps_n$)
-  extends $t$
-begin
-  $exprs \ldots$
-end class
-\end{lstlisting}
-for $n \geq 0$. 
-
-Here, 
-\begin{itemize}
-\item[]
-$cas$ is a possibly empty sequence of annotations (\sref{sec:annotations}) that are applied to the whole class. 
-
-\item[]
-$c$ is the name of the class to be defined. 
-
-\item[]
-$tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline!:[$tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
-
-\item[]
-$dps$ is a non-empty list of indexing parameters for dependent types (\sref{sec:dependent-types-decl}). The indexing parameter section \lstinline!@{$tps$}! may be omitted. A class with an indexing parameter section is called {\em indexed}. Indexing arguments are reified in Coral, i.e. indexing arguments are preserved in runtime. 
-
-\item[]
-$uomps$ is a non-empty list of unit of measure parameters for aggregated types (\sref{sec:units-of-measure}). The unit of measure parameter section \lstinline![<$uomps$>]! may be omitted. A class with a unit of measure parameter section is called {\em aggregated with units of measure}. Units of measure arguments are reified in Coral, i.e. units of measure arguments are preserved in runtime. 
-
-\item[]
-$as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If any annotations are given at this point, they apply to the primary constructor of the class. 
-
-% TBD: explain the other sections
-% TBD: add explicit primary `constructor (_)`
-\end{itemize}
-
-Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
-
-For superclasses, the following statements hold:
-\begin{itemize}
-\item The superclass is implicitly \code{Object}, if no explicit superclass is given.
-\item Only \code{Object} can state `\lstinline!()!' as its superclass, since it has no superclass. 
-\item Explicitly given superclass $T$, if $T$ is a single class, is that single class. 
-\item Explicitly given superclass $T$, if $T$ is a compound type with a class member (\sref{sec:compound-types}), is the class member of $T$ and all other members of the compound type are mixed in (\sref{sec:mixins}). 
-\item Explicitly given superclass $T$, if $T$ is a compound type without a class member (\sref{sec:compound-types}), is implicitly \code{Object} and all other members of the compound type are mixed in (\sref{sec:mixins}) if no member of the compound type has a class as its superclass, or that superclass of one of the members. If there are more members with a class-superclass, there must exist an ordering of these class-superclasses $C_1 \commadots C_n$, such that for each $i, 1 \le i \le n-1$: \lstinline!$C_i$ <: $C_{i+1}$!. It is an error if no such ordering exists. If such ordering exists, the superclass is implied to be $C_1$. 
-\item Superclass is never a function type (\sref{sec:function-types}). 
-\item Superclass is never a special type, i.e. unions (\sref{sec:unions}), enums (\sref{sec:enums}), range types (\sref{sec:range-types}), units of measure (\sref{sec:units-of-measure}) \& record types (\sref{sec:record-types}).. 
-\item Superclass is always a class, never a mixin (\sref{sec:mixins}), a protocol (\sref{sec:protocols}) or an interface (\sref{sec:interfaces}). 
-\item Every single class has at most one direct superclass. Only one class has no superclass: \code{Object}, no other class can be without a superclass. 
-\end{itemize}
-
-It is an error if any of the mixed in mixins from a compound type has a class-superclass and yet the defined class does not conform to that superclass. 
-
-\example Consider the following class definitions:
-\begin{lstlisting}
-class Base extends Object refine {}
-mixin Mixin extends Base refine {}
-object O extends Mixin refine {}
-\end{lstlisting}
-In this case, the definition of \code{O} is implied to be:
-\begin{lstlisting}
-object O extends Base with Mixin refine {}
-\end{lstlisting}
 
 \subsection{Metaclasses \& Eigenclasses}
 \label{sec:metaclasses}
@@ -259,6 +163,7 @@ Then the linearization of class \code{Iterator} is
 
 Note that the linearization of a class refines the inheritance relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any linearization where both $C$ and $D$ occur. Also note that whether a mixin is included or prepended is irrelevant to linearization, but essential to function applications (\sref{sec:function-applications}).
 
+
 \subsection{Inheritance Trees \& Include Classes}
 \label{sec:inheritance-trees}
 \label{sec:include-classes}
@@ -314,156 +219,6 @@ Concrete members are those that have a definition, abstract members are those th
 
 Members are instance variables, class instance variables, methods \& messages. 
 
-\subsection{Class-Level Blocks}
-\label{sec:class-level-blocks}
-
-Class-level blocks are multi-constructors for class objects. A single class may have one or more class-level blocks spread across multiple source files. A single class may have multiple class-level blocks in the same source file as well. 
-
-Class-level blocks work like functions that construct the class object, including declarations and definitions of its instances as well as the class object itself, and can work with metaclasses (\sref{sec:metaclasses}) like any other function. Their execution order is derived from the order in which the containing source files are executed (\sref{sec:compilation-units}). 
-
-An object definition (\sref{sec:object-definitions}) inside a class-level block for the same name as the name of the enclosing class defines the object of the enclosing class itself, and moreover, does not need to need to specify the superclass. It is an error if the enclosing class does not need specify a superclass and the nested object definition does specify a superclass -- it must be the other way around. The nested object definition has \lstinline!include $M$!, \lstinline!prepend $M$! and \lstinline!implements $M$! expressions relative to the defined object, not to the enclosing class, which has several implications: 
-\begin{itemize}
-\item There is no way to include (or prepend) only class methods from a mixin directly into the defined object -- the instance methods of the mixin are included in the defined object and the class methods go to the metaclass of the defined object. 
-\item Since the defined object is always an instance of \lstinline!Class:[$C$]!, the mixin must require any class of the receiver or a class that conforms to \lstinline!Class:[$C$]!, not $C$ directly. 
-\item It is advised to not give any class methods to mixins (or protocols) that are to be included (prepended, or implemented) in a defined object, since methods from its metaclass are not easy to invoke. 
-\end{itemize}
-
-\example Given the following object definition inside a class definition:
-\begin{lstlisting}
-class $C$
-  object $C$
-    $\ldots$
-  end object
-end class
-\end{lstlisting}
-The object definition for $C$ does \textbf{not} create an object \lstinline!$C$::$C$!, but defines the class object of the class $C$. However, the following object definition:
-\begin{lstlisting}
-class $C$
-  object $D$
-    $\ldots$
-  end object
-end class
-\end{lstlisting}
-does define an object \lstinline!$C$::$D$!, because it has a different name, and is thus unrelated to $C$ in any other way than being enclosed in $C$ (and having inheritance closure in $C$ -- \sref{sec:inheritance-closure}). 
-
-Since class-level blocks are basically functions, the members defined inside of them can closure local variables inside the block (\sref{sec:local-variable-closure}). Any member defined outside of the class-level block can not closure its local variables. 
-
-\subsection{Constructor \& Destructor Definitions}
-\label{sec:constructor-destructor-def}
-
-\syntax\begin{lstlisting}
-Ctor_Def     ::= 'constructor' Ctor_Fun_Def 'end' ['constructor']
-               | 'constructor' Ctor_Alt_Def
-Ctor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
-Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
-Dtor_Def     ::= 'destructor' Dtor_Fun_Def 'end' ['destructor']
-Dtor_Fun_Def ::= [Fun_Dec] semi Expr
-\end{lstlisting}
-
-% TBD: rework this section, restrict constructor invocations, forbid inheritance of constructors
-
-Constructors and destructors can only be defined inside of class-level blocks (\sref{sec:class-level-blocks}). Constructors are functions that can never be called by a name, instead, they are invoked indirectly by creating a new instance of a class (an object value), from the \lstinline!allocate! method of \code{Class}. Destructors are invoked indirectly when an object is to be deallocated, that is, when its reference count reaches \code{0} and all its soft references are released. 
-
-Constructors can have any number of parameters, including none at all. Every constructor has a special behavior that invokes its super-constructor with matching parameters before any other code, unless explicitly invoked. It is an error if a constructor invokes a super-constructor more than 1 times. If a constructor does not have a matching super-constructor, then a {\em default constructor} or an {\em implicit constructor} is used. It is an error if the same constructor is invoked multiple times during construction of the same object. 
-
-A different constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a constructor invokes a different constructor of the same class this way, the super-constructor is not implicitly invoked (since it is invoked in the other constructors). 
-
-Constructors create instances that have reference count of \code{1}. If a constructor has multiple parameter lists, then the last curried function is the one that sets the reference count to \code{1}. 
-
-\paragraph{\em Primary constructor}
-A primary constructor is defined by the formal value parameters of the class. Unlike in Scala, there is no requirement for each {\em auxiliary constructor} (every other constructor than the primary one) to invoke this constructor. However, if value and variable declarations of instance variables use as the default value a parameter of a primary constructor, then indeed auxiliary constructor must take care of initializing these values and variables. Also, constructors are inherited in subclasses. There is no block of code dedicated only to the primary constructor: instead, the class-level block may utilize its parameters to initialize each new instance. Moreover, if a formal value parameter of the class is prefixed with a \code{val} keyword, then a getter function is added to the class. If a formal value parameter of the class is prefixed with a \code{var} keyword, then in addition to a getter function, a setter function is added to the class as well. Annotations before the formal value parameters apply to the primary constructor. Modifiers from the formal value parameters are carried over to the generated accessor functions. A formal parameter prefixed by \code{val} or \code{var} may not at the same time be a call-by-name parameter (\sref{sec:by-name-parameters}). If no formal value parameters are given to the class, a parameterless primary constructor is added implicitly, corresponding to the implicit constructor of the class. 
-
-\paragraph{\em Default constructor}
-A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
-
-\paragraph{\em Implicit constructor}
-An implicit constructor is an automatically generated bridge constructor to the parameterless default constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions). 
-
-\paragraph{\em Convenience constructor}
-A convenience constructor is any other constructor than the parameterless default constructor. 
-
-\paragraph{\em Accessibility of constructors}
-Constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
-
-\example An example of a convenience constructor of class $C$.
-\begin{lstlisting}
-class $C$
-  constructor (param)
-    // super is invoked implicitly here
-    val @resource := param
-  end constructor
-end class
-\end{lstlisting}
-
-\example An example of a pair of constructors of class $C$. 
-\begin{lstlisting}
-class $C$
-  constructor := self(42)
-  constructor (param)
-    // super is invoked implicitly here
-    val @resource := param
-  end constructor
-end class
-\end{lstlisting}
-
-\paragraph{\em Explicit destructor}
-An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. 
-
-\paragraph{\em Implicit destructor}
-An implicit destructor is an automatically generated bridge destructor to the parameterless super-destructor. An implicit destructor ``does nothing'' but release all members specific to the destructed object and invoke super-destructor afterwards. The destructor of \code{Object} releases every remaining member of the destructed object. A class can only have a single destructor, either an explicit or an implicit one. 
-
-\paragraph{\em Accessibility of destructors}
-Destructors, unlike constructors, can not have any accessibility modifiers. They ignore the current accessibility flag of their class-block and trigger a warning if a modifier is used directly with the destructor. Destructors may be invoked independently on the context in which the object is destructed. 
-
-\example An example of an explicit destructor of class $C$. 
-\begin{lstlisting}
-class $C$
-  destructor
-    @resource.close unless @resource.closed?
-    // super is invoked implicitly here
-  end destructor
-end class
-\end{lstlisting}
-
-\subsection{Clone Constructor Definitions}
-\label{sec:clone-def}
-
-\syntax\begin{lstlisting}
-CCtor_Def     ::= 'clone' CCtor_Fun_Def 'end' ['clone']
-                | 'clone' CCtor_Alt_Def
-CCtor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
-CCtor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
-\end{lstlisting}
-
-Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
-
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available as the \code{cloned} keyword. The \code{cloned} keyword is only recognized as a keyword in a body of the clone constructor. 
-
-Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
-
-A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). 
-
-\paragraph{\em Default clone constructor}
-A default clone constructor of a class is the explicit parameterless clone constructor. 
-
-\paragraph{\em Implicit clone constructor}
-An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
-
-\paragraph{\em Convenience clone constructor}
-A convenience clone constructor is any other clone constructor than the parameterless default clone constructor. The \code{clone} method of objects can accept any number of arguments that are then passed into the clone constructor and the clone constructor is resolved based on these passed arguments. 
-
-\paragraph{\em Accessibility of clone constructors}
-Clone constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
-
-\example An example of a default clone constructor of class $C$, performing a deep copy. 
-\begin{lstlisting}
-class $C$
-  clone
-    // super is invoked implicitly here
-    cloned.resource := self.resource.clone
-  end constructor
-end class
-\end{lstlisting}
 
 \subsection{Overriding}
 \label{sec:overriding}
@@ -491,7 +246,10 @@ Let $C$ be a class type. The {\em inheritance closure} of $C$ is the smallest se
 \end{itemize}
 It is an error if the inheritance closure of a class type consists of an infinite number of types. 
 
-\subsection{Modifiers}
+\subsection{Early Definitions}
+\label{sec:early-defs}
+
+\section{Modifiers}
 \label{sec:modifiers}
 
 \syntax\begin{lstlisting}
@@ -649,52 +407,221 @@ This is only for the case where $C$ is accessible from within $D$.
 This is just for the sake of completeness, since change from public to public is not much of a relaxation. 
 \end{itemize}
 
-\section{Object Definitions}
-\label{sec:object-definitions}
+\section{Class Definitions}
+\label{sec:class-definitions}
 
 \syntax\begin{lstlisting}
-Obj_Def  ::= constant_id [Superclass] [semi]
-             {Obj_Expr}
-Obj_Expr ::= Clone_Expr
-           | Includes_Expr
-           | Prepend_Expr
-           | Implements_Expr
-           | Expr
-           | {Annotation} 'class' Class_Def 'end' ['class']
-           | {Annotation} 'object' Obj_Def 'end' ['object']
-           | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
-           | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
-           | {Annotation} 'interface' Ifc_Def 'end' 
-             ['interface']
-           | {Annotation} 'type' Const_Type_Def 'end' ['type']
+Class_Def  ::= constant_id [Type_Param_Clause] 
+               [Class_Param_Clauses] (Superclass [semi] | 'begin')
+               {Class_Expr}
+Class_Alt_Def
+           ::= constant_id [Type_Param_Clause] 
+               [Class_Param_Clauses] [Superclass] '{'
+               {Class_Expr} '}'
+Class_Param_Clauses 
+           ::= {Annotation} [Access_Modifier] {Class_Param_Clause}
+               ['(' 'implicit' Class_Params ')']
+Class_Param_Clause
+           ::= '(' [Class_Params] ')'
+Class_Params 
+           ::= Class_Param {',' Class_Param}
+Class_Param 
+           ::= {Annotation} [{Modifier} ('val' | 'var')]
+               variable_id [':' Param_Type] [':=' Expr]
+Superclass ::= 'extends' Compound_Type
+Class_Expr ::= Ctor_Expr
+             | Dtor_Expr
+             | Clone_Expr
+             | Includes_Expr
+             | Prepend_Expr
+             | Implements_Expr
+             | Expr
+             | {Annotation} 'class' Class_Def 'end' ['class']
+             | {Annotation} 'object' Obj_Def 'end' ['object']
+             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+             | {Annotation} 'interface' Ifc_Def 'end' 
+               ['interface']
+             | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
-Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied, only abstract compound types without class may appear as superclass, and it is an error if a concrete class appears as a superclass (even if that would be \lstinline!Class:[$C$]!, as it is prohibited to inherit from this class in user programs). If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}).
+A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
 
-Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. 
-
-\section{Module Definitions}
-\label{sec:module-definitions}
-
-\syntax\begin{lstlisting}
-Module_Def  ::= constant_id [Vendor_Arg] {'::' constant_id} 
-                [semi] {Module_Expr}
-Module_Expr ::= Expr
-              | Implements_Expr
-              | Const_Def
+The most general form of a class definition is
+\begin{lstlisting}
+$cas$
+class $c$ :[$tps$] @[$dps$] [<$uomps$>] 
+  $as$ $m$($ps_1$)$\ldots$($ps_n$)
+  extends $t$
+begin
+  $exprs \ldots$
+end class
 \end{lstlisting}
+for $n \geq 0$. 
 
-Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Coral's approach to modules solves these issues: 
+Here, 
 \begin{itemize}
-\item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
-\item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
-\item {\em Dependencies}. Module may define a tree of dependencies, including module vendor resolution, if a module of the same name is provided by different vendors. 
+\item[]
+$cas$ is a possibly empty sequence of annotations (\sref{sec:annotations}) that are applied to the whole class. 
+
+\item[]
+$c$ is the name of the class to be defined. 
+
+\item[]
+$tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline!:[$tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
+
+\item[]
+$dps$ is a non-empty list of indexing parameters for dependent types (\sref{sec:dependent-types-decl}). The indexing parameter section \lstinline!@{$tps$}! may be omitted. A class with an indexing parameter section is called {\em indexed}. Indexing arguments are reified in Coral, i.e. indexing arguments are preserved in runtime. 
+
+\item[]
+$uomps$ is a non-empty list of unit of measure parameters for aggregated types (\sref{sec:units-of-measure}). The unit of measure parameter section \lstinline![<$uomps$>]! may be omitted. A class with a unit of measure parameter section is called {\em aggregated with units of measure}. Units of measure arguments are reified in Coral, i.e. units of measure arguments are preserved in runtime. 
+
+\item[]
+$as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If any annotations are given at this point, they apply to the primary constructor of the class. 
+
+% TBD: explain the other sections
+% TBD: add explicit primary `constructor (_)`
 \end{itemize}
 
-Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
+Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
 
-\section{Mixins}
-\label{sec:mixins}
+For superclasses, the following statements hold:
+\begin{itemize}
+\item The superclass is implicitly \code{Object}, if no explicit superclass is given.
+\item Only \code{Object} can state `\lstinline!()!' as its superclass, since it has no superclass. 
+\item Explicitly given superclass $T$, if $T$ is a single class, is that single class. 
+\item Explicitly given superclass $T$, if $T$ is a compound type with a class member (\sref{sec:compound-types}), is the class member of $T$ and all other members of the compound type are mixed in (\sref{sec:traits}). 
+\item Explicitly given superclass $T$, if $T$ is a compound type without a class member (\sref{sec:compound-types}), is implicitly \code{Object} and all other members of the compound type are mixed in (\sref{sec:traits}) if no member of the compound type has a class as its superclass, or that superclass of one of the members. If there are more members with a class-superclass, there must exist an ordering of these class-superclasses $C_1 \commadots C_n$, such that for each $i, 1 \le i \le n-1$: \lstinline!$C_i$ <: $C_{i+1}$!. It is an error if no such ordering exists. If such ordering exists, the superclass is implied to be $C_1$. 
+\item Superclass is never a function type (\sref{sec:function-types}). 
+\item Superclass is never a special type, i.e. unions (\sref{sec:unions}), enums (\sref{sec:enums}), range types (\sref{sec:range-types}), units of measure (\sref{sec:units-of-measure}) \& record types (\sref{sec:record-types}).. 
+\item Superclass is always a class, never a mixin (\sref{sec:traits}), a protocol (\sref{sec:protocols}) or an interface (\sref{sec:interfaces}). 
+\item Every single class has at most one direct superclass. Only one class has no superclass: \code{Object}, no other class can be without a superclass. 
+\end{itemize}
+
+It is an error if any of the mixed in mixins from a compound type has a class-superclass and yet the defined class does not conform to that superclass. 
+
+\example Consider the following class definitions:
+\begin{lstlisting}
+class Base extends Object; $\ldots$ end
+mixin Mixin extends Base; $\ldots$ end
+object O extends Mixin; $\ldots$ end
+\end{lstlisting}
+In this case, the definition of \code{O} is implied to be:
+\begin{lstlisting}
+object O extends Base with Mixin {}
+\end{lstlisting}
+
+\subsection{Constructor \& Destructor Definitions}
+\label{sec:constructor-destructor-def}
+
+\syntax\begin{lstlisting}
+Ctor_Def     ::= 'constructor' Ctor_Fun_Def 'end' ['constructor']
+               | 'constructor' Ctor_Alt_Def
+Ctor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
+Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
+Dtor_Def     ::= 'destructor' Dtor_Fun_Def 'end' ['destructor']
+Dtor_Fun_Def ::= [Fun_Dec] semi Expr
+\end{lstlisting}
+
+% TBD: rework this section, restrict constructor invocations, forbid inheritance of constructors
+
+\paragraph{\em Default constructor}
+A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
+
+\paragraph{\em Implicit constructor}
+An implicit constructor is an automatically generated bridge constructor to the parameterless default constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions). 
+
+\paragraph{\em Convenience constructor}
+A convenience constructor is any other constructor than the parameterless default constructor. 
+
+\paragraph{\em Accessibility of constructors}
+Constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
+
+\example An example of a convenience constructor of class $C$.
+\begin{lstlisting}
+class $C$
+  constructor (param)
+    // super is invoked implicitly here
+    val @resource := param
+  end constructor
+end class
+\end{lstlisting}
+
+\example An example of a pair of constructors of class $C$. 
+\begin{lstlisting}
+class $C$
+  constructor := self(42)
+  constructor (param)
+    // super is invoked implicitly here
+    val @resource := param
+  end constructor
+end class
+\end{lstlisting}
+
+\paragraph{\em Explicit destructor}
+An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. 
+
+\paragraph{\em Implicit destructor}
+An implicit destructor is an automatically generated bridge destructor to the parameterless super-destructor. An implicit destructor ``does nothing'' but release all members specific to the destructed object and invoke super-destructor afterwards. The destructor of \code{Object} releases every remaining member of the destructed object. A class can only have a single destructor, either an explicit or an implicit one. 
+
+\paragraph{\em Accessibility of destructors}
+Destructors, unlike constructors, can not have any accessibility modifiers. They ignore the current accessibility flag of their class-block and trigger a warning if a modifier is used directly with the destructor. Destructors may be invoked independently on the context in which the object is destructed. 
+
+\example An example of an explicit destructor of class $C$. 
+\begin{lstlisting}
+class $C$
+  destructor
+    @resource.close unless @resource.closed?
+    // super is invoked implicitly here
+  end destructor
+end class
+\end{lstlisting}
+
+\subsection{Clone Constructor Definitions}
+\label{sec:clone-def}
+
+\syntax\begin{lstlisting}
+CCtor_Def     ::= 'clone' CCtor_Fun_Def 'end' ['clone']
+                | 'clone' CCtor_Alt_Def
+CCtor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
+CCtor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
+\end{lstlisting}
+
+Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
+
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available as the \code{cloned} keyword. The \code{cloned} keyword is only recognized as a keyword in a body of the clone constructor. 
+
+Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
+
+A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). 
+
+\paragraph{\em Default clone constructor}
+A default clone constructor of a class is the explicit parameterless clone constructor. 
+
+\paragraph{\em Implicit clone constructor}
+An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
+
+\paragraph{\em Convenience clone constructor}
+A convenience clone constructor is any other clone constructor than the parameterless default clone constructor. The \code{clone} method of objects can accept any number of arguments that are then passed into the clone constructor and the clone constructor is resolved based on these passed arguments. 
+
+\paragraph{\em Accessibility of clone constructors}
+Clone constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
+
+\example An example of a default clone constructor of class $C$, performing a deep copy. 
+\begin{lstlisting}
+class $C$
+  clone
+    // super is invoked implicitly here
+    cloned.resource := self.resource.clone
+  end constructor
+end class
+\end{lstlisting}
+
+\subsection{Case Classes}
+\label{sec:case-classes}
+
+\subsection{Traits}
+\label{sec:traits}
 
 \syntax\begin{lstlisting}
 Mixin_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi] 
@@ -739,7 +666,7 @@ Refinements in Coral are a special kind of mixins. There are two cases in which 
 
 % TODO: clear the syntaxes of declarations & definitions to be able to specify on a syntax level what can appear in a refinement
 
-\section{Protocols}
+\subsection{Protocols}
 \label{sec:protocols}
 
 \syntax\begin{lstlisting}
@@ -754,7 +681,7 @@ Pro_Arg         ::= Simple_Type [Type_Args]
 
 Protocols are classes that are abstract and can contain only abstract member declarations. Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}''. 
 
-\section{Interfaces}
+\subsection{Interfaces}
 \label{sec:interfaces}
 
 \syntax\begin{lstlisting}
@@ -766,6 +693,50 @@ Ifc_Expr ::= Dcl
 
 Interfaces are filtered versions of classes with only declarations. Interfaces can be generated from classes or mixins by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols. 
 
+
+\section{Object Definitions}
+\label{sec:object-definitions}
+
+\syntax\begin{lstlisting}
+Obj_Def  ::= constant_id [Superclass] [semi]
+             {Obj_Expr}
+Obj_Expr ::= Clone_Expr
+           | Includes_Expr
+           | Prepend_Expr
+           | Implements_Expr
+           | Expr
+           | {Annotation} 'class' Class_Def 'end' ['class']
+           | {Annotation} 'object' Obj_Def 'end' ['object']
+           | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+           | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
+           | {Annotation} 'interface' Ifc_Def 'end' 
+             ['interface']
+           | {Annotation} 'type' Const_Type_Def 'end' ['type']
+\end{lstlisting}
+
+Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied, only abstract compound types without class may appear as superclass, and it is an error if a concrete class appears as a superclass (even if that would be \lstinline!Class:[$C$]!, as it is prohibited to inherit from this class in user programs). If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}).
+
+Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. 
+
+\section{Module Definitions}
+\label{sec:module-definitions}
+
+\syntax\begin{lstlisting}
+Module_Def  ::= constant_id [Vendor_Arg] {'::' constant_id} 
+                [semi] {Module_Expr}
+Module_Expr ::= Expr
+              | Implements_Expr
+              | Const_Def
+\end{lstlisting}
+
+Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Coral's approach to modules solves these issues: 
+\begin{itemize}
+\item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
+\item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
+\item {\em Dependencies}. Module may define a tree of dependencies, including module vendor resolution, if a module of the same name is provided by different vendors. 
+\end{itemize}
+
+Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
 \section{Unions}
 \label{sec:unions}
 
