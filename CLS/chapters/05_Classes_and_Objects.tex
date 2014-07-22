@@ -10,8 +10,8 @@ Const_Def ::= {Annotation} 'class' Class_Def 'end' ['class']
             | {Annotation} 'object' Obj_Alt_Def
             | {Annotation} 'module' Module_Def 'end' ['module']
             | {Annotation} 'module' Module_Alt_Def
-            | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
-            | {Annotation} 'mixin' Mixin_Alt_Def
+            | {Annotation} 'trait' Trait_Def 'end' ['trait']
+            | {Annotation} 'trait' Trait_Alt_Def
             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
             | {Annotation} 'protocol' Pro_Alt_Def
             | {Annotation} 'interface' Ifc_Def 'end' ['interface']
@@ -131,13 +131,13 @@ Class \code{E} uses a similar recommended approach, utilizing standard ways of a
 \subsection{Class Linearization}
 \label{sec:class-linearization}
 
-The classes reachable through transitive closure of the direct inheritance relation from a class $C$ are called the {\em base classes} of $C$. Because of mixins, the inheritance relationship on base classes forms in general a directed acyclic graph. A linearization of this graph is defined as follows. 
+The classes reachable through transitive closure of the direct inheritance relation from a class $C$ are called the {\em base classes} of $C$. Because of traits, the inheritance relationship on base classes forms in general a directed acyclic graph. A linearization of this graph is defined as follows. 
 
 \newcommand{\uright}{\;\vec +\;}
 \newcommand{\lin}[1]{{\cal L}(#1)}
 
 \begin{definition}
-Let base classes of a class $C$ be the list of every superclass of $C$ with every mixin that these classes include and/or prepend and every protocol that these classes implement. Let $C$ be a class with base classes ~\lstinline!$C_1$ with $C_2$ with $\ldots$ with $C_n$!. The {\em linearization} of $C$, $\lin C$ is defined as follows:
+Let base classes of a class $C$ be the list of every superclass of $C$ with every trait that these classes include and/or prepend and every protocol that these classes implement. Let $C$ be a class with base classes ~\lstinline!$C_1$ with $C_2$ with $\ldots$ with $C_n$!. The {\em linearization} of $C$, $\lin C$ is defined as follows:
 \bda{rcl}
 \lin C &=& C\ , \ \lin{C_n} \uright \ldots \uright \lin{C_1}
 \eda
@@ -148,10 +148,10 @@ Here $\uright$ denotes concatenation, where elements of the right operand replac
 \eda
 \end{definition}
 
-\example Consider the following class definitions.\footnote{Here we say ``class'', but that term includes now mixins as well.}
+\example Consider the following class definitions.\footnote{Here we say ``class'', but that term includes now traits as well.}
 \begin{lstlisting}
 class Abstract_Iterator extends Object; $\ldots$ end
-mixin Rich_Iterator extends Abstract_Iterator; $\ldots$ end
+trait Rich_Iterator extends Abstract_Iterator; $\ldots$ end
 class String_Iterator extends Abstract_Iterator; $\ldots$ end
 class Iterator extends String_Iterator with Rich_Iterator; $\ldots$ end
 \end{lstlisting}
@@ -161,7 +161,7 @@ Then the linearization of class \code{Iterator} is
   Object }
 \end{lstlisting}
 
-Note that the linearization of a class refines the inheritance relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any linearization where both $C$ and $D$ occur. Also note that whether a mixin is included or prepended is irrelevant to linearization, but essential to function applications (\sref{sec:function-applications}).
+Note that the linearization of a class refines the inheritance relation: if $C$ is a subclass of $D$, then $C$ precedes $D$ in any linearization where both $C$ and $D$ occur. Also note that whether a trait is included or prepended is irrelevant to linearization, but essential to function applications (\sref{sec:function-applications}).
 
 
 \subsection{Inheritance Trees \& Include Classes}
@@ -169,49 +169,49 @@ Note that the linearization of a class refines the inheritance relation: if $C$ 
 \label{sec:include-classes}
 
 \paragraph{\em Include classes}
-A mechanism that allows arbitrary including and prepending of mixins into classes and inheritance binary trees\footnote{Yes, trees, not chains: prepended mixins make the inheritance game stronger by forking the inheritance chain at each class with prepended mixins, forming a shape similar to a rake.} uses a transparent structure called {\em include class}. Include classes are always defined indirectly.
+A mechanism that allows arbitrary including and prepending of trait into classes and inheritance binary trees\footnote{Yes, trees, not chains: prepended traits make the inheritance game stronger by forking the inheritance chain at each class with prepended traits, forming a shape similar to a rake.} uses a transparent structure called {\em include class}. Include classes are always defined indirectly.
 
 Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Object} class is encountered, which has no superclass. 
 
-\paragraph{\em Included mixins}
-When a mixin $M$ is included into a class, a new include class $Im_i$ is inserted between the target class and the include class $Is$ that holds a link to its superclass (or to a previously included mixin $Im_{i+1}$). This include class $Im_i$ then holds a link to the included mixin. Every class that includes the mixin $M$ is available via the \code{included_in} method of $M$. 
+\paragraph{\em Included traits}
+When a trait $M$ is included into a class, a new include class $Im_i$ is inserted between the target class and the include class $Is$ that holds a link to its superclass (or to a previously included trait $Im_{i+1}$). This include class $Im_i$ then holds a link to the included trait. Every class that includes the trait $M$ is available via the \code{included_in} method of $M$. 
 
-If a mixin $M$ is already (included in or prepended to)\footnote{This is important since both included and prepended mixins act like superclasses to every subclass.} any of the superclasses, then it is not included again. Included mixins act like superclasses of the class they are included in, and they {\em overlay} the superclasses. 
+If a trait $M$ is already (included in or prepended to)\footnote{This is important since both included and prepended traits act like superclasses to every subclass.} any of the superclasses, then it is not included again. Included traits act like superclasses of the class they are included in, and they {\em overlay} the superclasses. 
 
-\example A sample mixin schema:
+\example A sample trait schema:
 \begin{lstlisting}
-class C extends D with Some_Mixin
+class C extends D with Some_Trait
 end
 
-C $\rightarrow$ [Some_Mixin] $\rightarrow$ [D]
+C $\rightarrow$ [Some_Trait] $\rightarrow$ [D]
 D $\rightarrow$ [Object]
 \end{lstlisting}
 Include classes are depicted by the brackets, with their link value inside. Note that include classes only know their super-type (depicted by the arrow ``$\rightarrow$'') and their link value (inside brackets). 
 
-\paragraph{\em Prepended mixins}
-When a mixin $M$ is prepended to a class, a new include class $Im_i$ is inserted between the target class and its last prepended mixin, if any. Prepended mixins are stored in a secondary inheritance chain just for prepended mixins, forming an inheritance tree. Every class that has $M$ prepended is available via the \code{prepended_in} method of $M$. The effect of prepending a mixin in a class or a mixin is named {\em overlaying}. 
+\paragraph{\em Prepended traits}
+When a trait $M$ is prepended to a class, a new include class $Im_i$ is inserted between the target class and its last prepended trait, if any. Prepended traits are stored in a secondary inheritance chain just for prepended traits, forming an inheritance tree. Every class that has $M$ prepended is available via the \code{prepended_in} method of $M$. The effect of prepending a trait in a class or a trait is named {\em overlaying}. 
 
-If a mixin $M$ is already prepended to any of the superclasses, it has to be prepended again, since the already prepended mixins of superclasses are in super-position to the class or mixin that gets $M$ prepended. Prepended mixins of superclasses do not {\em overlay} child classes. Prepended mixins are inserted into the inheritance tree more like subclasses than superclasses. 
+If a trait $M$ is already prepended to any of the superclasses, it has to be prepended again, since the already prepended traits of superclasses are in super-position to the class or trait that gets $M$ prepended. Prepended traits of superclasses do not {\em overlay} child classes. Prepended traits are inserted into the inheritance tree more like subclasses than superclasses. 
 
 \paragraph{\em Nested includes}
-When a mixin $M$ itself includes one or more mixins $M_1 \commadots M_n$, then these included mixins are inserted between the included mixin $M$ and the superclass, unless they are already respectively included by any of the superclasses. If $M$ with included $M_1 \commadots M_n$ is prepended to $C$, then $M_1 \commadots M_n$ are inserted before the superclass of $C$, if not already included in any of the superclasses. It is an error if nested includes form a dependency cycle: any {\em auto-included}\footnote{Unlike in Ruby, Coral does not need concerns to employ automatic injection of dependencies. Every mixin in Coral is a concern.} mixin must not require to include a mixin that triggered the auto-include. 
+When a trait $M$ itself includes one or more traits $M_1 \commadots M_n$, then these included traits are inserted between the included trait $M$ and the superclass, unless they are already respectively included by any of the superclasses. If $M$ with included $M_1 \commadots M_n$ is prepended to $C$, then $M_1 \commadots M_n$ are inserted before the superclass of $C$, if not already included in any of the superclasses. It is an error if nested includes form a dependency cycle: any {\em auto-included}\footnote{Unlike in Ruby, Coral does not need concerns to employ automatic injection of dependencies. Every trait in Coral is a concern.} trait must not require to include a trait that triggered the auto-include. 
 
 \paragraph{\em Nested prepends}
-When a mixin $M$ itself prepends one or more mixins $M_1 \commadots M_n$, then nothing happens to the class or the mixin that $M$ is included in. If $M$ is prepended to $C$, then every prepended mixin in $M_1 \commadots M_n$ is prepended to $C$ in this way:
+When a trait $M$ itself prepends one or more traits $M_1 \commadots M_n$, then nothing happens to the class or the trait that $M$ is included in. If $M$ is prepended to $C$, then every prepended trait in $M_1 \commadots M_n$ is prepended to $C$ in this way:
 \begin{enumerate}
 \item $M$ is inserted as the head of the prepend chain in an include class. 
-\item For each $1 \le i \le n$, $M$ is switched with previously prepended mixins until $M_i$ is closer to the chain head than $M$, if $M_i$ is contained in the chain, or else $M_i$ is inserted as the head of the prepend chain. 
-\item If $M_i$ includes any other mixins, these are included in the same way as nested included mixins. 
-\item Check for prepend cycles -- if any {\em auto-prepended}\footnote{Again, this is unlike in Ruby, which does not automatically prepend mixins.} mixin requires to prepend a mixin that triggered the auto-prepend, then it is an error. 
+\item For each $1 \le i \le n$, $M$ is switched with previously prepended traits until $M_i$ is closer to the chain head than $M$, if $M_i$ is contained in the chain, or else $M_i$ is inserted as the head of the prepend chain. 
+\item If $M_i$ includes any other traits, these are included in the same way as nested included traits. 
+\item Check for prepend cycles -- if any {\em auto-prepended}\footnote{Again, this is unlike in Ruby, which does not automatically prepend traits.} trait requires to prepend a trait that triggered the auto-prepend, then it is an error. 
 \end{enumerate}
 
-\paragraph{\em Mixins \& Metaclasses}
-Since mixins may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses.\footnote{This makes Coral in no need of constructs like \lstinline[language=Ruby]!module ClassMethods!, known from Ruby.}
+\paragraph{\em Traits \& Metaclasses}
+Since traits may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses.\footnote{This makes Coral in no need of constructs like \lstinline[language=Ruby]!module ClassMethods!, known from Ruby.}
 
 \subsection{Class Members}
 \label{sec:class-members}
 
-A class $C$ defined by class definition can define members in its class-level block, can inherit members from all parent classes\footnote{Including an interface and any number of protocols.} and included mixins, and can have its members overlayed by all prepended mixins. 
+A class $C$ defined by class definition can define members in its class-level block, can inherit members from all parent classes\footnote{Including an interface and any number of protocols.} and included traits, and can have its members overlayed by all prepended traits. 
 
 Member definitions fall basically into two categories: {\em concrete} \& {\em abstract}. Members of the class $C$ are either {\em directly defined}, {\em overlayed} or {\em inherited}. 
 
@@ -338,30 +338,30 @@ A different form of qualification is \lstinline!protected:[self]!. A member $M$ 
 The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Coral is virtual, so Coral has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
 
 \item
-The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of mixins. 
+The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of traits. 
 
-We call a member $M$ of a class or mixin {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
+We call a member $M$ of a class or trait {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
 
 The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behavior can be turned off only in tests, if needed, and is implicitly turned on. 
 
-The \code{abstract override} modifier combination can be thus used with a full definition in a mixin and yet affect the class or mixin with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
+The \code{abstract override} modifier combination can be thus used with a full definition in a trait and yet affect the class or trait with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
 
 Additionally, an annotation \lstinline!@[Override]! exists for class members that triggers only warnings in case the member has no inherited member to override, but does not prevent the class from being created. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
 
 \item
-The \code{abstract} local modifier is used in class declarations. It is never mandatory for classes with incomplete members or for declarations and definitions. It is implied (and therefore redundant) for mixins. Abstract classes can not be instantiated (an exception is raised if tried to do so), unless provided with mixins and/or a refinement which override all incomplete members of the class. Only abstract classes and (all) mixins can have abstract term members. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
+The \code{abstract} local modifier is used in class declarations. It is never mandatory for classes with incomplete members or for declarations and definitions. It is implied (and therefore redundant) for traits. Abstract classes can not be instantiated (an exception is raised if tried to do so), unless provided with traits and/or a refinement which override all incomplete members of the class. Only abstract classes and (all) traits can have abstract term members. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
 
 The \code{abstract} local modifier can be used with conjunction with \code{override} modifier for class member definitions. 
 
 Additionally, an annotation \lstinline!@[Abstract]! exists for classes and class members that triggers only warnings in case of instantiation, but does not prevent the instantiation. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
 
 \item
-The \code{final} local modifier applies to class members definitions and to class definitions. Every \code{final} class member can not be overridden in subclasses. Every \code{final} class can not be inherited by a class or mixin. Members of final classes are implicitly also final. Note that \code{final} may not be applied to incomplete members, and can not be combined in one modifier list with the \code{sealed} local modifier. 
+The \code{final} local modifier applies to class members definitions and to class definitions. Every \code{final} class member can not be overridden in subclasses. Every \code{final} class can not be inherited by a class or trait. Members of final classes are implicitly also final. Note that \code{final} may not be applied to incomplete members, and can not be combined in one modifier list with the \code{sealed} local modifier. 
 
 Additionally, an annotation \lstinline!@[Final]! exists for classes and class members that triggers only warnings in case of inheriting or overriding respectively, but does not prevent the inheritance or overriding respectively. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
 
 \item
-The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or mixin is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
+The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or trait is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
 
 Additionally, an annotation \lstinline!@[Sealed]! exists for classes and class members that triggers only warnings in case of inheriting outside the same source file, but does not prevent the inheritance. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
 
@@ -438,7 +438,7 @@ Class_Expr ::= Ctor_Expr
              | Expr
              | {Annotation} 'class' Class_Def 'end' ['class']
              | {Annotation} 'object' Obj_Def 'end' ['object']
-             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+             | {Annotation} 'trait' Trait_Def 'end' ['trait']
              | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
              | {Annotation} 'interface' Ifc_Def 'end' 
                ['interface']
@@ -483,7 +483,7 @@ $as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If an
 % TBD: add explicit primary `constructor (_)`
 \end{itemize}
 
-Expressions in the class-level block may define new members or overwrite members in the parent classes or included mixins. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
+Expressions in the class-level block may define new members or overwrite members in the parent classes or included traits. The whole class-level block serves as a constructor for the defined class, so the expressions may contain regular function applications, even some that may dynamically define new members (e.g. in a DSL fashion). 
 
 For superclasses, the following statements hold:
 \begin{itemize}
@@ -494,21 +494,21 @@ For superclasses, the following statements hold:
 \item Explicitly given superclass $T$, if $T$ is a compound type without a class member (\sref{sec:compound-types}), is implicitly \code{Object} and all other members of the compound type are mixed in (\sref{sec:traits}) if no member of the compound type has a class as its superclass, or that superclass of one of the members. If there are more members with a class-superclass, there must exist an ordering of these class-superclasses $C_1 \commadots C_n$, such that for each $i, 1 \le i \le n-1$: \lstinline!$C_i$ <: $C_{i+1}$!. It is an error if no such ordering exists. If such ordering exists, the superclass is implied to be $C_1$. 
 \item Superclass is never a function type (\sref{sec:function-types}). 
 \item Superclass is never a special type, i.e. unions (\sref{sec:unions}), enums (\sref{sec:enums}), range types (\sref{sec:range-types}), units of measure (\sref{sec:units-of-measure}) \& record types (\sref{sec:record-types}).. 
-\item Superclass is always a class, never a mixin (\sref{sec:traits}), a protocol (\sref{sec:protocols}) or an interface (\sref{sec:interfaces}). 
+\item Superclass is always a class, never a trait (\sref{sec:traits}), a protocol (\sref{sec:protocols}) or an interface (\sref{sec:interfaces}). 
 \item Every single class has at most one direct superclass. Only one class has no superclass: \code{Object}, no other class can be without a superclass. 
 \end{itemize}
 
-It is an error if any of the mixed in mixins from a compound type has a class-superclass and yet the defined class does not conform to that superclass. 
+It is an error if any of the mixed in traits from a compound type has a class-superclass and yet the defined class does not conform to that superclass. 
 
 \example Consider the following class definitions:
 \begin{lstlisting}
 class Base extends Object; $\ldots$ end
-mixin Mixin extends Base; $\ldots$ end
-object O extends Mixin; $\ldots$ end
+trait Trait extends Base; $\ldots$ end
+object O extends Trait; $\ldots$ end
 \end{lstlisting}
 In this case, the definition of \code{O} is implied to be:
 \begin{lstlisting}
-object O extends Base with Mixin {}
+object O extends Base with Trait {}
 \end{lstlisting}
 
 \subsection{Constructor \& Destructor Definitions}
@@ -624,37 +624,37 @@ end class
 \label{sec:traits}
 
 \syntax\begin{lstlisting}
-Mixin_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi] 
-               {Mixin_Expr}
-Mixin_Expr ::= Includes_Expr
+Trait_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi] 
+               {Trait_Expr}
+Trait_Expr ::= Includes_Expr
              | Prepend_Expr
              | Implements_Expr
              | Expr
              | Requires_Expr
              | {Annotation} 'class' Class_Def 'end' ['class']
              | {Annotation} 'object' Obj_Def 'end' ['object']
-             | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+             | {Annotation} 'trait' Trait_Def 'end' ['trait']
              | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
              | {Annotation} 'interface' Ifc_Def 'end' 
                ['interface']
              | {Annotation} 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
-A mixin is a class that is meant to be injected into some other class as a mixin (including another mixins). Unlike normal classes, mixins can not be instantiated alone. 
+A trait is a class that is meant to be injected into some other class as a mixin (including another traits). Unlike normal classes, traits can not be instantiated alone. 
 
-Assume a mixin $D$ defines some aspect of an instance $x$ of type $C$ (i.e. $D$ is a base class of $C$). Then the {\em actual supertype} of $D$ in $x$ is the compound type consisting of all the base classes in $\lin{C}$ that succeed $D$. The actual super type gives the context for resolving a \code{super} reference in a mixin (\sref{sec:self-this-super}). Note that the actual supertype depends on the type to which the mixin is added in a mixin composition; it is not statically known at the time the mixin is defined (the mixin must exist before being added anywhere). 
+Assume a trait $D$ defines some aspect of an instance $x$ of type $C$ (i.e. $D$ is a base class of $C$). Then the {\em actual supertype} of $D$ in $x$ is the compound type consisting of all the base classes in $\lin{C}$ that succeed $D$. The actual super type gives the context for resolving a \code{super} reference in a trait (\sref{sec:self-this-super}). Note that the actual supertype depends on the type to which the trait is added in a trait composition; it is not statically known at the time the trait is defined (the trait must exist before being added anywhere). 
 
-If $D$ is not a mixin, then its actual supertype is simply its least proper supertype (which is statically known). 
+If $D$ is not a trait, then its actual supertype is simply its least proper supertype (which is statically known). 
 
-\example The following mixin defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The mixin also requires the self-type to be \lstinline[mathescape=false]!$T!. 
+\example The following trait defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The trait also requires the self-type to be \lstinline[mathescape=false]!$T!. 
 \begin{lstlisting}[mathescape=false]
-mixin Comparable:[$T <: Comparable:[$T]]
+trait Comparable:[$T <: Comparable:[$T]]
   requires $T
   operator < (that: $T): Boolean end
   operator <=(that: $T): Boolean := self < that || self = that
   operator > (that: $T): Boolean := that < self
   operator >=(that: $T): Boolean := that <= self
-end mixin
+end trait
 \end{lstlisting}
 
 \subsection{Refinements}
@@ -662,7 +662,7 @@ end mixin
 
 Syntax of refinements is given in section about compound types (\sref{sec:compound-types}). 
 
-Refinements in Coral are a special kind of mixins. There are two cases in which refinements may appear -- as nameless extensions to other types, or as a named mixin that has the ability to locally override or extend another type. The actual meaning depends on the usage of a refinement (see also \sref{sec:use-expressions}).
+Refinements in Coral are a special kind of traits. There are two cases in which refinements may appear -- as nameless extensions to other types, or as a named trait that has the ability to locally override or extend another type. The actual meaning depends on the usage of a refinement (see also \sref{sec:use-expressions}).
 
 % TODO: clear the syntaxes of declarations & definitions to be able to specify on a syntax level what can appear in a refinement
 
@@ -687,11 +687,11 @@ Protocols are classes that are abstract and can contain only abstract member dec
 \syntax\begin{lstlisting}
 Ifc_Def  ::= '[' Ifc_Kind ']' constant_id [Type_Param_Clause] 
              [Superclass] [semi] {Ifc_Expr}
-Ifc_Kind ::= 'class' | 'mixin'
+Ifc_Kind ::= 'class' | 'trait'
 Ifc_Expr ::= Dcl
 \end{lstlisting}
 
-Interfaces are filtered versions of classes with only declarations. Interfaces can be generated from classes or mixins by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols. 
+Interfaces are filtered versions of classes with only declarations. Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols. 
 
 
 \section{Object Definitions}
@@ -707,7 +707,7 @@ Obj_Expr ::= Clone_Expr
            | Expr
            | {Annotation} 'class' Class_Def 'end' ['class']
            | {Annotation} 'object' Obj_Def 'end' ['object']
-           | {Annotation} 'mixin' Mixin_Def 'end' ['mixin']
+           | {Annotation} 'trait' Trait_Def 'end' ['trait']
            | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
            | {Annotation} 'interface' Ifc_Def 'end' 
              ['interface']
