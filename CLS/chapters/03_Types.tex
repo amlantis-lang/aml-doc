@@ -179,7 +179,8 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ t
 \label{sec:compound-types}
 
 \syntax\begin{lstlisting}
-Compound_Type ::= Annot_Type {'with' Annot_Type} [Refinement]
+Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type} 
+                  [Refinement]
                 | Refinement
 Refinement    ::= 'refine' '{' Refine_Stat {semi Refine_Stat} '}'
 \end{lstlisting} % TBD: define Refine_Stat syntax
