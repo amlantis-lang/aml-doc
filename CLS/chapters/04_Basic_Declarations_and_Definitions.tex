@@ -661,35 +661,36 @@ double number
 
 \syntax\begin{lstlisting}
 Use             ::= 'use' Use_Expr
-Use_Expr        ::= (Container_Path | Stable_Id) '::' Import_Expr
+Use_Expr        ::= (Container_Path | Stable_Id) '.' Import_Expr
 Import_Expr     ::= Single_Import
                   | '{' Import_Exprs '}'
                   | '_'
 Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
 Single_Import   ::= importable_id ['as' [constant_id | '_']]
-Container_Path  ::= Module_Path ['::' Constant_Path]
+Container_Path  ::= Module_Path ['.' Constant_Path]
                   | Constant_Path
-Module_Path     ::= Module_Selector {'::' Module_Selector}
-Constant_Path   ::= Const_Selector {'::' Const_Selector}
+Module_Path     ::= Module_Selector {'.' Module_Selector}
+Constant_Path   ::= Const_Selector {'.' Const_Selector}
 Module_Selector ::= constant_id [Vendor_Arg]
 Const_Selector  ::= constant_id
 Vendor_Arg      ::= '~[' vendor_domain ']'
-vendor_domain   ::= variable_id {'.' variable_id}
+vendor_domain   ::= vendor_char {vendor_char}
+vendor_char     ::= lower | '.' | '-' | '_'
 \end{lstlisting}
 
-A use clause has the form \lstinline!use $p$::$I$!, where $p$ is a path to the containing type of the imported entity (either a module or another class), and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}
+A use clause has the form \lstinline!use $p$.$I$!, where $p$ is a path to the containing type of the imported entity (either a module or another class), and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}
 \begin{lstlisting}
 { $x_1$ as $y_1$ $\commadots$ $x_n$ as $y_n$, _ }
 \end{lstlisting}
-for $n \ge 0$, where the final wildcard ``\lstinline!_!'' may be absent. It makes available each importable member \lstinline!$p$::$x_i$! under the unqualified name $y_i$. I.e. every import selector \lstinline!$x_i$ as $y_i$! renames (aliases) \lstinline!$p$::$x_i$! to $y_i$. If a final wildcard is present, all importable members $z$ of $p$ other than $x_1 \commadots x_n, y_1 \commadots y_n$ are also made available under their own unqualified names. 
+for $n \ge 0$, where the final wildcard ``\lstinline!_!'' may be absent. It makes available each importable member \lstinline!$p$.$x_i$! under the unqualified name $y_i$. I.e. every import selector \lstinline!$x_i$ as $y_i$! renames (aliases) \lstinline!$p$.$x_i$! to $y_i$. If a final wildcard is present, all importable members $z$ of $p$ other than $x_1 \commadots x_n, y_1 \commadots y_n$ are also made available under their own unqualified names. 
 
-Import selectors work in the same way for type and term members. For instance, a use clause \lstinline!use $p$::{$x$ as $y$}! renames the term name \lstinline!$p$::$x$! to the term name $y$ and the type name \lstinline!$p$::$x$! to the type name $y$. At least one of these two names must reference an importable member of $p$. 
+Import selectors work in the same way for type and term members. For instance, a use clause \lstinline!use $p$.{$x$ as $y$}! renames the term name \lstinline!$p$.$x$! to the term name $y$ and the type name \lstinline!$p$.$x$! to the type name $y$. At least one of these two names must reference an importable member of $p$. 
 
 If the target name in an import selector is a wildcard, the import selector hides access to the source member. For instance, the import selector \lstinline!$x_i$ as _! ``renames'' $x$ to the wildcard symbol, which basically means discarding the name, since \lstinline!_! is not a readable name\footnote{Meaning, it is not possible to use ``\lstinline!_!'' as a variable to read from, it never has any value.}, and thereby effectively prevents unqualified access to $x$. This is useful if there is a final wildcard in the same import selector list, which imports all members not mentioned in previous import selectors, to selectively not import some members. 
 
 The scope of a binding introduced by an import-clause starts immediately after the import clause and extends to the end of the enclosing scope and all nested scopes. 
 
-Several shorthands exists. An import selector may be just a simple name $x$, in which case, $x$ is imported without renaming, so the import selector is equivalent to \lstinline!$x$ as $y$!. Furthermore, it is possible to replace the whole import selector list by a single identifier of wildcard. The use clause \lstinline!use $p$::$x$! is equivalent to \lstinline!use $p$::{$x$}!, i.e. it makes available without qualification the member $x$ of $p$. The use clause \lstinline!use $p$::_! is equivalent to \lstinline!use $p$::{_}!, i.e. it makes available without qualification all importable members of $p$ (this is analogous to \lstinline[language=Java]!import $p$.*! in Java or \lstinline[language=Java]!import $p$._! in Scala). 
+Several shorthands exists. An import selector may be just a simple name $x$, in which case, $x$ is imported without renaming, so the import selector is equivalent to \lstinline!$x$ as $y$!. Furthermore, it is possible to replace the whole import selector list by a single identifier of wildcard. The use clause \lstinline!use $p$.$x$! is equivalent to \lstinline!use $p$.{$x$}!, i.e. it makes available without qualification the member $x$ of $p$. The use clause \lstinline!use $p$._! is equivalent to \lstinline!use $p$.{_}!, i.e. it makes available without qualification all importable members of $p$ (this is analogous to \lstinline[language=Java]!import $p$.*! in Java or \lstinline[language=Java]!import $p$._! in Scala). 
 
 \example Consider the object definition:
 \begin{lstlisting}
@@ -701,7 +702,7 @@ end
 \end{lstlisting}
 Then the block
 \begin{lstlisting}
-{ use M::{one, z as zero, _}; add (zero, one) }
+{ use M.{one, z as zero, _}; add (zero, one) }
 \end{lstlisting}
 is equivalent to the block
 \begin{lstlisting}

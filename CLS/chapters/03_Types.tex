@@ -11,6 +11,11 @@ Concrete value types can be either a \textit{class type} (e.g. referenced with a
 
 Non-value types capture properties of identifiers that are not values. For instance, a type constructor does not directly specify a type of values, but a type constructor, when applied to the correct type arguments, yields a first-order type, which may be a value type. Non-value types are expressed indirectly in Coral. In example, a method type is described by writing down a method signature, which is not a real type itself, but it creates a corresponding method type. 
 
+
+
+
+
+
 \section{About Coral's Type System}
 
 There are two main streams of typing systems out there -- statically typed and dynamically typed. Static typing in a language usually means that the language is compiled into an executable with a definite set of types and every operation is type checked. Dynamic typing means that these checks are deferred until needed, in runtime. 
@@ -25,17 +30,22 @@ While Coral is so dynamic, it also needs to maintain stability and performance. 
 
 Types in Coral are represented by objects that are members of the \code{Class} type. 
 
+
+
+
+
+
 \section{Paths}
 \label{sec:type-paths}
 
 \syntax\begin{lstlisting}
 Path             ::= Stable_Id
                    | 'this'
-                   | [constant_id '#'] 'self'
+                   | [constant_id '.'] 'self'
 Stable_Id        ::= constant_id
-                   | ['::'] Path '::' constant_id
-                   | [constant_id '#'] 'super' [Class_Qualifier] 
-                      '::' constant_id
+                   | Path '.' constant_id
+                   | [constant_id '.'] 'super' [Class_Qualifier] 
+                      '.' constant_id
 Class_Qualifier  ::= '[' constant_id ']'
 \end{lstlisting}
 
@@ -51,29 +61,44 @@ The empty path $\epsilon$ (which can not be written explicitly in user programs)
 \code{this}, which references the directly enclosing class. 
 
 \item 
-\lstinline@$C$#self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$#self@, where $C$ is the name of the class directly enclosing the reference. 
+\lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. 
 
 \item 
-\lstinline@$p$::$x$@, where $p$ is a path and $x$ is a member of $p$. Additionally, $p$ allows modules to appear instead of references to classes or traits, but no module reference can follow a class or a trait reference: \lstinline@{module_ref '::'} {(class_ref|trait_ref) '::'} $\ldots$@. 
+\lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$. Additionally, $p$ allows modules to appear instead of references to classes or traits, but no module reference can follow a class or a trait reference: \lstinline@{module_ref '.'} {(class_ref|trait_ref) '.'} $\ldots$@. 
 
 \item
-\lstinline@$C$#super::$x$@ or \lstinline@$C$#super[$M$]::$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$#super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
+\lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
 \end{itemize}
+
+
+
+
+
 
 \section{Value Types}
 
 Every value in Coral has a type which is of one of the following forms. 
+
+
+
+
+
 
 \subsection{Value \& Singleton Type}
 \label{sec:value-types}
 \label{sec:singleton-types}
 
 \syntax\begin{lstlisting}
-Simple_Type ::= Path '#' 'type'
-Simple_Type ::= Path '#' 'singleton-type'
+Simple_Type ::= Path '.' 'type'
+Simple_Type ::= Path '.' 'singleton-type'
 \end{lstlisting}
 
-A singleton type is of the form \lstinline@$p$#singleton-type@ and a special type that denotes the set of values consisting of \code{nil} and the value denoted by $p$. A value type, on the other hand, is a special type that denotes the set of values consisting of \code{nil} and every value that conforms to the type of value denoted by $p$.\footnote{This is useful when using a value as prototype of new values.}
+A singleton type is of the form \lstinline@$p$.singleton-type@ and a special type that denotes the set of values consisting of \code{nil} and the value denoted by $p$. A value type, on the other hand, is a special type that denotes the set of values consisting of \code{nil} and every value that conforms to the type of value denoted by $p$.\footnote{This is useful when using a value as prototype of new values.}
+
+
+
+
+
 
 \subsection{Type Projection}
 \label{sec:type-projection}
@@ -82,7 +107,12 @@ A singleton type is of the form \lstinline@$p$#singleton-type@ and a special typ
 Simple_Type ::= Simple_Type '#' constant_id
 \end{lstlisting}
 
-A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. \footnote{Type projection operator \lstinline@#@ is a language construct and can't be overridden by user programs. There is a similarity between this construct and the \lstinline@::@ scope operator. The difference is, type projection operator is expected to be rarely needed, but it does provide a type projection and can refer in a stable way to a type of anything. Scope operator, on the other hand, does not care about types, it merely resolves a member of a particular expression at runtime.}
+A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. This is useful i.e. with nested classes that belong to the class instances, not the class object. 
+
+
+
+
+
 
 \subsection{Type Designators}
 
@@ -92,9 +122,14 @@ Simple_Type ::= Stable_Id
 
 A type designator refers to a named value type. It can be simple or qualified. All such type designators are shorthands for type projections. 
 
-Specifically, the unqualified type name $t$ where $t$ is bound in some class, object or module $C$ is taken as a shorthand for \lstinline@$C$#self#type#$t$@. If $t$ is not bound in a class, object or module, then $t$ is taken as a shorthand for \lstinline@$\epsilon$#type#$t$@. 
+Specifically, the unqualified type name $t$ where $t$ is bound in some class, object or module $C$ is taken as a shorthand for \lstinline@$C$.self.type#$t$@. If $t$ is not bound in a class, object or module, then $t$ is taken as a shorthand for \lstinline@$\epsilon$.type#$t$@. 
 
-A qualified type designator has the form \lstinline@$p$::$t$@, where $p$ is a path (\sref{sec:type-paths}) and $t$ is a type name. Such a type designator is equivalent to the type projection \lstinline@$p$#type#$t$@. 
+A qualified type designator has the form \lstinline@$p$.$t$@, where $p$ is a path (\sref{sec:type-paths}) and $t$ is a type name. Such a type designator is equivalent to the type projection \lstinline@$p$.type#$t$@. 
+
+
+
+
+
 
 \subsection{Parameterized Types}
 \label{sec:parameterized-types}
@@ -153,6 +188,10 @@ G:[S, Number]              // type S constrains its parameter to
                           //   that conforms to Number
 \end{lstlisting}
 
+
+
+
+
 \subsection{Tuple Types}
 
 \syntax\begin{lstlisting}
@@ -167,6 +206,11 @@ Tuple classes are generated lazily by the runtime as needed, so that the languag
 
 An effort will be made to introduce a simple enough syntax for variable parameterized types, if possible, until then, \lstinline@Tuple_$i$@ are the only such types. 
 
+
+
+
+
+
 \subsection{Annotated Types}
 
 \syntax\begin{lstlisting}
@@ -174,6 +218,11 @@ Annot_Type ::= {Annotation} Simple_Type
 \end{lstlisting}
 
 An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ to the type $T$. % TBD: add ref to a chapter about annotations.
+
+
+
+
+
 
 \subsection{Compound Types}
 \label{sec:compound-types}
@@ -192,6 +241,11 @@ If no refinement is given, the type is implicitly equivalent to the same type ha
 A compound type may also consist of just a refinement \lstinline@{$R$}@ with no preceding component types -- such a type has an implicit component type \code{Object} and describes the member values as ``any value, as long as it has what the refinement requires'', thus it works like an anonymous protocol. 
 
 If a compound type does not contain a concrete class type, then \code{Object} is implied in case the type is used as a concrete class\footnote{Meaning that the compound type is used as an ad-hoc (possibly anonymous) class, e.g. to create new instances of it.}.
+
+
+
+
+
 
 \subsection{Function Types}
 \label{sec:function-types}
@@ -219,6 +273,11 @@ end protocol
 
 Function types are covariant in their result type and contravariant in their argument types (\sref{sec:variance-of-type-parameters}).
 
+
+
+
+
+
 \subsection{Existential Types}
 \label{sec:existential-types}
 
@@ -233,6 +292,11 @@ An existential type has the form \lstinline@$T$ for-some {$Q$}@, where $Q$ is a 
 
 A {\em type instance} of \lstinline@$T$ for-some {$Q$}@ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, \lstinline@$L_i$ <: $t_i$ <: $U_i$@. The set of values denoted by the existential type \lstinline@$T$ for-some {$Q$}@ is the union of the set of values of all its type instances. 
 
+
+
+
+
+
 \subsection{Nullable Types}
 \label{sec:nullable-types}
 
@@ -246,6 +310,11 @@ A nullable type has the form \lstinline!$T$?! or \lstinline@$T$!@, where ``\code
 Explicitly nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly nullable, overriding the preference of $T$. Explicitly not-nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly not-nullable, overriding the preference of $T$. Explicit nullability of already nullable types is redundant, as is explicit non-nullability of already not-nullable types. Explicit nullability of the \code{Option} type is also redundant and is in fact ignored. 
 
 Nullable types in this form can appear as types of variables, parameters and return types. 
+
+
+
+
+
 
 \subsection{Dependent Types}
 \label{sec:dependent-types}
@@ -264,9 +333,19 @@ Integer@[42]
 String@[42]
 \end{lstlisting}
 
+
+
+
+
+
 \section{Non-Value Types}
 
 The types explained in the following paragraphs do not appear explicitly in programs, they are internal and do not represent any type of value directly. 
+
+
+
+
+
 
 \subsection{Method Types}
 \label{sec:method-types}
@@ -309,6 +388,11 @@ g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
 
 The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of return types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
 
+
+
+
+
+
 \subsection{Polymorphic Method Types}
 \label{sec:polymorphic-method-types}
 
@@ -327,10 +411,20 @@ union : :[@\$@A >: Nothing <: Comparable:[@\$@A]] (Set:[@\$@A],
         Set:[@\$@A]) $\mapsto$ Set:[@\$@A]
 \end{lstlisting}
 
+
+
+
+
+
 \subsection{Type Constructors}
 \label{sec:type-constructors}
 
 A type constructor is in turn represented internally much like a polymorphic method type. \lstinline@:[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto T$@ represents a type that is expected by a type constructor parameter. The difference is that the represented internal entity is not a method, but a type, creating higher-kinded types. 
+
+
+
+
+
 
 \section{Relations Between Types}
 
@@ -341,6 +435,11 @@ in all contexts.
 \\
 \em Conformance & $T \conforms U$ & Type $T$ conforms to type $U$.
 \end{tabular}\end{quote}
+
+
+
+
+
 
 \subsection{Type Equivalence}
 
@@ -373,6 +472,11 @@ Two type constructors (\sref{sec:type-constructors}) are equivalent, if they hav
 
 \end{itemize}
 
+
+
+
+
+
 \subsection{Conformance}
 \label{sec:conformance}
 
@@ -396,6 +500,11 @@ A type variable $t$ conforms to its upper bound and its lower bound conforms to 
 A class type or a parameterized type conforms to any of its base types. 
 
 \end{itemize}
+
+
+
+
+
 
 \subsection{Weak Conformance}
 

@@ -482,7 +482,7 @@ The \code{lazy} local modifier applies to value definitions. A \code{lazy} value
 
 \example The following code illustrates the use of qualified and unqualified private: 
 \begin{lstlisting}
-module Outer_Mod::Inner_Mod
+module Outer_Mod.Inner_Mod
   class Outer
     class Inner
       private:[self] def e() end def
@@ -494,7 +494,7 @@ module Outer_Mod::Inner_Mod
   end class
 end module
 \end{lstlisting}
-Here, accesses to the method \code{e} can appear anywhere within the instance of \code{Inner}, provided that the instance is also the receiver at the same time. Accesses to the method \code{f} can appear anywhere within the class \code{Inner}, including all receivers of the same class. Accesses to the method \code{g} can appear anywhere within the class \code{Outer}, but not outside of it. Accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod::Inner_Mod}, but not outside of it, similar to package-private methods in Java. Finally, accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod}, including modules and classes contained in it, but not outside of these.
+Here, accesses to the method \code{e} can appear anywhere within the instance of \code{Inner}, provided that the instance is also the receiver at the same time. Accesses to the method \code{f} can appear anywhere within the class \code{Inner}, including all receivers of the same class. Accesses to the method \code{g} can appear anywhere within the class \code{Outer}, but not outside of it. Accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod.Inner_Mod}, but not outside of it, similar to package-private methods in Java. Finally, accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod}, including modules and classes contained in it, but not outside of these.
 
 \end{itemize}
 
@@ -806,8 +806,8 @@ Modifiers (\sref{sec:modifiers}) are available in the same way as in class defin
 \label{sec:module-definitions}
 
 \syntax\begin{lstlisting}
-Module_Def  ::= constant_id [Vendor_Arg] {'::' constant_id} 
-                [semi] {Module_Expr}
+Module_Def  ::= constant_id [Vendor_Arg] {'.' constant_id 
+                [Vendor_Arg]} [semi] {Module_Expr}
 Module_Expr ::= Expr
               | Implements_Expr
               | Const_Def
@@ -866,13 +866,15 @@ Dependent types (\sref{sec:dependent-types}) are allowed in these positions:
 Class_Def          ::= constant_id [Type_Param_Clause] 
                        [Dep_Params] [Superclass] [semi] 
                        {Indexed_Class_Expr}
-Dep_Params         ::= '@{' Index_Param {',' Index_Param} '}'
+Dep_Params         ::= '@[' Index_Param {',' Index_Param} ']'
 Index_Param        ::= variable_id [':' Simple_Type]
 Indexed_Class_Expr ::= Class_Expr
                      | Indexed_By_Clause
 Indexed_By_Clause  ::= 'indexed-with' Indexing_Expr
 Indexing_Expr      ::= '{|' Index_Param {',' Index_Param} '|'
                        [Index_Exprs] '}'
+                     | '(' Index_Param {',' Index_Param} ')' '->'
+                       '{' [Index_Exprs] '}'
 Index_Exprs        ::= Index_Expr {[semi] Index_Expr}
 Index_Expr         ::= Index_Var Index_Op Index_Val
                      | Index_Val [Index_Op Index_Var]
@@ -977,10 +979,15 @@ If there are multiple indexing constraints separated by the \lstinline![semi]! s
 
 \example The following is an example on how a \code{String} type might index itself: 
 \begin{lstlisting}
-class String @{length: Integer}
-  indexed-with {|length| @length = length}
+class String @[length: Integer]
+  indexed-with (length) -> {@length = length}
 end
 \end{lstlisting}
+
+
+
+
+
 
 \subsection{Constrained Types}
 \label{sec:constrained-types}
@@ -988,8 +995,10 @@ end
 \syntax\begin{lstlisting}
 Type_Def      ::= constant_id [Type_Param_Clause] ':=' 
                   Type [Dep_Params_Constr]
-Dep_Params_C  ::= '@{|' Index_Param {','} Index_Param '|'
-                  [Index_Exprs_C] '}'
+Dep_Params_C  ::= '@[|' Index_Param {',' Index_Param} '|'
+                  [Index_Exprs_C] ']'
+                | '@(' Index_Param {',' Index_Param} ')'
+                  '->' '{' [Index_Exprs_C] '}'
 Index_Exprs_C ::= Index_Expr_C {[semi] Index_Expr_C}
 Index_Expr_C  ::= Index_Var_C Index_Op Index_Val_C
                 | Index_Val_C [Index_Op Index_Var_C]
@@ -1010,15 +1019,22 @@ The type of the indexing variable is implied to be the same as of the indexed ty
 
 \example Here is an example of how Coral might declare the \code{Char} type:
 \begin{lstlisting}
-type Char := String @{|length| length = 1}
+type Char := String @[|length| length = 1]
+type Char := String @(length) -> {length = 1}
 \end{lstlisting}
 Notice how the constraint only uses the already existing indexing variable. 
 
 \example Here is an example of a different constrained type: 
 \begin{lstlisting}
-type Even_Positive_Integers ::= Integer @{|i| even?(i); i >= 0}
+type Even_Positive_Integers ::= Integer @[|i| even?(i); i >= 0]
+type Even_Positive_Integers ::= Integer @(i) -> {even?(i); i >= 0}
 \end{lstlisting}
 This constrained type declares \code{Even_Positive_Ints} to be positive integers that are even at the same time. 
+
+
+
+
+
 
 \subsection{Range Types}
 \label{sec:range-types}
@@ -1033,16 +1049,21 @@ Range types are similar to constrained types, but limited in a few ways: they ca
 
 \example An example of a constrained type interchangeable with a range type:
 \begin{lstlisting}
-type Positive_Integers ::= Integer @{|i| i >= 0}
+type Positive_Integers ::= Integer @(i) -> {i >= 0}
 type Positive_Integers is range 
-  (0 .. +Integer::Infinity) : Integer 
+  (0 .. +Integer.Infinity) : Integer 
 end type
 type Positive_Integers is range
-  0 .. +Integer::Infinity
+  0 .. +Integer.Infinity
 end type
 \end{lstlisting}
 
 Types that do not require the ``\code{constant_id}'' are those that are ``sorts'' at the same time, so that the indexed type can be inferred. 
+
+
+
+
+
 
 \section{Units of Measure}
 \label{sec:units-of-measure}
@@ -1051,7 +1072,7 @@ Types that do not require the ``\code{constant_id}'' are those that are ``sorts'
 Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'unit-of-measure' 
                    [semi Unit_Convs {semi Unit_Convs}]
 Unit_Name      ::= variable_id | constant_id
-                   [':' Superunit_Name]
+                   ['extends' Superunit_Name]
 Superunit_Name ::= variable_id | constant_id
 Unit_Convs     ::= Unit_Name ':=' Unit_Conv
 Unit_Conv      ::= '(' Unit_Conv ')'
@@ -1075,6 +1096,26 @@ type ml is unit-of-measure
 end type
 \end{lstlisting}
 
+\example The following shows possible usage of abstract units of measure. 
+\begin{lstlisting}
+type distance is abstract unit-of-measure
+end type
+
+type m extends distance is unit-of-measure
+  m := km / 1000
+end type
+
+type km extends distance is unit-of-measure
+  km := m * 1000
+end type
+
+type mi extends distance is unit-of-measure
+  mi := km * 0.621
+  mi := (m * 1000) * 0.621 // this can be inferred!
+end type
+\end{lstlisting}
+This enables types aggregated with units of measure require a number tagged with any distance unit of measure and still work with correct units. 
+
 Every unit of measure is defined in the same scope as any other type would be, but the application of units of measure to numbers or {\em aggregated unit types} require to import units of measure by name into the scope where a unit of measure from a different unrelated module would be used. 
 
 \paragraph{\em Types Aggregated with Units of Measure}
@@ -1092,6 +1133,11 @@ Names of unit of measure parameters must not clash with names of type parameters
 
 \paragraph{\em Persistence of Units of Measure}
 There is a huge difference between the way F\# handles units of measure and Coral's way. In F\#, the unit of measure information is lost after compilation, but persists in Coral in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
+
+
+
+
+
 
 \section{Record Types}
 \label{sec:record-types}
@@ -1144,7 +1190,7 @@ type Variant_Record (option: Traffic_Light) is record
   end case
 end type
 
-let vr := Variant_Record(Traffic_Light::Red).
+let vr := Variant_Record(Traffic_Light.Red).
   new(a: A.new, b: B.new, c: C.new)
 \end{lstlisting}
 
