@@ -254,15 +254,69 @@ When a trait $M$ is prepended to a class, a new include class $Im_i$ is inserted
 If a trait $M$ is already prepended to any of the superclasses, it has to be prepended again, since the already prepended traits of superclasses are in super-position to the class or trait that gets $M$ prepended. Prepended traits of superclasses do not {\em overlay} child classes. Prepended traits are inserted into the inheritance tree more like subclasses than superclasses. 
 
 \paragraph{\em Nested includes}
-When a trait $M$ itself includes one or more traits $M_1 \commadots M_n$, then these included traits are inserted between the included trait $M$ and the superclass, unless they are already respectively included by any of the superclasses. If $M$ with included $M_1 \commadots M_n$ is prepended to $C$, then $M_1 \commadots M_n$ are inserted before the superclass of $C$, if not already included in any of the superclasses. It is an error if nested includes form a dependency cycle: any {\em auto-included}\footnote{Unlike in Ruby, Coral does not need concerns to employ automatic injection of dependencies. Every trait in Coral is a concern.} trait must not require to include a trait that triggered the auto-include. 
+% TBD: add the algorithm like with nested prepends, but this one is simpler
+When a trait $M$ itself includes one or more traits $M_1 \commadots M_n$, then these included traits are inserted between the included trait $M$ and the superclass, unless they are already respectively included by any of the superclasses. If $M$ with included $M_1 \commadots M_n$ is prepended to $C$, then $M_1 \commadots M_n$ are inserted before the superclass of $C$, if not already included in any of the superclasses. It is an error if nested includes form a dependency cycle: any {\em auto-included} trait must not require to include a trait that triggered the auto-include. The order in which traits are included in another trait may change when included in a class, i.e. if the class includes two traits $A$ and $B$ that themselves include the same two traits $D$ and $E$ in reverse order ($A$ includes $D$, then $E$, but $B$ includes $E$, then $D$): the order is then defined by the first trait that included the two auto-included traits and subsequently included traits can not change this order in any way. 
+
+\example Take the following trait and class definitions, where $S$ is the superclass of the class $C$:
+\begin{lstlisting}
+trait D; end
+trait E; end
+
+trait A extends D with E; end
+trait B extends E with D; end
+
+class C extends S with A with B; end
+\end{lstlisting}
+Then traits are auto-included in the following order:
+\begin{itemize}
+\item
+\lstinline!C $\rightarrow$ [S]! \\
+First, the superclass is added. 
+
+\item
+\lstinline!C $\rightarrow$ [A] $\rightarrow$ [S]! \\
+Then, trait $A$ is included, unless already included in $S$. 
+
+\item
+\lstinline!C $\rightarrow$ [A] $\rightarrow$ [E] $\rightarrow$ [S]! \\
+Including of trait $A$ triggers auto-include of traits included in $A$. Start with the first one in chain of $A$: $E$. 
+
+\item
+\lstinline!C $\rightarrow$ [A] $\rightarrow$ [E] $\rightarrow$ [D] $\rightarrow$ [S]! \\
+Then, $A$ has $D$ in its chain. 
+
+\item
+\lstinline!C $\rightarrow$ [B] $\rightarrow$ [A] $\rightarrow$ [E] $\rightarrow$ [D] $\rightarrow$ [S]! \\
+Finally include $B$. $B$ triggers auto-include, but both of its included traits are already included in the chain, so nothing more happens. 
+\end{itemize}
+Note that the order of $E$ and $D$ is reversed, since later includes move the trait closer to the including class or trait, and therefore \code{super} calls go through traits that were included before. Also, if $B$ was included sooner than $A$, then $D$ and $E$ would appear in reverse order in the chain. 
 
 \paragraph{\em Nested prepends}
-When a trait $M$ itself prepends one or more traits $M_1 \commadots M_n$, then nothing happens to the class or the trait that $M$ is included in. If $M$ is prepended to $C$, then every prepended trait in $M_1 \commadots M_n$ is prepended to $C$ in this way:
+When a trait $M$ itself prepends one or more traits $M_1 \commadots M_n$, then nothing happens to the class or the trait that $M$ is included in. If $M$ is prepended to $C$, then every trait $M_1 \commadots M_n$ prepended to $M$ is automatically prepended to $C$ in this way:
 \begin{enumerate}
-\item $M$ is inserted as the head of the prepend chain in an include class. 
-\item For each $1 \le i \le n$, $M$ is switched with previously prepended traits until $M_i$ is closer to the chain head than $M$, if $M_i$ is contained in the chain, or else $M_i$ is inserted as the head of the prepend chain. 
-\item If $M_i$ includes any other traits, these are included in the same way as nested included traits. 
-\item Check for prepend cycles -- if any {\em auto-prepended}\footnote{Again, this is unlike in Ruby, which does not automatically prepend traits.} trait requires to prepend a trait that triggered the auto-prepend, then it is an error. 
+\item
+Establish a list of traits that triggered auto-prepend, named here $tp$. This list is in ideal case empty, so it's actually ok for the runtime to wait with its creation until needed and only increase its size in very small steps. 
+
+\item
+Establish a list of traits that are scheduled to be auto-prepended, named here $sp$. This list is in ideal case empty, again. 
+
+\item
+There is a {\em prepend chain} in the class that prepends $M$. If no trait was prepended so far, create it. The chain's head is the element that is the farthest from the class $C$, the chain's tail is right before the class $C$. Traits closer to this chain's head are searched for method overlays sooner in runtime than traits closer to the tail (and the class respectively). 
+
+\item
+Insert $M$ at the chain's head, unless $M$ already is in the chain. If it is, then halt. 
+
+\item 
+If $M$ has itself prepended traits, insert $M$ into $tp$ (triggered prepend). 
+
+\item
+For traits $M_1 \commadots M_n$ that are prepended in $M$, test if each $M_i$ already appears in the chain. If it does, move $M$ up the chain towards the chain's tail, right until $M$ is closer to the chain's tail than $M_i$. If it does not, add $M_i$ to $sp$, unless $M_i$ is in $tp$. If it is, then it is an error\footnote{Trait cycle dependency detected.}. 
+
+\item
+If $M$ has included traits, include them in $C$ in the already described way now. 
+
+\item
+If $sp$ is not empty, then for each $M_i$ in $sp$, remove $M_i$ from $sp$ and recursively apply steps starting with 4 on it. Keep both $sp$ and $tp$ shared for recursive calls. If $M_i$ moves closer to the chain's tail than $M$ or any other trait prepended in prepending of the original $M$\footnote{This can be achieved by having a third list of traits that were prepended.}, it is an error\footnote{Trait composition design flaw detected.}. 
 \end{enumerate}
 
 \paragraph{\em Traits \& Metaclasses}
