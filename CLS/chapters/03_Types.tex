@@ -39,14 +39,15 @@ Types in Coral are represented by objects that are members of the \code{Class} t
 \label{sec:type-paths}
 
 \syntax\begin{lstlisting}
+path_id          ::= constant_id | variable_id
 Path             ::= Stable_Id
                    | 'this'
-                   | [constant_id '.'] 'self'
-Stable_Id        ::= constant_id
-                   | Path '.' constant_id
-                   | [constant_id '.'] 'super' [Class_Qualifier] 
-                      '.' constant_id
-Class_Qualifier  ::= '[' constant_id ']'
+                   | [path_id '.'] 'self'
+Stable_Id        ::= path_id
+                   | Path '.' path_id
+                   | [path_id '.'] 'super' [Class_Qualifier] 
+                      '.' path_id
+Class_Qualifier  ::= '[' path_id ']'
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Coral's type system. 
