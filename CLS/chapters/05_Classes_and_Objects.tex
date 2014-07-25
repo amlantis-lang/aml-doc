@@ -331,6 +331,7 @@ An overriding method, unlike in Scala, does not inherit any default arguments fr
 
 
 
+
 \subsection{Inheritance Closure}
 \label{sec:inheritance-closure}
 
@@ -339,7 +340,7 @@ An overriding method, unlike in Scala, does not inherit any default arguments fr
 Let $C$ be a class type. The {\em inheritance closure} of $C$ is the smallest set $\inheritclosure$ of types such that
 \begin{itemize}
 \item If $T$ is in $\inheritclosure$, then every type $T'$ which forms syntactically a part of $T$ is also in $\inheritclosure$. 
-\item If $T$ is a class type in $\inheritclosure$, then all parents of $T$ are also in $\inheritclosure$. 
+\item If $T$ is a class type in $\inheritclosure$, then all parents of $T$ (\sref{sec:templates}) are also in $\inheritclosure$. 
 \end{itemize}
 It is an error if the inheritance closure of a class type consists of an infinite number of types. 
 
