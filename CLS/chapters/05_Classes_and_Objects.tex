@@ -29,7 +29,8 @@ Class_Parents  ::= Constr {['prepend'] 'with' Annot_Type}
 Trait_Parents  ::= Annot_Type {['prepend'] 'with' Annot_Type}
 Template_Body  ::= [Self_Type] Template_Stat {semi Template_Stat}
 Self_Type      ::= 'requires' 'self' ':' Type semi
-                 | 'requires' variable_id [':' Type] semi
+                 | 'requires' [variable_id ':'] Type semi
+                 | 'use' ['self'] 'as' variable_id [':' Type] semi
 \end{lstlisting}
 
 A template defines the type signature, behaviour and initial state of a trait, class of objects or of a single object. Templates for part of instance creation expressions (constructors, see \sref{sec:constructor-invocations} \& \sref{sec:constructor-destructor-def}), class definitions and object definitions. A template ~\lstinline!$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $stats$ }!~ consists of constructor invocation $sc$, which defines the template's {\em superclass}, trait references $mt_1 \commadots mt_n$ $(n \geq 0)$, which statically define the template's included traits\footnote{Including protocols, which are also traits.}, and a statement sequence {\textit stats}, which contains initialization code and additional member definitions \& declarations for the template. Unlike in Scala, all trait references in class/trait parents need not to be exhaustive, as more prepended/included traits may be defined as a part of the template body. Trait references declared using \code{prepend with} are prepended to the template body instead of included (\sref{sec:include-classes}). 
@@ -42,7 +43,7 @@ The {\em least proper supertype} of a template is the class type or compound typ
 
 The statement sequence {\em stats} contain member definitions that define new members or overwrite members in the parent classes. It is called also the {\em class-level block}, as it does not need to contain only member definitions for the template, but also arbitrary other expressions that construct the class object and that are executed while the class is being loaded, in the context of the class. If the template forms part of an abstract class or trait definition, the statement part {\em stats} may also contain declarations of abstract members. If the template forms part of a concrete class definition, {\em stats} may still contain declarations of abstract type members, but not of abstract term members. Unlike in Scala, the expressions in {\em stats} are not forming the primary constructor of the class, but a multi-constructor\footnote{The classes are open in Coral, a single class may have its statements spread across multiple source files.} of the class itself. 
 
-The sequence of template statements may be prefixed with a formal parameter definition prefixed with \code{requires}, e.g. ~\lstinline!requires $x$!~, or ~\lstinline!requires $x$: $T$!~. If a formal parameter is given, it can be used as an alias for the reference \code{self} throughout the body of the template, including any nested types. If the formal parameter comes with a type $T$, this definition affects the {\em self type} $S$ of the underlying class or objects as follows: Let $C$ be the type of the class or trait or object defining the template. If a type $T$ is given for the formal self parameter, $S$ is the greatest lower bound of $T$ and $C$. If no type $T$ is given, $S$ is simply $C$. Inside the template, the type of \code{self} is assumed to be $S$. 
+The sequence of template statements may be prefixed with a formal parameter definition prefixed with \code{requires} or \code{use}, i.e. ~\lstinline!use self as $x$!, ~\lstinline!use self as $x$: $T$!, ~\lstinline!requires $T$!~ or ~\lstinline!requires $x$: $T$!. If a formal parameter $x$ is given, it can be used as an alias for the reference \code{self} throughout the body of the template, including any nested types. If the formal parameter $x$ comes with a type $T$, this definition affects the {\em self type} $S$ of the underlying class or objects as follows: Let $C$ be the type of the class or trait or object defining the template. If a type $T$ is given for the formal self parameter, $S$ is the greatest lower bound of $T$ and $C$. If no type $T$ is given, $S$ is simply $C$. Inside the template, the type of \code{self} is assumed to be $S$. 
 
 The self type of a class or object must conform to the self types of all classes which are inherited by the template $t$. 
 
@@ -714,7 +715,6 @@ Trait_Expr ::= Includes_Expr
              | Prepend_Expr
              | Implements_Expr
              | Expr
-             | Requires_Expr
              | {Annotation} 'class' Class_Def 'end' ['class']
              | {Annotation} 'object' Obj_Def 'end' ['object']
              | {Annotation} 'trait' Trait_Def 'end' ['trait']
