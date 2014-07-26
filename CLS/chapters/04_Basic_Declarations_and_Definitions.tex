@@ -14,6 +14,7 @@ Pat_Var_Def ::= [Val_Mod] 'val' Pat_Def
 Def         ::= Pat_Var_Def
               | 'def' Fun_Def
               | 'type' Type_Def
+              | Tmpl_Def
 \end{lstlisting}
 
 A {\em declaration} introduces names and assigns them types. Using another words, declarations are abstract members, working sort of like header files in C. 

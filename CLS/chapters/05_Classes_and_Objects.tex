@@ -23,8 +23,6 @@ Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}
 \label{sec:templates}
 
 \syntax\begin{lstlisting}
-Class_Template ::= [Early_Defs] Class_Parents [Template_Body]
-Trait_Template ::= [Early_Defs] Trait_Parents [Template_Body]
 Class_Parents  ::= Constr {['prepend'] 'with' Annot_Type} 
 Trait_Parents  ::= Annot_Type {['prepend'] 'with' Annot_Type}
 Template_Body  ::= [Self_Type] Template_Stat {semi Template_Stat}
@@ -71,6 +69,7 @@ object O extends Base with Mixin; $\ldots$ end
 
 \syntax\begin{lstlisting}
 Constr ::= Annot_Type {'(' [Exprs] ')'}
+         | '(' ')'
 \end{lstlisting}
 
 Constructor invocations define the type, members and initial state of objects created by an instance creation expression, or of parts of an object's definition, which are inherited by a class or object definition. A constructor invocation is a function application ~\lstinline!$c$:[$\targs$]@[$\dargs$][<$\uomargs$>]($\args_1$)$\ldots$($\args_n$)!~, where $c$ is a path to the superclass or an alias for the superclass, $\targs$ is a type argument list, $\dargs$ is an indexing argument list, $\uomargs$ is a units of measure argument list, $\args_1 \commadots \args_n$ are argument lists, and there is a constructor of that class which is applicable to the given arguments. 
@@ -622,79 +621,77 @@ This is only for the case where $C$ is accessible from within $D$.
 This is just for the sake of completeness, since change from public to public is not much of a relaxation. 
 \end{itemize}
 
+
+
+
+
+
 \section{Class Definitions}
 \label{sec:class-definitions}
 
 \syntax\begin{lstlisting}
-Class_Def  ::= constant_id [Type_Param_Clause] 
-               [Class_Param_Clauses] (Superclass [semi] | 'begin')
-               {Class_Expr}
-Class_Alt_Def
-           ::= constant_id [Type_Param_Clause] 
-               [Class_Param_Clauses] [Superclass] '{'
-               {Class_Expr} '}'
-Class_Param_Clauses 
-           ::= {Annotation} [Access_Modifier] {Class_Param_Clause}
-               ['(' 'implicit' Class_Params ')']
-Class_Param_Clause
-           ::= '(' [Class_Params] ')'
-Class_Params 
-           ::= Class_Param {',' Class_Param}
-Class_Param 
-           ::= {Annotation} [{Modifier} ('val' | 'var')]
-               variable_id [':' Param_Type] [':=' Expr]
-Superclass ::= 'extends' Compound_Type
-Class_Expr ::= Ctor_Expr
-             | Dtor_Expr
-             | Clone_Expr
-             | Includes_Expr
-             | Prepend_Expr
-             | Implements_Expr
-             | Expr
-             | {Annotation} 'class' Class_Def 'end' ['class']
-             | {Annotation} 'object' Obj_Def 'end' ['object']
-             | {Annotation} 'trait' Trait_Def 'end' ['trait']
-             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
-             | {Annotation} 'interface' Ifc_Def 'end' 
-               ['interface']
-             | {Annotation} 'type' Const_Type_Def 'end' ['type']
+Tmpl_Def            ::= 'class' Class_Def
+Class_Def           ::= constant_id [Type_Param_Clause] 
+                        [Class_Param_Clauses] Class_Tmpl_Env
+Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
+                        {Class_Param_Clause}
+                        ['(' 'implicit' Class_Params ')']
+Class_Param_Clause  ::= '(' [Class_Params] ')'
+Class_Params        ::= Class_Param {',' Class_Param}
+Class_Param         ::= {Annotation} [{Modifier} ('val' | 'var')]
+                        variable_id [':' Param_Type] [':=' Expr]
+Class_Tmpl_Env      ::= 'extends' [Early_Defs] Class_Parents
+                        semi [Template_Body] 'end' ['class']
+                      | ['extends'] '{' [Template_Body] '}'
+                      | ['begin' [Template_Body]] 'end' ['class']
 \end{lstlisting}
 
 A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
 
 The most general form of a class definition is
 \begin{lstlisting}
-$cas$
-class $c$ :[$tps$] @[$dps$] [<$uomps$>] 
-  $as$ $m$($ps_1$)$\ldots$($ps_n$)
+class $c$ :[$\tps$] @[$\dps$] [<$\uomps$>] 
+  $\as$ $m$($\ps_1$)$\ldots$($\ps_n$)
   extends $t$
-begin
-  $exprs \ldots$
-end class
 \end{lstlisting}
 for $n \geq 0$. 
 
 Here, 
 \begin{itemize}
 \item[]
-$cas$ is a possibly empty sequence of annotations (\sref{sec:annotations}) that are applied to the whole class. 
-
-\item[]
 $c$ is the name of the class to be defined. 
 
 \item[]
-$tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline!:[$tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
+$\tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline!:[$\tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
 
 \item[]
-$dps$ is a non-empty list of indexing parameters for dependent types (\sref{sec:dependent-types-decl}). The indexing parameter section \lstinline!@{$tps$}! may be omitted. A class with an indexing parameter section is called {\em indexed}. Indexing arguments are reified in Coral, i.e. indexing arguments are preserved in runtime. 
+$\dps$ is a non-empty list of indexing parameters for dependent types (\sref{sec:dependent-types-decl}). The indexing parameter section \lstinline!@[$\dps$]! may be omitted. A class with an indexing parameter section is called {\em indexed}. Indexing arguments are reified in Coral, i.e. indexing arguments are preserved in runtime. 
 
 \item[]
-$uomps$ is a non-empty list of unit of measure parameters for aggregated types (\sref{sec:units-of-measure}). The unit of measure parameter section \lstinline![<$uomps$>]! may be omitted. A class with a unit of measure parameter section is called {\em aggregated with units of measure}. Units of measure arguments are reified in Coral, i.e. units of measure arguments are preserved in runtime. 
+$\uomps$ is a non-empty list of unit of measure parameters for aggregated types (\sref{sec:units-of-measure}). The unit of measure parameter section \lstinline![<$\uomps$>]! may be omitted. A class with a unit of measure parameter section is called {\em aggregated with units of measure}. Units of measure arguments are reified in Coral, i.e. units of measure arguments are preserved in runtime. 
 
 \item[]
-$as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If any annotations are given at this point, they apply to the primary constructor of the class. 
+$\as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If any annotations are given at this point, they apply to the primary constructor of the class. 
 
-% TBD: explain the other sections
+\item[]
+$m$ is an access modifier (\sref{sec:modifiers}), such as \code{private} or \code{protected} (\code{public} is implied otherwise), possibly with a qualification. If such an access modifier is given, it applies to the primary constructor of the class. 
+
+\item[]
+$(\ps_1)\ldots(\ps_n)$ are formal value parameter clauses for the {\em primary constructor} of the class. The scope of a formal value parameter includes all subsequent parameter sections and the template $t$. However, a formal value parameter may not form part of the types of any of the parent classes or members of the class template $t$ -- only parameters from $\tps$ may form part of the types of any of the parent classes or members of the class template $t$. It is illegal to define two formal value parameters with the same name. If no formal parameter sections are given, an empty parameter section \lstinline!()! is implied. 
+
+\item[]
+If a formal parameter declaration ~\lstinline!$x$: $T$!~ is preceded by a \code{val} or \code{var} keyword, an accessor (getter) definition (\sref{sec:value-dcl-def}) for this parameter is implicitly added to the class. The getter introduces a value member $x$ of class $c$ that is defined as an alias of the parameter. Moreover, if the introducing keyword is \code{var}, a setter accessor ~\lstinline!$x$_=($e$)!~ is also implicitly added to the class. The formal parameter declaration may contain modifiers, which then carry over to the accessor definition(s). A formal parameter prefixed by \code{val} or \code{var} may not at the same time be a call-by-name parameter (\sref{sec:by-name-parameters}). 
+
+\item[]
+If a formal value parameter is a part of the definition of a property (a property getter and/or a property value), then these accessors are not implicitly added, as the arguments may be traced into the properties. The same applies to instance value definitions that have a formal value parameter forming a part of it. In any case, every formal value parameter is implicitly added as an instance value definition of  a \code{val} or \code{var} type respectively. 
+
+\item[]
+$t$ is a template (\sref{sec:templates}) of the form
+\begin{lstlisting}
+$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
+\end{lstlisting}
+for $(n \geq 0)$, which defines the base classes, behavior and initial state of objects of the class. The extends clause ~\lstinline!extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$!~ can be omitted, in which case ~\lstinline!extends Object!~ is implied. The only class that defines $sc$ as ~\lstinline!()!~ is \code{Object} (meaning that it has no superclass) and it is an error if any other class attempts to do the same. 
+
 % TBD: add explicit primary `constructor (_)`
 \end{itemize}
 
