@@ -125,13 +125,14 @@ Another way to access an eigenclass is to use the \lstinline!class << obj; $\ldo
 
 \paragraph{\em Metaclass Access}
 Metaclasses of classes may be accessed using the following language construct. 
+
 \syntax\begin{lstlisting}
 Metaclass_Access ::= 'class' '<<' Metaclass_Obj semi 
                      [Exprs] 'end'
 Metaclass_Obj    ::= Type | Path | 'self' | variable_id
 \end{lstlisting}
 
-\example The following code shows how metaclasses are nested in case of \code{Object} type. 
+\example The following code shows how metaclasses are nested in case of \code{Object} type. Don't try this at home though. 
 \begin{lstlisting}
 class << Object
   self = Metaclass:[Object]
