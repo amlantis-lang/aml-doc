@@ -720,8 +720,48 @@ object Sensitive {
 }
 \end{lstlisting}
 
+
+
+
+
+
 \subsection{Constructor \& Destructor Definitions}
 \label{sec:constructor-destructor-def}
+
+\paragraph{\em Primary constructor}
+The primary constructor is a special function, more special in its syntax than any other function in Coral. Its definition can spread across three syntactically different places inside of a class definition: formal value parameters, explicit field declarations, explicit primary constructor body. Primary constructor without explicitly defined parameters is equivalent to the default constructor. 
+
+\paragraph{\em Primary constructor parameters}
+These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
+
+\paragraph{\em Explicit primary constructor fields}
+These are instance value definitions inside the class template (\sref{sec:templates}) that use the formal value parameters either with or without any modification. Formal value parameter used without any modification is equivalent to the expression defining the value of an instance value being only the parameter itself. If the parameter is used without modification, it becomes an alias to the instance value implicitly defined by the primary constructor parameter. As the explicit field can be expected to be accessed more often than the original parameter, a Coral VM implementation may opt in to make the implicit instance value being the alias, instead of the explicit field. 
+\example An example of an explicit primary constructor field. 
+\begin{lstlisting}
+class C (val y: String) {
+  val @x := y                // without modification
+  val @z := y + "_modified"  // with modification
+}
+\end{lstlisting}
+
+\paragraph{\em Explicit primary constructor body}
+If a primary constructor should do something more than simply map parameters to instance values, then its explicit body comes in. It may co-exist with explicit primary constructor fields, which are then executed right after a call to the super-constructor (either in implicit position, or an explicit one). 
+\syntax\begin{lstlisting}
+Def         ::= PCtor_Def
+PCtor_Def       ::= 'constructor' PCtor_Fun_Def
+PCtor_Fun_Def   ::= '(' '_' ')' (':=' Constr_Expr | Constr_Block)
+Constr_Expr     ::= Self_Invocation
+                  | Constr_Block2
+Self_Invocation ::= 'self' Argument_Exprs {Argument_Exprs}
+                  | 'super' [Argument_Exprs {Argument_Exprs}]
+Constr_Block    ::= Constr_Block1 | Constr_Block2
+Constr_Block1   ::= [semi Constr_Block3] 'end' ['constructor']
+Constr_Block2   ::= '{' [Constr_Block3] '}'
+Constr_Block3   ::= [[Block_Stat {semi Block_Stat} semi] 
+                    Self_Invocation semi] 
+                    Block_Stat {semi Block_Stat}
+                  | Self_Invocation
+\end{lstlisting}
 
 \syntax\begin{lstlisting}
 Ctor_Def     ::= 'constructor' Ctor_Fun_Def 'end' ['constructor']
