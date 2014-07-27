@@ -232,8 +232,8 @@ type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
 Type_Param_Clause  ::= ':[' Variant_Type_Param 
                        {',' Variant_Type_Param} ']'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
-Type_Param         ::= (constant_id | '_') [Type_param_Clause]
-                       ['>:' Type] ['<:' Type]
+Type_Param         ::= (tp_id | '_') [Type_Param_Clause]
+                       ['>:' Type] ['<:' Type] [':' Type]
 \end{lstlisting}
 
 Type parameters appear in type definitions, class definitions and function definitions. 
