@@ -695,6 +695,31 @@ for $(n \geq 0)$, which defines the base classes, behavior and initial state of 
 % TBD: add explicit primary `constructor (_)`
 \end{itemize}
 
+This class definition defines a type ~\lstinline!$c$:[$\tps$]@[$\dps$][<$\uomps$>]!~ and a primary constructor, which, when applied to arguments conforming to types $\ps$, initializes instances of type ~\lstinline!$c$:[$\tps$]@[$\dps$][<$\uomps$>]!~ by evaluating the primary constructor parts defined in the template $t$. 
+
+\example The following example illustrates \code{val} and \code{var} parameters of a class \code{C}: 
+\begin{lstlisting}
+class C (x: Integer, val y: String, var z: List:[String]) end
+val c := C.new(1, "abc", List:[String].new)
+c.z := c.y ~> c.z
+\end{lstlisting}
+
+\example The following class can be created only from its class object. 
+\begin{lstlisting}
+class Sensitive private () {
+  $\ldots$
+}
+object Sensitive {
+  def make_sensitive (credentials: Certificate): Sensitive := {
+    if credentials.admin?
+      Sensitive.new
+    else 
+      raise SecurityViolationException
+    end
+  }
+}
+\end{lstlisting}
+
 \subsection{Constructor \& Destructor Definitions}
 \label{sec:constructor-destructor-def}
 
