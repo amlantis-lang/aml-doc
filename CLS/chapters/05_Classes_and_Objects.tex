@@ -4,13 +4,13 @@
 \chapter{Classes \& Objects}
 
 \syntax\begin{lstlisting}
-Const_Def ::= {Annotation} ['case'] 'class' Class_Def
-            | {Annotation} ['case'] 'object' Object_Def
-            | {Annotation} 'trait' Trait_Def
-            | {Annotation} 'module' Module_Def
-            | {Annotation} 'protocol' Pro_Def
-            | {Annotation} ['case'] 'interface' Ifc_Def
-            | {Annotation} 'type' Const_Type_Def 'end' ['type']
+Tmpl_Def ::= ['case'] 'class' Class_Def
+           | ['case'] 'object' Object_Def
+           | 'trait' Trait_Def
+           | 'module' Module_Def
+           | 'protocol' Pro_Def
+           | ['case'] 'interface' Ifc_Def
+           | 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
 Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
