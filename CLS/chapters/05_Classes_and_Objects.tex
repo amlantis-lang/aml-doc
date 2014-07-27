@@ -483,7 +483,7 @@ Access_Qualifier ::= ':[' (constant_id | 'self') ']'
 Access modifiers may appear in two forms:
 
 \paragraph{\em Accessibility flag modifier}
-Such a modifier appears in a class-level block (\sref{sec:class-level-blocks}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Only access modifiers can be used this way. 
+Such a modifier appears in a template (\sref{sec:templates}) or a module definition (\sref{sec:module-definitions}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Only access modifiers can be used this way. 
 
 \paragraph{\em Directly applied modifier}
 Such a modifier appears on a line preceding a member to which the modifier is solely applied, or a list of arguments with symbols that the modifier will be applied to. A directly applied modifier expression has a return type of \code{Symbol}, so that it may be used as a regular function and chained. 
