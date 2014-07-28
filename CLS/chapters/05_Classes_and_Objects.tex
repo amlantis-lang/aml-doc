@@ -753,7 +753,8 @@ PCtor_Fun_Def   ::= '(' '_' ')' (':=' Constr_Expr | Constr_Block)
 Constr_Expr     ::= Self_Invocation
                   | Constr_Block2
 Self_Invocation ::= 'self' Argument_Exprs {Argument_Exprs}
-                  | 'super' [Argument_Exprs {Argument_Exprs}]
+                  | Sup_Invocation
+Sup_Invocation  ::= 'super' [Argument_Exprs {Argument_Exprs}]
 Constr_Block    ::= Constr_Block1 | Constr_Block2
 Constr_Block1   ::= [semi Constr_Block3] 'end' ['constructor']
 Constr_Block2   ::= '{' [Constr_Block3] '}'
@@ -763,16 +764,25 @@ Constr_Block3   ::= [[Block_Stat {semi Block_Stat} semi]
                   | Self_Invocation
 \end{lstlisting}
 
-\syntax\begin{lstlisting}
-Ctor_Def     ::= 'constructor' Ctor_Fun_Def 'end' ['constructor']
-               | 'constructor' Ctor_Alt_Def
-Ctor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
-Ctor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
-Dtor_Def     ::= 'destructor' Dtor_Fun_Def 'end' ['destructor']
-Dtor_Fun_Def ::= [Fun_Dec] semi Expr
-\end{lstlisting}
+\paragraph{Auxiliary constructors}
+Besides the primary constructor, a class may define additional constructors with different parameter sections, that form together with the primary constructor an overloaded constructor definition. Every auxiliary constructor is constrained in means that it has to either invoke another constructor defined before itself, or any superclass constructor. Therefore classes in Coral have multiple entry point, but with great power comes great responsibility: user must ensure that every constructor path defines all necessary members. It is an error if a constructor invocation leads to an instance with abstract members. If a constructor does not explicitly invoke another constructor, an invocation of the implicit constructor is inserted implicitly as the first invocation in the constructor. 
 
-% TBD: rework this section, restrict constructor invocations, forbid inheritance of constructors
+\syntax\begin{lstlisting}
+Ctor_Def     ::= 'constructor' Ctor_Fun_Def
+Ctor_Fun_Def ::= [Param_Clauses] (':=' Constr_Expr | Constr_Block)
+
+Dtor_Def     ::= 'destructor' Dtor_Fun_Def
+Dtor_Fun_Def ::= (':=' Dtor_Expr | Dtor_Block)
+Dtor_Expr    ::= Sup_Invocation
+               | Dtor_Block2
+Dtor_Block   ::= Dtor_Block1 | Dtor_Block2
+Dtor_Block1  ::= [semi Dtor_Block3] 'end' ['destructor']
+Dtor_Block2  ::= '{' [Dtor_Block3] '}'
+Dtor_Block3  ::= [[Block_Stat {semi Block_Stat} semi] 
+                 Sup_Invocation semi] 
+                 Block_Stat {semi Block_Stat}
+               | Sup_Invocation
+\end{lstlisting}
 
 \paragraph{\em Default constructor}
 A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
@@ -781,7 +791,7 @@ A default constructor of a class is the explicit parameterless constructor. This
 An implicit constructor is an automatically generated bridge constructor to the parameterless default constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions). 
 
 \paragraph{\em Convenience constructor}
-A convenience constructor is any other constructor than the parameterless default constructor. 
+A convenience constructor is any other constructor than the parameterless default constructor, including the primary constructor, if it has parameters. 
 
 \paragraph{\em Accessibility of constructors}
 Constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
@@ -826,19 +836,23 @@ class $C$
 end class
 \end{lstlisting}
 
+
+
+
+
+
 \subsection{Clone Constructor Definitions}
 \label{sec:clone-def}
 
 \syntax\begin{lstlisting}
-CCtor_Def     ::= 'clone' CCtor_Fun_Def 'end' ['clone']
-                | 'clone' CCtor_Alt_Def
-CCtor_Fun_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] semi Expr
-CCtor_Alt_Def ::= [Fun_Tpc] [Param_Clauses] [Fun_Dec] ':=' Expr
+CCtor_Def     ::= 'clone' CCtor_Fun_Def
+CCtor_Fun_Def ::= [Param_Clauses] 
+                  (':=' Constr_Expr | Constr_Block)
 \end{lstlisting}
 
 Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
 
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available as the \code{cloned} keyword. The \code{cloned} keyword is only recognized as a keyword in a body of the clone constructor. 
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available with the \code{cloned} keyword. The \code{cloned} keyword is only recognized as a keyword in a body of the clone constructor. 
 
 Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
 
