@@ -278,6 +278,7 @@ To illustrate nested scoping, these declarations are all equivalent:
 
 \item[]
 ~\lstinline[mathescape=false]!type t:[:m[$x] <: Bound:[$x], Bound:[$y]] end!
+
 \item[]
 ~\lstinline[mathescape=false]!type t:[:m[$x] <: Bound:[$x], Bound:[_]] end!,
 \end{itemize} 
@@ -294,6 +295,24 @@ type T <: Comparable:[T]
 type Two:[@\$@A] := Tuple_2:[@\$@A, @\$@A]
 type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
 \end{lstlisting}
+The following are illegal:
+\begin{lstlisting}
+type Abs := Comparable:[Abs] // recursive type alias
+
+type S <: T  // S, T are bounded by themselves
+type T <: S
+
+type T >: Comparable:[T.That] // can't select from T
+                              // T is a type, not a value
+type My_Collection <: Iterable
+  // type constructor members must explicitly state
+  // their type parameters
+\end{lstlisting}
+
+
+
+
+
 
 \section{Type Parameters}
 
