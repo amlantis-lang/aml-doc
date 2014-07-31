@@ -880,8 +880,52 @@ class $C$
 end class
 \end{lstlisting}
 
+
+
+
+
+
 \subsection{Case Classes}
 \label{sec:case-classes}
+
+\syntax\begin{lstlisting}
+Tmpl_Def ::= 'case' 'class' Class_Def
+\end{lstlisting}
+
+If a class definition is prefixed with \code{case}, the class is said to be a {\em case class}. 
+
+The formal parameters are handled differently from regular classes. The formal parameters in the first parameter section of a case class are called {\em elements} and are treated specially:
+\begin{itemize}
+\item[] First, the value of such a parameter can be extracted as a field of a constructor pattern. 
+\item[] Second, a \code{val} prefix is implicitly added to such a parameter, unless the parameter already carries a \code{val} or \code{var} modifier. Hence, an accessor definition for the parameter is generated (\sref{sec:class-definitions}). 
+\end{itemize}
+
+A case class definition of \lstinline!$c$:[$\tps$]@[$\dps$][<$\uomps$>]($\ps_1$)$\ldots$($\ps_n$)! with type parameters $\tps$, indexing parameters $\dps$, aggregated with units of measure $\uomps$ and value parameters $\ps$ implicitly adds some methods to the corresponding class object, making it suitable as an extractor object (\sref{sec:extractor-patterns}), and are defined as follows:\footnote{Notice that indexing parameters are not present. These are used for type definitions only, and are not intended to be used in general expressions like instance creation.} 
+\begin{lstlisting}
+object $c$ {
+  def apply:[$\tps$][<$\uomps$>]($\ps_1$)$\ldots$($\ps_n$): $c$:[$\tps$] := 
+      $c$:[$\Ts$][<$\UoMs$>].new($xs_1$)$\ldots$($xs_n$)
+  def unapply:[$\tps$][<$\uomps$>]($x$: $c$:[$\tps$][<$\uomps$>]): Option:[$e$] :=
+      unless x = nil
+        Some($x$.$xs_{11} \commadots x$.$xs_{1k}$)
+      else
+        None
+      end
+}
+\end{lstlisting}
+
+Here, $\Ts$ stands for the vector of types defined in the type parameter section $\tps$, $\UoMs$ stands for the vector of units of measure defined in the units of measure parameter section $\uomps$, each $xs_i$ denotes the parameter names of the parameter section $\ps_i$, and $xs_{11} \commadots xs_{1k}$ denote the names of all parameters in the first parameter section $xs_1$. If a type parameter section is missing in the class $c$, it is also missing in the \code{apply} and \code{unapply} methods. The definition of \code{apply} is missing also if the class $c$ is marked \code{abstract}.\footnote{Because the implied \code{apply} method creates new objects and abstract classes can't have any instances of themselves.}
+
+If the case class definition contains an empty value parameter list, the \code{unapply} returns a \code{Boolean} instead of an \code{Option} type and is defined as follows:
+\begin{lstlisting}
+def unapply:[$\tps$][<$\uomps$>]($x$: $c$:[$\tps$][<$\uomps$>]): Boolean := 
+    x != nil
+\end{lstlisting}
+
+% TBD: $e$ in previous is a Tuple_(count of ps_1 section, each further type-parameterized with the corresponding element type) - in HERE!
+
+
+
 
 \subsection{Traits}
 \label{sec:traits}
@@ -919,6 +963,11 @@ trait Comparable:[$T <: Comparable:[$T]]
 end trait
 \end{lstlisting}
 
+
+
+
+
+
 \subsection{Refinements}
 \label{sec:refinements}
 
@@ -927,6 +976,11 @@ Syntax of refinements is given in section about compound types (\sref{sec:compou
 Refinements in Coral are a special kind of traits. There are two cases in which refinements may appear -- as nameless extensions to other types, or as a named trait that has the ability to locally override or extend another type. The actual meaning depends on the usage of a refinement (see also \sref{sec:use-expressions}).
 
 % TODO: clear the syntaxes of declarations & definitions to be able to specify on a syntax level what can appear in a refinement
+
+
+
+
+
 
 \subsection{Protocols}
 \label{sec:protocols}
