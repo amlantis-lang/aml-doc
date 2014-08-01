@@ -914,7 +914,7 @@ object $c$ {
 }
 \end{lstlisting}
 
-Here, $\Ts$ stands for the vector of types defined in the type parameter section $\tps$, $\UoMs$ stands for the vector of units of measure defined in the units of measure parameter section $\uomps$, each $xs_i$ denotes the parameter names of the parameter section $\ps_i$, and $xs_{11} \commadots xs_{1k}$ denote the names of all parameters in the first parameter section $xs_1$. If a type parameter section is missing in the class $c$, it is also missing in the \code{apply} and \code{unapply} methods. The definition of \code{apply} is missing also if the class $c$ is marked \code{abstract}.\footnote{Because the implied \code{apply} method creates new objects and abstract classes can't have any instances of themselves.}
+Here, $\Ts$ stands for the vector of types defined in the type parameter section $\tps$, $\UoMs$ stands for the vector of units of measure defined in the units of measure parameter section $\uomps$, each $xs_i$ denotes the parameter names of the parameter section $\ps_i$, $xs_{11} \commadots xs_{1k}$ denote the names of all parameters in the first parameter section $xs_1$, and $e$ denotes the type that \code{Option} is parameterized with. If a type parameter section is missing in the class $c$, it is also missing in the \code{apply} and \code{unapply} methods. The definition of \code{apply} is missing also if the class $c$ is marked \code{abstract}.\footnote{Because the implied \code{apply} method creates new objects and abstract classes can't have any instances of themselves.}
 
 If the case class definition contains an empty value parameter list, the \code{unapply} returns a \code{Boolean} instead of an \code{Option} type and is defined as follows:
 \begin{lstlisting}
@@ -922,7 +922,27 @@ def unapply:[$\tps$][<$\uomps$>]($x$: $c$:[$\tps$][<$\uomps$>]): Boolean :=
     x != nil
 \end{lstlisting}
 
-% TBD: $e$ in previous is a Tuple_(count of ps_1 section, each further type-parameterized with the corresponding element type) - in HERE!
+For each case of a value parameter list of $n$ parameters, the \code{unapply} returns these types: 
+\begin{itemize}
+\item
+For $n = 0$, ~\lstinline!Boolean!~ is the return type. 
+
+\item
+For $n = 1$, ~\lstinline!Option:[$\Tp_1$]!~ is the return type, where $\Tp_1$ is the type of the only parameter in the first parameter section. 
+
+\item
+For $n \geq 1$, ~\lstinline!Option:[($\Tp_1 \commadots \Tp_n$)]!~ is the return type, where $\Tp_i$ is the type of the $i^{\superth}$ parameter of the first parameter section. Notice that the \code{Option} is parameterized with a tuple type (\sref{sec:tuple-types}). This allows for the \code{apply} method of \code{Some} to accept a tuple of arguments while accepting a single argument only. 
+\end{itemize}
+
+A clone constructor is implicitly added to every case class, unless the case class already has a matching one, or the class has a repeated parameter. The clone constructor is defined as follows:
+\begin{lstlisting}
+clone :[$\tps$][<$\uomps$>]($\ps'_1$)$\ldots$($\ps'_n$): $c$:[$\tps$][<$\uomps$>]
+  cloned.$xs_{11}$ := self.$xs_{11}$
+  $\ldots$
+  cloned.$xs_{nk}$ := self.$xs_{nk}$
+end
+\end{lstlisting}
+
 
 
 
