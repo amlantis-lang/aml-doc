@@ -642,7 +642,8 @@ Class_Param         ::= {Annotation} [{Modifier} ('val' | 'var')]
                         variable_id [':' Param_Type] [':=' Expr]
 Class_Tmpl_Env      ::= 'extends' [Early_Defs] Class_Parents
                         semi [Template_Body] 'end' ['class']
-                      | ['extends'] '{' [Template_Body] '}'
+                      | ['extends' [Early_Defs]] 
+                        '{' [Template_Body] '}'
                       | ['begin' [Template_Body]] 'end' ['class']
 \end{lstlisting}
 
@@ -951,19 +952,13 @@ end
 \label{sec:traits}
 
 \syntax\begin{lstlisting}
-Trait_Def  ::= constant_id [Type_Param_Clause] [Superclass] [semi] 
-               {Trait_Expr}
-Trait_Expr ::= Includes_Expr
-             | Prepend_Expr
-             | Implements_Expr
-             | Expr
-             | {Annotation} 'class' Class_Def 'end' ['class']
-             | {Annotation} 'object' Obj_Def 'end' ['object']
-             | {Annotation} 'trait' Trait_Def 'end' ['trait']
-             | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
-             | {Annotation} 'interface' Ifc_Def 'end' 
-               ['interface']
-             | {Annotation} 'type' Const_Type_Def 'end' ['type']
+Tmpl_Def       ::= 'trait' Trait_Def
+Trait_Def      ::= constant_id [Type_Param_Clause] Trait_Tmpl_Env
+Trait_Tmpl_Env ::= 'extends' [Early_Defs] Trait_Parents
+                   semi [Template_Body] 'end' ['trait']
+                 | ['extends' [Early_Defs]] 
+                   '{' [Template_Body] '}'
+                 | ['begin' [Template_Body]] 'end' ['trait']
 \end{lstlisting}
 
 A trait is a class that is meant to be injected into some other class as a mixin (including another traits). Unlike normal classes, traits can not be instantiated alone. 
@@ -974,13 +969,13 @@ If $D$ is not a trait, then its actual supertype is simply its least proper supe
 
 \example The following trait defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The trait also requires the self-type to be \lstinline[mathescape=false]!$T!. 
 \begin{lstlisting}[mathescape=false]
-trait Comparable:[$T <: Comparable:[$T]]
+trait Comparable:[$T <: Comparable:[$T]] {
   requires $T
   operator < (that: $T): Boolean end
   operator <=(that: $T): Boolean := self < that || self = that
   operator > (that: $T): Boolean := that < self
   operator >=(that: $T): Boolean := that <= self
-end trait
+}
 \end{lstlisting}
 
 
