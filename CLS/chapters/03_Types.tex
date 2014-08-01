@@ -231,18 +231,22 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ t
 
 \syntax\begin{lstlisting}
 Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type} 
-                  [Refinement]
-                | Refinement
-Refinement    ::= 'refine' '{' Refine_Stat {semi Refine_Stat} '}'
+                  ['with' ['refine'] Refine_Stats]
+                | 'refine' Refine_Stats
+Refine_Stats  ::= '{' Refine_Stat {semi Refine_Stat} '}'
 \end{lstlisting} % TBD: define Refine_Stat syntax
 
-A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
+A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refine {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
 
 If no refinement is given, the type is implicitly equivalent to the same type having an empty refinement. 
 
 A compound type may also consist of just a refinement \lstinline@{$R$}@ with no preceding component types -- such a type has an implicit component type \code{Object} and describes the member values as ``any value, as long as it has what the refinement requires'', thus it works like an anonymous protocol. 
 
 If a compound type does not contain a concrete class type, then \code{Object} is implied in case the type is used as a concrete class\footnote{Meaning that the compound type is used as an ad-hoc (possibly anonymous) class, e.g. to create new instances of it.}.
+
+The keyword \code{refine} instructs that the following tokens will be a part of a refinement, and the construct ~\lstinline!refine {$R$}!~ is called an {\em anonymous refinement}, being equivalent to ~\lstinline!Object with refine {$R$}!, although when the refinement is a part of a compound type with more elements than just the refinement itself, the \code{Object} type is replaced with the class type appearing in the compound type, if any. 
+
+The \code{refine} keyword can be omitted from a compound type that consists of more elements than just the refinement. Constructs ~\lstinline!Object with {$R$}!~ and ~\lstinline!refine {$R$}!~ are then equal. 
 
 
 
