@@ -786,7 +786,7 @@ Dtor_Block3  ::= [[Block_Stat {semi Block_Stat} semi]
 \end{lstlisting}
 
 \paragraph{\em Default constructor}
-A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. 
+A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. The default root constructor of \code{Object} carries the modifier \code{public} (\sref{sec:modifiers}), and therefore to explicitly disallow direct object creating, custom constructors have to be explicitly more restrictive than \code{public}. 
 
 \paragraph{\em Implicit constructor}
 An implicit constructor is an automatically generated bridge constructor to the parameterless default constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions). 
@@ -853,14 +853,14 @@ CCtor_Fun_Def ::= [Param_Clauses]
 
 Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
 
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object. The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available with the \code{cloned} keyword. The \code{cloned} keyword is only recognized as a keyword in a body of the clone constructor. 
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available with the ~\lstinline!self[cloned]!~ construct. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, and ~\lstinline!self[cloned]!~ is the only allowed prefix to instance values and variables, allowing to define new instance values or variables in the clone. 
 
 Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
 
 A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). 
 
 \paragraph{\em Default clone constructor}
-A default clone constructor of a class is the explicit parameterless clone constructor. 
+A default clone constructor of a class is the explicit parameterless clone constructor. The \code{Object} class has a default root clone constructor, which carries the modifier \code{protected} (\sref{sec:modifiers}). Therefore, any custom clone constructor has to be explicitly protected in a less restrictive way, or public, in order to allow direct object cloning from outside of the class that defines it. 
 
 \paragraph{\em Implicit clone constructor}
 An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
@@ -876,7 +876,7 @@ Clone constructors may have modified accessibility, so that only certain functio
 class $C$
   clone
     // super is invoked implicitly here
-    cloned.resource := self.resource.clone
+    self[cloned].@resource := @resource.clone
   end constructor
 end class
 \end{lstlisting}
@@ -935,14 +935,23 @@ For $n = 1$, ~\lstinline!Option:[$\Tp_1$]!~ is the return type, where $\Tp_1$ is
 For $n \geq 1$, ~\lstinline!Option:[($\Tp_1 \commadots \Tp_n$)]!~ is the return type, where $\Tp_i$ is the type of the $i^{\superth}$ parameter of the first parameter section. Notice that the \code{Option} is parameterized with a tuple type (\sref{sec:tuple-types}). This allows for the \code{apply} method of \code{Some} to accept a tuple of arguments while accepting a single argument only. 
 \end{itemize}
 
-A clone constructor is implicitly added to every case class, unless the case class already has a matching one, or the class has a repeated parameter. The clone constructor is defined as follows:
+A method named \code{copy} is implicitly added to every case class, unless the case class already has a matching one, or the class has a repeated parameter. The method is defined as follows:
 \begin{lstlisting}
-clone :[$\tps$][<$\uomps$>]($\ps'_1$)$\ldots$($\ps'_n$): $c$:[$\tps$][<$\uomps$>]
-  cloned.$xs_{11}$ := self.$xs_{11}$
-  $\ldots$
-  cloned.$xs_{nk}$ := self.$xs_{nk}$
-end
+def copy :[$\tps$][<$\uomps$>]($\ps'_1$)$\ldots$($\ps'_n$): $c$:[$\tps$][<$\uomps$>] :=
+    $c$:[$\Ts$][<$\UoMs$>].new($xs_1$)$\ldots$($xs_n$)
 \end{lstlisting}
+$\Ts$ stands for the vector of types defined in the type parameter section $\tps$ and $\UoMs$ stands for the vector of units of measure arguments defined in the units of measure parameter section $\uomps$. Each $xs_i$ denotes the parameter names of the parameter section $\ps'_i$.  Each value parameter of the first parameter list $\ps'_1$ has the form ~\lstinline!:$x_{1,j}$ : $T_{1,j}$ := self.$x_{1,j}$!, and the other parameters $\ps'_{i,j}$ of the clone constructor are defined as ~\lstinline!:$x_{1,j}$ : $T_{1,j}$!. Note that these parameters are defined as named parameters (\sref{sec:named-parameters}), and that the parameters of the first value parameter section have default values using \code{self}, which is available, since the copied object is already ``complete''. 
+
+A clone constructor is also implicitly added to every case class, but limited to the first value parameter section. The following definition of the implicitly added clone constructor shares the definition of parameters: 
+\begin{lstlisting}
+clone :[$\tps$][<$\uomps$>]($\ps'_1$): $c$:[$\tps$][<$\uomps$>]
+  self[cloned].@$xs_{1,1}$ := $xs_{1,1}$
+  $\ldots$
+  self[cloned].@$xs_{1,n}$ := $xs_{1,n}$
+end clone
+\end{lstlisting}
+Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) parameter section. 
+
 
 
 
@@ -1025,29 +1034,25 @@ Ifc_Expr ::= Dcl
 Interfaces are filtered versions of classes with only declarations. Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols. 
 
 
+
+
+
+
 \section{Object Definitions}
 \label{sec:object-definitions}
 
 \syntax\begin{lstlisting}
-Obj_Def  ::= constant_id [Superclass] [semi]
-             {Obj_Expr}
-Obj_Expr ::= Clone_Expr
-           | Includes_Expr
-           | Prepend_Expr
-           | Implements_Expr
-           | Expr
-           | {Annotation} 'class' Class_Def 'end' ['class']
-           | {Annotation} 'object' Obj_Def 'end' ['object']
-           | {Annotation} 'trait' Trait_Def 'end' ['trait']
-           | {Annotation} 'protocol' Pro_Def 'end' ['protocol']
-           | {Annotation} 'interface' Ifc_Def 'end' 
-             ['interface']
-           | {Annotation} 'type' Const_Type_Def 'end' ['type']
+Object_Def ::= constant_id Class_Template
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied, only abstract compound types without class may appear as superclass, and it is an error if a concrete class appears as a superclass (even if that would be \lstinline!Class:[$C$]!, as it is prohibited to inherit from this class in user programs). If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}).
 
 Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. 
+
+
+
+
+
 
 \section{Module Definitions}
 \label{sec:module-definitions}
@@ -1068,6 +1073,11 @@ Module definitions are objects that have one main purpose: to join related code 
 \end{itemize}
 
 Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
+
+
+
+
+
 \section{Unions}
 \label{sec:unions}
 
@@ -1077,6 +1087,11 @@ Const_Type_Def ::= constant_id 'is' 'union' 'of'
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
+
+
+
+
+
 
 \section{Enums}
 \label{sec:enums}
@@ -1090,6 +1105,11 @@ Enum_Field     ::= constant_id [':=' scalar_literal]
 % TODO: when primary constructors are introduced, add them to enums as well
 
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
+
+
+
+
+
 
 \section{Dependent Type Declarations}
 \label{sec:dependent-types-decl}
@@ -1105,6 +1125,11 @@ Dependent types (\sref{sec:dependent-types}) are allowed in these positions:
 \item Variable declarations and definitions. 
 \item Type conversions. 
 \end{enumerate}
+
+
+
+
+
 
 \subsection{Indexed Types}
 \label{sec:indexed-types}
