@@ -3,6 +3,32 @@
 
 \chapter{Types}
 
+\syntax\begin{lstlisting}
+Type                ::= Function_Type
+                      | Compound_Type [Existential_Clauses]
+Function_Type       ::= Function_Args {'->' Function_Args} 
+                        '->' Return_Type
+Function_Args       ::= Compound_Type
+                      | '(' [Function_Arg {',' Function_Arg}] ')'
+Function_Arg        ::= [Param_Io] ['*'] [':' variable_id] Param_Type
+                      | '&' Function_Type
+Existential_Clauses ::= {'for-some' '{' Existential_Dcl
+                        {semi Existential_Dcl} '}'}
+Existential_Dcl     ::= 'type' Type_Dcl
+                      | 'val' Val_Dcl
+                      | 'var' Var_Dcl
+Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type} 
+                        ['with' ['refinement'] Refine_Stats]
+                      | ['refinement'] Refine_Stats
+Annot_Type          ::= {Annotation} Simple_Type
+Simple_Type         ::= Simple_Type [Type_Args] [Dep_Args] [UoM_Args]
+                      | Simple_Type '#' constant_id
+                      | Stable_Id
+                      | Path '.' ('type' | 'singleton-type')
+                      | '(' Types ')'
+Types               ::= Type {',' Type}
+\end{lstlisting}
+
 When we say \textit{type} in the context of Coral, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Coral is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
 
 We distinguish a few different properties of types in Coral. There are first-order types and type constructors, which take type parameters and yield new types. A subset of first-order types called \textit{value types} represents set of first-class values. Value types are either \textit{concrete} or \textit{abstract}. 
@@ -140,9 +166,10 @@ A qualified type designator has the form \lstinline@$p$.$t$@, where $p$ is a pat
 \label{sec:parameterized-types}
 
 \syntax\begin{lstlisting}
-Simple_Type ::= Simple_Type Type_Args
+Simple_Type ::= Simple_Type [Type_Args] [UoM_Args]
 Type_Args   ::= ':[' Types ']'
 Types       ::= Type {',' Type}
+UoM_Args    ::= '[<' uom_expr '>]'
 \end{lstlisting}
 
 A parameterized type\footnote{The `\lstinline@:[@' and `\lstinline@]@' token pairs were selected after many considerations. The original idea was to use the same pair as Java or C\#: `\lstinline@<@' and `\lstinline@>@', but this has the drawback of injecting an exception into the parser. Then Scala's `\lstinline@[@' and `\lstinline@]@' were considered, but they kind of collide with an operator that uses the same pair and therefore expressions could become ambiguous. Finally an idea emerged to use `\lstinline@:[@' and `\lstinline@]@', since the `\lstinline@:@' in it hints that it is related to the type system, and `\lstinline@[@' and `\lstinline@]@' lack the drawbacks of `\lstinline@<@' and `\lstinline@>@' (collision with comparison operators).} $T:[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
@@ -235,12 +262,14 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ t
 
 \syntax\begin{lstlisting}
 Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type} 
-                  ['with' ['refine'] Refine_Stats]
-                | 'refine' Refine_Stats
-Refine_Stats  ::= '{' Refine_Stat {semi Refine_Stat} '}'
+                  ['with' ['refinement'] Refine_Stats]
+                | ['refinement'] Refine_Stats
+Refine_Stats  ::= '{' [Refine_Stat {semi Refine_Stat}] '}'
+Refine_Stat   ::= Dcl
+                | 'type' Type_Def
 \end{lstlisting} % TBD: define Refine_Stat syntax
 
-A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refine {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
+A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refinement {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
 
 If no refinement is given, the type is implicitly equivalent to the same type having an empty refinement. 
 
@@ -248,9 +277,11 @@ A compound type may also consist of just a refinement \lstinline@{$R$}@ with no 
 
 If a compound type does not contain a concrete class type, then \code{Object} is implied in case the type is used as a concrete class\footnote{Meaning that the compound type is used as an ad-hoc (possibly anonymous) class, e.g. to create new instances of it.}.
 
-The keyword \code{refine} instructs that the following tokens will be a part of a refinement, and the construct ~\lstinline!refine {$R$}!~ is called an {\em anonymous refinement}, being equivalent to ~\lstinline!Object with refine {$R$}!, although when the refinement is a part of a compound type with more elements than just the refinement itself, the \code{Object} type is replaced with the class type appearing in the compound type, if any. 
+The keyword \code{refinement} instructs that the following tokens will be a part of a refinement, and the construct ~\lstinline!refinement {$R$}!~ is called an {\em anonymous refinement}, being equivalent to ~\lstinline!Object with refinement {$R$}!, although when the refinement is a part of a compound type with more elements than just the refinement itself, the \code{Object} type is replaced with the class type appearing in the compound type, if any. 
 
-The \code{refine} keyword can be omitted from a compound type that consists of more elements than just the refinement. Constructs ~\lstinline!Object with {$R$}!~ and ~\lstinline!refine {$R$}!~ are then equal. 
+The \code{refinement} keyword can be omitted from a compound type that consists of more elements than just the refinement. Constructs ~\lstinline!Object with {$R$}!~ and ~\lstinline!refinement {$R$}!~ are then equal. 
+
+The \code{refinement} keyword may also be omitted from a compound type that consists of just the refinement, but only in contexts in which a type is expected, i.e.: parameter type declaration, value or variable type declaration, return type declaration, type argument application or type parameter declaration; but never stand-alone. If used as such, the constructs ~\lstinline!refinement {$R$}!~ and ~\lstinline!{$R$}!~ are then equal. 
 
 
 
@@ -262,10 +293,12 @@ The \code{refine} keyword can be omitted from a compound type that consists of m
 
 \syntax\begin{lstlisting}
 Type          ::= [Function_Args {'->' Function_Args}] 
-                '->' Return_Type
-Function_Args ::= Type
-                | '(' [Type {',' Type}] ')'
-Return_Type   ::= Type | '()'
+                  '->' Return_Type
+Function_Args ::= Compound_Type
+                | '(' [Function_Arg {',' Function_Arg}] ')'
+Function_Arg  ::= [Param_Io] ['*'] [':' variable_id] Param_Type
+                | '&' Function_Type
+Return_Type   ::= Type | '(' ')'
 \end{lstlisting}
 
 The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. Empty arguments list is indeed also possible as \lstinline@-> $R$@, equivalent to \lstinline@() -> $R$@.
@@ -275,13 +308,30 @@ Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is
 Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$:[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Coral library for any $n \ge 0$:
 
 \begin{lstlisting}[escapechar=`]
-protocol Function_$n$:[-`\$`$T_1 \commadots$ -`\$`$T_n$, +`\$`$R$]
-  message apply ($x_1$ : `\$`$T_1 \commadots x_n$ : `\$`$T_n$): `\$`$R$
+protocol Function_$n$:[-`\$`$T_1$ $\commadots$ -`\$`$T_n$, +`\$`$R$]
+  message apply ($x_1$ : `\$`$T_1$ $\commadots$ $x_n$ : `\$`$T_n$): `\$`$R$
   $\ldots$
 end protocol
 \end{lstlisting}
 
 Function types are covariant in their result type and contravariant in their argument types (\sref{sec:variance-of-type-parameters}).
+
+A function return type may be declared as simple ``\lstinline!()!'', which is equivalent to the return type of ~\code{Unit}, which in turn is equivalent to empty return type, similar to \lstinline[language=C]!void! in C-related languages. Such a type is then written equivalently as either ~\lstinline!($S$) -> ()!~ or ~\lstinline!($S$) -> Unit!. 
+
+Function arguments may be optionally annotated with more requirements: 
+\begin{itemize}
+\item
+Parameter prefixed with \code{Param_Io} defines whether the parameter is required to be an output parameter. 
+
+\item
+Parameter prefixed with ``\lstinline!*!'' is a requirement of a repeated parameter. 
+
+\item 
+Parameter prefixed with ~\lstinline!:$x$!~ is a requirement of a named parameter. Note that a requirement of a parameter capturing other named parameters is not available. 
+
+\item
+Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements on the particular block. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullability}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}). 
+\end{itemize}
 
 
 
@@ -296,6 +346,8 @@ Type                ::= Compound_Type Existential_Clauses
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
 Existential_Dcl     ::= 'type' Type_Dcl
+                      | 'val' Val_Dcl
+                      | 'var' Var_Dcl
 \end{lstlisting}
 
 An existential type has the form \lstinline@$T$ for-some {$Q$}@, where $Q$ is a sequence of type declarations. Let \lstinline@$t_1$:[$tps_1$] >: $L_1$ <: $U_1$ $\commadots$ $t_n$:[$tps_n$] >: $L_n$ <: $U_n$@ be the types declared in $Q$. 
@@ -330,9 +382,9 @@ Nullable types in this form can appear as types of variables, parameters and ret
 \label{sec:dependent-types}
 
 \syntax\begin{lstlisting}
-Dep_Type ::= Simple_Type Dep_Args
-Dep_Args ::= '@[' Dep_Arg {',' Dep_Arg} ']'
-Dep_Arg  ::= variable_id | Dep_Sort_Val
+Simple_Type ::= Simple_Type Dep_Args
+Dep_Args    ::= '@[' Dep_Arg {',' Dep_Arg} ']'
+Dep_Arg     ::= variable_id | Dep_Sort_Val
 \end{lstlisting}
 
 Dependent types in Coral are implemented by simple indexed types. Dependent types are explained in greater detail in \sref{sec:dependent-types-decl}. 
