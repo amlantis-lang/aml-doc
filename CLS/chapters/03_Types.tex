@@ -43,6 +43,7 @@ path_id          ::= constant_id | variable_id
 Path             ::= Stable_Id
                    | 'this'
                    | [path_id '.'] 'self'
+                   | 'self' '[' 'cloned' ']'
 Stable_Id        ::= path_id
                    | Path '.' path_id
                    | [path_id '.'] 'super' [Class_Qualifier] 
@@ -63,6 +64,9 @@ The empty path $\epsilon$ (which can not be written explicitly in user programs)
 
 \item 
 \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. 
+
+\item
+\lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
 
 \item 
 \lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$. Additionally, $p$ allows modules to appear instead of references to classes or traits, but no module reference can follow a class or a trait reference: \lstinline@{module_ref '.'} {(class_ref|trait_ref) '.'} $\ldots$@. 
