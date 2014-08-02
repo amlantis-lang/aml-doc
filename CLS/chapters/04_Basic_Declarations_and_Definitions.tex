@@ -366,8 +366,8 @@ Def           ::= 'def' Fun_Def 'end' ['def']
                 | 'method' Fun_Alt_Def
                 | 'function' Fun_Def 'end' ['function']
                 | 'function' Fun_Alt_Def
-Fun_Def       ::= Fun_Sig [':' Type] [Fun_Dec] [semi Expr]
-Fun_Alt_Def   ::= Fun_Sig [':' Type] ':=' Expr
+Fun_Def       ::= Fun_Sig [':' Return_Type] [Fun_Dec] [semi Expr]
+Fun_Alt_Def   ::= Fun_Sig [':' Return_Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Expr [semi] 'begin'
 Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
 Fun_Tpc       ::= ':[' Type_Param {',' Type_Param} ']'
@@ -395,6 +395,8 @@ A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\e
 Multiple parameter clauses render curried functions. 
 
 The type of the function body is expected to conform (\sref{sec:conformance}) to the function's declared result type, if one is given. 
+
+If the function's result type is given as one of ``\lstinline!()!'' or \code{Unit}, the function's implicit return value is stripped and it is an error if a return statement occurs in the function body with a value to be returned, unless the return value is specified again as ``\lstinline!()!''.
 
 An optional type parameter clause $tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
 
