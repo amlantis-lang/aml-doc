@@ -48,11 +48,12 @@ Val_Dcl     ::= var_ids ':' Type
 Pat_Var_Def ::= 'val' Pat_Def
               | 'let' ['!'] variable_id ':=' Expr
 Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Expr
-              | [[variable_id {',' variable_id} ','] 
-                '*' variable_id] variable_id {',' variable_id}
+              | [[var_ids ','] 
+                '*' variable_id] var_ids
                 ':=' [[Expr {',' Expr} ','] '*' Expr] 
                 Expr {',' Expr}
-var_ids     ::= variable_id {',' variable_id}
+var_ids     ::= var_id {',' var_id}
+var_id      ::= variable_id | ivar_id | cvar_id
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -176,6 +177,11 @@ A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand 
 \item[]
 A value definition ~\lstinline@val $p_1 \commadots p_n: T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1: T$ := $e$; $\ldots$; val $p_n: T$ := $e$@.
 \end{itemize}
+
+
+
+
+
 
 \section{Variable Declarations \& Definitions}
 \label{sec:variable-dcl-def}
