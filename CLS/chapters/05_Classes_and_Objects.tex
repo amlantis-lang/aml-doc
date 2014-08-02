@@ -10,6 +10,7 @@ Tmpl_Def ::= ['case'] 'class' Class_Def
            | 'module' Module_Def
            | 'protocol' Pro_Def
            | ['case'] 'interface' Ifc_Def
+           | 'refinement' Refinement_Def
            | 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
@@ -632,6 +633,7 @@ This is just for the sake of completeness, since change from public to public is
 \syntax\begin{lstlisting}
 Tmpl_Def            ::= 'class' Class_Def
 Class_Def           ::= constant_id [Type_Param_Clause] 
+                        [Dep_Params] [UoM_Params]
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
                         {Class_Param_Clause}
@@ -919,8 +921,7 @@ Here, $\Ts$ stands for the vector of types defined in the type parameter section
 
 If the case class definition contains an empty value parameter list, the \code{unapply} returns a \code{Boolean} instead of an \code{Option} type and is defined as follows:
 \begin{lstlisting}
-def unapply:[$\tps$][<$\uomps$>]($x$: $c$:[$\tps$][<$\uomps$>]): Boolean := 
-    x != nil
+def unapply:[$\tps$][<$\uomps$>]($x$: $c$:[$\tps$][<$\uomps$>]): Boolean := x != nil
 \end{lstlisting}
 
 For each case of a value parameter list of $n$ parameters, the \code{unapply} returns these types: 
@@ -952,6 +953,18 @@ end clone
 \end{lstlisting}
 Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) parameter section. 
 
+Every case class implicitly overrides some method definitions of class \code{Object}, unless a definition of the same method is already given in the case class itself or a concrete definition of the same method is given in some base class (including traits) of the case class, different from \code{Object}. Namely: 
+\begin{itemize}
+\item[]
+Method ~\lstinline!equals: (Object) $\mapsto$ Boolean!~ (equivalent to operator ``\lstinline!=!'') is structural equality, where two instances are equal if they both belong to the case class in question and they have equal (with respect to \code{equals}) elements. 
+
+\item[]
+Method ~\lstinline!hash_code: () $\mapsto$ Number.Integer_Unsigned!~ computes a hash code. 
+
+\item[]
+Method ~\lstinline!to_string: () $\mapsto$ String!~ returns a string representation which contains the name of the case class and its elements. 
+\end{itemize}
+
 
 
 
@@ -962,7 +975,8 @@ Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) par
 
 \syntax\begin{lstlisting}
 Tmpl_Def       ::= 'trait' Trait_Def
-Trait_Def      ::= constant_id [Type_Param_Clause] Trait_Tmpl_Env
+Trait_Def      ::= constant_id [Type_Param_Clause] [UoM_Params] 
+                   Trait_Tmpl_Env
 Trait_Tmpl_Env ::= 'extends' [Early_Defs] Trait_Parents
                    semi [Template_Body] 'end' ['trait']
                  | ['extends' [Early_Defs]] 
@@ -995,11 +1009,31 @@ trait Comparable:[$T <: Comparable:[$T]] {
 \subsection{Refinements}
 \label{sec:refinements}
 
-Syntax of refinements is given in section about compound types (\sref{sec:compound-types}). 
+There are two separate branches of refinements in Coral, both are quite similar, but used for different purposes. Refinements are kind of a trait (\sref{sec:traits}). The branches are as follows:
+\begin{itemize}
+\item[]
+First, refinements as part of the type system. Those refinements present only declarations and further type restrictions as part of compound types (\sref{sec:compound-types}).
 
-Refinements in Coral are a special kind of traits. There are two cases in which refinements may appear -- as nameless extensions to other types, or as a named trait that has the ability to locally override or extend another type. The actual meaning depends on the usage of a refinement (see also \sref{sec:use-expressions}).
+\item[]
+Second, refinements that are basically traits designed to be locally prepended to classes. The second branch is described here. 
+\end{itemize}
 
-% TODO: clear the syntaxes of declarations & definitions to be able to specify on a syntax level what can appear in a refinement
+\syntax\begin{lstlisting}
+Tmpl_Def            ::= 'refinement' Refinement_Def
+Refinement_Def      ::= constant_id 'refine' constant_id 
+                        Refinement_Tmpl_Env
+Refinement_Tmpl_Env ::= '{' [Template_Body] '}'
+                      | (semi | 'begin') [Template_Body] 
+                        'end' ['refinement']
+\end{lstlisting}
+
+Such a refinement does not declare any type, indexing or units of measure parameters, since those are already declared on the type that it refines. Therefore, the type and units of measure parameters are made available to the refinement in order to allow it to override the class methods type-correctly. 
+
+Refinements need to be ``activated'' in the scope for it to take effect (\sref{sec:use-expressions}).
+
+If a refinement refines a parameterized type, then the refinement only activates for this parameterized type (\sref{sec:parameterized-types}). A refinement can also refine a constrained type (\sref{sec:constrained-types}), and the refinement then again only applies to values that conform to this constrained type. 
+
+A refinement is not allowed to include or prepend any new traits to the type that it refines. It is an error if it attempts to do so. 
 
 
 
@@ -1010,28 +1044,54 @@ Refinements in Coral are a special kind of traits. There are two cases in which 
 \label{sec:protocols}
 
 \syntax\begin{lstlisting}
-Pro_Def         ::= constant_id [Type_Param_Clause]
-                    [Superclass] [semi] {Pro_Expr}
-Pro_Expr        ::= Dcl
-Implements_Expr ::= 'implements' Pro_Arg {',' Pro_Arg}
-Pro_Arg         ::= Simple_Type [Type_Args]
+Tmpl_Def     ::= 'protocol' Pro_Def
+Pro_Def      ::= constant_id [Type_Param_Clause] [UoM_Params]
+                 Pro_Tmpl_Env
+Pro_Tmpl_Env ::= 'extends' Trait_Parents
+                 semi [Template_Body] 'end' ['trait']
+               | ['extends'] '{' [Template_Body] '}'
+               | ['begin' [Template_Body]] 'end' ['trait']
 \end{lstlisting}
 
-% TODO: after syntaxes are cleared, replace Dcl with a subset with only function declarations
+Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}''. 
 
-Protocols are classes that are abstract and can contain only abstract member declarations. Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}''. 
+Protocols are basically traits (\sref{sec:traits}) that are stripped of some features, namely: 
+\begin{itemize}
+\item
+Only declarations are allowed as the template body. If a method definition is needed, use a trait instead. 
+
+\item
+Protocols can't declare anything for the class or metaclass of the class that implements them. If this is needed, use a trait instead. 
+
+\item
+Protocols don't have early definitions (\sref{sec:early-defs}). If this is needed, again, use a trait instead. 
+\end{itemize}
+
+Protocol references are preferred to traits to be used by library designers to declare contracts for the code that uses them. 
+
+
+
+
+
+
 
 \subsection{Interfaces}
 \label{sec:interfaces}
 
 \syntax\begin{lstlisting}
-Ifc_Def  ::= '[' Ifc_Kind ']' constant_id [Type_Param_Clause] 
-             [Superclass] [semi] {Ifc_Expr}
-Ifc_Kind ::= 'class' | 'trait'
-Ifc_Expr ::= Dcl
+Tmpl_Def      ::= ['case'] 'interface' [Ifc_Qualifier] Ifc_Def
+Ifc_Qualifier ::= '[' Ifc_Kind ']'
+Ifc_Kind      ::= 'class' | 'trait' | 'object'
+Ifc_Def       ::= constant_id [Type_Param_Clause] 
+                  [Dep_Params] [UoM_Params]
+                  [Class_Param_Clauses] Ifc_Tmpl_Env
+Ifc_Tmpl_Env  ::= 'extends' Class_Parents
+                  semi [Template_Body] 'end' ['interface']
+                | ['extends'] '{' [Template_Body '}'
+                | ['begin' [Template_Body]] 'end' ['interface']
 \end{lstlisting}
 
-Interfaces are filtered versions of classes with only declarations. Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols. 
+Interfaces are filtered versions of classes and traits with only declarations and without early definitions or any definitions at all, except for auxiliary constructor definitions that become empty constructor declarations (without function bodies). Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols are. 
 
 
 
@@ -1135,9 +1195,6 @@ Dependent types (\sref{sec:dependent-types}) are allowed in these positions:
 \label{sec:indexed-types}
 
 \syntax\begin{lstlisting}
-Class_Def          ::= constant_id [Type_Param_Clause] 
-                       [Dep_Params] [Superclass] [semi] 
-                       {Indexed_Class_Expr}
 Dep_Params         ::= '@[' Index_Param {',' Index_Param} ']'
 Index_Param        ::= variable_id [':' Simple_Type]
 Indexed_Class_Expr ::= Class_Expr
@@ -1266,7 +1323,7 @@ end
 
 \syntax\begin{lstlisting}
 Type_Def      ::= constant_id [Type_Param_Clause] ':=' 
-                  Type [Dep_Params_Constr]
+                  Type [Dep_Params_C]
 Dep_Params_C  ::= '@[|' Index_Param {',' Index_Param} '|'
                   [Index_Exprs_C] ']'
                 | '@(' Index_Param {',' Index_Param} ')'
@@ -1394,9 +1451,6 @@ Every unit of measure is defined in the same scope as any other type would be, b
 In addition to type parameters and dependency parameters of each type, every type may be parameterized with a units of measure aggregation. It is recommended to avoid mixing these three together. 
 
 \syntax\begin{lstlisting}[mathescape=false]
-Class_Def  ::= constant_id [Type_Param_Clause]
-               [Dep_Params] [UoM_Params] [Superclass] [semi]
-               {Indexed_Class_Expr}
 UoM_Params ::= '[<' UoM_Param {',' UoM_Param} '>]'
 UoM_Param  ::= '$' Unit_Name
 \end{lstlisting}
