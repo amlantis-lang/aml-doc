@@ -289,7 +289,7 @@ character_literal ::= '%'' (character | unicode_escape) '''
 boolean_literal ::= 'yes' | 'no'
 \end{lstlisting}
 
-Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
+Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different, and \code{no} does not match in pattern matching (\sref{sec:pattern-matching}) as \code{nil} and vice versa. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
 
 \subsection{String Literals}\label{sec:stringliterals}
 
