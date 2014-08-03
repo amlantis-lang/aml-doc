@@ -10,6 +10,7 @@ Bindings of different kinds have a different precedence defined on them:
 \begin{enumerate}
 \item Definitions and declarations that are local have the highest precedence. 
 \item Explicit \lstinline@use@ clauses (imports) have the next highest precedence.\footnote{Explicit imports have such high precedence in order to allow binding of different names than those that would be otherwise inherited.} 
+\item Wildcard \lstinline@use@ clauses (imports) have the next highest precedence.
 \item Inherited definitions and declarations have the next highest precedence. 
 \item Definitions and declarations made available by module clause have the next highest precedence. 
 \item Definitions and declarations that are not in the same compilation unit (a different script or a different module) have the next highest precedence. 
