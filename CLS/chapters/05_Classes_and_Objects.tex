@@ -1104,12 +1104,35 @@ Interfaces are filtered versions of classes and traits with only declarations an
 \label{sec:object-definitions}
 
 \syntax\begin{lstlisting}
-Object_Def ::= constant_id Class_Template
+Object_Def ::= constant_id (Class_Template | Trait_Template)
 \end{lstlisting}
 
-Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied, only abstract compound types without class may appear as superclass, and it is an error if a concrete class appears as a superclass (even if that would be \lstinline!Class:[$C$]!, as it is prohibited to inherit from this class in user programs). If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}).
+Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Coral has one scope for both types and terms. 
 
-Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. 
+It's most general form is ~\lstinline!object $m$ extends $t$!. Here, $m$ is the name of the object to be defined (or of the class object, which is the same as the related class), and $t$ is a template (\sref{sec:templates}) of one of the following forms:
+
+\paragraph{\em Singleton object form}
+This is a form of objects that are not class objects (not instances of ~\lstinline!Class:[$C$]!). 
+\begin{lstlisting}
+$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
+\end{lstlisting}
+
+\paragraph{\em Class object form}
+This is a form of objects that are class objects, therefore instances of ~\lstinline!Class:[$C$]!. 
+\begin{lstlisting}
+$mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
+\end{lstlisting}
+
+Every trait applied to a class object does not affect the associated class itself -- here, the class object is the object that inherits features of the included/prepended traits, not the class instances; and the trait is included/prepended in the metaclass of the class object. This also has an implication on self types of traits (\sref{sec:traits}) that are to be included in a class object of class $C$: the self type would have to be ~\lstinline!Class:[$C$]!, not just $C$. 
+
+\subsection{Case Objects}
+\label{sec:case-objects}
+
+\syntax\begin{lstlisting}
+Tmpl_Def ::= 'case' 'object' Object_Def
+\end{lstlisting}
+
+Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
 
 
 
@@ -1123,8 +1146,6 @@ Modifiers (\sref{sec:modifiers}) are available in the same way as in class defin
 Module_Def  ::= constant_id [Vendor_Arg] {'.' constant_id 
                 [Vendor_Arg]} [semi] {Module_Expr}
 Module_Expr ::= Expr
-              | Implements_Expr
-              | Const_Def
 \end{lstlisting}
 
 Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Coral's approach to modules solves these issues: 
@@ -1135,6 +1156,8 @@ Module definitions are objects that have one main purpose: to join related code 
 \end{itemize}
 
 Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
+
+% TBD: update Module_Expr as appropriate
 
 
 
