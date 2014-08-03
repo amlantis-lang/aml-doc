@@ -3,19 +3,144 @@
 
 \chapter{Expressions}
 
+% TBD: update this chapter and the syntax gradually as the CLS evolves
+
+\syntax\begin{lstlisting}
+Expr        ::= Cond_Expr
+              | Loop_Expr
+              | Rescue_Expr
+              | Raise_Expr
+              | Throw_Expr
+              | Catch_Expr
+              | Return_Expr
+              | Assign_Expr
+              | Update_Expr
+              | Yield_Expr
+              | Prefix_Expr
+              | Simple_Expr
+              | Match_Expr
+              | Binding
+              | Annot_Expr
+              | Cast_Expr
+Simple_Expr ::= '(' (Class_Template | Template_Body) ')'
+              | Block_Expr
+              | Simple_Expr1 ['_']
+\end{lstlisting}
+
+Expressions are composed of various keywords, operators and operands. Expression forms are discussed subsequently. 
+
+
+
+
+
+
+
 \section{Expression Typing}
+
+The typing of expressions is often relative to some {\em expected type} (which might be undefined). When we write ``expression $e$ is expected to conform to type $T$'', we mean:
+\begin{enumerate}
+\item The expected type of $e$ is $T$.
+\item The type of expression $e$ must conform to $T$. 
+\end{enumerate}
+
+Usually, the type of the expression is defined by the last element of an execution branch, as discussed subsequently with each expression kind. 
+
+What we call ``statement'', in context of Coral is in fact yet another kind of an expression, and those expressions themselves always have a type and a value. 
+
+
+
+
 
 \section{Literals}
 
-\section{The Nil Value}
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= literal
+\end{lstlisting}
+
+Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate, including non-scalar literals (collection literals). 
+
+
+
+
+
+
+\subsection{The Nil Value}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= 'nil'
+\end{lstlisting}
+
+The \code{nil} value is of type \code{Nothing}, and is thus compatible with every type that is nullable (\sref{sec:nullability}), either preferably or explicitly.
+
+The \code{nil} represents a ``no object'', and is itself represented by an object. This object overrides methods in \code{Object} as follows: 
+\begin{itemize}
+\item 
+\lstinline!equals($x$)! and \lstinline!=($x$)! return \code{yes} if the argument $x$ is also the \code{nil} object. 
+
+\item 
+\lstinline@!=($x$)@ return \code{yes} if the argument $x$ is not the \code{nil} object.
+
+\item
+\lstinline[mathescape=false]!as_instance_of:[$T]()! returns always \code{nil}. 
+
+\item
+\lstinline!hash_code()! returns \code{0}. 
+\end{itemize}
+
+A reference to any other member of the \code{nil} object causes \code{Method_Not_Found_Error} or \code{Member_Not_Found_Error} to be raised, unless the member in fact exists.\footnote{It is even possible to use a refinement to actually implement some methods of \code{nil} locally (preferred approach), or globally implement those methods (discouraged, causes warnings).} 
+
+
+
+
+
 
 \section{Designators}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= Path
+               | Simple_Expr '.' importable_id
+\end{lstlisting}
+
+A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
+
+
+
+
+
 
 \section{Self, This \& Super}
 \label{sec:self-this-super}
 
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= [Container_Path '.'] 'self'
+                 ['.' (constant_id | variable_id | function_id)]
+               | [Container_Path '.'] 'this'
+                 ['.' (constant_id | variable_id | function_id)]
+               | [Container_Path '.'] 'super' 
+                 [Class_Qualifier] 
+                 ['.' (constant_id | variable_id | function_id)]
+\end{lstlisting}
+
+The expression \code{self} stands always for the current instance in the context and function resolution searches in the actual class of the instance. 
+
+The expression \code{this} is the same as \code{self}, except that function resolution searches from the class that this expression appears in, possibly skipping overrides. 
+
+% TBD: expand the description
+
+
+
+
+
+
 \section{Use Expressions}
 \label{sec:use-expressions}
+
+
+
+
+
+
+
 
 \section{Function Applications}
 \label{sec:function-applications}

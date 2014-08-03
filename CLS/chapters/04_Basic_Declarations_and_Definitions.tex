@@ -213,6 +213,11 @@ A variable definition ~\lstinline@var $x_1 \commadots x_n$ := $e$@~ is a shortha
 A variable definition ~\lstinline@var $x_1 \commadots x_n$: $T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$: $T$ := $e$; $\ldots$; var $x_n$: $T$ := $e$@.
 \end{itemize}
 
+
+
+
+
+
 \section{Property Declarations \& Definitions}
 \label{sec:property-dec-dfn}
 
@@ -257,6 +262,11 @@ def $x$_= (y: $T$): (); end
 \end{lstlisting}
 
 Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation. 
+
+
+
+
+
 
 \section{Type Declarations \& Aliases}
 
@@ -353,6 +363,10 @@ A variance annotation constrains the way the annotated type variable may appear 
 
 % TBD! Far from complete, variance is a complex topic. 
 
+
+
+
+
 \section{Function Declarations \& Definitions}
 
 \syntax\begin{lstlisting}[escapechar=`]
@@ -366,7 +380,8 @@ Def           ::= 'def' Fun_Def 'end' ['def']
                 | 'method' Fun_Alt_Def
                 | 'function' Fun_Def 'end' ['function']
                 | 'function' Fun_Alt_Def
-Fun_Def       ::= Fun_Sig [':' Return_Type] [Fun_Dec] [semi Expr]
+Fun_Def       ::= Fun_Sig [':' Return_Type] [Fun_Dec] [semi Fun_Stats]
+Fun_Stats     ::= Fun_Stat {semi Fun_Stat}
 Fun_Alt_Def   ::= Fun_Sig [':' Return_Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Expr [semi] 'begin'
 Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
