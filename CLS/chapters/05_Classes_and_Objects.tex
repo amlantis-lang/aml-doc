@@ -1410,6 +1410,7 @@ Unit_Conv      ::= '(' Unit_Conv ')'
                  | Unit_Elem [Unit_Op Unit_Elem]
                  | Unit_Conv Unit_Op Unit_Conv
 Unit_Elem      ::= number_literal | Unit_Name
+Unit_Op        ::= '*' | '/' | '**'
 \end{lstlisting}
 
 Numbers in Coral can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
@@ -1541,8 +1542,6 @@ All types in Coral are not-nullable implicitly to prevent \code{Method_Not_Found
 @[Nullable no, override: no]
 \end{lstlisting}
 
-% TBD: case classes after primary constructors are available
-% TBD: when safe navigation is introduced, make a note that it has the same effect on nils as on None
 
 
 
