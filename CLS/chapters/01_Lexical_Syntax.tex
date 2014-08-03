@@ -329,13 +329,14 @@ Type parameters are not members of any type, rather they stand-in for a real typ
 \subsection{Regular Expression Literals}\label{sec:regexpliterals}
 
 \syntax\begin{lstlisting}
-regexp_literal ::= '%/' regexp_content_int '/' [regexp_flags]
-	| '%r/' regexp_content_int '/' [regexp_flags]
-	| '%r#' regexp_content '#' [regexp_flags]
-	| '%r~' regexp_content_int '~' [regexp_flags]
+regexp_literal     ::= '%/' regexp_content_int '/' [regexp_flags]
+	                 | '%r/' regexp_content_int '/' [regexp_flags]
+	                 | '%r#' regexp_content '#' [regexp_flags]
+	                 | '%r~' regexp_content_int '~' [regexp_flags]
 regexp_content_int ::= regexp_element_int {regexp_element_int}
 regexp_element_int ::= string_element | int_string_element
-regexp_content ::= string_element {string_element}
+regexp_content     ::= string_element {string_element}
+regexp_flags       ::= printable_char {printable_char}
 \end{lstlisting}
 
 Regular expression literals are members of the type \lstinline@Regular_Expression@ with alias of \lstinline@Regexp@. 
@@ -345,19 +346,18 @@ Regular expression literals are members of the type \lstinline@Regular_Expressio
 Collection literals are paired syntax tokens and as such, they are a kind of parentheses in Coral sources. 
 
 \syntax\begin{lstlisting}
-collection_literal ::= tuple_literal
-	| list_literal
-	| dictionary_literal
-	| bag_literal
-tuple_literal ::= '(' exprs ')'
-list_literal ::= '%' collection_flags '[' exprs ']'
-dictionary_literal ::= '%' collection_flags '{' dict_exprs '}'
-bag_literal ::= '%' collection_flags '(' exprs ')'
-exprs ::= expr {',' expr}
-dict_exprs ::= dict_expr {',' dict_expr}
-dict_expr ::= expr '=>' expr
-	| simple_id ':' expr
-collection_flags ::= printable_char {printable_char}
+Collection_Literal ::= Tuple_Literal
+	                 | List_literal
+	                 | Dictionary_Literal
+	                 | Bag_Literal
+Tuple_Literal      ::= '(' Exprs ')'
+List_Literal       ::= '%' Collection_Flags '[' Exprs ']'
+Dictionary_Literal ::= '%' Collection_Flags '{' Dict_Exprs '}'
+Bag_Literal        ::= '%' Collection_Flags '(' Exprs ')'
+Dict_Exprs         ::= Dict_Expr {',' Dict_Expr}
+Dict_Expr          ::= Expr '=>' Expr
+	                 | simple_id ':' Expr
+Collection_Flags   ::= printable_char {printable_char}
 \end{lstlisting}
 
 Tuple literals are members of the \lstinline@Tuple@ type family. List literals are members of the \lstinline@List@ type, usually \lstinline@Array_List@ with alias of \lstinline@Array@. Dictionary literals are members of the \lstinline@Dictionary@ type with alias of \lstinline@Map@, usually \lstinline@Hash_Dictionary@ with alias of \lstinline@Hash_Map@. Bag literals are members of the \lstinline@Bag@ type, usually \lstinline@Hash_Bag@ or \lstinline@Hash_Set@. Collection flags may change the actual class of the literal, along with some other properties, described in the following text. 
