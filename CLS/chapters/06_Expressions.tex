@@ -22,6 +22,7 @@ Expr        ::= Cond_Expr
               | Binding
               | Annot_Expr
               | Cast_Expr
+              | Use_Expr
 Simple_Expr ::= '(' Anon_Class ')'
               | Block_Expr
               | Simple_Expr1 ['_']
@@ -119,13 +120,17 @@ Simple_Expr1 ::= [Container_Path '.'] 'self'
                | [Container_Path '.'] 'super' 
                  [Class_Qualifier] 
                  ['.' (constant_id | variable_id | function_id)]
+               | [Container_Path '.'] 'self' '[' 'cloned' ']'
+                 '.' ivar_id
+               | ivar_id
+               | cvar_id
 \end{lstlisting}
 
 The expression \code{self} stands always for the current instance in the context and function resolution searches in the actual class of the instance. 
 
 The expression \code{this} is the same as \code{self}, except that function resolution searches from the class that this expression appears in, possibly skipping overrides. 
 
-% TBD: expand the description
+% TBD: expand the description, include ivars, cvars
 
 
 
@@ -134,6 +139,13 @@ The expression \code{this} is the same as \code{self}, except that function reso
 
 \section{Use Expressions}
 \label{sec:use-expressions}
+
+\syntax\begin{lstlisting}
+Use_Expr ::= 'use' Simple_Expr 'as' 
+             [variable_id ':'] Type [Block_Expr]
+\end{lstlisting}
+
+Use expressions are similar to type cast expressions. Their intention is to rebind an expression to a specific type, and then either have this type be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. 
 
 
 
