@@ -65,10 +65,12 @@ Types in Coral are represented by objects that are members of the \code{Class} t
 \label{sec:type-paths}
 
 \syntax\begin{lstlisting}
-path_id          ::= constant_id | variable_id
+path_id          ::= constant_id 
+                   | variable_id
+                   | function_id
+                   | op_id
 Path             ::= Stable_Id
-                   | 'this'
-                   | [path_id '.'] 'self'
+                   | [path_id '.'] ('this' | 'self')
                    | 'self' '[' 'cloned' ']'
 Stable_Id        ::= path_id
                    | Path '.' path_id
