@@ -22,7 +22,7 @@ Expr        ::= Cond_Expr
               | Binding
               | Annot_Expr
               | Cast_Expr
-Simple_Expr ::= '(' (Class_Template | Template_Body) ')'
+Simple_Expr ::= '(' Anon_Class ')'
               | Block_Expr
               | Simple_Expr1 ['_']
 \end{lstlisting}
@@ -216,6 +216,31 @@ The expression \code{this} is the same as \code{self}, except that function reso
 \section{Throw \& Catch Expressions}
 
 \section{Anonymous Functions}
+
+
+
+
+
+
+\section{Anonymous Classes}
+\label{sec:anonymous-classes}
+
+\syntax\begin{lstlisting}
+Anon_Class      ::= ['class' [Class_Param_Clauses] 'extends'] 
+                    [Early_Defs] Anon_Class_Tmpl
+Anon_Class_Tmpl ::= Class_Parents 'with' '{' [Template_Body] '}'
+\end{lstlisting}
+
+Anonymous classs are a mechanism to implement an abstract class or override a concrete class ``ad hoc'', in place where needed, without needing to create a new constant (although as an expression, the anonymous class definition can indeed be assigned to a constant and gain its name). 
+
+A minimal anonymous class expression is of the form ~\lstinline!$c$ with { $t$ }!, where $c$ is the class that the anonymous class inherits from (can be even \code{Object}), and $t$ is the template of the anonymous class. The anonymous class inherits all traits mixed into this parent class, and can itself include or prepend more traits (via the \code{Class_Parents} syntax element). 
+
+Optionally, the anonymous class may define its own primary constructor parameters, in which case the form of the anonymous class is ~\lstinline!class ($\ps_1$)$\ldots$($\ps_n$) extends $c$ with { $t$ }!, where $\ps_1$ to $\ps_n$ are the primary constructor parameters. Superclass constructor arguments may be specified in any case. 
+
+
+
+
+
 
 \section{Conversions}
 
