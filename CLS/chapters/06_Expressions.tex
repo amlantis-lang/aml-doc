@@ -16,13 +16,15 @@ Expr        ::= Cond_Expr
               | Assign_Expr
               | Update_Expr
               | Yield_Expr
-              | Prefix_Expr
+              | Infix_Expr
               | Simple_Expr
               | Match_Expr
               | Binding
               | Annot_Expr
               | Cast_Expr
               | Use_Expr
+Infix_Expr  ::= Prefix_Expr
+              | Infix_Expr [op_id Infix_Expr]
 Simple_Expr ::= '(' Anon_Class ')'
               | Block_Expr
               | Simple_Expr1 ['_']
@@ -157,6 +159,23 @@ Use expressions are similar to type cast expressions. Their intention is to rebi
 \section{Function Applications}
 \label{sec:function-applications}
 
+\syntax\begin{lstlisting}
+Simple_Expr1   ::= Simple_Expr1 Argument_Exprs [Block_Expr]
+Argument_Exprs ::= '(' [Arg_Exprs] ')'
+                 | '(' [Arg_Exprs ','] '*' Expr ')'
+                 | '(' [Arg_Exprs ','] ['*' Expr ','] '**' Expr ')'
+                 | Block_Expr
+Arg_Exprs      ::= Arg_Expr {',' Arg_Expr}
+Arg_Expr       ::= Expr
+\end{lstlisting}
+
+% TBD: extend this section, note tuple of arguments
+
+
+
+
+
+
 \subsection{Named and Optional Arguments}
 \label{sec:named-optional-arguments}
 
@@ -168,15 +187,61 @@ Use expressions are similar to type cast expressions. Their intention is to rebi
 
 \subsection{Function Compositions \& Pipelines}
 
-\section{Method Values}
+
+
+
+
 
 \section{Type Applications}
+\label{sec:type-applications}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= Simple_Expr (Type_Args [UoM_Args] | UoM_Args)
+\end{lstlisting}
+
+
+
+
+
 
 \section{Tuples}
+\label{sec:tuples}
+
+\syntax\begin{lstlisting}
+Simple_Expr ::= '(' [Exprs] ')'
+\end{lstlisting}
+
+A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 1$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. 
+
+
+
+
+
 
 \section{Instance Creation Expressions}
+\label{sec:instance-creation-exprs}
+
+Unlike languages like Java, Scala, C\# and similar, Coral does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline!Class#new!~ method (not to be confused with ~\lstinline@Class.new@), which in the end\footnote{Because constructor currying can happen, the constructor is invoked by a native implementation from outside of the \code{new} method, by the curried function, which is a mechanism inaccessible to users otherwise than via the constructor definition.} has all arguments for a constructor, which gets invoked by a native implementation. 
+
+
+
+
+
 
 \section{Blocks}
+
+\syntax\begin{lstlisting}
+Block_Expr  ::= Block_Expr1 | Block_Expr2
+Block_Expr1 ::= '{' [Block_Args semi] Block '}'
+Block_Expr2 ::= 'do' [Block_Args semi] Block 'end'
+Block_Args  ::= '|' [Arg_Exprs] '|' [':' Type]
+Block       ::= {Block_Stat semi} [Result_Expr]
+\end{lstlisting}
+
+
+
+
+
 
 \subsection{Local Variable Closure}
 \label{sec:local-variable-closure}
@@ -228,6 +293,22 @@ Use expressions are similar to type cast expressions. Their intention is to rebi
 \section{Throw \& Catch Expressions}
 
 \section{Anonymous Functions}
+\label{sec:anonymous-functions}
+
+\subsection{Method Values}
+
+\syntax\begin{lstlisting}
+Simple_Expr ::= Simple_Expr1 '_'
+\end{lstlisting}
+
+\example The method values in the left column are each equivalent to the anonymous functions (\sref{sec:anonymous-functions}) on their right. 
+\begin{lstlisting}[deletekeywords={range}]
+Math.sin _                (x)      -> { Math.sin(x) }
+Array.range _             (x1, x2) -> { Array.range(x1, x2) }
+List.map_2 _              (x1, x2) -> (x3) -> { List.map_2(x1, x2)(x3) }
+List.map_2(xs, ys) _      (x)      -> { List.map_2(xs, xy)(x) }
+\end{lstlisting}
+
 
 
 
