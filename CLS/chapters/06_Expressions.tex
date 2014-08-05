@@ -324,7 +324,7 @@ Anon_Class      ::= ['class' [Class_Param_Clauses] 'extends']
 Anon_Class_Tmpl ::= Class_Parents 'with' '{' [Template_Body] '}'
 \end{lstlisting}
 
-Anonymous classs are a mechanism to implement an abstract class or override a concrete class ``ad hoc'', in place where needed, without needing to create a new constant (although as an expression, the anonymous class definition can indeed be assigned to a constant and gain its name). 
+Anonymous classs are a mechanism to implement an abstract class or override a concrete class ``ad hoc'', in place where needed, without needing to create a new constant (although as an expression, the anonymous class definition can indeed be assigned to a constant and gain its name). Anonymous classes can't be type constructors (\sref{sec:type-constructors}). 
 
 A minimal anonymous class expression is of the form ~\lstinline!$c$ with { $t$ }!, where $c$ is the class that the anonymous class inherits from (can be even \code{Object}), and $t$ is the template of the anonymous class. The anonymous class inherits all traits mixed into this parent class, and can itself include or prepend more traits (via the \code{Class_Parents} syntax element). 
 
