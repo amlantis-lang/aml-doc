@@ -211,7 +211,7 @@ Simple_Expr1 ::= Simple_Expr (Type_Args [UoM_Args] | UoM_Args)
 Simple_Expr ::= '(' [Exprs] ')'
 \end{lstlisting}
 
-A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 1$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. 
+A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple. 
 
 
 
@@ -243,10 +243,19 @@ Block       ::= {Block_Stat semi} [Result_Expr]
 
 
 
-\subsection{Local Variable Closure}
-\label{sec:local-variable-closure}
-
 \section{Prefix \& Infix Operations}
+\label{sec:prefix-infix-ops}
+
+\syntax\begin{lstlisting}
+Infix_Expr  ::= Prefix_Expr
+              | Infix_Expr [op_id Infix_expr]
+Prefix_Expr ::= [op_id] Simple_Expr
+\end{lstlisting}
+
+
+
+
+
 
 \subsection{Prefix Operations}
 
@@ -256,12 +265,64 @@ Block       ::= {Block_Stat semi} [Result_Expr]
 
 \section{Typed Expressions}
 
+\syntax\begin{lstlisting}
+Cast_Expr ::= Infix_Expr 'as' Type
+\end{lstlisting}
+
+
+
+
+
+
+
 \section{Annotated Expressions}
 \label{sec:annotated-exprs}
 
+\syntax\begin{lstlisting}
+Annot_Expr ::= Annotation {Annotation} Infix_Expr
+\end{lstlisting}
+
+
+
+
+
+
+
+
 \section{Assignments}
 
+\syntax\begin{lstlisting}
+Assign_Expr ::= [Simple_Expr '.'] variable_id ':=' Expr
+              | Simple_Expr1 Argument_Exprs ':=' Expr
+\end{lstlisting}
+
+
+
+
+
+
+
+
 \section{Conditional Expressions}
+
+\syntax\begin{lstlisting}
+Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
+Cond_Block_Expr  ::= Cond_Block_Expr1 | Cond_Block_Expr2
+Cond_Block_Expr1 ::= 'if' Expr ('then' | semi) Expr 
+                     {'elsif' Expr ('then' | semi) Expr}
+                     ['else' Expr] 'end' ['if']
+Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Expr 
+                     {'elsif' Expr ('then' | semi) Expr}
+                     ['else' Expr] 'end' ['unless']
+Cond_Mod_Expr    ::= Expr ('if' | 'unless') Expr
+\end{lstlisting}
+
+
+
+
+
+
+
 
 \section{Loop Expressions}
 
@@ -294,6 +355,9 @@ Block       ::= {Block_Stat semi} [Result_Expr]
 
 \section{Anonymous Functions}
 \label{sec:anonymous-functions}
+
+\subsection{Local Variable Closure}
+\label{sec:local-variable-closure}
 
 \subsection{Method Values}
 
