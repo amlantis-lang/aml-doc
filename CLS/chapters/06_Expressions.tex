@@ -314,7 +314,8 @@ Cond_Block_Expr1 ::= 'if' Expr ('then' | semi) Expr
 Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Expr 
                      {'elsif' Expr ('then' | semi) Expr}
                      ['else' Expr] 'end' ['unless']
-Cond_Mod_Expr    ::= Expr ('if' | 'unless') Expr
+Cond_Mod_Expr    ::= Expr Cond_Modifier
+Cond_Modifier    ::= ('if' | 'unless') Infix_Expr
 \end{lstlisting}
 
 
@@ -326,17 +327,97 @@ Cond_Mod_Expr    ::= Expr ('if' | 'unless') Expr
 
 \section{Loop Expressions}
 
-\subsection{Classic For Expressions}
-
 \subsection{Iterable For Expressions}
+
+\syntax\begin{lstlisting}
+Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcl 'in' Expr 
+                    ['step' Expr] For_Loop
+For_Loop        ::= 'loop' Expr 'end' ['loop']
+                  | '{' Loop_Block_Expr '}'
+Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
+\end{lstlisting}
+
+
+
+
+
 
 \subsection{Basic Loop Expressions}
 
+\syntax\begin{lstlisting}
+Loop_Ctrl_Expr ::= Break_Expr
+                 | Skip_Expr
+                 | Next_Expr
+Break_Expr     ::= 'break' [label_id] [Cond_Modifier]
+Skip_Expr      ::= 'skip' [integer_literal] [Cond_Modifier]
+Next_Expr      ::= 'next' [label_id] [Cond_Modifier]
+\end{lstlisting}
+
+
+
+
+
+
 \subsection{While \& Until Loop Expressions}
 
-\subsection{Conditions in Loop Expressions}
+\syntax\begin{lstlisting}
+Loop_Expr     ::= [Label_Dcl] ('while' | 'until') Expr For_Loop
+                | Loop_Mod_Expr
+Loop_Mod_Expr ::= Expr Loop_Modifier
+Loop_Modifier ::= ('while' | 'until') Expr
+\end{lstlisting}
+
+
+
+
+
+\subsection{Pure \& Classic Loops}
+
+\syntax\begin{lstlisting}
+Loop_Expr  ::= [Label_Dcl] 'loop' [Loop_Conds] 
+               (nl Loop_Block_Expr 'end' ['loop'] | 
+               '{' Loop_Block_Expr '}')
+Loop_Conds ::= '(' [Exprs] semi [Exprs] semi [Exprs] ')'
+\end{lstlisting}
+
+
+
+
+
+
+\section{Generator Expressions}
+
+\syntax\begin{lstlisting}
+Loop_Expr        ::= 'for' (Generator_Iter | Generator_Expr)
+Generator_Iter   ::= '(' Enumerators ')' (Expr | For_Loop)
+Generator_Expr   ::= '{' Enumerators semi 'yield' Expr '}'
+Enumerators      ::= Generator {semi Enumerator}
+Enumerator       ::= Generator
+                   | Enumerator_Guard
+                   | Pattern1 ':=' Expr
+Generator        ::= Pattern1 '<-' Expr [Enumerator_Guard]
+Enumerator_Guard ::= Cond_Modifier
+\end{lstlisting}
+
+
+
+
+
 
 \section{Collection Comprehensions}
+
+\syntax\begin{lstlisting}
+List_Literal       ::= '%' Collection_Flags '[' 'for' Generator_Expr ']'
+Dictionary_Literal ::= '%' Collection_Flags '{' 'for' Generator_Expr '}'
+Bag_Literal        ::= '%' Collection_Flags '(' 'for' Generator_Expr ')'
+\end{lstlisting}
+
+Collection comprehensions extend the syntax of collection ``literals''\footnote{Pure literals are terminal symbols in the language, but collection literals are wrappers around virtually any expression.}, so that collections may be defined by not their explicit values, but by a function that generates them -- and that function is a generator. Only tuple literals don't have collection comprehension, due to their special nature within the language. 
+
+
+
+
+
 
 \section{Return Expressions}
 

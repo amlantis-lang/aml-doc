@@ -82,19 +82,19 @@ do          else        elsif       end         ensure
 enum        extends     final       for         for-some
 function    get         goto        if          indexed-with
 implements  implicit    in          include     interface
-is          lazy        let         loop        match
-memoize     message     method      module      native
-next        nil         no          object      of
-opaque      operator    out         override    prepend
-private     property    protected   protocol    public
-raise       range       record      redo        refine
-refinement  rescue      retry       return      requires
-sealed      self        set         singleton-type
+is          label       lazy        let         loop
+match       memoize     message     method      module
+native      next        nil         no          object
+of          opaque      operator    out         override
+prepend     private     property    protected   protocol
+public      raise       range       record      redo
+refine      refinement  rescue      retry       return
+requires    sealed      self        set         singleton-type
 skip        step        super       then        this
-throw       trait       transparent type        undef
-unless      until       union       unit-of-measure
-use         val         var         yes         weak
-when        while       with        yield
+throw       trait       transparent type        unless
+until       union       unit-of-measure         use
+val         var         yes         weak        when
+while       with        yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -124,14 +124,14 @@ The following character sequences are the operators recognized by Coral.
 
 \begin{lstlisting}
 :=     +=     -=     *=     **=    /=     %=     ||=    &&=    ^^= 
-|=     &=     |=     :[     ^=     ~=     <<     >>     <<<    >>> 
+|=     &=     |=     [     ^=     ~=     <<     >>     <<<    >>> 
 <<=    >>=    <<<=   >>>=   ;      =      !=     ==     !==    === 
 !===   =~     !~     <>     <      >      <=     >=     <=>    + 
 -      *      **     /      div    %      mod    ||     or     && 
 and    !      not    ^^     xor    |      &      ^      ~      .. 
 ...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
 :>     <<|    |>>    <|     |>     (      )      [      ]      { 
-}      .      [<     >]     >:     .?     .!     @{
+}      .      [<     >]     >:     .?     .!
 \end{lstlisting}
 
 Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
