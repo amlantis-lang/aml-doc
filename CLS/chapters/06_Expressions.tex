@@ -23,6 +23,7 @@ Expr        ::= Cond_Expr
               | Annot_Expr
               | Cast_Expr
               | Use_Expr
+              | Jump_Expr
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [op_id Infix_Expr]
 Simple_Expr ::= '(' Anon_Class ')'
@@ -330,7 +331,7 @@ Cond_Modifier    ::= ('if' | 'unless') Infix_Expr
 \subsection{Iterable For Expressions}
 
 \syntax\begin{lstlisting}
-Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcl 'in' Expr 
+Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcl 'in' ['reverse'] Expr 
                     ['step' Expr] For_Loop
 For_Loop        ::= 'loop' Expr 'end' ['loop']
                   | '{' Loop_Block_Expr '}'
@@ -342,7 +343,7 @@ Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
 
 
 
-\subsection{Basic Loop Expressions}
+\subsection{Loop Control Expressions}
 
 \syntax\begin{lstlisting}
 Loop_Ctrl_Expr ::= Break_Expr
@@ -419,13 +420,66 @@ Collection comprehensions extend the syntax of collection ``literals''\footnote{
 
 
 
-\section{Return Expressions}
+\section{Unconditional Expressions}
 
-\subsection{Implicit Return Expressions}
+Unconditional expressions change the flow of programs without a condition. 
 
-\subsection{Explicit Return Expressions}
+\subsection{Return Expressions}
+\label{sec:return-expressions}
+
+\paragraph{Implicit Return Expressions}
+Implicit return expression is always the value of the last expression in a code execution path. 
+
+\paragraph{Explicit Return Expressions}
+
+
+\syntax\begin{lstlisting}
+Return_Expr ::= 'return' [Expr] [Cond_Modifier]
+\end{lstlisting}
+
+
+
+
+
 
 \subsection{Structured Return Expressions}
+
+\syntax\begin{lstlisting}
+Return_Expr ::= 'return' Var_Def 'do' 
+                Block_Stat {semi Block_Stat} 
+                'end' ['return']
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Local Jump Expressions}
+
+\syntax\begin{lstlisting}
+Jump_Expr  ::= Goto_Expr | Label_Dcl
+Goto_Expr  ::= 'goto' label_name [Cond_Modifier]
+Label_Dcl  ::= 'label' label_name 
+             | '<<' label_name '>>'
+label_name ::= variable_id | constant_id
+\end{lstlisting}
+
+Local jumps transfer control from \code{goto} statements to the statements following a \code{label}. 
+
+
+\subsection{Continuations}
+
+\paragraph{\em Unlimited continuations}
+Unlimited continuations are defined by the whole program, as the unlimited continuation allows almost arbitrary non-local jumps. The unlimited continuation is captured with \code{call/cc} function. 
+
+\paragraph{\em Delimited continuations}
+Delimited continuations are defined with \code{reset} and \code{shift} functions. Reset and shift expressions are actually not language constructs, but rather regular functions that have a native implementation capable of unconditionally changing the standard control flow of a program. Moreover, the first \code{shift} expression (which captures the delimited continuation) controls the return value of the \code{reset} expression, which overrides the implicit return expression (\sref{sec:return-expressions}).
+
+
+
+
+
 
 \section{Raise Expressions}
 
@@ -452,6 +506,7 @@ Math.sin _                (x)      -> { Math.sin(x) }
 Array.range _             (x1, x2) -> { Array.range(x1, x2) }
 List.map_2 _              (x1, x2) -> (x3) -> { List.map_2(x1, x2)(x3) }
 List.map_2(xs, ys) _      (x)      -> { List.map_2(xs, xy)(x) }
+42.* _                    (x)      -> { 42 * x }
 \end{lstlisting}
 
 
