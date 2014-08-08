@@ -396,7 +396,7 @@ Param         ::= {Annotation} [Param_Extra] variable_id
                 [':' Param_Type] [':=' Expr]
                 | Literal
 Param_Extra   ::= [Param_Io] [Param_Rw] ['*' | '**' | '&'] [':']
-Param_Io      ::= 'in' | 'out' | 'in' '+' 'out'
+Param_Io      ::= 'in' ['out'] | 'out'
 Param_Rw      ::= 'val' | 'var'
 Param_Type    ::= Type | '`\$`' constant_id | '=>' [Type | '_']
 \end{lstlisting}
@@ -498,7 +498,7 @@ Since the parameter has no name to bind to, it is not accessible inside the meth
 \label{sec:io-parameters}
 
 \syntax\begin{lstlisting}
-Param_Io ::= 'in' | 'out' | 'in' '+' 'out'
+Param_Io ::= 'in' ['out'] | 'out'
 \end{lstlisting}
 
 If no input/output parameter specifier is explicitly available, then the parameter is implicitly an input parameter. Output parameters require a specific application (\sref{sec:io-arguments}).
@@ -518,8 +518,8 @@ in var $x$: $T$
 in val $x$: $T$
 out $x$: $T$
 out var $x$: $T$
-in+out $x$: $T$
-in+out var $x$: $T$
+in out $x$: $T$
+in out var $x$: $T$
 $x$: => $T$
 val $x$: => $T$
 in $x$: => $T$
@@ -610,8 +610,8 @@ in var :$x$ : $T$
 in val :$x$ : $T$
 out :$x$ : $T$
 out var :$x$ : $T$
-in+out :$x$ : $T$
-in+out var :$x$ : $T$
+in out :$x$ : $T$
+in out var :$x$ : $T$
 :$x$ : $T$ := $e$
 var :$x$ : $T$ := $e$
 val :$x$ : $T$ := $e$
