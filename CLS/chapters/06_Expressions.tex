@@ -24,6 +24,7 @@ Expr        ::= Cond_Expr
               | Cast_Expr
               | Use_Expr
               | Jump_Expr
+              | Anon_Fun
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [op_id Infix_Expr]
 Simple_Expr ::= '(' Anon_Class ')'
@@ -544,6 +545,18 @@ Fun_Stats    ::= Block
 
 \section{Anonymous Functions}
 \label{sec:anonymous-functions}
+
+\syntax\begin{lstlisting}
+Anon_Fun        ::= Anon_Params '->' '{' Block '}'
+Result_Expr     ::= Anon_Params '->' Block
+Anon_Params     ::= Bindings {'->' Bindings}
+                  | '(' ['implicit'] variable_id ')'
+                  | '(' [Nameless_Param] ')'
+Bindings        ::= '(' Binding {'' Binding} ')'
+Binding         ::= (variable_id | '_') [':' Type]
+Nameless_Params ::= Nameless_Param {',' Nameless_Param}
+Nameless_Param  ::= '_' [':' Compound_Type]
+\end{lstlisting}
 
 
 
