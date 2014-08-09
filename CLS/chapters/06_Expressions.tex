@@ -30,6 +30,8 @@ Infix_Expr  ::= Prefix_Expr
 Simple_Expr ::= '(' Anon_Class ')'
               | Block_Expr
               | Simple_Expr1 ['_']
+Result_Expr ::= Anon_Params '->' Block 
+              | ['memoize'] Expr
 \end{lstlisting}
 
 Expressions are composed of various keywords, operators and operands. Expression forms are discussed subsequently. 
@@ -236,9 +238,26 @@ Unlike languages like Java, Scala, C\# and similar, Coral does not have dedicate
 Block_Expr  ::= Block_Expr1 | Block_Expr2
 Block_Expr1 ::= '{' [Block_Args semi] Block '}'
 Block_Expr2 ::= 'do' [Block_Args semi] Block 'end'
-Block_Args  ::= '|' [Arg_Exprs] '|' [':' Type]
+Block_Args  ::= '|' [Params] '|' [':' Type]
 Block       ::= {Block_Stat semi} [Result_Expr]
 \end{lstlisting}
+
+
+
+
+
+
+\section{Yield Expressions}
+
+\syntax\begin{lstlisting}
+Yield_Expr ::= 'yield' '(' [Arg_Exprs] ')'
+             | '(' [Arg_Exprs ','] '*' Expr ')'
+             | '(' [Arg_Exprs ','] ['*' Expr ','] '**' Expr ')'
+             | [Arg_Exprs]
+             | [Arg_Exprs ','] '*' Expr
+             | [Arg_Exprs ','] ['*' Expr ','] '**' Expr
+\end{lstlisting}
+
 
 
 
@@ -295,7 +314,7 @@ Annot_Expr ::= Annotation {Annotation} Infix_Expr
 
 \syntax\begin{lstlisting}
 Assign_Expr ::= [Simple_Expr '.'] variable_id ':=' Expr
-              | Simple_Expr1 Argument_Exprs ':=' Expr
+Update_Expr ::= Simple_Expr1 Argument_Exprs ':=' Expr
 \end{lstlisting}
 
 
@@ -430,11 +449,16 @@ Unconditional expressions change the flow of programs without a condition.
 \paragraph{Implicit Return Expressions}
 Implicit return expression is always the value of the last expression in a code execution path. 
 
+\syntax\begin{lstlisting}
+Result_Expr ::= Anon_Params '->' Block 
+              | ['memoize'] Expr
+\end{lstlisting}
+
 \paragraph{Explicit Return Expressions}
 
 
 \syntax\begin{lstlisting}
-Return_Expr ::= 'return' [Expr] [Cond_Modifier]
+Return_Expr ::= ['memoize'] 'return' [Expr] [Cond_Modifier]
 \end{lstlisting}
 
 
@@ -445,7 +469,7 @@ Return_Expr ::= 'return' [Expr] [Cond_Modifier]
 \subsection{Structured Return Expressions}
 
 \syntax\begin{lstlisting}
-Return_Expr ::= 'return' Var_Def 'do' 
+Return_Expr ::= ['memoize'] 'return' Var_Def 'do' 
                 Block_Stat {semi Block_Stat} 
                 'end' ['return']
 \end{lstlisting}
@@ -548,8 +572,9 @@ Fun_Stats    ::= Block
 
 \syntax\begin{lstlisting}
 Anon_Fun        ::= Anon_Params '->' '{' Block '}'
-Result_Expr     ::= Anon_Params '->' Block
+Result_Expr     ::= Anon_Params '->' Block 
 Anon_Params     ::= Bindings {'->' Bindings}
+                  | Param_Clause
                   | '(' ['implicit'] variable_id ')'
                   | '(' [Nameless_Param] ')'
 Bindings        ::= '(' Binding {'' Binding} ')'
@@ -599,6 +624,45 @@ Anonymous classs are a mechanism to implement an abstract class or override a co
 A minimal anonymous class expression is of the form ~\lstinline!$c$ with { $t$ }!, where $c$ is the class that the anonymous class inherits from (can be even \code{Object}), and $t$ is the template of the anonymous class. The anonymous class inherits all traits mixed into this parent class, and can itself include or prepend more traits (via the \code{Class_Parents} syntax element). 
 
 Optionally, the anonymous class may define its own primary constructor parameters, in which case the form of the anonymous class is ~\lstinline!class ($\ps_1$)$\ldots$($\ps_n$) extends $c$ with { $t$ }!, where $\ps_1$ to $\ps_n$ are the primary constructor parameters. Superclass constructor arguments may be specified in any case. 
+
+
+
+
+
+
+\section{Statements}
+
+\syntax\begin{lstlisting}
+Block_Stat    ::= Use
+                | {Annotation} ['implicit'] Def
+                | {Annotation} {Local_Modifier} Tmpl_Def
+                | Expr
+                | ()
+Template_Stat ::= Use
+                | {Annotation} {Modifier} Def
+                | {Annotation} {Modifier} Dcl
+                | Expr
+                | ()
+Fun_Stats     ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
+                | Block
+                  {'rescue' [Pattern [Guard]] semi Block }
+                  ['ensure' semi Block_Stat {semi Block_Stat}]
+Fun_Stat      ::= Block_Stat
+Fun_Dec_Expr  ::= {Annotation} Dcl
+                | {Annotation} ['implicit'] Def
+                | 'transparent'
+                | 'opaque'
+                | 'native' [Expr]
+                | ()
+\end{lstlisting}
+
+Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{nil}, or the empty statement/expression, whose value is again \code{nil}. 
+
+Function statements is an umbrella term for a series of statements and expressions, so their effective value is more complex. 
+
+Statement can be an import via a use clause (\sref{sec:use-clauses}), a definition or an expression, or it can be empty. Statements used in the template of a class definition can also be declarations. 
+
+
 
 
 
