@@ -372,13 +372,12 @@ Loop_Modifier ::= ('while' | 'until') Expr
 
 
 
-\subsection{Pure \& Classic Loops}
+\subsection{Pure Loops}
 
 \syntax\begin{lstlisting}
-Loop_Expr  ::= [Label_Dcl] 'loop' [Loop_Conds] 
-               (nl Loop_Block_Expr 'end' ['loop'] | 
+Loop_Expr  ::= [Label_Dcl] 'loop'
+               (semi Loop_Block_Expr 'end' ['loop'] | 
                '{' Loop_Block_Expr '}')
-Loop_Conds ::= '(' [Exprs] semi [Exprs] semi [Exprs] ')'
 \end{lstlisting}
 
 
@@ -389,15 +388,15 @@ Loop_Conds ::= '(' [Exprs] semi [Exprs] semi [Exprs] ')'
 \section{Generator Expressions}
 
 \syntax\begin{lstlisting}
-Loop_Expr        ::= 'for' (Generator_Iter | Generator_Expr)
-Generator_Iter   ::= '(' Enumerators ')' (Expr | For_Loop)
-Generator_Expr   ::= '{' Enumerators semi 'yield' Expr '}'
-Enumerators      ::= Generator {semi Enumerator}
-Enumerator       ::= Generator
-                   | Enumerator_Guard
-                   | Pattern1 ':=' Expr
-Generator        ::= Pattern1 '<-' Expr [Enumerator_Guard]
-Enumerator_Guard ::= Cond_Modifier
+Loop_Expr      ::= 'for' (Generator_Iter | Generator_Expr)
+Generator_Iter ::= '(' Enumerators ')' (Expr | For_Loop)
+Generator_Expr ::= '{' Enumerators semi 'yield' Expr '}'
+Enumerators    ::= Generator {semi Enumerator}
+Enumerator     ::= Generator
+                 | Enumerator_Guard
+                 | Pattern1 ':=' Expr
+Generator      ::= Pattern1 '<-' Expr [Guard]
+Guard          ::= Cond_Modifier
 \end{lstlisting}
 
 
@@ -481,18 +480,76 @@ Delimited continuations are defined with \code{reset} and \code{shift} functions
 
 
 
-\section{Raise Expressions}
 
-\section{Rescue \& Ensure Expressions}
+
+
+
+
+
+
+
 
 
 \section{Throw \& Catch Expressions}
 
+\syntax\begin{lstlisting}
+Catch_Expr  ::= Catch_Expr1 | Catch_Expr2
+Catch_Expr1 ::= 'begin' Block 
+                'catch' semi When_Clauses
+                'end'
+Catch_Expr2 ::= '{' Block '}'
+                'catch' '{' When_Clauses '}'
+Throw_Expr  ::= 'throw' Expr
+\end{lstlisting}
+
+
+
+
+
+
+
+\subsection{Raise Expressions}
+
+\syntax\begin{lstlisting}
+Raise_Expr ::= 'raise' Raiseable
+Raiseable  ::= string_literal
+             | Container_Path [',' string_literal]
+             | Expr
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Rescue \& Ensure Expressions}
+
+\syntax\begin{lstlisting}
+Rescue_Expr  ::= Rescue_Expr1 | Rescue_Expr2
+Rescue_Expr1 ::= 'begin' Block 
+                 {'rescue' [Pattern [Guard]] semi Block }
+                 ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
+Rescue_Expr2 ::= '{' Block '}' 
+                 {'rescue' [Pattern [Guard]] '{' Block '}'}
+                 ['ensure' '{' Block_Stat {semi Block_Stat} '}']
+Fun_Stats    ::= Block
+                 {'rescue' [Pattern [Guard]] semi Block }
+                 ['ensure' semi Block_Stat {semi Block_Stat}]
+\end{lstlisting}
+
+
+
+
+
+
 \section{Anonymous Functions}
 \label{sec:anonymous-functions}
 
-\subsection{Local Variable Closure}
-\label{sec:local-variable-closure}
+
+
+
+
+
 
 \subsection{Method Values}
 

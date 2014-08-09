@@ -381,7 +381,6 @@ Def           ::= 'def' Fun_Def 'end' ['def']
                 | 'function' Fun_Def 'end' ['function']
                 | 'function' Fun_Alt_Def
 Fun_Def       ::= Fun_Sig [':' Return_Type] [Fun_Dec] [semi Fun_Stats]
-Fun_Stats     ::= Fun_Stat {semi Fun_Stat}
 Fun_Alt_Def   ::= Fun_Sig [':' Return_Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Expr [semi] 'begin'
 Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
