@@ -164,10 +164,15 @@ Use expressions are similar to type cast expressions. Their intention is to rebi
 \label{sec:function-applications}
 
 \syntax\begin{lstlisting}
-Simple_Expr1   ::= Simple_Expr1 Argument_Exprs [Block_Expr]
-Argument_Exprs ::= '(' [Arg_Exprs] ')'
-                 | '(' [Arg_Exprs ','] '*' Expr ')'
+Simple_Expr1   ::= Simple_Expr1 Argument_Exprs 
+Argument_Exprs ::= '(' [Arg_Exprs] ')' [Block_Expr]
+                 | '(' [Arg_Exprs ','] '*' Expr ')' [Block_Expr]
                  | '(' [Arg_Exprs ','] ['*' Expr ','] '**' Expr ')'
+                   [Block_Expr]
+                 | Arg_Exprs [Block_Expr2]
+                 | [Arg_Exprs ','] '*' Expr [Block_Expr2]
+                 | [Arg_Exprs ','] ['*' Expr ','] '**' Expr
+                   [Block_Expr2]
                  | Block_Expr
 Arg_Exprs      ::= Arg_Expr {',' Arg_Expr}
 Arg_Expr       ::= Expr
