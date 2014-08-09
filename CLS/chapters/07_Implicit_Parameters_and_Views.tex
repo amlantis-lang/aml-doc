@@ -5,8 +5,22 @@
 
 \section{The Implicit Modifier}
 
+\syntax\begin{lstlisting}
+Local_Modifier ::= 'implicit'
+Param_Clauses  ::= {Param_Clause} '(' 'implicit' Params ')'
+\end{lstlisting}
+
 \section{Implicit Parameters}
 \label{sec:implicit-parameters}
 
+An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a method marks the parameters $p_1 \commadots p_n$ as implicit. 
+
 \section{Views}
+
+\section{View Bounds}
+
+\syntax\begin{lstlisting}
+Type_Param ::= (tp_id | '_') [Type_Param_Clause]               ['>:' Type] ['<:' Type] {'<%' Type}
+\end{lstlisting}
+
 

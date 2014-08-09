@@ -337,7 +337,7 @@ Type_Param_Clause  ::= ':[' Variant_Type_Param
                        {',' Variant_Type_Param} ']'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
 Type_Param         ::= (tp_id | '_') [Type_Param_Clause]
-                       ['>:' Type] ['<:' Type] [':' Type]
+                       ['>:' Type] ['<:' Type]
 \end{lstlisting}
 
 Type parameters appear in type definitions, class definitions and function definitions. 
