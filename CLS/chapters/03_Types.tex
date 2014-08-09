@@ -69,6 +69,7 @@ path_id          ::= constant_id
                    | variable_id
                    | function_id
                    | op_id
+                   | path_id [Type_Args] [UoM_Args]
 Path             ::= Stable_Id
                    | [path_id '.'] ('this' | 'self')
                    | 'self' '[' 'cloned' ']'

@@ -336,7 +336,9 @@ Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Expr
                      {'elsif' Expr ('then' | semi) Expr}
                      ['else' Expr] 'end' ['unless']
 Cond_Mod_Expr    ::= Expr Cond_Modifier
-Cond_Modifier    ::= ('if' | 'unless') Infix_Expr
+Cond_Modifier    ::= Cond_Modifier1
+                     ['else' Infix_Expr]
+Cond_Modifier1   ::= ('if' | 'unless') Infix_Expr 
 \end{lstlisting}
 
 
@@ -369,9 +371,9 @@ Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
 Loop_Ctrl_Expr ::= Break_Expr
                  | Skip_Expr
                  | Next_Expr
-Break_Expr     ::= 'break' [label_id] [Cond_Modifier]
-Skip_Expr      ::= 'skip' [integer_literal] [Cond_Modifier]
-Next_Expr      ::= 'next' [label_id] [Cond_Modifier]
+Break_Expr     ::= 'break' [label_id] [Cond_Modifier1]
+Skip_Expr      ::= 'skip' [integer_literal] [Cond_Modifier1]
+Next_Expr      ::= 'next' [label_id] [Cond_Modifier1]
 \end{lstlisting}
 
 
@@ -416,7 +418,7 @@ Enumerator     ::= Generator
                  | Enumerator_Guard
                  | Pattern1 ':=' Expr
 Generator      ::= Pattern1 '<-' Expr [Guard]
-Guard          ::= Cond_Modifier
+Guard          ::= Cond_Modifier1
 \end{lstlisting}
 
 
@@ -439,6 +441,34 @@ Collection comprehensions extend the syntax of collection ``literals''\footnote{
 
 
 
+\section{Pattern Matching \& Case Expressions}
+
+\syntax\begin{lstlisting}
+Match_Expr     ::= Pat_Match_Expr | Case_Expr
+Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
+Match_Body     ::= semi When_Clauses 'end' ['match']
+                 | '{' When_Clauses '}'
+When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
+                   [['next'] 'else' Block]
+When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Block
+Case_Expr      ::= 'case' Simple_Expr1 Case_Body
+Case_Body      ::= semi Case_Clauses 'end' ['case']
+                 | '{' Case_Clauses '}'
+Case_Clauses   ::= Case_Clause {['next'] semi Case_Clause}
+                   [['next'] 'else' Block]
+Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Block
+Case_Patterns  ::= Case_Pattern {',' Case_Pattern}
+Case_Pattern   ::= Stable_Id
+                 | literal [('..' | '...') literal]
+                 | variable_id
+                 | Infix_Expr
+\end{lstlisting}
+
+
+
+
+
+
 \section{Unconditional Expressions}
 
 Unconditional expressions change the flow of programs without a condition. 
@@ -455,10 +485,10 @@ Result_Expr ::= Anon_Params '->' Block
 \end{lstlisting}
 
 \paragraph{Explicit Return Expressions}
-
+Explicit return expressions unconditionally change the flow of programs by making the enclosing function definition return a value early (or return no value). 
 
 \syntax\begin{lstlisting}
-Return_Expr ::= ['memoize'] 'return' [Expr] [Cond_Modifier]
+Return_Expr ::= ['memoize'] 'return' [Expr] [Cond_Modifier1]
 \end{lstlisting}
 
 
@@ -483,7 +513,7 @@ Return_Expr ::= ['memoize'] 'return' Var_Def 'do'
 
 \syntax\begin{lstlisting}
 Jump_Expr  ::= Goto_Expr | Label_Dcl
-Goto_Expr  ::= 'goto' label_name [Cond_Modifier]
+Goto_Expr  ::= 'goto' label_name [Cond_Modifier1]
 Label_Dcl  ::= 'label' label_name 
              | '<<' label_name '>>'
 label_name ::= variable_id | constant_id
@@ -499,14 +529,6 @@ Unlimited continuations are defined by the whole program, as the unlimited conti
 
 \paragraph{\em Delimited continuations}
 Delimited continuations are defined with \code{reset} and \code{shift} functions. Reset and shift expressions are actually not language constructs, but rather regular functions that have a native implementation capable of unconditionally changing the standard control flow of a program. Moreover, the first \code{shift} expression (which captures the delimited continuation) controls the return value of the \code{reset} expression, which overrides the implicit return expression (\sref{sec:return-expressions}).
-
-
-
-
-
-
-
-
 
 
 
