@@ -4,6 +4,11 @@
 \chapter{Pattern Matching}
 \label{sec:pattern-matching}
 
+
+
+
+
+
 \section{Patterns}
 \label{sec:patterns}
 
@@ -14,25 +19,119 @@ Pattern1       ::= variable_id ':' Type_Pat
                  | Pattern2
 Pattern2       ::= variable_id ['@' Simple_Pattern]
                  | Simple_Pattern
-Simple_Pattern ::= '_'
-                 | variable_id
+Simple_Pattern ::= ['*'] '_'
+                 | ['*'] variable_id
                  | literal
                  | Stable_Id
                  | Stable_Id '(' [Patterns] ')' 
                  | '(' [Patterns] ')'
+                 | Pattern '&' Pattern
+                 | Pattern '~>' Pattern
+                 | Pattern '<~' Pattern
+                 | Pattern ('..' | '...') Pattern
 Patterns       ::= Pattern {',' Pattern}
 \end{lstlisting}
 
+
+
+
+
+
 \subsection{Variable Patterns}
+\label{sec:variable-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= '_'
+                 | variable_id
+\end{lstlisting}
+
+A variable pattern $x$ is a simple identifier which starts with a lower case letter. It matches any value and binds the variable name to that value. The type of $x$ is the expected type of the pattern as given from the outside. A special case is the wild-card pattern ``\lstinline!_!'', which is treated as if it was a fresh variable on each occurence, and which does not bind itself to the value, i.e., it is alone equivalent to the \code{else} clause of \code{When_Clauses}. 
+
+
+
+
+
 
 \subsection{Typed Patterns}
+\label{sec:typed-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= '_' ':' Type_Pat
+                 | variable_id ':' Type_Pat
+Type_Pat       ::= Type
+\end{lstlisting}
+
+A typed pattern ~\lstinline!$x$: $T$!~ consists of a pattern variable $x$ and a type pattern $T$. The type of $x$ is the type $T$, where each type variable and wildcard is replaced by a fresh, unknown type. This pattern matches any value matched by the type pattern $T$ (\sref{sec:type-patterns}), and it binds the variable name to that value (unless the variable name is ``\lstinline!_!''). 
+
+
+
+
+
 
 \subsection{Pattern Binders}
+\label{sec:pattern-binders}
+
+\syntax\begin{lstlisting}
+Pattern2 ::= variable_id '@' Simple_Pattern
+\end{lstlisting}
+
+A pattern binder ~\lstinline!$x$ @ $p$!~ consists of a pattern variable $x$ and a pattern $p$. The type of the variable $x$ is the type $T$ resulting from the pattern $p$. This pattern matches any value $v$ matched by the pattern $p$, provided the type of $v$ is also an instance of $T$, and it binds the variable name to that value. 
+
+\example In the following example, \code{person} binds to the whole \code{Person} object. 
+\begin{lstlisting}
+def f (someone: Person) := match someone
+  when person @ Person('John Galt', _, _) then $\ldots$
+end match
+\end{lstlisting}
+
+
+
+
+
+
 
 \subsection{Literal Patterns}
+\label{sec:literal-patterns}
 
-\subsection{Constant Patterns}
-\label{sec:constant-patterns}
+\syntax\begin{lstlisting}
+Simple_Pattern ::= literal
+\end{lstlisting}
+
+A literal pattern $L$ matches any value that is equal (in terms of ~\lstinline!=!) to the literal $L$. The type of $L$ must conform to the expected type of the pattern. Literal kinds that are considered legal with this pattern are: string literals, number literals, boolean literals and the \code{nil} value. 
+
+
+
+
+
+\subsection{Stable Identifier Patterns}
+\label{sec:stable-identifier-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Stable_Id
+\end{lstlisting}
+
+A stable identifier pattern is a stable identifier $r$ (\sref{sec:type-paths}). The type of $r$ must conform to the expected type of the pattern. The pattern matches any value $v$, such that ~\lstinline!$r$ = $v$!.
+
+To resolve the syntactic overlap with a variable pattern (\sref{sec:variable-patterns}), a stable identifier pattern may not be a simple name starting with a lower case letter. However, it is possible to enclose such a variable or method name in backquotes, then it is treated as a stable identifier pattern. 
+
+\example Consider the following function definition:
+\begin{lstlisting}
+def f (x: Integer, y: Integer) := match x
+  when y then $\ldots$
+end match
+\end{lstlisting}
+Here, \code{y} is a variable pattern, which matches any value, namely here it would bind simply to \code{x}. If we wanted to turn the pattern into a stable identifier pattern, this can be achieved as follows:
+\begin{lstlisting}
+def f (x: Integer, y: Integer) := match x
+  when `y` then $\ldots$
+end match
+\end{lstlisting}
+Now, the pattern matches the \code{y} parameter of the enclosing function \code{f}. That is, the match succeeds only if the \code{x} argument and the \code{y} argument of \code{f} are equal. 
+
+
+
+
+
 
 \subsection{Constructor Patterns}
 \label{sec:constructor-patterns}
@@ -49,6 +148,7 @@ Patterns       ::= Pattern {',' Pattern}
 \subsection{Regular Expression Patterns}
 
 \section{Type Patterns}
+\label{sec:type-patterns}
 
 \section{Pattern Matching Expressions}
 
