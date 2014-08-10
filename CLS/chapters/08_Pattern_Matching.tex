@@ -136,19 +136,160 @@ Now, the pattern matches the \code{y} parameter of the enclosing function \code{
 \subsection{Constructor Patterns}
 \label{sec:constructor-patterns}
 
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Stable_Id '(' [Patterns] ')'
+\end{lstlisting}
+
+A constructor pattern is of the form ~\lstinline!$c$($p_1 \commadots p_n$)!, for $n \geq 0$. It consists of a stable identifier $c$, followed by element patterns $p_1 \commadots p_n$. The constructor $c$ is a simple or qualified name which denotes a case class (\sref{sec:case-classes}). If the case class is monomorphic, then it must conform to the expected type of the pattern, and the formal parameter types of $c$'s primary constructor (\sref{sec:constructor-destructor-def}) are taken as the expected types of the element patterns $p_1 \commadots p_n$. If the case class is polymorphic, then its type parameters are instantiated so that the instantiation of $c$ conforms to the expected type of the pattern, unless the type arguments are already given. These types of the formal parameter types of $c$'s primary constructor are then taken as the expected types of the component patterns $p_1 \commadots p_n$. The pattern matches all objects created from constructor invocations ~\lstinline!$c$($p_1 \commadots p_n$)!, where each element pattern $p_i$ matches the corresponding value $v_i$. Any extra parameter sections of $c$'s primary constructor do not affect this behavior. 
+
+A special case arises when $c$'s formal parameter types contain a repeated parameter. This is further discussed in (\sref{sec:pattern-sequences}).
+
+
+
+
+
+
 \subsection{Tuple Patterns}
+\label{sec:tuple-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= '(' [Patterns] ')'
+\end{lstlisting}
+
+A tuple pattern ~\lstinline!($p_1 \commadots p_n$)!~ is an alias for the constructor pattern ~\lstinline!Tuple_$n$($p_1 \commadots p_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. 
+
+
+
+
 
 \subsection{Extractor Patterns}
 \label{sec:extractor-patterns}
 
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Stable_Id '(' [Patterns] ')'
+\end{lstlisting}
+
+An extractor pattern ~\lstinline!$x$($p_1 \commadots p_n$)!, where $n \geq 0$, is of the same syntactic form as a constructor pattern. However, instead of a case class, the stable identifier $x$ denotes an object which has a member method named \code{unapply} or \code{unapply_sequence} that matches the pattern. 
+
+An \code{unapply} method in an object $x$ {\em matches} the pattern ~\lstinline!$x$($p_1 \commadots p_n$)!~ if it takes exactly one argument and one of the following applies: 
+\begin{itemize}
+\item[]
+$n = 0$ and \code{unapply}'s result type is \code{Boolean}. In this case the extractor pattern matches all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns \code{yes}. 
+\item[]
+$n = 1$ and \code{unapply}'s result type is ~\lstinline!Option[$T$]!, for some type $T$. In this case, the only argument pattern $p_1$ is typed in turn with expected type $T$. The extractor pattern matches then all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns a value of form ~\lstinline!Some($v_1$)!, and $p_1$ matches $v_1$. 
+\item[]
+$n > 1$ and \code{unapply}'s result type is ~\lstinline!Option[($T_1 \commadots T_n$)]!, for some types $T_1 \commadots T_n$. In this case, the argument patterns $p_1 \commadots p_n$ are typed in turn with expected types $T_1 \commadots T_n$. The extractor pattern matches then all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns a value of form ~\lstinline!Some(($v_1 \commadots v_n$))!, and each pattern $p_i$ matches the corresponding value $v_i$.
+\end{itemize}
+
+An \code{unapply_sequence} method in an object $x$ matches the pattern ~\lstinline!$x$($p_1 \commadots p_n$)!, if it takes exactly one argument and its result type is of the form ~\lstinline!Option[$S$]!, where $S$ is a subtype of ~\lstinline!Sequence[$T$]!~ for some element type $T$. This case is further discussed in (\sref{sec:pattern-sequences}).
+
+
+
+
+
 \subsection{Pattern Sequences}
+\label{sec:pattern-sequences}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Stable_Id '(' [Patterns ','] 
+                   '*' (variable_id | '_')
+                   [',' Patterns] ')'
+\end{lstlisting}
+
+A pattern sequence $p_1 \commadots p_n$ appears in two contexts. First, in a constructor pattern ~\lstinline!$c$($q_1 \commadots q_a, p_1 \commadots p_n, r_1 \commadots r_b$)!, where $c$ is a case class, which has $a+1+b$ primary constructor parameters, with a repeated parameter (\sref{sec:repeated-parameters}) of type ~\lstinline!*$S$! in the middle. Second, in an extractor pattern ~\lstinline!$x$($p_1 \commadots p_n$)!, if the extractor object $x$ has an \code{unapply_sequence} method with a result type conforming to ~\lstinline!Sequence[$T$]!, but does not have an \code{unapply} method that matches $p_1 \commadots p_n$. The expected type for the pattern sequence is in each case the type $S$. 
+
+% TBD: elaborate on how the element patterns match
+
+
+
+
+
+
+\subsection{Conjunction Patterns}
+\label{sec:conjunction-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Pattern '&' Pattern
+\end{lstlisting}
+
+A conjunction pattern ({\em {\normalfont ``and''} pattern}) matches only if both patterns match. Moreover, only the first pattern in a sequence of conjunction patterns may bind variable names, but variables from the other patterns have their scope extended to the following patterns. This behavior is unlike in pattern alternatives, which aren't allowed to bind variable names at all, due to the fact that each alternative may match a completely different structure, whereas a conjunction pattern matches on the same structure. 
+
+
+
+
+
+\subsection{List Patterns}
+\label{sec:list-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Pattern '~>' Pattern
+                 | Pattern '<~' Pattern
+\end{lstlisting}
+
+A list pattern is a pattern specialized to match elements of list instances. A list pattern of the form ~\lstinline!$p_1$ ~> $p_2$!~ matches a list, where $p_1$ matches the head element of the list and $p_2$ matches the remainder of the list, ending with the tail element. A list pattern of the form ~\lstinline!$p_1$ <~ $p_2$!~ matches a list, where $p_1$ matches the tail element of the list and $p_2$ matches the remained of the list, starting with the head element. If the list has one element, then the matched remainder is \code{nil}. 
+
+
+
+
+
+\subsection{Range Patterns}
+\label{sec:range-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Pattern ('..' | '...') Pattern
+\end{lstlisting}
+
+A range pattern is a pattern specialized to match scalar values with ordering.
+
+
+
+
+
 
 \subsection{Pattern Alternatives}
+\label{sec:pattern-alternatives}
+
+\syntax\begin{lstlisting}
+Pattern ::= Pattern {'|' Pattern}
+\end{lstlisting}
+
+A pattern alternative ~\lstinline!$p_1$ | $\ldots$ | $p_n$!, where $n \geq 2$, consists of a number of alternative patterns $p_i$. All alternative patterns are type checked with the expected type of the pattern. They may not bind variable names other than wildcards (which are discarded). The alternative pattern matches a value $v$ if at least one of its alternatives matches $v$. Consequently, if a first such match is successful, the remaining patterns are not tested.
+
+{\em Non-normatively:} Usually, each pattern alternative is a literal pattern, and therefore binding a variable name makes no sense, since the value that the pattern matching expression matches against is the already bound variable. Still, if needed, the pattern alternatives may be used together with a pattern binder (\sref{sec:pattern-binders}), which can be useful when the structure that is being matched contains union types. 
+
+
+
+
 
 \subsection{Regular Expression Patterns}
+\label{sec:regexp-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= regexp_literal
+\end{lstlisting}
+
+A regular expression pattern $p$ ({\em regexp pattern}) is a variant of literal pattern, designed to match \code{String_Like} values. Literally, the pattern $p $ matches a value $v$, if $v$ is of a type that conforms to \code{String_Like} and its contents match the regular expression. Moreover, sub-patterns bind to variable names of a name of the form ~\lstinline!match_$n$!, where $n$ is either the position of the sub-pattern (unless the sub-pattern is explicitly not captured), or the name of a named sub-pattern. 
+
+Regular expression patterns are not designed to match against algebraic data structures. 
+
+
+
+
+
 
 \section{Type Patterns}
 \label{sec:type-patterns}
+
+\syntax\begin{lstlisting}
+Type_Pat ::= Type
+\end{lstlisting}
+
+
+
+
+
+
+
 
 \section{Pattern Matching Expressions}
 

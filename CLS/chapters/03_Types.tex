@@ -170,38 +170,38 @@ A qualified type designator has the form \lstinline@$p$.$t$@, where $p$ is a pat
 
 \syntax\begin{lstlisting}
 Simple_Type ::= Simple_Type [Type_Args] [UoM_Args]
-Type_Args   ::= ':[' Types ']'
+Type_Args   ::= '[' Types ']'
 Types       ::= Type {',' Type}
 UoM_Args    ::= '[<' uom_expr '>]'
 \end{lstlisting}
 
-A parameterized type\footnote{The `\lstinline@:[@' and `\lstinline@]@' token pairs were selected after many considerations. The original idea was to use the same pair as Java or C\#: `\lstinline@<@' and `\lstinline@>@', but this has the drawback of injecting an exception into the parser. Then Scala's `\lstinline@[@' and `\lstinline@]@' were considered, but they kind of collide with an operator that uses the same pair and therefore expressions could become ambiguous. Finally an idea emerged to use `\lstinline@:[@' and `\lstinline@]@', since the `\lstinline@:@' in it hints that it is related to the type system, and `\lstinline@[@' and `\lstinline@]@' lack the drawbacks of `\lstinline@<@' and `\lstinline@>@' (collision with comparison operators).} $T:[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
+A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
 
-Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline[mathescape=false]!$A <: Comparable:[$A]!~ is substituted into ~\lstinline!$C$ <: Comparable:[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfil the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
+Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline[mathescape=false]!$A <: Comparable[$A]!~ is substituted into ~\lstinline!$C$ <: Comparable[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfil the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
 
 \example
 \label{example:parameterized-types}
 Given the generic type definitions: 
 
 \begin{lstlisting}[escapechar=@]
-class Tree_Map:[@\$@A <: Comparable:[@\$@A], @\$@B] $\ldots$ end
-class List:[@\$@A] $\ldots$ end
-class I; implements Comparable:[I]; $\ldots$ end
+class Tree_Map[@\$@A <: Comparable[@\$@A], @\$@B] $\ldots$ end
+class List[@\$@A] $\ldots$ end
+class I; implements Comparable[I]; $\ldots$ end
 
-class F:[@\$@M:[_], @\$@X] $\ldots$ end
-class S:[@\$@K <: String] $\ldots$ end
-class G:[@\$@M:[@\$@Z <: @\$@I], @\$@I] $\ldots$ end
+class F[@\$@M[_], @\$@X] $\ldots$ end
+class S[@\$@K <: String] $\ldots$ end
+class G[@\$@M[@\$@Z <: @\$@I], @\$@I] $\ldots$ end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
 
 \begin{lstlisting}
-Tree_Map:[I, String]
-List:[I]
-List:[List:[Boolean]]
+Tree_Map[I, String]
+List[I]
+List[List[Boolean]]
 
-F:[List, Number]
-G:[S, String]
+F[List, Number]
+G[S, String]
 \end{lstlisting}
 
 \example
@@ -210,14 +210,14 @@ G:[S, String]
 Given the type definitions of the previous example, the following types are malformed: 
 
 \begin{lstlisting}
-Tree_Map:[I]               // wrong number of parameters
-Tree_Map:[List:[I], Number] // type parameter List not within bound
+Tree_Map[I]               // wrong number of parameters
+Tree_Map[List[I], Number] // type parameter List not within bound
 
-F:[Number, Boolean]        // Number is not a type constructor
-F:[Tree_Map, Number]       // Tree_Map takes two parameters, 
+F[Number, Boolean]        // Number is not a type constructor
+F[Tree_Map, Number]       // Tree_Map takes two parameters, 
                           //   F expects a type constructor taking one
 
-G:[S, Number]              // type S constrains its parameter to
+G[S, Number]              // type S constrains its parameter to
                           //   conform to String, 
                           // G expects type constructor with a parameter
                           //   that conforms to Number
@@ -234,7 +234,7 @@ G:[S, Number]              // type S constrains its parameter to
 Simple_Type ::= '(' Types ')'
 \end{lstlisting}
 
-A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$:[$T_1 \commadots T_n$]@, where $n \geq 2$. 
+A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
 
 Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods \lstinline@[1]$ \commadots $[$n$]@ (using an ``offset'' that is outside of the tuple's size results in a method-not-found error, not offset-out-of-bounds -- tuple classes do not implement the operator \lstinline@[i]@ for arbitrary $i$). 
 
@@ -308,10 +308,10 @@ The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of functio
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
 
-Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$:[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Coral library for any $n \ge 0$:
+Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Coral library for any $n \ge 0$:
 
 \begin{lstlisting}[escapechar=`]
-protocol Function_$n$:[-`\$`$T_1$ $\commadots$ -`\$`$T_n$, +`\$`$R$]
+protocol Function_$n$[-`\$`$T_1$ $\commadots$ -`\$`$T_n$, +`\$`$R$]
   message apply ($x_1$ : `\$`$T_1$ $\commadots$ $x_n$ : `\$`$T_n$): `\$`$R$
   $\ldots$
 end protocol
@@ -353,7 +353,7 @@ Existential_Dcl     ::= 'type' Type_Dcl
                       | 'var' Var_Dcl
 \end{lstlisting}
 
-An existential type has the form \lstinline@$T$ for-some {$Q$}@, where $Q$ is a sequence of type declarations. Let \lstinline@$t_1$:[$tps_1$] >: $L_1$ <: $U_1$ $\commadots$ $t_n$:[$tps_n$] >: $L_n$ <: $U_n$@ be the types declared in $Q$. 
+An existential type has the form \lstinline@$T$ for-some {$Q$}@, where $Q$ is a sequence of type declarations. Let \lstinline@$t_1$[$tps_1$] >: $L_1$ <: $U_1$ $\commadots$ $t_n$[$tps_n$] >: $L_n$ <: $U_n$@ be the types declared in $Q$. 
 
 A {\em type instance} of \lstinline@$T$ for-some {$Q$}@ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, \lstinline@$L_i$ <: $t_i$ <: $U_i$@. The set of values denoted by the existential type \lstinline@$T$ for-some {$Q$}@ is the union of the set of values of all its type instances. 
 
@@ -461,19 +461,19 @@ The difference between the ``\code{g}'' and ``\code{h}'' functions is that using
 \subsection{Polymorphic Method Types}
 \label{sec:polymorphic-method-types}
 
-A polymorphic method type is the same as a regular method type, but enhanced with a type parameters section. It is denoted internally as \lstinline@:[$tps$]$ \mapsto T$@, where \lstinline@:[$tps$]@ is a type parameter section \lstinline@:[$a_1$ >: $L_1$ <: $U_1$ $\commadots$ $a_n$ >: $L_n$ <: $U_n$]@ for some $n \geq 0$ and $T$ is a (value or method) type. This type represents (only\footnote{Not anonymous.}) named methods that take type arguments $S_1 \commadots S_n$, for which the lower bounds $L_1 \commadots L_n$ conform (\sref{sec:conformance}) to the type arguments and the type arguments conform and the upper bounds $U_1 \commadots U_n$ and that yield results of type $T$. No explicit lower bound implies \code{Nothing} to be the corresponding lower bound, no explicit upper bound implies \code{Object} to be the corresponding upper bound. As usual, lower bound must conform to the corresponding upper bound. 
+A polymorphic method type is the same as a regular method type, but enhanced with a type parameters section. It is denoted internally as \lstinline@[$tps$]$ \mapsto T$@, where \lstinline@[$tps$]@ is a type parameter section \lstinline@[$a_1$ >: $L_1$ <: $U_1$ $\commadots$ $a_n$ >: $L_n$ <: $U_n$]@ for some $n \geq 0$ and $T$ is a (value or method) type. This type represents (only\footnote{Not anonymous.}) named methods that take type arguments $S_1 \commadots S_n$, for which the lower bounds $L_1 \commadots L_n$ conform (\sref{sec:conformance}) to the type arguments and the type arguments conform and the upper bounds $U_1 \commadots U_n$ and that yield results of type $T$. No explicit lower bound implies \code{Nothing} to be the corresponding lower bound, no explicit upper bound implies \code{Object} to be the corresponding upper bound. As usual, lower bound must conform to the corresponding upper bound. 
 
 \example The declarations
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-def empty:[@\$@A]: List:[@\$@A]
-def union:[@\$@A <: Comparable:[@\$@A]] (x : Set:[@\$@A], 
-         xs : Set:[@\$@A]): Set:[@\$@A]
+def empty[@\$@A]: List[@\$@A]
+def union[@\$@A <: Comparable[@\$@A]] (x : Set[@\$@A], 
+         xs : Set[@\$@A]): Set[@\$@A]
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-empty : :[@\$@A >: Nothing <: Object] () $\mapsto$ List:[@\$@A]
-union : :[@\$@A >: Nothing <: Comparable:[@\$@A]] (Set:[@\$@A], 
-        Set:[@\$@A]) $\mapsto$ Set:[@\$@A]
+empty : [@\$@A >: Nothing <: Object] () $\mapsto$ List[@\$@A]
+union : [@\$@A >: Nothing <: Comparable[@\$@A]] (Set[@\$@A], 
+        Set[@\$@A]) $\mapsto$ Set[@\$@A]
 \end{lstlisting}
 
 
@@ -484,7 +484,7 @@ union : :[@\$@A >: Nothing <: Comparable:[@\$@A]] (Set:[@\$@A],
 \subsection{Type Constructors}
 \label{sec:type-constructors}
 
-A type constructor is in turn represented internally much like a polymorphic method type. \lstinline@:[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto T$@ represents a type that is expected by a type constructor parameter. The difference is that the represented internal entity is not a method, but a type, creating higher-kinded types. 
+A type constructor is in turn represented internally much like a polymorphic method type. \lstinline@[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto T$@ represents a type that is expected by a type constructor parameter. The difference is that the represented internal entity is not a method, but a type, creating higher-kinded types. 
 
 
 

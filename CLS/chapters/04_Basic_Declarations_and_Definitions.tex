@@ -250,7 +250,7 @@ Properties defined with only \code{get} are stored in immutable instance variabl
 Properties defined with \code{set}\footnote{It is also possible to declare/define properties that are \code{set}-only. That makes them {\em write-only}, as opposed to {\em read-only} properties with \code{get}-only.} are stored in mutable instance variables (\sref{sec:variable-dcl-def}). 
 
 \item
-Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference:[$T$]@. 
+Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@. 
 
 \end{enumerate}
 
@@ -279,7 +279,7 @@ Type_Def ::= constant_id [Type_Param_Clause] [Dep_Params]
              [UoM_Params] ':=' Type
 \end{lstlisting}
 
-A {\em type declaration} \lstinline!type $t$:[$\tps$]@[$\dps$][<$\uomps$>] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@:[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. Omitting indexing parameter clause \lstinline!@[$\dps$]! or units of measure parameter clause \lstinline@[<$\uomps$>]@ does not affect whether $t$ abstracts over a first-order type, since these parameters only restrict subsets of the type $t$, instead of constructing new types. 
+A {\em type declaration} \lstinline!type $t$[$\tps$]@[$\dps$][<$\uomps$>] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. Omitting indexing parameter clause \lstinline!@[$\dps$]! or units of measure parameter clause \lstinline@[<$\uomps$>]@ does not affect whether $t$ abstracts over a first-order type, since these parameters only restrict subsets of the type $t$, instead of constructing new types. 
 
 If a type declaration appears as a member declaration of a type, implementations of the type may implement $t$ with any type $T$, for which $L \conforms T \conforms U$. It is an error if $L$ does not conform to $U$. Either or both bounds may be omitted. If the lower bound $L$ is omitted, the bottom type \code{Nothing} is implied. If the upper bound $U$ is omitted, the top type \code{Object} is implied. 
 
@@ -290,35 +290,35 @@ The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!
 To illustrate nested scoping, these declarations are all equivalent: 
 \begin{itemize}
 \item[]
-~\lstinline[mathescape=false]!type t:[:m[$x] <: Bound:[$x], Bound:[$x]] end! 
+~\lstinline[mathescape=false]!type t[:m[$x] <: Bound[$x], Bound[$x]] end! 
 
 \item[]
-~\lstinline[mathescape=false]!type t:[:m[$x] <: Bound:[$x], Bound:[$y]] end!
+~\lstinline[mathescape=false]!type t[:m[$x] <: Bound[$x], Bound[$y]] end!
 
 \item[]
-~\lstinline[mathescape=false]!type t:[:m[$x] <: Bound:[$x], Bound:[_]] end!,
+~\lstinline[mathescape=false]!type t[:m[$x] <: Bound[$x], Bound[_]] end!,
 \end{itemize} 
 as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline[mathescape=false]!$x!~ is unrelated to the first two occurrences, but may confuse the reader. 
 
-A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$:[$\tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $\tps$ itself. 
+A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$[$\tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $\tps$ itself. 
 
 It is an error if a type alias refers recursively to the defined type constructor itself. 
 
 \example The following are legal type declarations and aliases:
 \begin{lstlisting}[escapechar=@]
-type Integer_List := List:[Integer]
-type T <: Comparable:[T]
-type Two:[@\$@A] := Tuple_2:[@\$@A, @\$@A]
-type My_Collection:[+@\$@X] <: Iterable:[@\$@X]
+type Integer_List := List[Integer]
+type T <: Comparable[T]
+type Two[@\$@A] := Tuple_2[@\$@A, @\$@A]
+type My_Collection[+@\$@X] <: Iterable[@\$@X]
 \end{lstlisting}
 The following are illegal:
 \begin{lstlisting}
-type Abs := Comparable:[Abs] // recursive type alias
+type Abs := Comparable[Abs] // recursive type alias
 
 type S <: T  // S, T are bounded by themselves
 type T <: S
 
-type T >: Comparable:[T.That] // can't select from T
+type T >: Comparable[T.That] // can't select from T
                               // T is a type, not a value
 type My_Collection <: Iterable
   // type constructor members must explicitly state
@@ -333,7 +333,7 @@ type My_Collection <: Iterable
 \section{Type Parameters}
 
 \syntax\begin{lstlisting}
-Type_Param_Clause  ::= ':[' Variant_Type_Param 
+Type_Param_Clause  ::= '[' Variant_Type_Param 
                        {',' Variant_Type_Param} ']'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
 Type_Param         ::= (tp_id | '_') [Type_Param_Clause]
@@ -346,10 +346,10 @@ The most general form of a first-order type parameter is ~\lstinline!@{$a_1$}$\l
 
 \example The following are some well-formed type parameter clauses:
 \begin{lstlisting}[escapechar=`]
-:[`\$`S, `\$`T]
-:[@{Specialized} `\$`S, `\$`T]
-:[`\$`Ex <: Raisable]
-:[`\$`A <: Comparable:[`\$`B], `\$`B <: `\$`A]
+[`\$`S, `\$`T]
+[@{Specialized} `\$`S, `\$`T]
+[`\$`Ex <: Raisable]
+[`\$`A <: Comparable[`\$`B], `\$`B <: `\$`A]
 \end{lstlisting}
 
 % TBD! Not complete.
@@ -385,7 +385,7 @@ Fun_Alt_Def   ::= Fun_Sig [':' Return_Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Fun_Dec_Exprs [semi] 'begin'
 Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
 Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
-Fun_Tpc       ::= ':[' Type_Param {',' Type_Param} ']'
+Fun_Tpc       ::= '[' Type_Param {',' Type_Param} ']'
 Function_Path ::= function_id
                 | 'self' '.' function_id
                 | variable_id '.' function_id
@@ -405,7 +405,7 @@ Param_Type    ::= Type | '`\$`' constant_id | '=>' [Type | '_']
 
 A function declaration has the form of \lstinline@def $f$ $psig$: $T$@, where $f$ is the function's name, $psig$ is its parameter signature and $T$ is its return type. 
 
-A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@:[$tps$]@, followed by zero or more value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
+A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$tps$]@, followed by zero or more value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
 
 Multiple parameter clauses render curried functions. 
 
@@ -438,18 +438,18 @@ For every parameter $p_{i,j}$ with a default value expression, a function named
 \begin{lstlisting}[escapechar=`]
 default`\$`$n$
 \end{lstlisting}
-is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@:[$tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
+is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@[$tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
 
 The scope of a formal value parameter name $x$ comprises all subsequent parameter clauses, as well as the method return type and the function body, if they are given.
 
 \example In the method
 \begin{lstlisting}[escapechar=`]
-def compare:[`\$`T](a: `\$`T := 0)(b: `\$`T := a) := (a = b)
+def compare[`\$`T](a: `\$`T := 0)(b: `\$`T := a) := (a = b)
 \end{lstlisting}
 the default expression \code{0} is type-checked with an undefined expected type. When applying \lstinline@compare()@\footnote{Without any explicit arguments.}, the default value \code{0} is inserted and \code{T} is instantiated to \code{Number}. The functions computing the default arguments have the forms\footnote{See, at the moment \lstinline[mathescape=false]!default$2! is called, the parameter \code{a} is already computed and passed as an argument to it.}:
 \begin{lstlisting}[escapechar=`]
-def default`\$`1:[`\$`T]: Number := 0
-def default`\$`2:[`\$`T](a: `\$`T): `\$`T := a
+def default`\$`1[`\$`T]: Number := 0
+def default`\$`2[`\$`T](a: `\$`T): `\$`T := a
 \end{lstlisting}
 
 Parameters may be optionally flagged with \code{var} and \code{val} keywords, modifying their mutability inside the method. Some combinations are disallowed, as explained in the following sections. All parameters are implicitly \code{val}-flagged, unless the parameter kind implies a \code{var} flag, such as an output parameter (\sref{sec:io-parameters}).
@@ -560,7 +560,7 @@ in var *$x$: $T$
 in val *$x$: $T$
 \end{lstlisting}
 
-Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em repeated} parameter inside the method is then a list type \lstinline!List:[$T$]!. Methods with repeated parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). 
+Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em repeated} parameter inside the method is then a list type \lstinline!List[$T$]!. Methods with repeated parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). 
 
 If a repeated parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the list. Repeated parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 
@@ -640,7 +640,7 @@ in val **$x$ : $T$
 
 Named parameters are a way of allowing users of the method to write down arguments in any order, provided that their name is given at function application (\sref{sec:function-applications} \& \sref{sec:named-optional-arguments}). Named parameters may have a default value expression and may be both input and output. Named parameters are disallowed for repeated parameters. Named parameters inside the method is then accessible the same way as a positional parameter. 
 
-Captured named parameters are capturing any other applied named parameters that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). They are declared after the block of named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary:[Symbol, $T$]!. Methods with captured named parameters take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. Captured named parameters are disallowed for repeated parameters, output parameters and by-name parameters. 
+Captured named parameters are capturing any other applied named parameters that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). They are declared after the block of named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary[Symbol, $T$]!. Methods with captured named parameters take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. Captured named parameters are disallowed for repeated parameters, output parameters and by-name parameters. 
 
 If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. Captured named parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 
@@ -681,11 +681,11 @@ Functions that are members of a class $C$ may define parameters without type ann
 
 \example Assume the following definitions:
 \begin{lstlisting}[escapechar=`]
-protocol I:[`\$`A]
+protocol I[`\$`A]
   def f(x: `\$`A)(y: `\$`A): `\$`A
 end
 class C
-  implements I:[Integer]
+  implements I[Integer]
   def f(x)(y) := x + y
 end
 \end{lstlisting}

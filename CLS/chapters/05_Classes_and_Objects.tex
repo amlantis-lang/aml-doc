@@ -73,7 +73,7 @@ Constr ::= Annot_Type {'(' [Exprs] ')'}
          | '(' ')'
 \end{lstlisting}
 
-Constructor invocations define the type, members and initial state of objects created by an instance creation expression, or of parts of an object's definition, which are inherited by a class or object definition. A constructor invocation is a function application ~\lstinline!$c$:[$\targs$]@[$\dargs$][<$\uomargs$>]($\args_1$)$\ldots$($\args_n$)!~, where $c$ is a path to the superclass or an alias for the superclass, $\targs$ is a type argument list, $\dargs$ is an indexing argument list, $\uomargs$ is a units of measure argument list, $\args_1 \commadots \args_n$ are argument lists, and there is a constructor of that class which is applicable to the given arguments. 
+Constructor invocations define the type, members and initial state of objects created by an instance creation expression, or of parts of an object's definition, which are inherited by a class or object definition. A constructor invocation is a function application ~\lstinline!$c$[$\targs$]@[$\dargs$][<$\uomargs$>]($\args_1$)$\ldots$($\args_n$)!~, where $c$ is a path to the superclass or an alias for the superclass, $\targs$ is a type argument list, $\dargs$ is an indexing argument list, $\uomargs$ is a units of measure argument list, $\args_1 \commadots \args_n$ are argument lists, and there is a constructor of that class which is applicable to the given arguments. 
 
 A type argument list can be only given if the class $c$ takes type parameters. An indexing argument list can be only given if the class $c$ takes indexing parameters. A units of measure argument list can be only given if the class $c$ is a class aggregated with units of measure. If no explicit arguments are given, an empty list ~\lstinline!()!~ is implicitly supplied, unless an explicit primary constructor definition is given, calling explicitly a super-constructor -- in that case, the constructor invocation only defines the superclass, and the invocation itself is deferred to the explicit primary constructor. 
 
@@ -98,7 +98,7 @@ In Coral, every class (except for the root class \code{Object}) has a superclass
 
 The superclass hierarchy for metaclasses parallels that for classes, except for the class \code{Object}. The following holds for the class \code{Object}:
 \begin{lstlisting}[deletekeywords={class}]
-Object.class = Class:[Object]
+Object.class = Class[Object]
 Object.superclass = nil
 \end{lstlisting}
 
@@ -135,11 +135,11 @@ Metaclass_Obj    ::= Type | Path | 'self' | variable_id
 \example The following code shows how metaclasses are nested in case of \code{Object} type. Don't try this at home though. 
 \begin{lstlisting}
 class << Object
-  self = Metaclass:[Object]
+  self = Metaclass[Object]
   class << self
-    self = Metaclass:[Metaclass:[Object]]
+    self = Metaclass[Metaclass[Object]]
     class << self
-      self = Metaclass:[Metaclass:[Metaclass:[Object]]]
+      self = Metaclass[Metaclass[Metaclass[Object]]]
     end
   end
 end
@@ -148,9 +148,9 @@ end
 \example The following code shows what \code{self} references when inside of a class definition, but outside of any defined methods. 
 \begin{lstlisting}
 class Object extends ()
-  self = Class:[Object]
+  self = Class[Object]
   class << self
-    self = Metaclass:[Object]
+    self = Metaclass[Object]
   end
 end
 \end{lstlisting}
@@ -387,7 +387,7 @@ $M'$ must not be labeled \lstinline!final!.
 $M$ must not be \lstinline!private!. 
 
 \item 
-If $M$ is labeled \lstinline!private:[$C$]! for some enclosing class or module $C$, then $M'$ must be labeled \lstinline!private:[$C'$]!, where $C'$ equals $C$ or $C$ is contained in $C'$. % TBD: review the last few words
+If $M$ is labeled \lstinline!private[$C$]! for some enclosing class or module $C$, then $M'$ must be labeled \lstinline!private[$C'$]!, where $C'$ equals $C$ or $C$ is contained in $C'$. % TBD: review the last few words
 
 \item 
 If $M$ is labeled \lstinline!protected!, then $M'$ must also be labeled \lstinline!protected!. 
@@ -478,7 +478,7 @@ Local_Modifier   ::= 'implicit'
                    | 'abstract'
 Access_Modifier  ::= 'public'
                    | ('protected' | 'private') [Access_Qualifier]
-Access_Qualifier ::= ':[' (constant_id | 'self') ']'
+Access_Qualifier ::= '[' (constant_id | 'self') ']'
 \end{lstlisting}
 
 Access modifiers may appear in two forms:
@@ -511,7 +511,7 @@ class C
 end class
 \end{lstlisting}
 
-By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} access modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private:[self]!). 
+By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} access modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private[self]!). 
 
 Modifiers affect the accessibility and usage of the identifiers bound by them. If several modifiers are given, their order does not matter, but the same modifier may not occur more than once and combinations of \code{public}, \code{protected} \& \code{private} are not allowed (using them as accessibility flag modifiers overwrites the previous accessibility, not combines them). If a member declaration has a modifier applied to it, then the subsequent member definition has the same modifier already applied to it as well, without the need to explicitly state that. It is an error if the modifier applied to the member definition would contradict the modifier applied to the member declaration. 
 
@@ -522,11 +522,11 @@ The rules governing the validity and meaning of a modifier are as follows:
 \item
 The \code{private} access modifier can be used with any declaration or definition in a class. Such members can be accessed only from within the directly enclosing class, the class object (\sref{sec:object-definitions}) and any member of the directly enclosing class, including inner classes. They are not inherited by subclasses and they may not override definitions in parent classes. 
 
-The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private:[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$ (\sref{sec:object-definitions}). 
+The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$ (\sref{sec:object-definitions}). 
 
-A different form of qualification is \lstinline!private:[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self} and starts with $O$ for some class $O$ enclosing the reference. . Moreover, the restrictions for unqualified \code{private} apply as well. 
+A different form of qualification is \lstinline!private[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self} and starts with $O$ for some class $O$ enclosing the reference. . Moreover, the restrictions for unqualified \code{private} apply as well. 
 
-Members marked \code{private} without any qualifier are called {\em class-private}. A member {\em is private} if it is either class-private or object-private, but not if it is marked \lstinline!private:[$C$]!, where $C$ is an identifier, in the latter case the member is called {\em qualified private}. 
+Members marked \code{private} without any qualifier are called {\em class-private}. A member {\em is private} if it is either class-private or object-private, but not if it is marked \lstinline!private[$C$]!, where $C$ is an identifier, in the latter case the member is called {\em qualified private}. 
 
 Class-private and object-private members must not be \code{abstract}, since there is no way to provide a concrete implementation for them, as private members are not inherited. Moreover, modifiers \code{protected} \& \code{public} can not be applied to them (that would be a contradiction\footnote{E.g., a member can not be public and private at the same time.}), and the modifier \code{override} can not be applied to them as well\footnote{Otherwise, if a private member could override an inherited member, that would mean there is an inherited member that could be overridden, but private members can not override anything: only protected and public members can be overridden. If a member was overriding an inherited member, the parent class would {\em lose access} to it.}. 
 
@@ -538,7 +538,7 @@ The \code{protected} access modifier can be used with any declaration or definit
 \item all class objects of any of those classes
 \end{itemize}
 
-A \code{protected} access modifier can be qualified with an identifier $C$ (e.g. \lstinline!protected:[$C$]!) that must denote a class or module enclosing the definition. Members labeled with such a modifier are {\em also}\footnote{In addition to unqualified \code{protected} access.} accessible respectively from all code inside the module $C$ or from all code inside the class $C$ and its class object $C$ (\sref{sec:object-definitions}). 
+A \code{protected} access modifier can be qualified with an identifier $C$ (e.g. \lstinline!protected[$C$]!) that must denote a class or module enclosing the definition. Members labeled with such a modifier are {\em also}\footnote{In addition to unqualified \code{protected} access.} accessible respectively from all code inside the module $C$ or from all code inside the class $C$ and its class object $C$ (\sref{sec:object-definitions}). 
 
 A protected identifier $x$ can be used as a member name in a selection \lstinline!$r$.$x$! only if one of the following applies: 
 \begin{itemize}
@@ -547,7 +547,7 @@ A protected identifier $x$ can be used as a member name in a selection \lstinlin
 \item $r$'s type conforms to a type-instance of the class which has the access to $x$. 
 \end{itemize}
 
-A different form of qualification is \lstinline!protected:[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
+A different form of qualification is \lstinline!protected[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
 
 \item
 The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Coral is virtual, so Coral has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
@@ -588,11 +588,11 @@ The \code{lazy} local modifier applies to value definitions. A \code{lazy} value
 module Outer_Mod.Inner_Mod
   class Outer
     class Inner
-      private:[self] def e() end def
+      private[self] def e() end def
       private def f() end def
-      private:[Outer] def g() end def
-      private:[Inner_Mod] def h() end def
-      private:[Outer_Mod] def i() end def
+      private[Outer] def g() end def
+      private[Inner_Mod] def h() end def
+      private[Outer_Mod] def i() end def
     end class
   end class
 end module
@@ -611,12 +611,12 @@ A rule for access modifiers in scope of overriding: Any overriding member may be
 \end{itemize}
 The relaxations of access modifiers for overriding members are then available as follows: 
 \begin{itemize}
-\item \lstinline!protected:[self] $\rightarrow$ { protected, protected:[$C$], public }!
-\item \lstinline!protected $\rightarrow$ { protected:[$C$], public }!
-\item \lstinline!protected:[$C$] $\rightarrow$ { protected:[$D$], public }!
+\item \lstinline!protected[self] $\rightarrow$ { protected, protected[$C$], public }!
+\item \lstinline!protected $\rightarrow$ { protected[$C$], public }!
+\item \lstinline!protected[$C$] $\rightarrow$ { protected[$D$], public }!
 
 This is only for the case where $C$ is accessible from within $D$. 
-\item \lstinline!protected:[$C$] $\rightarrow$ { public }!
+\item \lstinline!protected[$C$] $\rightarrow$ { public }!
 \item \lstinline!public $\rightarrow$ { public }!
 
 This is just for the sake of completeness, since change from public to public is not much of a relaxation. 
@@ -653,7 +653,7 @@ A class definition defines the type signature, behavior and initial state of a c
 
 The most general form of a class definition is
 \begin{lstlisting}
-class $c$ :[$\tps$] @[$\dps$] [<$\uomps$>] 
+class $c$ [$\tps$] @[$\dps$] [<$\uomps$>] 
   $\as$ $m$($\ps_1$)$\ldots$($\ps_n$)
   extends $t$
 \end{lstlisting}
@@ -665,7 +665,7 @@ Here,
 $c$ is the name of the class to be defined. 
 
 \item[]
-$\tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline!:[$\tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
+$\tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline![$\tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
 
 \item[]
 $\dps$ is a non-empty list of indexing parameters for dependent types (\sref{sec:dependent-types-decl}). The indexing parameter section \lstinline!@[$\dps$]! may be omitted. A class with an indexing parameter section is called {\em indexed}. Indexing arguments are reified in Coral, i.e. indexing arguments are preserved in runtime. 
@@ -698,12 +698,12 @@ for $(n \geq 0)$, which defines the base classes, behavior and initial state of 
 % TBD: add explicit primary `constructor (_)`
 \end{itemize}
 
-This class definition defines a type ~\lstinline!$c$:[$\tps$]@[$\dps$][<$\uomps$>]!~ and a primary constructor, which, when applied to arguments conforming to types $\ps$, initializes instances of type ~\lstinline!$c$:[$\tps$]@[$\dps$][<$\uomps$>]!~ by evaluating the primary constructor parts defined in the template $t$. 
+This class definition defines a type ~\lstinline!$c$[$\tps$]@[$\dps$][<$\uomps$>]!~ and a primary constructor, which, when applied to arguments conforming to types $\ps$, initializes instances of type ~\lstinline!$c$[$\tps$]@[$\dps$][<$\uomps$>]!~ by evaluating the primary constructor parts defined in the template $t$. 
 
 \example The following example illustrates \code{val} and \code{var} parameters of a class \code{C}: 
 \begin{lstlisting}
-class C (x: Integer, val y: String, var z: List:[String]) end
-val c := C.new(1, "abc", List:[String].new)
+class C (x: Integer, val y: String, var z: List[String]) end
+val c := C.new(1, "abc", List[String].new)
 c.z := c.y ~> c.z
 \end{lstlisting}
 
@@ -903,12 +903,12 @@ The formal parameters are handled differently from regular classes. The formal p
 \item[] Second, a \code{val} prefix is implicitly added to such a parameter, unless the parameter already carries a \code{val} or \code{var} modifier. Hence, an accessor definition for the parameter is generated (\sref{sec:class-definitions}). 
 \end{itemize}
 
-A case class definition of \lstinline!$c$:[$\tps$]@[$\dps$][<$\uomps$>]($\ps_1$)$\ldots$($\ps_n$)! with type parameters $\tps$, indexing parameters $\dps$, aggregated with units of measure $\uomps$ and value parameters $\ps$ implicitly adds some methods to the corresponding class object, making it suitable as an extractor object (\sref{sec:extractor-patterns}), and are defined as follows:\footnote{Notice that indexing parameters are not present. These are used for type definitions only, and are not intended to be used in general expressions like instance creation.} 
+A case class definition of \lstinline!$c$[$\tps$]@[$\dps$][<$\uomps$>]($\ps_1$)$\ldots$($\ps_n$)! with type parameters $\tps$, indexing parameters $\dps$, aggregated with units of measure $\uomps$ and value parameters $\ps$ implicitly adds some methods to the corresponding class object, making it suitable as an extractor object (\sref{sec:extractor-patterns}), and are defined as follows:\footnote{Notice that indexing parameters are not present. These are used for type definitions only, and are not intended to be used in general expressions like instance creation.} 
 \begin{lstlisting}
 object $c$ {
-  def apply:[$\tps$][<$\uomps$>]($\ps_1$)$\ldots$($\ps_n$): $c$:[$\tps$] := 
-      $c$:[$\Ts$][<$\UoMs$>].new($xs_1$)$\ldots$($xs_n$)
-  def unapply:[$\tps$][<$\uomps$>]($x$: $c$:[$\tps$][<$\uomps$>]): Option:[$e$] :=
+  def apply[$\tps$][<$\uomps$>]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
+      $c$[$\Ts$][<$\UoMs$>].new($xs_1$)$\ldots$($xs_n$)
+  def unapply[$\tps$][<$\uomps$>]($x$: $c$[$\tps$][<$\uomps$>]): Option[$e$] :=
       unless x = nil
         Some($x$.$xs_{11} \commadots x$.$xs_{1k}$)
       else
@@ -921,7 +921,7 @@ Here, $\Ts$ stands for the vector of types defined in the type parameter section
 
 If the case class definition contains an empty value parameter list, the \code{unapply} returns a \code{Boolean} instead of an \code{Option} type and is defined as follows:
 \begin{lstlisting}
-def unapply:[$\tps$][<$\uomps$>]($x$: $c$:[$\tps$][<$\uomps$>]): Boolean := x != nil
+def unapply[$\tps$][<$\uomps$>]($x$: $c$[$\tps$][<$\uomps$>]): Boolean := x != nil
 \end{lstlisting}
 
 For each case of a value parameter list of $n$ parameters, the \code{unapply} returns these types: 
@@ -930,22 +930,22 @@ For each case of a value parameter list of $n$ parameters, the \code{unapply} re
 For $n = 0$, ~\lstinline!Boolean!~ is the return type. 
 
 \item
-For $n = 1$, ~\lstinline!Option:[$\Tp_1$]!~ is the return type, where $\Tp_1$ is the type of the only parameter in the first parameter section. 
+For $n = 1$, ~\lstinline!Option[$\Tp_1$]!~ is the return type, where $\Tp_1$ is the type of the only parameter in the first parameter section. 
 
 \item
-For $n \geq 1$, ~\lstinline!Option:[($\Tp_1 \commadots \Tp_n$)]!~ is the return type, where $\Tp_i$ is the type of the $i^{\superth}$ parameter of the first parameter section. Notice that the \code{Option} is parameterized with a tuple type (\sref{sec:tuple-types}). This allows for the \code{apply} method of \code{Some} to accept a tuple of arguments while accepting a single argument only. 
+For $n \geq 1$, ~\lstinline!Option[($\Tp_1 \commadots \Tp_n$)]!~ is the return type, where $\Tp_i$ is the type of the $i^{\superth}$ parameter of the first parameter section. Notice that the \code{Option} is parameterized with a tuple type (\sref{sec:tuple-types}). This allows for the \code{apply} method of \code{Some} to accept a tuple of arguments while accepting a single argument only. 
 \end{itemize}
 
 A method named \code{copy} is implicitly added to every case class, unless the case class already has a matching one, or the class has a repeated parameter. The method is defined as follows:
 \begin{lstlisting}
-def copy :[$\tps$][<$\uomps$>]($\ps'_1$)$\ldots$($\ps'_n$): $c$:[$\tps$][<$\uomps$>] :=
-    $c$:[$\Ts$][<$\UoMs$>].new($xs_1$)$\ldots$($xs_n$)
+def copy [$\tps$][<$\uomps$>]($\ps'_1$)$\ldots$($\ps'_n$): $c$[$\tps$][<$\uomps$>] :=
+    $c$[$\Ts$][<$\UoMs$>].new($xs_1$)$\ldots$($xs_n$)
 \end{lstlisting}
 $\Ts$ stands for the vector of types defined in the type parameter section $\tps$ and $\UoMs$ stands for the vector of units of measure arguments defined in the units of measure parameter section $\uomps$. Each $xs_i$ denotes the parameter names of the parameter section $\ps'_i$.  Each value parameter of the first parameter list $\ps'_1$ has the form ~\lstinline!:$x_{1,j}$ : $T_{1,j}$ := self.$x_{1,j}$!, and the other parameters $\ps'_{i,j}$ of the clone constructor are defined as ~\lstinline!:$x_{1,j}$ : $T_{1,j}$!. Note that these parameters are defined as named parameters (\sref{sec:named-parameters}), and that the parameters of the first value parameter section have default values using \code{self}, which is available, since the copied object is already ``complete''. 
 
 A clone constructor is also implicitly added to every case class, but limited to the first value parameter section. The following definition of the implicitly added clone constructor shares the definition of parameters: 
 \begin{lstlisting}
-clone :[$\tps$][<$\uomps$>]($\ps'_1$): $c$:[$\tps$][<$\uomps$>]
+clone [$\tps$][<$\uomps$>]($\ps'_1$): $c$[$\tps$][<$\uomps$>]
   self[cloned].@$xs_{1,1}$ := $xs_{1,1}$
   $\ldots$
   self[cloned].@$xs_{1,n}$ := $xs_{1,n}$
@@ -992,7 +992,7 @@ If $D$ is not a trait, then its actual supertype is simply its least proper supe
 
 \example The following trait defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The trait also requires the self-type to be \lstinline[mathescape=false]!$T!. 
 \begin{lstlisting}[mathescape=false]
-trait Comparable:[$T <: Comparable:[$T]] {
+trait Comparable[$T <: Comparable[$T]] {
   requires $T
   operator < (that: $T): Boolean end
   operator <=(that: $T): Boolean := self < that || self = that
@@ -1107,23 +1107,23 @@ Interfaces are filtered versions of classes and traits with only declarations an
 Object_Def ::= constant_id (Class_Template | Trait_Template)
 \end{lstlisting}
 
-Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class:[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Coral has one scope for both types and terms. 
+Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Coral has one scope for both types and terms. 
 
 It's most general form is ~\lstinline!object $m$ extends $t$!. Here, $m$ is the name of the object to be defined (or of the class object, which is the same as the related class), and $t$ is a template (\sref{sec:templates}) of one of the following forms:
 
 \paragraph{\em Singleton object form}
-This is a form of objects that are not class objects (not instances of ~\lstinline!Class:[$C$]!). 
+This is a form of objects that are not class objects (not instances of ~\lstinline!Class[$C$]!). 
 \begin{lstlisting}
 $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
 \end{lstlisting}
 
 \paragraph{\em Class object form}
-This is a form of objects that are class objects, therefore instances of ~\lstinline!Class:[$C$]!. 
+This is a form of objects that are class objects, therefore instances of ~\lstinline!Class[$C$]!. 
 \begin{lstlisting}
 $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
 \end{lstlisting}
 
-Every trait applied to a class object does not affect the associated class itself -- here, the class object is the object that inherits features of the included/prepended traits, not the class instances; and the trait is included/prepended in the metaclass of the class object. This also has an implication on self types of traits (\sref{sec:traits}) that are to be included in a class object of class $C$: the self type would have to be ~\lstinline!Class:[$C$]!, not just $C$. 
+Every trait applied to a class object does not affect the associated class itself -- here, the class object is the object that inherits features of the included/prepended traits, not the class instances; and the trait is included/prepended in the metaclass of the class object. This also has an implication on self types of traits (\sref{sec:traits}) that are to be included in a class object of class $C$: the self type would have to be ~\lstinline!Class[$C$]!, not just $C$. 
 
 \subsection{Case Objects}
 \label{sec:case-objects}
