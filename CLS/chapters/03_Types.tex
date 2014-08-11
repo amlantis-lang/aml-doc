@@ -73,6 +73,7 @@ path_id          ::= constant_id
 Path             ::= Stable_Id
                    | [path_id '.'] ('this' | 'self')
                    | 'self' '[' 'cloned' ']'
+                   | Container_Path
 Stable_Id        ::= path_id
                    | Path '.' path_id
                    | [path_id '.'] 'super' [Class_Qualifier] 

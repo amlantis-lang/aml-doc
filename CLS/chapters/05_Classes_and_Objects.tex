@@ -293,8 +293,8 @@ When a trait $M$ itself includes one or more traits $M_1 \commadots M_n$, then t
 
 \example Take the following trait and class definitions, where $S$ is the superclass of the class $C$:
 \begin{lstlisting}
-trait D; end
-trait E; end
+trait D end
+trait E end
 
 trait A extends D with E; end
 trait B extends E with D; end
@@ -492,6 +492,7 @@ Such a modifier appears on a line preceding a member to which the modifier is so
 \example An example of an accessibility flag modifier:
 \begin{lstlisting}
 class C
+begin
   public
     def hello; end
   private
@@ -502,6 +503,7 @@ end class
 \example An example of directly applied modifier:
 \begin{lstlisting}
 class C
+begin
   def hello; end
   def private_hello; end
   def salute; end
