@@ -284,7 +284,26 @@ Regular expression patterns are not designed to match against algebraic data str
 Type_Pat ::= Type
 \end{lstlisting}
 
+Type patterns consist of types, type variables and wildcards. A type pattern $T$ is of one of the following forms: 
+\begin{itemize}
+\item[]
+A reference to a class $C$, ~\lstinline!$p$.$C$!, ~\lstinline!$p$.type!~ or ~\lstinline!$T$#$C$!. This type pattern matches any non-\code{nil} instance of the given class (therefore, it does match the empty tuple ~\lstinline!()!~ with type \code{Unit}). Note that the prefix of the class, if it is given, is irrelevant for determining class instances, unlike in Scala. 
 
+The bottom type \code{Nothing} (with singleton instance \code{nil}) is the only type pattern that matches \code{nil} (only), but its preferable to match against ~\lstinline!Option[$T$]! with implicit conversion of \code{nil} to object \code{None}. 
+
+\item[]
+A singleton type ~\lstinline!$p$.singleton-type!. This type pattern matches only the value denoted by the path $p$ (only the single value denoted by the path $p$, since \code{nil} is not matched). 
+
+\item[]
+A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$]@[$b_1 \ldots b_n$][<$c_1 \ldots c_n$>]!, where the $a_i$ are type variable patterns or wildcards ``\lstinline!_!'', $b_i$ are constraining expressions (\sref{sec:constrained-types}) and $c_i$ are unit of measure kinds. This type pattern matches all values which match $T$ for some arbitrary instantiation of the type variables and wildcards.  
+
+\item[]
+A compound type pattern ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, where each $T_i$ is a type pattern. This type pattern matches all values that are matched by each of the type patterns $T_i$, and in this sense it is equivalent to the pattern ~\lstinline!$T_1$ & $\ldots$ & $T_n$!. 
+\end{itemize}
+
+Types are not subject to any type erasure, so it is basically safe to use any other type as type pattern, unlike in Scala. 
+
+A {\em type variable pattern} is a simple identifier which starts with a lower case letter. 
 
 
 
