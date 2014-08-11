@@ -587,7 +587,9 @@ The \code{lazy} local modifier applies to value definitions. A \code{lazy} value
 \begin{lstlisting}
 module Outer_Mod.Inner_Mod
   class Outer
+  begin
     class Inner
+    begin
       private[self] def e() end def
       private def f() end def
       private[Outer] def g() end def
@@ -750,7 +752,7 @@ class C (val y: String) {
 \paragraph{\em Explicit primary constructor body}
 If a primary constructor should do something more than simply map parameters to instance values, then its explicit body comes in. It may co-exist with explicit primary constructor fields, which are then executed right after a call to the super-constructor (either in implicit position, or an explicit one). 
 \syntax\begin{lstlisting}
-Def         ::= PCtor_Def
+Def             ::= PCtor_Def
 PCtor_Def       ::= 'constructor' PCtor_Fun_Def
 PCtor_Fun_Def   ::= '(' '_' ')' (':=' Constr_Expr | Constr_Block)
 Constr_Expr     ::= Self_Invocation
