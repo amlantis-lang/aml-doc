@@ -295,13 +295,13 @@ The bottom type \code{Nothing} (with singleton instance \code{nil}) is the only 
 A singleton type ~\lstinline!$p$.singleton-type!. This type pattern matches only the value denoted by the path $p$ (only the single value denoted by the path $p$, since \code{nil} is not matched). 
 
 \item[]
-A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$]@[$b_1 \ldots b_n$][<$c_1 \ldots c_n$>]!, where the $a_i$ are type variable patterns or wildcards ``\lstinline!_!'', $b_i$ are constraining expressions (\sref{sec:constrained-types}) and $c_i$ are unit of measure kinds. This type pattern matches all values which match $T$ for some arbitrary instantiation of the type variables and wildcards.  
+A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$][<$t_1 \ldots t_n$>]!, where the $a_i$ are type variable patterns or wildcards ``\lstinline!_!'' and $u_i$ are unit of measure kinds. This type pattern matches all values which match $T$ for some arbitrary instantiation of the type variables and wildcards.  
 
 \item[]
 A compound type pattern ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, where each $T_i$ is a type pattern. This type pattern matches all values that are matched by each of the type patterns $T_i$, and in this sense it is equivalent to the pattern ~\lstinline!$T_1$ & $\ldots$ & $T_n$!. 
 \end{itemize}
 
-Types are not subject to any type erasure, so it is basically safe to use any other type as type pattern, unlike in Scala. 
+Types are not subject to any type erasure, so it is basically safe to use any other type as type pattern (e.g. constrained types -- \sref{sec:constrained-types}), unlike in Scala. 
 
 A {\em type variable pattern} is a simple identifier which starts with a lower case letter. 
 
@@ -337,6 +337,31 @@ consists of a selector expression $e$, a number $n > 0$ of cases and an optional
 \syntax\begin{lstlisting}
 Block_Expr ::= '{' When_Clauses '}'
 \end{lstlisting}
+
+An anonymous function can be defined by a sequence of cases
+\begin{lstlisting}
+{ when $p_1$ then $b_1$ $\ldots$ when $p_k$ then $b_k$ else $b_{k+1}$ }
+\end{lstlisting}
+which appears as an expression without a prior \code{match}.
+
+The expression is taken to be equivalent to the anonymous function:
+\begin{lstlisting}
+($x_1$: $S_1 \commadots x_k$: $S_k$) -> {
+  match ($x_1 \commadots x_k$) {
+    when $p_1$ then $b_1$
+    $\ldots$
+    when $p_k$ then $b_k$
+    else $b_{k+1}$
+  }
+}
+\end{lstlisting}
+
+
+
+
+
+
+
 
 
 
