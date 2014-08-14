@@ -605,7 +605,7 @@ Anon_Params     ::= Bindings {'->' Bindings}
                   | Param_Clause
                   | '(' ['implicit'] variable_id ')'
                   | '(' [Nameless_Param] ')'
-Bindings        ::= '(' Binding {'' Binding} ')'
+Bindings        ::= '(' Binding {',' Binding} ')'
 Binding         ::= (variable_id | '_') [':' Type]
 Nameless_Params ::= Nameless_Param {',' Nameless_Param}
 Nameless_Param  ::= '_' [':' Compound_Type]

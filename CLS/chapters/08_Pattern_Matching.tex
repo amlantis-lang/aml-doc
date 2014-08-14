@@ -312,7 +312,31 @@ A {\em type variable pattern} is a simple identifier which starts with a lower c
 
 \section{Pattern Matching Expressions}
 
+\syntax\begin{lstlisting}
+Match_Expr     ::= Pat_Match_Expr | Case_Expr
+Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
+Match_Body     ::= semi When_Clauses 'end' ['match']
+                 | '{' When_Clauses '}'
+When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
+                   [['next'] 'else' Block]
+When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Block
+\end{lstlisting}
+
+A pattern matching expression 
+\begin{lstlisting}
+match e { when $p_1$ then $b_1$ $\ldots$ when $p_n$ then $b_n$ else $b_{n+1}$ }
+\end{lstlisting}
+consists of a selector expression $e$, a number $n > 0$ of cases and an optional ``default'' case, denoted with \code{else} keyword. Each case consists of a (possibly guarded) pattern $p_i$ and a block $b_i$, or just the block $b_{n+1}$. Each $p_i$ might be complemented by a guard \code{if e} or \code{unless e}, where $e$ is a the guarding expression that is evaluated as boolean. The scope of the pattern variables in $p_i$ comprises the pattern's guard and the corresponding block $b_i$. 
+
+
+
+
+
 \section{Pattern Matching Anonymous Functions}
+
+\syntax\begin{lstlisting}
+Block_Expr ::= '{' When_Clauses '}'
+\end{lstlisting}
 
 
 
