@@ -780,7 +780,7 @@ Import_Expr     ::= Single_Import
 Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
 Single_Import   ::= importable_id ['as' [constant_id | '_']]
 Container_Path  ::= Module_Path ['.' Constant_Path]
-                  | Constant_Path
+                  | [Root] Constant_Path
 Module_Path     ::= [Root] Module_Selector {'.' Module_Selector}
 Constant_Path   ::= Const_Selector {'.' Const_Selector}
 Module_Selector ::= constant_id [Vendor_Arg]
