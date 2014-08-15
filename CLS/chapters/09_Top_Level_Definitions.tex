@@ -33,7 +33,7 @@ Modifiers (\sref{sec:modifiers}) are available in the same way as in class defin
 
 \syntax\begin{lstlisting}
 Packaging  ::= 'module' Module_Path (Packaging1 | Packaging2)
-Packaging1 ::= nl Top_Stat_Seq 'end'
+Packaging1 ::= semi Top_Stat_Seq 'end' ['module']
 Packaging2 ::= '{' Top_Stat_Seq '}'
 \end{lstlisting}
 
@@ -70,7 +70,7 @@ A {\em program} is a module that has 1 or more entry points.
 \example The following example will create a hello world program by defining a module entry point in module \code{Test}. 
 
 \syntax\begin{lstlisting}[morekeywords={entry}]
-module Test ~[com.example];
+module Test ~[com.example]
 module object {
   entry def main (args: Sequence[String]) := {
     Console.print_line "Hello world!"
