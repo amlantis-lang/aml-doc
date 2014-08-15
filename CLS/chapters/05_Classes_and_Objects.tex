@@ -1400,14 +1400,14 @@ This constrained type declares \code{Even_Positive_Ints} to be positive integers
 \syntax\begin{lstlisting}
 Const_Type_Def ::= constant_id 'is' 'range' 
                    (Range_Expr 
-                 | '(' Range_Expr ')' [':' constant_id])
+                 | '(' Range_Expr ')' [':' Path])
 \end{lstlisting}
 
 Range types are similar to constrained types, but limited in a few ways: they can constrain only indexed types that are indexed with exactly one indexing variable. The range expression is converted into the corresponding indexing constraint. 
 
 \example An example of a constrained type interchangeable with a range type:
 \begin{lstlisting}
-type Positive_Integers ::= Integer @(i) -> {i >= 0}
+type Positive_Integers := Integer @(i) -> {i >= 0}
 type Positive_Integers is range 
   (0 .. +Integer.Infinity) : Integer 
 end type
