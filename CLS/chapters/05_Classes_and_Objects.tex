@@ -7,12 +7,13 @@
 Tmpl_Def ::= ['case'] 'class' Class_Def
            | ['case'] 'object' Object_Def
            | 'trait' Trait_Def
-           | 'module' Module_Def
            | 'protocol' Pro_Def
            | ['case'] 'interface' Ifc_Def
            | 'refinement' Refinement_Def
            | 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
+
+% TBD: | 'aspect' Aspect_Def
 
 Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
 
@@ -1138,30 +1139,6 @@ Tmpl_Def ::= 'case' 'object' Object_Def
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
 
-
-
-
-
-
-\section{Module Definitions}
-\label{sec:module-definitions}
-
-\syntax\begin{lstlisting}
-Module_Def  ::= constant_id [Vendor_Arg] {'.' constant_id 
-                [Vendor_Arg]} [semi] {Module_Expr}
-Module_Expr ::= Expr
-\end{lstlisting}
-
-Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Coral's approach to modules solves these issues: 
-\begin{itemize}
-\item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
-\item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
-\item {\em Dependencies}. Module may define a tree of dependencies, including module vendor resolution, if a module of the same name is provided by different vendors. 
-\end{itemize}
-
-Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
-
-% TBD: update Module_Expr as appropriate
 
 
 

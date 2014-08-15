@@ -6,14 +6,85 @@
 \section{Compilation Units}
 \label{sec:compilation-units}
 
-\section{Modules}
+\subsection{Modules}
 \label{sec:modules}
 
-\section{Module References}
+\syntax\begin{lstlisting}
+Compilation_Unit ::= {'module' Module_Path semi [Top_Stat_Seq]} 
+                     Top_Stat_Seq
+Top_Stat_Seq     ::= Top_Stat {semi Top_Stat}
+Top_Stat         ::= {Annotation} {Modifier} Tmpl_Def
+                   | Use
+                   | Packaging
+                   | Module_Object
+                   | ()
+\end{lstlisting}
 
-\section{Top-Level Classes}
+Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Coral's approach to modules solves these issues: 
+\begin{itemize}
+\item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
+\item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
+\end{itemize}
+
+Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
+
+\subsection{Packagings}
+
+\syntax\begin{lstlisting}
+Packaging  ::= 'module' Module_Path (Packaging1 | Packaging2)
+Packaging1 ::= nl Top_Stat_Seq 'end'
+Packaging2 ::= '{' Top_Stat_Seq '}'
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Module Object}
+
+\syntax\begin{lstlisting}
+Module_Object ::= 'module' 'object' Trait_Template
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Module References}
+
+\syntax\begin{lstlisting}
+Path ::= Module_Path
+\end{lstlisting}
+
+
+
+
 
 \section{Programs}
+
+A {\em program} is a module that has 1 or more entry points. 
+
+\example The following example will create a hello world program by defining a module entry point in module \code{Test}. 
+
+\syntax\begin{lstlisting}[morekeywords={entry}]
+module Test ~[com.example];
+module object {
+  entry def main (args: Sequence[String]) := {
+    Console.print_line "Hello world!"
+  }
+}
+\end{lstlisting}
+
+This program can be started by the command
+\begin{lstlisting}
+% coral Test
+\end{lstlisting}
+
+
+
+
 
 
 
