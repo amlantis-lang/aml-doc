@@ -66,6 +66,61 @@ object O extends Base with Mixin; $\ldots$ end
 
 
 
+\subsection{Open Templates}
+\label{sec:open-templates}
+
+Unlike in Java, Scala or any other language that does not feature open classes, and similar to Ruby's open classes or C\#'s partial classes, Coral has a feature of open templates. This means that a single template (be it a class or a trait) can have its definition spread across several source files. 
+
+An open template has a {\em leading template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including a parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
+
+Auxiliary templates do not need to be eager loaded. There are basically three major ways to make use of an auxiliary template:
+\begin{itemize}
+\item Eager loaded auxiliary template, using the construct ~\lstinline!include 'path/to/file'!. This way the auxiliary template is loaded along with the leading template.
+\item Autoload (\sref{sec:autoloading}) of the auxiliary template. 
+\item On-demand load of the auxiliary template via independent ~\lstinline!VM.load 'path/to/file'!, after the leading template is defined.  
+\end{itemize}
+
+To declare a template as an open template, the following annotations are available. All templates are implicitly open, so the annotations are only useful to prevent implicit inheriting from \code{Object}, if the intended leading template inherits from a different base class. 
+\begin{lstlisting}
+@{Open_Template :leading}
+@{Open_Template :auxiliary}
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Autoloading}
+\label{sec:autoloading}
+
+Autoloading is a mechanism of putting code from different source files and source directories together in runtime. There are two kinds of autoloading.
+
+\paragraph{Implicit autoloading}
+This kind of autoloading is basically the expected layout of source files, source directories and terms inside of a directory. Given that a root directory represents a module sources root, each template definition is expected to appear in a file that directly appears in this directory, preferably with a name of the included template. If multiple templates appear in one source file, then the implicit autoloading uses the mechanism of template index to track location of these templates. However, if the name of the template is generated dynamically in runtime (i.e. not via template definition or a constant initialization), then it needs to be loaded using explicit autoloading. Also, if the source file is used as a script, every such term needs to be loaded using explicit autoloading, since the compiler does not know about anything that hasn't been yet loaded or otherwise defined and is not in the same source file. 
+
+\paragraph{Explicit autoloading}
+This kind of autoloading is basically a custom definition of the layout of source files, source directories and terms inside of a directory. Explicit autoloading happens every time a member is accessed in a template and it is not defined. Explicit autoloading is defined in means of using the \code{autoload} method, provided by the \code{Class} class, and therefore available inside of any template definition. The method has the following overloaded declarations: 
+\begin{lstlisting}
+type Autoloaded_Term is union of ( Symbol, Regexp )
+end type
+def autoload (term: Autoloaded_Term, 
+              path: String): Unit
+end def
+def autoload (term: Autoloaded_Term := nil, 
+              callback: (t: Autoloaded_Term) -> Boolean): Unit
+end def
+\end{lstlisting}
+The first overloaded variant generates an autoloading record that will autoload the source file from the given path. The second overloaded variant expects a callback that will return a boolean indicating whether the term was successfully autoloaded or not, also having the actual autoloaded term as an optional argument -- if the argument is omitted, then the callback is registered for every autoloading attempt.
+
+With explicit autoloading, the runtime is allowed to keep track of templates that make use of explicit autoloading to optimize member resolution. If an explicit autoloading is added in runtime, the version number of the template has to be updated to invalidate member caches. 
+
+
+
+
+
+
+
 \subsection{Constructor Invocations}
 \label{sec:constructor-invocations}
 
