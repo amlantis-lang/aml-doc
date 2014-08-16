@@ -1233,6 +1233,8 @@ Indexed types declare what their index is, based on combinations of their input 
 \item Getting converted to a type (unless the conversion is implicit to a different type). 
 \end{enumerate}
 
+Indexed types basically render {\em subsets of the original type}, each such subset may or may not overlay any previous subsets (based on the ordering of chosen sorts) -- that is up to the indexing expressions to define. 
+
 Note that implicit conversions (\sref{sec:implicit-conversions}) can't apply to dependent types, since that would be a conversion from the same type to a subset of the same type. 
 
 \paragraph{\em Sorts}
@@ -1348,21 +1350,34 @@ Index_Val_C   ::= variable_id
                   {',' Index_Var_C} ')'
 \end{lstlisting}
 
-Constrained types are basically aliases to indexed types with optionally further restricted indexing, which can only make use of the existing indexing constraints of the base type, using the indexing variables. No additional instance variable can be constrained by a constrained type directly. 
+Constrained types are basically manipulations over the indexing types, constraining the indexing parameters of the indexed type, where the order of the parameters is the same as of the original indexed type (and the actual used parameter name is irrelevant, but is better to be the same). 
 
-The type of the indexing variable is implied to be the same as of the indexed type. 
+No additional instance variable can be constrained by a constrained type directly. 
+
+The number of the parameters for every constrained type must be the same as the number of the parameters of the original indexed type, but it is irrelevant if any of these parameters is used in the constraining expression (but for it to make sense, at least one should be used). If the constraining expression is of the form ~\lstinline!$p_i$ = $j_i$! for every parameter $p_i$ (without any further constraints), the constrained type is equivalent to the dependent type (\sref{sec:dependent-types}) ~\lstinline!$T$@[$j_1 \commadots j_n$]! for $n$ indexing parameters. 
+
+The type of the indexing variable is implied to be the same as of the original indexed type. 
 
 \example Here is an example of how Coral might declare the \code{Char} type:
 \begin{lstlisting}
 type Char := String @[|length| length = 1]
 type Char := String @(length) -> {length = 1}
 \end{lstlisting}
-Notice how the constraint only uses the already existing indexing variable. 
+Notice how the constraint only uses the already existing indexing variable. This is in turn equivalent to the dependent type:
+\begin{lstlisting}
+type Char := String @[1]
+\end{lstlisting}
+
+\example Here is an example of how Coral might declare simply ``short'' strings type:
+\begin{lstlisting}
+type Short_String := String @[|length| length <= 255]
+type Short_String := String @(length) -> {length <= 255}
+\end{lstlisting}
 
 \example Here is an example of a different constrained type: 
 \begin{lstlisting}
-type Even_Positive_Integers ::= Integer @[|i| even?(i); i >= 0]
-type Even_Positive_Integers ::= Integer @(i) -> {even?(i); i >= 0}
+type Even_Positive_Integers := Integer @[|i| even?(i); i >= 0]
+type Even_Positive_Integers := Integer @(i) -> {even?(i); i >= 0}
 \end{lstlisting}
 This constrained type declares \code{Even_Positive_Ints} to be positive integers that are even at the same time. 
 
