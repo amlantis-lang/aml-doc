@@ -27,7 +27,43 @@ Module definitions are objects that have one main purpose: to join related code 
 \item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
 \end{itemize}
 
-Modifiers (\sref{sec:modifiers}) are available in the same way as in class definitions. This time, members may be classes and other types as well, beside functions. 
+A compilation unit (a single source file) consists of a sequence of packagings, import clauses, and class and object definitions, which may be preceded (and should be preceded) by a module clause. 
+
+A compilation unit 
+\begin{lstlisting}
+module $p_1$
+$\ldots$
+module $p_n$
+$\stats$
+\end{lstlisting}
+starting with one or more module clauses is equivalent to a compilation unit consisting of the packaging
+\begin{lstlisting}
+module $p_1$
+  $\ldots$
+  module $p_n$
+    $\stats$
+  end module
+end module
+\end{lstlisting}
+
+Implicitly imported into every compilation unit are, in that order: 
+\begin{enumerate}
+\item the module ~\lstinline!Root~Lang~[com.coral-lang]! 
+\item the object ~\lstinline!Root~Lang~[com.coral-lang].Predef!
+\end{enumerate} 
+Members of a later import in that order hide members of an earlier import. 
+
+% TBD: notice that the implicit import may be overridden by a pragma at the beginning of a compilation unit
+
+The implicitly added code looks like the following code listing, with all its implications:
+\begin{lstlisting}
+use Root~Lang~[com.coral-lang].{_}
+use Root~Lang~[com.coral-lang].Predef.{_}
+\end{lstlisting}
+
+
+
+
 
 \subsection{Packagings}
 
@@ -36,6 +72,8 @@ Packaging  ::= 'module' Module_Path (Packaging1 | Packaging2)
 Packaging1 ::= semi Top_Stat_Seq 'end' ['module']
 Packaging2 ::= '{' Top_Stat_Seq '}'
 \end{lstlisting}
+
+A module is a special object which defines a set of member classes, objects and another modules. Like open templates (\sref{sec:open-templates}), modules are introduced by multiple definitions across multiple source files.  
 
 
 
