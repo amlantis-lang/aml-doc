@@ -276,7 +276,7 @@ Type_Dcl ::= constant_id [Type_Param_Clause] [Dep_Params]
              [UoM_Params] ['>:' Type] ['<:' Type]
 Def      ::= 'type' Type_Def
 Type_Def ::= constant_id [Type_Param_Clause] [Dep_Params] 
-             [UoM_Params] ':=' Type
+             [UoM_Params] (':=' | 'is') ['alias'] Type
 \end{lstlisting}
 
 A {\em type declaration} \lstinline!type $t$[$\tps$]@[$\dps$][<$\uomps$>] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. Omitting indexing parameter clause \lstinline!@[$\dps$]! or units of measure parameter clause \lstinline@[<$\uomps$>]@ does not affect whether $t$ abstracts over a first-order type, since these parameters only restrict subsets of the type $t$, instead of constructing new types. 

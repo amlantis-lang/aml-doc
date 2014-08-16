@@ -665,11 +665,13 @@ Block_Stat    ::= Use
                 | {Annotation} ['implicit'] Def
                 | {Annotation} {Local_Modifier} Tmpl_Def
                 | Expr
+                | Alias_Expr
                 | ()
 Template_Stat ::= Use
                 | {Annotation} {Modifier} Def
                 | {Annotation} {Modifier} Dcl
                 | Expr
+                | Alias_Expr
                 | ()
 Fun_Stats     ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                 | Block
@@ -682,6 +684,7 @@ Fun_Dec_Expr  ::= {Annotation} Dcl
                 | 'opaque'
                 | 'native' [Expr]
                 | ()
+Alias_Expr    ::= 'alias' symbol_literal 'is' symbol_literal
 \end{lstlisting}
 
 Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{nil}, or the empty statement/expression, whose value is again \code{nil}. 
