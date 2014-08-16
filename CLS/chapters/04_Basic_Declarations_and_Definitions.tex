@@ -290,13 +290,13 @@ The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!
 To illustrate nested scoping, these declarations are all equivalent: 
 \begin{itemize}
 \item[]
-~\lstinline[mathescape=false]!type t[:m[$x] <: Bound[$x], Bound[$x]] end! 
+~\lstinline[mathescape=false]!type t[m[$x] <: Bound[$x], Bound[$x]] end! 
 
 \item[]
-~\lstinline[mathescape=false]!type t[:m[$x] <: Bound[$x], Bound[$y]] end!
+~\lstinline[mathescape=false]!type t[m[$x] <: Bound[$x], Bound[$y]] end!
 
 \item[]
-~\lstinline[mathescape=false]!type t[:m[$x] <: Bound[$x], Bound[_]] end!,
+~\lstinline[mathescape=false]!type t[m[$x] <: Bound[$x], Bound[_]] end!,
 \end{itemize} 
 as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline[mathescape=false]!$x!~ is unrelated to the first two occurrences, but may confuse the reader. 
 
@@ -307,20 +307,20 @@ It is an error if a type alias refers recursively to the defined type constructo
 \example The following are legal type declarations and aliases:
 \begin{lstlisting}[escapechar=@]
 type Integer_List := List[Integer]
-type T <: Comparable[T]
+type T <: Comparable[T] end
 type Two[@\$@A] := Tuple_2[@\$@A, @\$@A]
-type My_Collection[+@\$@X] <: Iterable[@\$@X]
+type My_Collection[+@\$@X] <: Iterable[@\$@X] end
 \end{lstlisting}
 The following are illegal:
 \begin{lstlisting}
-type Abs := Comparable[Abs] // recursive type alias
+type Abs := Comparable[Abs] end // recursive type alias
 
-type S <: T  // S, T are bounded by themselves
-type T <: S
+type S <: T end  // S, T are bounded by themselves
+type T <: S end
 
-type T >: Comparable[T.That] // can't select from T
-                              // T is a type, not a value
-type My_Collection <: Iterable
+type T >: Comparable[T.That] end // can't select from T
+                                 // T is a type, not a value
+type My_Collection <: Iterable end
   // type constructor members must explicitly state
   // their type parameters
 \end{lstlisting}
