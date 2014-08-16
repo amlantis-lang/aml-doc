@@ -229,8 +229,8 @@ Prop_Spec  ::= ([Access_Modifier] ('get' | 'set')) | 'weak'
 Prop_Def   ::= 'property' ['(' Prop_Specs ')'] simple_id 
              [':' Type]
              '{' Prop_Impl {semi Prop_Impl} '}'
-Prop_Impl  ::= ('get' [Prop_Get_Impl])
-             | ('set' [Prop_Set_Impl])
+Prop_Impl  ::= ('get' Prop_Get_Impl)
+             | ('set' Prop_Set_Impl)
              | ('val' ':=' Expr)
              | ('var' ':=' Expr)
 \end{lstlisting} % TBD: syntax of property implementations
@@ -263,6 +263,22 @@ def $x$_= (y: $T$): (); end
 
 Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation. 
 
+
+
+
+
+
+\subsection{Property Implementations}
+\label{sec:property-impl}
+
+\begin{lstlisting}
+Prop_Get_Impl ::= '(' ')' '->' '{' Block '}'
+                | '{' Block '}'
+Prop_Set_Impl ::= '(' variable_id ')' '->' '{' Block '}'
+                | '{' '|' variable_id '|' semi Block '}'
+\end{lstlisting}
+
+Property implementations are restricted to parameterless block expressions for property getters and to block expressions with one parameter for property setters. If the property is specified with a \code{get} or \code{set}, but without a property getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
 
 
 
