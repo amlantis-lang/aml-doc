@@ -119,7 +119,7 @@ Top-level definitions outside a packaging are assumed to be injected into the \c
 \subsection{Module Object}
 
 \syntax\begin{lstlisting}
-Module_Object ::= 'module' 'object' Trait_Template
+Module_Object ::= 'module' 'object' Trait_Tmpl_Env
 \end{lstlisting}
 
 A module object ~\lstinline!module object $p$ extends $t$! can specify some properties of the module object, add new traits to it, and adds the members of the template $t$ to the module object $p$. There can be only one module object per module, but the module object definition is still an open template (\sref{sec:open-templates}). The module object has to have the leading template defined in a file named ~\lstinline!$p$.coral!~ in the module's root directory, otherwise the module object has an implied empty template. 
@@ -139,6 +139,25 @@ The module object has also a special role in defining entry points of the module
 \syntax\begin{lstlisting}
 Path ::= Module_Path
 \end{lstlisting}
+
+A reference to a module takes the form of a qualified identifier. Like all other references, module references are relative, i.e., a module reference starting in a name $p$ will be looked up in the closest enclosing scope that defines a member named $p$, and continue with the next closest enclosing scope, as long as the modules share the exact same vendor. 
+
+The special predefined name \code{Root} (which is vendor-less and separated from the other names with a ``\lstinline!~!'' instead of a ``\lstinline!.!'') refers to the outermost ``root module'', which contains all top-level modules. 
+
+A nested module inherits the vendor from its directly enclosing module, unless there is no enclosing module, or the vendor is specified explicitly. If a module inherits the vendor, then it doesn't need to specify it again in its fully qualified identifier, as it is implied that nested modules will have the same vendor. 
+
+\example Consider the following program:
+\begin{lstlisting}
+module B {
+  class C {}
+}
+module A.B {
+  class D {
+    val x := Root~B.C.new
+  }
+}
+\end{lstlisting}
+Here, the reference ~\lstinline!Root~B.C! refers to class \code{B} in the top-level module \code{B}. If the ~\lstinline!Root~! prefix had been omitted, the name \code{B} would instead resolve to the module \code{A.B}, and, provided that the module does not also contain a class \code{C}, a runtime error would result (constant not found). 
 
 
 
