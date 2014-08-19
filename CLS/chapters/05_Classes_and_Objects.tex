@@ -10,6 +10,7 @@ Tmpl_Def ::= ['case'] 'class' Class_Def
            | 'protocol' Pro_Def
            | ['case'] 'interface' Ifc_Def
            | 'refinement' Refinement_Def
+           | 'aspect' Aspect_Def
            | 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
@@ -1193,6 +1194,25 @@ Tmpl_Def ::= 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
+
+
+
+
+
+
+\section{Aspects}
+\label{sec:aspects}
+
+\syntax\begin{lstlisting}
+Tmpl_Def        ::= 'aspect' Aspect_Def
+Aspect_Def      ::= constant_id Aspect_Tmpl_Env
+Aspect_Tmpl_Env ::= '{' Aspect_Body '}'
+                  | 'begin' Aspect_Body 'end' ['aspect']
+Aspect_Body     ::= Template_Stat 
+                  | Aspect_Stat
+Aspect_Stat     ::= Advice_Stat
+                  | Pointcut_Stat
+\end{lstlisting}
 
 
 

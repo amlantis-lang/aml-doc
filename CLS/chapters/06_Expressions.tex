@@ -380,9 +380,13 @@ Val_Dcls        ::= Val_Dcl
 Loop_Ctrl_Expr ::= Break_Expr
                  | Skip_Expr
                  | Next_Expr
-Break_Expr     ::= 'break' [label_id] [Cond_Modifier1]
+                 | Exhausted_Expr
+                 | Broken_Expr
+Break_Expr     ::= 'break' [label_name] [Cond_Modifier1]
 Skip_Expr      ::= 'skip' [integer_literal] [Cond_Modifier1]
-Next_Expr      ::= 'next' [label_id] [Cond_Modifier1]
+Next_Expr      ::= 'next' [label_name] [Cond_Modifier1]
+Exhausted_Expr ::= 'exhausted' Block_Expr
+Broken_Expr    ::= 'broken' Broken_Expr
 \end{lstlisting}
 
 
