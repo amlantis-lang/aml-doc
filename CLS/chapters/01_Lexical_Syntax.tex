@@ -44,6 +44,7 @@ cvar_id       ::= '@@' simple_id
 op_id         ::= opchar {opchar}
 function_id   ::= simple_id [id_rest_fun]
                 | '`' simple_id [id_rest_fun] '`'
+                | '`' op_id '`'
 constant_id   ::= upper [id_rest_con]
                 | '`' upper [id_rest_con] '`'
 id_rest       ::= {letter | digit | '_'}
@@ -53,7 +54,6 @@ id_rest_mid   ::= id_rest {('/' | '+' | '-') id_rest}
 importable_id ::= simple_id
                 | function_id
                 | constant_id
-                | '`' op_id '`'
 \end{lstlisting}
 
 There are three kinds of identifiers.

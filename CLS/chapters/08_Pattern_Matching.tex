@@ -342,7 +342,7 @@ An anonymous function can be defined by a sequence of cases
 \begin{lstlisting}
 { when $p_1$ then $b_1$ $\ldots$ when $p_k$ then $b_k$ else $b_{k+1}$ }
 \end{lstlisting}
-which appears as an expression without a prior \code{match}.
+which appears as an expression without a prior \code{match}. The expression is expected to be of a block type, unless it is expected to be a function type, in that case it is converted to ~\lstinline!Function_$k$[$S_1 \commadots S_k$, $T$]!~ automatically for $k \geq 1$, and for $k = 0$ the expression does not match the expected function type in function applications (\sref{sec:function-applications}).\footnote{This is due to Coral not knowing the expected types in advance, but this anonymous function expression is able to match any non-empty arguments list, which is simply passed into the implicit pattern matching expression.} 
 
 The expression is taken to be equivalent to the anonymous function:
 \begin{lstlisting}
@@ -355,6 +355,37 @@ The expression is taken to be equivalent to the anonymous function:
   }
 }
 \end{lstlisting}
+
+Here, each $x_i$ is a fresh name. As was shown in (\sref{sec:anonymous-functions}), this anonymous function is in turn equivalent to the following instance creation expression, where $T$ is the weak least upper bound of the types of all $b_i$. 
+
+\begin{lstlisting}
+(Function_$k$[$S_1 \commadots S_k$, $T$] with {
+  def apply ($x_1$: $S_1 \commadots x_k$: $S_k$): $T$ := match ($x_1 \commadots x_k$)
+    when $p_1$ then $b_1$
+    $\ldots$
+    when $p_k$ then $b_k$
+    else $b_{k+1}$
+  end match
+}).new
+\end{lstlisting}
+
+\example Here is a method which uses a fold-left operation ~\lstinline!/:!~ to compute the scalar product of two vectors:
+\begin{lstlisting}
+def scalar_product (xs: List[Double], ys: List[Double]) := 
+  (0.0 /: xs.zip(ys)) {
+    when (a, (b, c)) then a + b * c
+  }
+\end{lstlisting}
+The when clauses in this code are equivalent to the following anonymous function:
+\begin{lstlisting}
+(x, y) -> { 
+  match (x, y) {
+    when (a, (b, c)) then a + b * c
+  }
+}
+\end{lstlisting}
+Note that the fold-left operation ~\lstinline!/:!~ is an operator ending in a colon ``\lstinline!:!'', and therefore right-associative, and therefore the expression is interpreted as specified in (\sref{sec:infix-operations}) for right-associative operations: ~\lstinline[mathescape=false]!{ val x$ := 0.0; xs.zip(ys).`/:`(x) }!. 
+
 
 
 

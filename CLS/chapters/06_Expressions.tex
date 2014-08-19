@@ -287,6 +287,7 @@ Prefix_Expr ::= [op_id] Simple_Expr
 \subsection{Prefix Operations}
 
 \subsection{Infix Operations}
+\label{sec:infix-operations}
 
 \subsection{Assignment Operators}
 
@@ -359,11 +360,13 @@ Cond_Modifier1   ::= ('if' | 'unless') Infix_Expr
 \subsection{Iterable For Expressions}
 
 \syntax\begin{lstlisting}
-Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcl 'in' ['reverse'] Expr 
+Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
                     ['step' Expr] For_Loop
 For_Loop        ::= 'loop' Expr 'end' ['loop']
                   | '{' Loop_Block_Expr '}'
 Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
+Val_Dcls        ::= Val_Dcl
+                  | Pattern1
 \end{lstlisting}
 
 
