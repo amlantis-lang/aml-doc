@@ -312,7 +312,7 @@ The {\em precedence} of an infix operator is determined by the operator's first 
 |
 ^
 &
-< >
+< > ~
 = !
 :
 $\mbox{\rm\sl(all other special characters)}$
@@ -324,14 +324,14 @@ That is, operators starting with ``\lstinline!|!'' have the lowest precedence, f
 
 There's one exception to this rule, which concerns {\em assignment operators} (\sref{sec:assignment-operations}). The precedence of an assignment operator is the same as the one of simple assignment (\lstinline!=!). That is, it is lower than the precedence of any other operator. 
 
-The {\em associativity} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative. All other operators are left-associative. 
+The {\em associativity} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, and operators ending in a greater-than sign ``\lstinline!>!'' are right-associative, if they consist of more than one operator character. All other operators are left-associative. 
 
 Precedence and associativity of operators determine the grouping of parts of an expression as follows.
 
 \begin{itemize}
 \item If there are several infix operations in an expression, then operators with higher precedence bind more closely than operators with lower precedence. 
 
-\item If there are consecutive infix operartions of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). % TBD: finish this item
+\item If there are consecutive infix operations $e_0\ \op_1\ e_1\ \op_2 \ldots \op_n\ e_n$ with operators $\op_1 \ldots \op_n$ of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). If all operators are left-associative, then the sequence is interpreted as ~\lstinline!(($e_0\ \op_1\ e_1$) $\op_2 \ldots$) $\op_n\ e_n$!. Otherwise, if all operators are right-associative, the sequence is interpreted as ~\lstinline!$e_0\ \op_1$ ($e_1\ \op_2$ ($\ldots \op_n\ e_n$))!.
 
 \item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
 
