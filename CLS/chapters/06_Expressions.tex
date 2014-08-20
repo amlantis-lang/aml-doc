@@ -107,8 +107,8 @@ A reference to any other member of the \code{nil} object causes \code{Method_Not
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Path
-               | Simple_Expr '.' Designator
-Designator   ::= ['?' | '!'] (importable_id | variable_id)
+               | Simple_Expr '.' Selection
+Selection    ::= ['?' | '!'] (importable_id | variable_id)
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
@@ -123,14 +123,14 @@ A designator refers to a named term. It can be a {\em simple name} or a {\em sel
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= [Container_Path '.'] 'self'
-                 ['.' Designator]
+                 ['.' Selection]
                | [Container_Path '.'] 'this'
-                 ['.' Designator]
+                 ['.' Selection]
                | [Container_Path '.'] 'super' 
                  [Class_Qualifier] 
-                 ['.' Designator]
+                 ['.' Selection]
                | [Container_Path '.'] 'self' '[' 'cloned' ']'
-                 '.' (ivar_id | Designator)
+                 '.' (ivar_id | Selection)
                | [Container_Path '.'] (ivar_id | cvar_id)
 \end{lstlisting}
 
