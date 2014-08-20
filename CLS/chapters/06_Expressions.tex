@@ -279,6 +279,7 @@ Infix_Expr  ::= Prefix_Expr
 Prefix_Expr ::= [op_id] Simple_Expr
 \end{lstlisting}
 
+Expressions can be constructed from operands and operators. 
 
 
 
@@ -286,10 +287,66 @@ Prefix_Expr ::= [op_id] Simple_Expr
 
 \subsection{Prefix Operations}
 
+A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, unlike in Scala, but must not be followed by any whitespace, only identifiers or parentheses. The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!. 
+
+
+
+
+
+\subsection{Postfix Operations}
+
+Apart from standard function applications (\sref{sec:function-applications}) that may be viewed as postfix, Coral does not include support for postfix operations. 
+
+
+
+
+
 \subsection{Infix Operations}
 \label{sec:infix-operations}
 
-\subsection{Assignment Operators}
+An infix operator can be an arbitrary operator identifier. Infix operators have static precedence and associativity borrowed from Scala, and defined as follows:
+
+The {\em precedence} of an infix operator is determined by the operator's first character. Characters are listed below in increasing order of precedence, with characters on the same line having the same precedence.
+
+\begin{lstlisting}
+|
+^
+&
+< >
+= !
+:
+$\mbox{\rm\sl(all other special characters)}$
++ -
+* / %
+\end{lstlisting}
+
+That is, operators starting with ``\lstinline!|!'' have the lowest precedence, followed by operators starting with ``\lstinline!^!'', etc. 
+
+There's one exception to this rule, which concerns {\em assignment operators} (\sref{sec:assignment-operations}). The precedence of an assignment operator is the same as the one of simple assignment (\lstinline!=!). That is, it is lower than the precedence of any other operator. 
+
+The {\em associativity} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative. All other operators are left-associative. 
+
+Precedence and associativity of operators determine the grouping of parts of an expression as follows.
+
+\begin{itemize}
+\item If there are several infix operations in an expression, then operators with higher precedence bind more closely than operators with lower precedence. 
+
+\item If there are consecutive infix operartions of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). % TBD: finish this item
+
+\item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
+
+\item The right-hand operand of a left-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!$e\ \op$ ($e_1 \commadots e_n$)!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
+
+\item The left-hand operand of a right-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!($e_1 \commadots e_n$) $\op\ e$!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
+\end{itemize}
+
+
+
+
+
+
+\subsection{Assignment Operations}
+\label{sec:assignment-operations}
 
 \section{Typed Expressions}
 
