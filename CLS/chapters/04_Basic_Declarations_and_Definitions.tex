@@ -370,6 +370,11 @@ The most general form of a first-order type parameter is ~\lstinline!@{$a_1$}$\l
 
 % TBD! Not complete.
 
+
+
+
+
+
 \section{Variance of Type Parameters}
 \label{sec:variance-of-type-parameters}
 
@@ -470,6 +475,11 @@ def default`\$`2[`\$`T](a: `\$`T): `\$`T := a
 
 Parameters may be optionally flagged with \code{var} and \code{val} keywords, modifying their mutability inside the method. Some combinations are disallowed, as explained in the following sections. All parameters are implicitly \code{val}-flagged, unless the parameter kind implies a \code{var} flag, such as an output parameter (\sref{sec:io-parameters}).
 
+
+
+
+
+
 \subsection{By-Name Parameters}
 \label{sec:by-name-parameters}
 
@@ -486,6 +496,11 @@ By-name parameters require a specific application (\sref{sec:by-name-arguments})
 By-name parameters with default value expressions evaluate the default value expression each time the parameter is accessed, unlike optional parameters that evaluate the default value expression only once. 
 
 By-name parameters imply the \code{val} flag, and disallow the \code{var} flag. 
+
+
+
+
+
 
 \subsection{Explicit Parameters}
 \label{sec:explicit-parameters}
@@ -510,6 +525,11 @@ def factorial (x) := x * factorial(x - 1)
 
 Since the parameter has no name to bind to, it is not accessible inside the method body. 
 
+
+
+
+
+
 \subsection{Input \& Output Parameters}
 \label{sec:io-parameters}
 
@@ -520,6 +540,11 @@ Param_Io ::= 'in' ['out'] | 'out'
 If no input/output parameter specifier is explicitly available, then the parameter is implicitly an input parameter. Output parameters require a specific application (\sref{sec:io-arguments}).
 
 Output parameters imply \code{var} parameter and is disallowed for \code{val} parameters. Input parameters that are not output parameters at the same time can be both \code{var} and \code{val}. 
+
+
+
+
+
 
 \subsection{Positional Parameters}
 \label{sec:positional-parameters}
@@ -544,6 +569,11 @@ in val $x$: => $T$
 
 Positional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters}) and by-name (\sref{sec:by-name-parameters}). Positional parameters can't have any default value expressions. 
 
+
+
+
+
+
 \subsection{Optional Parameters}
 \label{sec:optional-parameters}
 
@@ -562,6 +592,11 @@ in val $x$: => $T$ := $e$
 \end{lstlisting}
 
 Optional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters})\footnote{Optional parameters are always ``input'', so that declaration is always redundant.} and by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have a {\em default value expressions} and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for output parameters and repeated parameters. 
+
+
+
+
+
 
 \subsection{Repeated Parameters}
 \label{sec:repeated-parameters}
@@ -612,6 +647,11 @@ By contrast, the following application is well-formed and yields again the resul
 sum *xs
 \end{lstlisting}
 
+
+
+
+
+
 \subsection{Named Parameters}
 \label{sec:named-parameters}
 \label{sec:captured-named-parameters}
@@ -660,6 +700,11 @@ Captured named parameters are capturing any other applied named parameters that 
 
 If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. Captured named parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 
+
+
+
+
+
 \subsection{Captured Block Parameter}
 \label{sec:captured-block-parameter}
 
@@ -681,6 +726,11 @@ It is an error if a block parameter type $T$ is provided and it is not a functio
 
 If a block parameter type $T$ is given, then the applied block argument must accept parameters, such that the parameter constrains declared by the function type $T$ conform to the parameter constrains declared by the applied block: the parameters of the applied block must be the same or less restrictive than those declared by $T$ -- they must be pairwise contravariant or invariant, never covariant (\sref{sec:variance-of-type-parameters}). 
 
+
+
+
+
+
 \subsection{Parameter Kind Combinations}
 
 This section is {\em normative}. 
@@ -689,7 +739,12 @@ Users should design their functions in a way that makes them having as few param
 
 In this spirit, an ideal count of parameters lies between 0 and 2 (nullary, unary and binary functions). Named parameters should be used with only up to one positional\footnote{In this sense, optional and repeated parameters are also positional, because they are applied on a particular numbered position rather than named.} parameter. Functions with more than 4 different parameters should be avoided. 
 
-\subsection{Method Types Inference}
+
+
+
+
+
+\section{Method Types Inference}
 \label{sec:method-types-inference}
 
 \paragraph{\em Parameter Type Inference}
@@ -744,6 +799,11 @@ A function definition
 sequence of function definitions 
 ~\lstinline@def $fsig_1: T$ := $e$; $\ldots$; def $fsig_n: T$ := $e$@.
 
+
+
+
+
+
 \section{Overloaded Declarations \& Definitions}
 \label{sec:overloaded-definitions}
 
@@ -783,6 +843,11 @@ double number
 var number := 42 // the type is inferred
 double number
 \end{lstlisting}
+
+
+
+
+
 
 \section{Use Clauses}
 \label{sec:use-clauses}
