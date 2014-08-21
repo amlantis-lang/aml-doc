@@ -376,25 +376,27 @@ The re-interpretation is correct always, since, unlike in Scala,
 \section{Typed Expressions}
 
 \syntax\begin{lstlisting}
-Cast_Expr  ::= Infix_Expr 'as' Type
-Infix_Expr ::= Infix_Expr 'is' Type
+Cast_Expr  ::= Infix_Expr ('as' | 'as!') Type
+Infix_Expr ::= Infix_Expr ('is' | 'is!') Type
 \end{lstlisting}
 
-The typed expression ~\lstinline!$e$ as $T$! has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. The conversion can take these forms, preferred in the following order:
+The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. The conversion can take these forms, preferred in the following order:
 \begin{enumerate}
 \item No conversion, if $e$ conforms to $T$ directly. 
 \item If an implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope, then the conversion is of the form ~\lstinline!$c$($e$)!. 
 \item Otherwise, the conversion is of the form ~\lstinline!$e$.as_instance_of[$T$]()!. 
 \end{enumerate}
 
-The conformance check expression ~\lstinline!$e$ is $T$! has type \code{Boolean} and tests whether $e$ conforms to $T$, basically by asking a question ``Can $e$ be of type $T$?'', answering either ``It can be'' or ``It can't be''. The expression $e$ conforms to type $T$ if at least one of the following conditions hold:
+The conformance check expression ~\lstinline!$e$ is $T$!~ has type \code{Boolean} and tests whether $e$ conforms to $T$, basically by asking a question ``Can $e$ be of type $T$?'', answering either ``It can be'' or ``It can't be''. The expression $e$ conforms to type $T$ if at least one of the following conditions hold:
 \begin{enumerate}
 \item Type of $e$ is a subtype of $T$. 
 \item An implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope. 
-\item As a last resort, type of $e$ overrides the method ~\lstinline!is_instance_of[$T$]()! and evaluating it results in \code{yes} value. 
+\item As a last resort, type of $e$ overrides the method ~\lstinline!is_instance_of[$T$]()!~ and evaluating it results in \code{yes} value. 
 \end{enumerate}
 
 Note: the conformance check expression as defined here is not used in resolution of function applications (\sref{sec:function-applications}).
+
+The typed expression ~\lstinline@$e$ as! $T$@~ works like ~\lstinline!$e$ as $T$!, but only uses the first form. Similarly, the conformance check expression ~\lstinline@$e$ is! $T$@~ works like ~\lstinline!$e$ is $T$!, but it uses only the first condition. The bang character ``\lstinline@!@'' signalizes that the operation is more dangerous, in means of that its easier for the expression $e$ to not successfully convert to the target type or conform to it. 
 
 
 
