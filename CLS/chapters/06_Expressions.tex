@@ -104,11 +104,12 @@ A reference to any other member of the \code{nil} object causes \code{Method_Not
 
 
 \section{Designators}
+\label{sec:designators}
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Path
                | Simple_Expr '.' Selection
-Selection    ::= ['?' | '!'] (importable_id | variable_id)
+Selection    ::= ['?'] (importable_id | variable_id)
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
@@ -410,7 +411,7 @@ The typed expression ~\lstinline@$e$ as! $T$@~ works like ~\lstinline!$e$ as $T$
 Annot_Expr ::= Annotation {Annotation} Infix_Expr
 \end{lstlisting}
 
-
+An annotated expression $a_1\ \ldots\ a_n\ e$ attaches annotations $a_1\ \ldots\ a_n$ to the expression $e$ (\sref{sec:annotations}). 
 
 
 
@@ -421,11 +422,57 @@ Annot_Expr ::= Annotation {Annotation} Infix_Expr
 
 \syntax\begin{lstlisting}
 Assign_Expr ::= [Simple_Expr '.'] variable_id ':=' Expr
+              | Mul_Assign_Expr
 Update_Expr ::= Simple_Expr1 Argument_Exprs ':=' Expr
+\end{lstlisting}
+
+The interpretation of an assignment to a simple variable ~\lstinline!$x$ := $e$!~ depends on the definitions of $x$. If $x$ denotes a mutable variable, then the assignment changes the current value of $x$ to the result of evaluating the expression $e$. The type of $e$ is expected to conform to the type of $x$. 
+
+If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!$x$_=!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!$x$_=($e$)!~ of that setter function. 
+
+Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.$x$_=($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}.\footnote{This likely results in a runtime error being raised, unless \code{nil} would actually implement method \code{x_=}.} 
+
+An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?$x$_=($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
+
+An assignment ~\lstinline!$f$($\args$) := $e$!~ with a function application to the left of the ``\lstinline!:=!'' operator is interpreted as ~\lstinline!$f$.update($\args$)($e$)!, i.e. the invocation of an \code{update} function defined by $f$. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}. The ``\lstinline!.?!'' navigation is not available with this expression. 
+
+\example Here are some assignment expressions and their equivalent interpretations. 
+\begin{lstlisting}
+f := e                       f_=(e)
+f() := e                     f.update()(e)
+f(i) := e                    f.update(i)(e)
+f(i, j) := e                 f.update(i, j)(e)
+x.f := e                     x.f_=(e)
+x.f() := e                   x.f.update()(e)
+x.f(i) := e                  x.f.update(i)(e)
+x.f(i, j) := e               x.f.update(i, j)(e)
+f()() := e                   f().update()(e)
+f(i)() := e                  f(i).update()(e)
+f()(i) := e                  f().update(i)(e)
+f(i)(j) := e                 f(i).update(j)(e)
+f(i, j)(k) := e              f(i, j).update(k)(e)
+f(i, j)(k, l) := e           f(i, j).update(k, l)(e)
+f(i, j) := (e_1, e_2)        f.update(i, j)((e_1, e_2))
 \end{lstlisting}
 
 
 
+
+
+
+\subsection{Multiple Assignments}
+\label{sec:multiple-assignments}
+
+\syntax\begin{lstlisting}
+Mul_Assign_Expr ::= Mul_Vars ':=' Mul_Exprs
+Mul_Vars        ::= [variable_id {',' variable_id} ',']
+                    ['*'] variable_id {',' variable_id}
+Mul_Exprs       ::= [Expr {',' Expr} ',']
+                    ['*'] Expr {',' Expr}
+\end{lstlisting}
+
+% TBD: expand this section with some lovely math expressions
+% TBD: add explanation of what *var is and *expr is here
 
 
 
