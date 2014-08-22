@@ -375,6 +375,7 @@ The re-interpretation is correct always, since, unlike in Scala,
 
 
 \section{Typed Expressions}
+\label{sec:typed-expressions}
 
 \syntax\begin{lstlisting}
 Cast_Expr  ::= Infix_Expr ('as' | 'as!') Type
@@ -484,18 +485,46 @@ Mul_Exprs       ::= [Expr {',' Expr} ',']
 Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
 Cond_Block_Expr  ::= Cond_Block_Expr1 | Cond_Block_Expr2
 Cond_Block_Expr1 ::= 'if' Expr ('then' | semi) Expr 
-                     {'elsif' Expr ('then' | semi) Expr}
-                     ['else' Expr] 'end' ['if']
+                     {[semi] 'elsif' Expr ('then' | semi) Expr}
+                     [[semi] 'else' Expr] 'end' ['if']
 Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Expr 
-                     {'elsif' Expr ('then' | semi) Expr}
-                     ['else' Expr] 'end' ['unless']
+                     {[semi] 'elsif' Expr ('then' | semi) Expr}
+                     [[semi] 'else' Expr] 'end' ['unless']
 Cond_Mod_Expr    ::= Expr Cond_Modifier
 Cond_Modifier    ::= Cond_Modifier1
                      ['else' Infix_Expr]
 Cond_Modifier1   ::= ('if' | 'unless') Infix_Expr 
 \end{lstlisting}
 
+The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} object converts always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
 
+The conditional expression is evaluated by evaluating first $e_1$. If this evaluates to \code{true}, the result of evaluating $e_2$ is returned, otherwise the result of evaluating $e_3$ is returned. 
+
+The evaluation of $e_1$ utilizes the so-called {\em short-circuit evaluation}. The expression $e_1$ is split by binary boolean operators. Then every first argument is evaluated, but the second argument is evaluated only if the evaluation of the first argument does not suffice to determine the value of the expression. When the first argument of ``\lstinline!&&!'' evaluates to \code{no}, the overall value must be \code{no} and the result of evaluating the second argument does not change that. When the first argument of ``\lstinline!||!'' evaluates to \code{yes}, the overall value must be \code{yes}. These boolean operators are in fact short-circuited source-code-wide, not only as part of conditional expressions. Word equivalents of these operators are not short-circuited (``\code{and}'' and ``\code{or}'' respectively). 
+
+\example The following examples show how short-circuit evaluation behaves. Let's mark the short-circuited ``\lstinline!&&!'' as ``\lstinline!sand!'' and the short-circuited ``\lstinline!||!'' as ``\lstinline!sor!''. On the right side are the equivalent conditional expressions. 
+\begin{lstlisting}
+$x$ sand $y$          if $x$ then $y$ else no
+$x$ sor $y$           if $x$ then yes else $y$
+\end{lstlisting}
+
+A short form of the conditional expression eliminates the \code{else}-part. The conditional expression ~\lstinline!if $e_1$ then $e_2$!~ is evaluated as if it was ~\lstinline!if $e_1$ then $e_2$ else ()!, and is therefore expected to be the weak least upper bound of the type \code{Unit} and the type of $e_2$. 
+
+The conditional expression 
+\begin{lstlisting}
+if $e_1$ then $e_2$ elsif $e_3$ then $e_4$ $\ldots$ elsif $e_n$ then $e_{n+1}$ else $e_{n+2}$
+\end{lstlisting} 
+is evaluated as if it was 
+\begin{lstlisting}
+if $e_1$ then $e_2$ else if $e_3$ then $e_4$ $\ldots$ else if $e_n$ then $e_{n+1}$ else $e_{n+2}$
+\end{lstlisting}
+Basically, \code{elsif} is a simple syntax sugar for the little longer \code{else if} keyword tokens sequence. 
+
+The alternative conditional expression ~\lstinline!unless $e_1$ then $e_2$ else $e_3$!~ is evaluated as if it was ~\lstinline@if !$e_1$ then $e_2$ else $e_3$@. Unlike in Ruby, the \code{elsif}-part is allowed to appear with this conditional expression. 
+
+The modifier-fashion conditional expression ~\lstinline!$e_1$ if $e_2$ else $e_3$!~ is interpreted as if it was ~\lstinline!if $e_2$ then $e_1$ else $e_3$!. Similarly with the \code{unless} version and the short form of the modifier conditional expression (without the explicit \code{else}-part). 
+
+Unlike in some languages, conditional expressions do not require to place parentheses around the conditions -- but it is possible to do so, the result is equivalent. That might be useful when the condition is inevitably long and needs to span multiple lines -- so that boolean operators may be situated at the beginning of each new line, instead of being at the end of the previous line. 
 
 
 
