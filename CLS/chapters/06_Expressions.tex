@@ -484,16 +484,17 @@ Mul_Exprs       ::= [Expr {',' Expr} ',']
 \syntax\begin{lstlisting}
 Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
 Cond_Block_Expr  ::= Cond_Block_Expr1 | Cond_Block_Expr2
-Cond_Block_Expr1 ::= 'if' Expr ('then' | semi) Expr 
-                     {[semi] 'elsif' Expr ('then' | semi) Expr}
-                     [[semi] 'else' Expr] 'end' ['if']
-Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Expr 
-                     {[semi] 'elsif' Expr ('then' | semi) Expr}
-                     [[semi] 'else' Expr] 'end' ['unless']
+Cond_Block_Expr1 ::= 'if' Expr ('then' | semi) Cond_Block 
+                     {[semi] 'elsif' Expr ('then' | semi) Cond_Block}
+                     [[semi] 'else' Cond_Block] 'end' ['if']
+Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Cond_Block 
+                     {[semi] 'elsif' Expr ('then' | semi) Cond_Block}
+                     [[semi] 'else' Cond_Block] 'end' ['unless']
 Cond_Mod_Expr    ::= Expr Cond_Modifier
 Cond_Modifier    ::= Cond_Modifier1
                      ['else' Infix_Expr]
 Cond_Modifier1   ::= ('if' | 'unless') Infix_Expr 
+Cond_Block       ::= Expr | Block
 \end{lstlisting}
 
 The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} object converts always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
@@ -538,7 +539,7 @@ Unlike in some languages, conditional expressions do not require to place parent
 \syntax\begin{lstlisting}
 Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
                     ['step' Expr] For_Loop
-For_Loop        ::= 'loop' Expr 'end' ['loop']
+For_Loop        ::= 'loop' Loop_Block_Expr 'end' ['loop']
                   | '{' Loop_Block_Expr '}'
 Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
 Val_Dcls        ::= Val_Dcl
@@ -562,7 +563,7 @@ Break_Expr     ::= 'break' [label_name] [Cond_Modifier1]
 Skip_Expr      ::= 'skip' [integer_literal] [Cond_Modifier1]
 Next_Expr      ::= 'next' [label_name] [Cond_Modifier1]
 Exhausted_Expr ::= 'exhausted' Block_Expr
-Broken_Expr    ::= 'broken' Broken_Expr
+Broken_Expr    ::= 'broken' Block_Expr
 \end{lstlisting}
 
 
@@ -638,14 +639,14 @@ Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
-                   [['next'] 'else' Block]
-When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Block
+                   [['next'] 'else' Cond_Block]
+When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
 Case_Expr      ::= 'case' Simple_Expr1 Case_Body
 Case_Body      ::= semi Case_Clauses 'end' ['case']
                  | '{' Case_Clauses '}'
 Case_Clauses   ::= Case_Clause {['next'] semi Case_Clause}
-                   [['next'] 'else' Block]
-Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Block
+                   [['next'] 'else' Cond_Block]
+Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Cond_Block
 Case_Patterns  ::= Case_Pattern {',' Case_Pattern}
 Case_Pattern   ::= Stable_Id
                  | literal [('..' | '...') literal]
