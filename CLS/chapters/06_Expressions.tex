@@ -9,6 +9,7 @@
 Expr        ::= Cond_Expr
               | Loop_Expr
               | Rescue_Expr
+              | Retry_Expr
               | Raise_Expr
               | Throw_Expr
               | Catch_Expr
@@ -534,6 +535,8 @@ Unlike in some languages, conditional expressions do not require to place parent
 
 \section{Loop Expressions}
 
+Coral has an elaborate support for loop expressions. Not all structures known from other languages are supported though, e.g. the ~\lstinline[language=Java]!do $\ldots$ while!~ expression, which is expressed differently in Coral. 
+
 \subsection{Iterable For Expressions}
 
 \syntax\begin{lstlisting}
@@ -557,11 +560,13 @@ Val_Dcls        ::= Val_Dcl ['=>' Val_Dcl]
 Loop_Ctrl_Expr ::= Break_Expr
                  | Skip_Expr
                  | Next_Expr
+                 | Redo_Expr
                  | Exhausted_Expr
                  | Broken_Expr
 Break_Expr     ::= 'break' [label_name] [Cond_Modifier1]
 Skip_Expr      ::= 'skip' [integer_literal] [Cond_Modifier1]
 Next_Expr      ::= 'next' [label_name] [Cond_Modifier1]
+Redo_Expr      ::= 'redo' [label_name] [Cond_Modifier1]
 Exhausted_Expr ::= 'exhausted' Block_Expr
 Broken_Expr    ::= 'broken' Block_Expr
 \end{lstlisting}
@@ -772,6 +777,7 @@ Rescue_Expr2 ::= '{' Block '}'
 Fun_Stats    ::= Block
                  {'rescue' [Pattern [Guard]] semi Block }
                  ['ensure' semi Block_Stat {semi Block_Stat}]
+Retry_Expr   ::= 'retry' [label_name] [Cond_Modifier1]
 \end{lstlisting}
 
 
