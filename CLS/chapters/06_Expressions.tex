@@ -9,7 +9,6 @@
 Expr        ::= Cond_Expr
               | Loop_Expr
               | Rescue_Expr
-              | Retry_Expr
               | Raise_Expr
               | Throw_Expr
               | Catch_Expr
@@ -767,16 +766,18 @@ Raiseable  ::= string_literal
 \subsection{Rescue \& Ensure Expressions}
 
 \syntax\begin{lstlisting}
-Rescue_Expr  ::= Rescue_Expr1 | Rescue_Expr2
+Rescue_Expr  ::= [Label_Dcl] (Rescue_Expr1 | Rescue_Expr2)
 Rescue_Expr1 ::= 'begin' Block 
-                 {'rescue' [Pattern [Guard]] semi Block }
+                 {'rescue' [Pattern [Guard]] semi Rescue_Block }
                  ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
 Rescue_Expr2 ::= '{' Block '}' 
-                 {'rescue' [Pattern [Guard]] '{' Block '}'}
+                 {'rescue' [Pattern [Guard]] '{' Rescue_Block '}'}
                  ['ensure' '{' Block_Stat {semi Block_Stat} '}']
 Fun_Stats    ::= Block
-                 {'rescue' [Pattern [Guard]] semi Block }
+                 {'rescue' [Pattern [Guard]] semi Rescue_Block }
                  ['ensure' semi Block_Stat {semi Block_Stat}]
+Rescue_Block ::= {Rescue_Stat semi} [Result_Expr]
+Rescue_Stat  ::= Block_Stat | Retry_Expr
 Retry_Expr   ::= 'retry' [label_name] [Cond_Modifier1]
 \end{lstlisting}
 
