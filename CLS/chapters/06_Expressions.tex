@@ -25,12 +25,12 @@ Expr        ::= Cond_Expr
               | Use_Expr
               | Jump_Expr
               | Anon_Fun
+              | Anon_Class
               | Metaclass_Access
               | Workflow_Expr
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [op_id Infix_Expr]
-Simple_Expr ::= '(' Anon_Class ')'
-              | Block_Expr
+Simple_Expr ::= Block_Expr
               | Simple_Expr1 ['_']
 Result_Expr ::= Anon_Params '->' Block 
               | ['memoize'] Expr
@@ -108,6 +108,7 @@ A reference to any other member of the \code{nil} object causes \code{Method_Not
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Path
+               | '(' Anon_Class ')' '.' Selection
                | Simple_Expr '.' Selection
 Selection    ::= ['?'] (importable_id | variable_id)
 \end{lstlisting}
@@ -123,16 +124,16 @@ A designator refers to a named term. It can be a {\em simple name} or a {\em sel
 \label{sec:self-this-super}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= [Container_Path '.'] 'self'
+Simple_Expr1 ::= [Path '.'] 'self'
                  ['.' Selection]
-               | [Container_Path '.'] 'this'
+               | [Path '.'] 'this'
                  ['.' Selection]
-               | [Container_Path '.'] 'super' 
+               | [Path '.'] 'super' 
                  [Class_Qualifier] 
                  ['.' Selection]
-               | [Container_Path '.'] 'self' '[' 'cloned' ']'
+               | [Path '.'] 'self' '[' 'cloned' ']'
                  '.' (ivar_id | Selection)
-               | [Container_Path '.'] (ivar_id | cvar_id)
+               | [Path '.'] (ivar_id | cvar_id)
 \end{lstlisting}
 
 The expression \code{self} stands always for the current instance in the context and function resolution searches in the actual class of the instance. 
@@ -150,11 +151,15 @@ The expression \code{this} is the same as \code{self}, except that function reso
 \label{sec:use-expressions}
 
 \syntax\begin{lstlisting}
-Use_Expr ::= 'use' Simple_Expr 'as' 
-             [variable_id ':'] Type [Block_Expr]
+Use_Expr    ::= Use_Expr_As | Use_Aspect
+Use_Expr_As ::= 'use' Simple_Expr 'as' 
+                [variable_id ':'] Type [Block_Expr]
+Use_Aspect  ::= 'use' 'aspect' Path [Block_Expr]
 \end{lstlisting}
 
-Use expressions are similar to type cast expressions. Their intention is to rebind an expression to a specific type, and then either have this type be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. 
+Use expressions of the form ~\lstinline!use $e$ as $a$: $T$!~ are similar to type cast expressions. Their intention is to rebind an expression to a specific type, and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. 
+
+Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified aspect, either in the scope defined by the given block, or if no block is given, then from that point onward. If the expression is used as a template statement, then the aspect is enabled for the whole template anywhere, if it does not have the block part. 
 
 
 
@@ -335,7 +340,7 @@ Precedence and associativity of operators determine the grouping of parts of an 
 
 \item If there are consecutive infix operations $e_0\ \op_1\ e_1\ \op_2 \ldots \op_n\ e_n$ with operators $\op_1 \ldots \op_n$ of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). If all operators are left-associative, then the sequence is interpreted as ~\lstinline!(($e_0\ \op_1\ e_1$) $\op_2 \ldots$) $\op_n\ e_n$!. Otherwise, if all operators are right-associative, the sequence is interpreted as ~\lstinline!$e_0\ \op_1$ ($e_1\ \op_2$ ($\ldots \op_n\ e_n$))!.
 
-\item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. If $\op$ is ``\lstinline!=>!'' (right-associative), the operation is interpreted as ~\lstinline!Pair($e_1$, $e_2$)!, where \code{Pair} is a simple relative name (overrideable in the scope).
+\item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
 
 \item The right-hand operand of a left-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!$e\ \op$ ($e_1 \commadots e_n$)!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
 
@@ -480,6 +485,7 @@ Mul_Exprs       ::= [Expr {',' Expr} ',']
 
 
 \section{Conditional Expressions}
+\label{sec:conditional-expressions}
 
 \syntax\begin{lstlisting}
 Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
@@ -536,24 +542,13 @@ Unlike in some languages, conditional expressions do not require to place parent
 
 Coral has an elaborate support for loop expressions. Not all structures known from other languages are supported though, e.g. the ~\lstinline[language=Java]!do $\ldots$ while!~ expression, which is expressed differently in Coral. 
 
-\subsection{Iterable For Expressions}
-
-\syntax\begin{lstlisting}
-Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
-                    ['step' Expr] For_Loop
-For_Loop        ::= 'loop' Loop_Block_Expr 'end' ['loop']
-                  | '{' Loop_Block_Expr '}'
-Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
-Val_Dcls        ::= Val_Dcl ['=>' Val_Dcl]
-                  | Pattern1
-\end{lstlisting}
-
 
 
 
 
 
 \subsection{Loop Control Expressions}
+\label{sec:loop-control-expressions}
 
 \syntax\begin{lstlisting}
 Loop_Ctrl_Expr ::= Break_Expr
@@ -570,6 +565,51 @@ Exhausted_Expr ::= 'exhausted' Block_Expr
 Broken_Expr    ::= 'broken' Block_Expr
 \end{lstlisting}
 
+Loop control expressions are made available inside of loop expressions to allow control of the enclosing loops.
+
+In the following paragraphs, a {\em loop identified by the label $l$} is a loop expression preceded in its syntax with the syntax element \code{Label_Dcl} (\sref{sec:local-jump-expressions}). All annotations (\sref{sec:annotated-exprs}) that precede the label declaration are applied to the following loop expression, never to the label. 
+
+The ~\lstinline!break $l$!~ expression stops the loop labeled with $l$, and omitting the $l$ label stops the directly enclosing loop. 
+
+The ~\lstinline!skip $i$!~ expression skips $i$ loop iterations, or with the $i$ omitted, skips $1$ loop iteration (the current iteration). 
+
+The ~\lstinline!next $l$!~ expression skips the current loop iteration and every other enclosing iteration until the loop identified by the given label $l$ is found, and continues with its next iteration. If the label $l$ is omitted, then its behavior is equal to ~\lstinline!skip 1!. 
+
+The ~\lstinline!redo $l$!~ restarts the loop identified by the label $l$ (and stops all loops in between), or if $l$ is omitted, restarts the directly enclosing loop. 
+
+The ~\lstinline!exhausted $e$!~ expression evaluates the expression $e$ only if the directly enclosing loop {\em was not broken} with the \code{break} keyword. 
+
+The ~\lstinline!broken $e$!~ expression evaluates the expression $e$ only if the directly enclosing loop {\em was broken} with the \code{break} keyword. 
+
+The standard library provides loop-like methods, where these loop control structures are not available as keywords, but as methods instead (either imported or available on some given loop-control object) -- they might be implemented e.g. using the \code{throw} expressions (\sref{sec:throw-catch-expressions}), that the enclosing loop-like method catches and resolves as appropriate. Only the \code{exhausted} and \code{broken} constructs need to be simulated, possibly by optional parameters or additional parameter sections.\footnote{In fact, all loop expressions may be interpreted as syntax sugar to such methods. How exactly -- that may get into this specification as soon as it is clearly defined.} 
+
+
+
+
+
+\subsection{Iterable For Expressions}
+\label{sec:iterable-expressions}
+
+\syntax\begin{lstlisting}
+Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
+                    ['step' Expr] For_Loop
+For_Loop        ::= 'loop' Loop_Block_Expr 'end' ['loop']
+                  | '{' Loop_Block_Expr '}'
+Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
+Val_Dcls        ::= Val_Dcl
+                  | Pattern1
+\end{lstlisting}
+
+The {\em iterable expression} is typed as \code{Unit}, so there is no point in using its value. 
+
+In an expression ~\lstinline!for $e_1$ in $e_2$ loop $e_3$ end!, the type of $e_2$ is expected to conform to ~\lstinline!Iterable[$E$]!. The type of $e_1$ is expected to conform to the type $E$. The type of $e_3$ is evaluated to ``\lstinline!()!'' anyway. The scope of variables defined in $e_1$ extends to the $e_3$ expression. 
+
+In expression ~\lstinline!for $e_1$ in reverse $e_2$ loop $e_3$ end!, the type of $e_2$ is expected to conform to \code{Reverse_Iterable}. 
+
+Iterable expressions make use only of the two mentioned traits and the methods defined by them, and therefore advanced iterating mechanisms, such as parallel computations, are not performed -- they are simply too complex to be generalized by a simple language construct. 
+
+Iterable expression repeats evaluation of the expression $e_3$ for every value that comes from the \code{Iterable}'s \code{Iterator}, unless the loop controls alter this flow (\sref{sec:loop-control-expressions}). 
+
 
 
 
@@ -584,6 +624,19 @@ Loop_Mod_Expr ::= Expr Loop_Modifier
 Loop_Modifier ::= ('while' | 'until') Expr
 \end{lstlisting}
 
+The {\em while loop expression} ~\lstinline!while $e_1$ loop $e_2$ end!~ is typed as \code{Unit}, so there is no point in using its value. 
+
+In an expression ~\lstinline!while $e_1$ loop $e_2$ end!, the expression $e_1$ is treated the same way as the condition part in conditional expressions (\sref{sec:conditional-expressions}). The type of $e_2$ is evaluated to ``\lstinline!()!'' anyway.
+
+The while loop expression ~\lstinline!while $e_1$ loop $e_2$ end!~ is alone typed and evaluated as if it was an application of a hypothetical function ~\lstinline!while_loop ($e_1$) ($e_2$)!, where the function \code{while_loop} would be defined as follows, with the $e_1$ and $e_2$ would be passed by-name: 
+\begin{lstlisting}
+def while_loop (condition: => Boolean)(body: => Unit): Unit := 
+  if (condition) { body; while_loop(condition)(body) } else {}
+\end{lstlisting}
+The real implementation has to handle loop control expressions (\sref{sec:loop-control-expressions}), so it is not this simple. 
+
+A while loop expression repeats evaluation of the expression $e_2$ as long as $e_1$ evaluates to \code{yes}, unless the loop controls alter this flow (\sref{sec:loop-control-expressions}).
+
 
 
 
@@ -596,6 +649,17 @@ Loop_Expr  ::= [Label_Dcl] 'loop'
                '{' Loop_Block_Expr '}')
 \end{lstlisting}
 
+The {\em pure loop expression} ~\lstinline!loop $e$ end!~ is typed as \code{Unit}, so there is no point in using its value. 
+
+A pure loop expression repeats evaluation of the expression $e$ as long as the loop controls don't alter this flow (\sref{sec:loop-control-expressions}). It is basically equivalent to an iterable expression (\sref{sec:iterable-expressions}) that iterates over an endless iterator. 
+
+This expression may also be used to replace the ~\lstinline[language=Java]!do { $e_1$ } while ($e_2$)!~ expression, known from other languages, using the following structure: 
+\begin{lstlisting}
+loop
+  $e_1$
+  break if $e_2$
+end loop
+\end{lstlisting}
 
 
 
@@ -605,16 +669,98 @@ Loop_Expr  ::= [Label_Dcl] 'loop'
 
 \syntax\begin{lstlisting}
 Loop_Expr      ::= 'for' (Generator_Iter | Generator_Expr)
-Generator_Iter ::= '(' Enumerators ')' (Expr | For_Loop)
-Generator_Expr ::= '{' Enumerators semi 'yield' Expr '}'
+Generator_Iter ::= '(' Enumerators ')' {nl} (Expr | For_Loop)
+Generator_Expr ::= '{' Enumerators '}' {nl} 'yield' Expr
 Enumerators    ::= Generator {semi Enumerator}
 Enumerator     ::= Generator
-                 | Enumerator_Guard
+                 | Guard
                  | Pattern1 ':=' Expr
 Generator      ::= Pattern1 '<-' Expr [Guard]
 Guard          ::= Cond_Modifier1
 \end{lstlisting}
 
+A {\em generator iteration} ~\lstinline!for ($\enums$) $e$!~ executes expression $e$ for each binding generated by the enumerators $\enums$ and as an expression, it is typed as \code{Unit}. A {\em generator expression} ~\lstinline!for {$\enums$} yield $e$!~ evaluates expression $e$ for each binding generated by the enumerators $\enums$ and collects the results.
+
+An enumerator sequence always starts with a generator; this can be followed by further generators, value definitions or guards. A {\em generator} ~\lstinline!$p$ <- $e$!~ produces bindings from an expression $e$, which are matched in some way against pattern $p$ (\sref{sec:pattern-matching}). A {\em value definition} ~\lstinline!$p$ := $e$!~ binds the value name $p$ (or several names in a pattern $p$) to the result of evaluating the expression $e$. A {\em guard} ~\lstinline!if $e$!~ (or ~\lstinline!unless $e$!) contains a boolean expression $e$, which restricts enumerated bindings. The precise meaning of generators and guards is defined by translation to invocations of four methods: \code{map}, \code{with_filter}, \code{flat_map} and \code{each}. These methods can be implemented in different ways for different carrier types.
+
+The translation scheme is defined as follows. In a first step, every generator ~\lstinline!$p$ <- $e$!, where $p$ is not irrefutable (\sref{sec:irrefutable-patterns}) for the type of $e$, is replaced by 
+\begin{lstlisting}
+$p$ <- $e$.with_filter { when $p$ then yes else no }
+\end{lstlisting}
+
+Then, the following rules are applied repeatedly, until all comprehensions are eliminated. 
+\begin{itemize}
+
+\item A comprehensioin 
+\begin{lstlisting}
+for {$p$ <- $e$} yield $e'$
+\end{lstlisting}
+is translated to
+\begin{lstlisting}
+$e$.map { when $p$ then $e'$ }
+\end{lstlisting}
+
+\item A comprehension 
+\begin{lstlisting}
+for ($p$ <- $e$) $e'$
+\end{lstlisting}
+is translated to
+\begin{lstlisting}
+$e$.each { when $p$ then $e'$ }
+\end{lstlisting}
+
+\item A comprehension 
+\begin{lstlisting}
+for {$p$ <- $e$; $p'$ <- $e'\ \ldots$} yield $e''$
+\end{lstlisting}
+where $\ldots$ is a (possibly empty) sequence of generators, value definitions, or guards, is translated to
+\begin{lstlisting}
+$e$.flat_map { when $p$ then for {$p'$ <- $e'\ \ldots$ } yield $e''$ }
+\end{lstlisting}
+
+\item A comprehension 
+\begin{lstlisting}
+for ($p$ <- $e$; $p'$ <- $e'\ \ldots$) $e''$
+\end{lstlisting}
+where $\ldots$ is a (possibly empty) sequence of generators, value definitions, or guards, is translated to
+\begin{lstlisting}
+$e$.each { when $p$ then for ($p'$ <- $e'\ \ldots$) $e''$ }
+\end{lstlisting}
+
+\item A generator ~\lstinline!$p$ <- $e$!~ followed by a guard ~\lstinline!if $g$!~ is translated to a single generator
+\begin{lstlisting}
+$p$ <- $e$.with_filter(($x_1 \commadots x_n$) -> { $g$ })
+\end{lstlisting}
+where $x_1 \commadots x_n$ are the free variables of the pattern $p$. 
+
+\item A generator ~\lstinline!$p$ <- $e$!~ followed by a guard ~\lstinline!unless $g$!~ is translated to a single generator
+\begin{lstlisting}
+$p$ <- $e$.with_filter(($x_1 \commadots x_n$) -> { !($g$) })
+\end{lstlisting}
+where $x_1 \commadots x_n$ are the free variables of the pattern $p$. 
+
+\item A generator ~\lstinline!$p$ <- $e$!~ followed by a definition ~\lstinline!$p'$ := $e'$!~ is translated to the following generator of pairs of values, where $x$ and $x'$ are fresh names:
+\begin{lstlisting}
+($p$, $p'$) <- for {$x$ @ $p$ <- $e$} yield { val $x'$ @ $p'$ := $e'$; ($x$, $x'$) }
+\end{lstlisting}
+
+\end{itemize}
+
+\example The following code produces all pairs of numbers between $1$ and $n - 1$, whose sums are prime numbers. 
+\begin{lstlisting}
+for { i <- 1..n
+      j <- 1..i
+      if prime? i + j
+} yield (i, j)
+\end{lstlisting}
+The comprehension is translated to:
+\begin{lstlisting}
+(1..n).flat_map {
+  when i then (1..i).
+    with_filter { (j) -> { prime? i + j } }.
+    map { when j then (i, j) }
+}
+\end{lstlisting}
 
 
 
@@ -704,6 +850,7 @@ Return_Expr ::= ['memoize'] 'return' Var_Def 'do'
 
 
 \subsection{Local Jump Expressions}
+\label{sec:local-jump-expressions}
 
 \syntax\begin{lstlisting}
 Jump_Expr  ::= Goto_Expr | Label_Dcl
@@ -732,6 +879,7 @@ Delimited continuations are defined with \code{reset} and \code{shift} functions
 
 
 \section{Throw \& Catch Expressions}
+\label{sec:throw-catch-expressions}
 
 \syntax\begin{lstlisting}
 Catch_Expr  ::= Catch_Expr1 | Catch_Expr2
@@ -754,7 +902,7 @@ Throw_Expr  ::= 'throw' Expr
 \syntax\begin{lstlisting}
 Raise_Expr ::= 'raise' Raiseable
 Raiseable  ::= string_literal
-             | Container_Path [',' string_literal]
+             | Path [',' string_literal]
              | Expr
 \end{lstlisting}
 

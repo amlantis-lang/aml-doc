@@ -415,11 +415,11 @@ Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] variable_id 
                 [':' Param_Type] [':=' Expr]
-                | Literal
+                | Literalw
 Param_Extra   ::= [Param_Io] [Param_Rw] ['*' | '**' | '&'] [':']
 Param_Io      ::= 'in' ['out'] | 'out'
 Param_Rw      ::= 'val' | 'var'
-Param_Type    ::= Type | '`\$`' constant_id | '=>' [Type | '_']
+Param_Type    ::= Type | '`\$`' constant_id | '=>' (Type | '_')
 \end{lstlisting}
 
 % TBD: update Fun_Def to include the optional rescue ... rescue ... ensure

@@ -272,6 +272,16 @@ A regular expression pattern $p$ ({\em regexp pattern}) is a variant of literal 
 
 Regular expression patterns are not designed to match against algebraic data structures. 
 
+\subsection{Irrefutable Patterns}
+\label{sec:irrefutable-patterns}
+
+A patter $p$ is {\em irrefutable} for a type $T$, if one of the following applies: 
+\begin{enumerate}
+\item $p$ is a variable pattern (\sref{sec:variable-patterns}),
+\item $p$ is a typed pattern ~\lstinline!$x$: $T'$! (\sref{sec:typed-patterns}), and ~\lstinline!$T$ <: $T'$!,
+\item $p$ is a constructor pattern ~\lstinline!$c$($p_1 \ldots p_n$)! (\sref{sec:constructor-patterns}), the type $T$ is an instance of a class $c$, the primary constructor (\sref{sec:class-definitions}) of type $T$ has argument types $T_1 \commadots T_n$, and each $p_i$ is irrefutable for type $T_i$. 
+\end{enumerate}
+
 
 
 
