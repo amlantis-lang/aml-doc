@@ -602,13 +602,65 @@ Val_Dcls        ::= Val_Dcl
 
 The {\em iterable expression} is typed as \code{Unit}, so there is no point in using its value. 
 
-In an expression ~\lstinline!for $e_1$ in $e_2$ loop $e_3$ end!, the type of $e_2$ is expected to conform to ~\lstinline!Iterable[$E$]!. The type of $e_1$ is expected to conform to the type $E$. The type of $e_3$ is evaluated to ``\lstinline!()!'' anyway. The scope of variables defined in $e_1$ extends to the $e_3$ expression. 
+In an expression ~\lstinline!for $e_1$ in $e_2$ loop $e_3$ end!, the type of $e_2$ is expected to conform to ~\lstinline!Iterable_Like[$E$]!. The type of $e_1$ is expected to conform to the type $E$. The type of $e_3$ is evaluated to ``\lstinline!()!'' anyway. The scope of variables defined in $e_1$ extends to the $e_3$ expression. 
 
-In expression ~\lstinline!for $e_1$ in reverse $e_2$ loop $e_3$ end!, the type of $e_2$ is expected to conform to \code{Reverse_Iterable}. 
+In expression ~\lstinline!for $e_1$ in reverse $e_2$ loop $e_3$ end!, the type of $e_2$ is expected to conform to \code{Reverse_Iterable_Like}. 
 
 Iterable expressions make use only of the two mentioned traits and the methods defined by them, and therefore advanced iterating mechanisms, such as parallel computations, are not performed -- they are simply too complex to be generalized by a simple language construct. 
 
-Iterable expression repeats evaluation of the expression $e_3$ for every value that comes from the \code{Iterable}'s \code{Iterator}, unless the loop controls alter this flow (\sref{sec:loop-control-expressions}). 
+Iterable expression repeats evaluation of the expression $e_3$ for every value that comes from the \code{Iterable_Like}'s \code{Iterator}, unless the loop controls alter this flow (\sref{sec:loop-control-expressions}).
+
+Iterable expressions are simple comprehensions over iterating a single iterable value. For more complex iterating expressions, see generators (\sref{sec:generator-expressions}).
+
+An expression 
+\begin{lstlisting}
+for $e_1$ in $e_2$ loop $e_3$ end
+\end{lstlisting} 
+is translated to the invocation
+\begin{lstlisting}
+$e_2$.each { when $e_1$ then $e_3$ }
+\end{lstlisting} 
+
+An expression 
+\begin{lstlisting}
+<<$l$>> for $e_1$ in $e_2$ loop $e_3$ end
+\end{lstlisting} 
+where $l$ is a label name, is translated to the invocation
+\begin{lstlisting}[deletekeywords={label}]
+$e_2$.each({ when $e_1$ then $e_3$ }, label: $l'$)
+\end{lstlisting}
+where $l'$ is a symbol literal for the label $l$. 
+
+An expression 
+\begin{lstlisting}
+for $e_1$ in reverse $e_2$ loop $e_3$ end
+\end{lstlisting} 
+is translated to the invocation
+\begin{lstlisting}[deletekeywords={reverse}]
+$e_2$.reverse.each { when $e_1$ then $e_3$ }
+\end{lstlisting} 
+
+An expression 
+\begin{lstlisting}
+<<$l$>> for $e_1$ in reverse $e_2$ loop $e_3$ end
+\end{lstlisting} 
+where $l$ is a label name, is translated to the invocation
+\begin{lstlisting}[deletekeywords={label,reverse}]
+$e_2$.reverse.each({ when $e_1$ then $e_3$ }, label: $l'$)
+\end{lstlisting}
+where $l'$ is a symbol literal for the label $l$. 
+
+An expression 
+\begin{lstlisting}
+for $e_1$ in $e_2$ step $i$ loop $e_3$ end
+\end{lstlisting} 
+is translated to the invocation
+\begin{lstlisting}[deletekeywords={step}]
+$e_2$.each({ when $e_1$ then $e_3$ }, step: $i$)
+\end{lstlisting} 
+
+Analogously, other combinations of \code{reverse}, \code{skip} and labeled loops are translated. If the $e_3$ expression contains a \code{exhausted} expression, then it's block is passed to the \code{each} method as an argument named \lstinline[deletekeywords={exhausted}]{exhausted}, and analogously, if the $e_3$ expression contains a \code{broken} expression, then it's block is passed to the \code{each} method as an argument named \lstinline[deletekeywords={broken}]{broken}.
+
 
 
 
@@ -630,10 +682,12 @@ In an expression ~\lstinline!while $e_1$ loop $e_2$ end!, the expression $e_1$ i
 
 The while loop expression ~\lstinline!while $e_1$ loop $e_2$ end!~ is alone typed and evaluated as if it was an application of a hypothetical function ~\lstinline!while_loop ($e_1$) ($e_2$)!, where the function \code{while_loop} would be defined as follows, with the $e_1$ and $e_2$ would be passed by-name: 
 \begin{lstlisting}
-def while_loop (condition: => Boolean)(body: => Unit): Unit := 
-  if (condition) { body; while_loop(condition)(body) } else {}
+def while_loop (condition: => Boolean)(body: => Unit): Unit := {
+<<repeat>>
+  if (condition) { body; goto repeat } else {}
+}
 \end{lstlisting}
-The real implementation has to handle loop control expressions (\sref{sec:loop-control-expressions}), so it is not this simple. 
+The real implementation has to handle loop control expressions (\sref{sec:loop-control-expressions}) around the evaluation of \code{body} and also handle a label, if one is given; so it is not this simple. 
 
 A while loop expression repeats evaluation of the expression $e_2$ as long as $e_1$ evaluates to \code{yes}, unless the loop controls alter this flow (\sref{sec:loop-control-expressions}).
 
@@ -666,6 +720,7 @@ end loop
 
 
 \section{Generator Expressions}
+\label{sec:generator-expressions}
 
 \syntax\begin{lstlisting}
 Loop_Expr      ::= 'for' (Generator_Iter | Generator_Expr)
@@ -675,7 +730,7 @@ Enumerators    ::= Generator {semi Enumerator}
 Enumerator     ::= Generator
                  | Guard
                  | Pattern1 ':=' Expr
-Generator      ::= Pattern1 '<-' Expr [Guard]
+Generator      ::= [Label_Dcl] Pattern1 '<-' Expr [Guard]
 Guard          ::= Cond_Modifier1
 \end{lstlisting}
 
@@ -700,6 +755,16 @@ is translated to
 $e$.map { when $p$ then $e'$ }
 \end{lstlisting}
 
+\item A comprehension
+\begin{lstlisting}
+for {<<$l$>> $p$ <- $e$} yield $e'$
+\end{lstlisting}
+where $l$ is a label name, is translated to
+\begin{lstlisting}[deletekeywords={label}]
+$e$.map({ when $p$ then $e'$ }, label: $l'$)
+\end{lstlisting}
+where $l'$ is a symbol literal for the label $l$. 
+
 \item A comprehension 
 \begin{lstlisting}
 for ($p$ <- $e$) $e'$
@@ -708,6 +773,16 @@ is translated to
 \begin{lstlisting}
 $e$.each { when $p$ then $e'$ }
 \end{lstlisting}
+
+\item A comprehension 
+\begin{lstlisting}
+for (<<$l$>> $p$ <- $e$) $e'$
+\end{lstlisting}
+where $l$ is a label name, is translated to
+\begin{lstlisting}[deletekeywords={label}]
+$e$.each({ when $p$ then $e'$ }, label: $l$)
+\end{lstlisting}
+where $l'$ is a symbol literal for the label $l$. 
 
 \item A comprehension 
 \begin{lstlisting}
@@ -720,11 +795,36 @@ $e$.flat_map { when $p$ then for {$p'$ <- $e'\ \ldots$ } yield $e''$ }
 
 \item A comprehension 
 \begin{lstlisting}
+for {<<$l$>> $p$ <- $e$; $p'$ <- $e'\ \ldots$} yield $e''$
+\end{lstlisting}
+where $l$ is a label name, and where $\ldots$ is a (possibly empty) sequence of generators, value definitions, or guards, is translated to
+\begin{lstlisting}[deletekeywords={label}]
+$e$.flat_map(
+  { when $p$ then for {$p'$ <- $e'\ \ldots$ } yield $e''$ },
+  label: $l$
+)
+\end{lstlisting}
+where $l'$ is a symbol literal for the label $l$. 
+
+\item A comprehension 
+\begin{lstlisting}
 for ($p$ <- $e$; $p'$ <- $e'\ \ldots$) $e''$
 \end{lstlisting}
 where $\ldots$ is a (possibly empty) sequence of generators, value definitions, or guards, is translated to
 \begin{lstlisting}
 $e$.each { when $p$ then for ($p'$ <- $e'\ \ldots$) $e''$ }
+\end{lstlisting}
+
+\item A comprehension 
+\begin{lstlisting}
+for (<<$l$>> $p$ <- $e$; $p'$ <- $e'\ \ldots$) $e''$
+\end{lstlisting}
+where $\ldots$ is a (possibly empty) sequence of generators, value definitions, or guards, is translated to
+\begin{lstlisting}[deletekeywords={label}]
+$e$.each(
+  { when $p$ then for ($p'$ <- $e'\ \ldots$) $e''$ },
+  label: $l$
+)
 \end{lstlisting}
 
 \item A generator ~\lstinline!$p$ <- $e$!~ followed by a guard ~\lstinline!if $g$!~ is translated to a single generator
@@ -746,21 +846,31 @@ where $x_1 \commadots x_n$ are the free variables of the pattern $p$.
 
 \end{itemize}
 
+Generators in generator expression can optionally have a label $l$ assigned, so that expressions like ~\lstinline!break $l$!~ could work.\footnote{It is up to the concrete method how it handles the invocation, which uses \code{throw}-\code{catch} expressions -- however, ignoring it may result in an uncaught \code{Throwable} killing the thread.} Like with other loop expressions, if an \code{exhausted} or a \code{broken} loop control expression is given in the generator iteration expression $e$, it is passed to the outermost \code{each} method as a named argument, possibly along the \code{label} argument. 
+
 \example The following code produces all pairs of numbers between $1$ and $n - 1$, whose sums are prime numbers. 
 \begin{lstlisting}
-for { i <- 1..n
-      j <- 1..i
-      if prime? i + j
+for { i <- 1 .. n
+      j <- 1 .. i
+      if is_prime? i + j
 } yield (i, j)
 \end{lstlisting}
 The comprehension is translated to:
 \begin{lstlisting}
 (1..n).flat_map {
-  when i then (1..i).
-    with_filter { (j) -> { prime? i + j } }.
+  when i then (1 .. i).
+    with_filter { (j) -> { is_prime? i + j } }.
     map { when j then (i, j) }
 }
 \end{lstlisting}
+
+\example Generator expressions can be used to express vector and matrix algorithms concisely.
+\begin{lstlisting}[mathescape=false]
+def transpose[$A](xss: List[List[$A]]) :=
+  for {i <- O .. (xss(0).length)} yield {
+    for (xs <- xss) yield xs(i)
+  }
+\end{lstlisting} 
 
 
 
