@@ -715,6 +715,20 @@ loop
 end loop
 \end{lstlisting}
 
+A pure loop expression is the only expression that is not translated into a method call, but rather into another expression. The following constructs are practically the same: 
+\begin{lstlisting}
+// construct with loop
+loop
+  $\ldots$
+end loop
+
+// construct with goto
+label loop_begin
+  $\ldots$
+  goto loop_begin
+\end{lstlisting}
+However, the loop construct has built-in support for loop control expressions. 
+
 
 
 
@@ -866,11 +880,21 @@ The comprehension is translated to:
 
 \example Generator expressions can be used to express vector and matrix algorithms concisely.
 \begin{lstlisting}[mathescape=false]
-def transpose[$A](xss: List[List[$A]]) :=
-  for {i <- O .. (xss(0).length)} yield {
+def transpose[$A](xss: List[List[$A]]): List[List[$A]] :=
+  for {i <- 0 .. xss(0).length} yield {
     for (xs <- xss) yield xs(i)
   }
 \end{lstlisting} 
+The comprehension is translated to: 
+\begin{lstlisting}[mathescape=false]
+def transpose[$A](xss: List[List[$A]]): List[List[$A]] := 
+  (0 .. xss(0).length).
+    map { 
+      when i then xss.
+        map { when xs then xs(i) }
+    }
+\end{lstlisting}
+
 
 
 
@@ -885,6 +909,8 @@ Bag_Literal        ::= '%' Collection_Flags '(' 'for' Generator_Expr ')'
 \end{lstlisting}
 
 Collection comprehensions extend the syntax of collection ``literals''\footnote{Pure literals are terminal symbols in the language, but collection literals are wrappers around virtually any expression.}, so that collections may be defined by not their explicit values, but by a function that generates them -- and that function is a generator. Only tuple literals don't have collection comprehension, due to their special nature within the language. 
+
+Note that the generator expression for dictionary literal comprehension has to generate values of type ~\lstinline!($K$, $E$)!, where $K$ is the type of the keys and $E$ is the type of mapped values. 
 
 
 
@@ -914,6 +940,20 @@ Case_Pattern   ::= Stable_Id
                  | Infix_Expr
 \end{lstlisting}
 
+Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given. 
+
+Case expressions 
+\begin{lstlisting}
+case $e$ { when $c_1$ then $b_1\ \ldots$ when $c_n$ then $b_n$ else $b_{n+1}$ }
+\end{lstlisting}
+are simplified pattern matching expressions, though they do not use pattern matching at all, but {\em case equality} instead, defined with the method ``\lstinline!===!''. Thus, case expressions do not aim at matching the selector expression $e$, thus decomposing the selector $e$, but rather tests if it falls into a particular set of values, defined using the case equality method, by:
+\begin{itemize}
+\item a type of values ~\lstinline!$c$.`===`($e$)!,
+\item a range of values ~\lstinline!($e_1$ .. $e_2$).`===`($e$)!, 
+\item a set of values defined by another value ~\lstinline!$e_1$.`===`($e$)!.
+\end{itemize}
+
+Multiple values can define a case pattern, for convenience. Note that no variables are bound from the case pattern to the corresponding block.
 
 
 

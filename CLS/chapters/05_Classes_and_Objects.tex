@@ -1465,12 +1465,13 @@ This constrained type declares \code{Even_Positive_Ints} to be positive integers
 \label{sec:range-types}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= constant_id 'is' 'range' 
-                   (Range_Expr 
-                 | '(' Range_Expr ')' [':' Path])
+Const_Type_Def  ::= constant_id 'is' 'range' 
+                    (Range_Type_Expr 
+                  | '(' Ranged_Type_Expr ')' [':' Path])
+Range_Type_Expr ::= Infix_Expr ('..' | '...') Infix_Expr
 \end{lstlisting}
 
-Range types are similar to constrained types, but limited in a few ways: they can constrain only indexed types that are indexed with exactly one indexing variable. The range expression is converted into the corresponding indexing constraint. 
+Range types are similar to constrained types, but limited in a few ways: they can constrain only indexed types that are indexed with exactly one indexing variable. The range expression is converted into the corresponding indexing constraint. Note that the value of each infix expression on both sides is expected to result in a ``sort'' value, and both are dynamically evaluated on range type definition time.  
 
 \example An example of a constrained type interchangeable with a range type:
 \begin{lstlisting}

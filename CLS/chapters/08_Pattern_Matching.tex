@@ -334,9 +334,24 @@ When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Block
 
 A pattern matching expression 
 \begin{lstlisting}
-match e { when $p_1$ then $b_1$ $\ldots$ when $p_n$ then $b_n$ else $b_{n+1}$ }
+match $e$ { when $p_1$ then $b_1\ \ldots$ when $p_n$ then $b_n$ else $b_{n+1}$ }
 \end{lstlisting}
-consists of a selector expression $e$, a number $n > 0$ of cases and an optional ``default'' case, denoted with \code{else} keyword. Each case consists of a (possibly guarded) pattern $p_i$ and a block $b_i$, or just the block $b_{n+1}$. Each $p_i$ might be complemented by a guard \code{if e} or \code{unless e}, where $e$ is a the guarding expression that is evaluated as boolean. The scope of the pattern variables in $p_i$ comprises the pattern's guard and the corresponding block $b_i$. 
+consists of a selector expression $e$ and a number $n > 0$ of cases. Each case consists of a (possibly guarded) pattern $p_i$, a block $b_i$ and optionally the default block $b_{n+1}$, if none of the patterns matched. Each $p_i$ might be complemented by a guard \code{if e} or \code{unless e}, where $e$ is a guarding expression, that is typed as \code{Boolean}. The scope of the pattern variables in $p_i$ comprises the pattern's guard and the corresponding block $b_i$. If the following when clause ~\lstinline!when $p_{i+1}$ then $b_{i+1}$! is preceded by the keyword \code{next}, then the pattern variables in $p_i$ do not comprise the block $b_{i+1}$ and neither the pattern $p_{i+1}$. 
+
+Let $T$ be the type of the selector expression $e$. Every pattern $e \in \{ p_1 \ldots p_n \}$ is typed with $T$ as its expected type. 
+
+The expected type of every block $b_i$ is the expected type of the whole pattern matching expression. The type of the pattern matching expression is then the weak least upper bound (\sref{sec:weak-conformance}) of the types of all blocks $b_i$. 
+
+When applying a pattern matching expression to a selector value, patterns are tried in given order, until one is found that matches the selector value. Say this \code{when} clause is ~\lstinline!when $p_i$ then $b_i$!. The result of the whole expression is then the result of evaluating $b_i$, where all pattern variables of $p_i$ are bound to the corresponding parts of the selector value. If no matching pattern is found, a \code{No_Match_Error} is raised. 
+
+The pattern in a \code{when} clause may also be followed by a guard suffix ~\lstinline!if $e$! with a boolean expression $e$. The guard expression is evaluated if the preceding pattern in the case matches. If the guard expression evaluates to \code{yes}, the pattern match succeeds as normal. If the guard expression evaluates to \code{yes}, the pattern in the case is considered not to match and the search for a matching pattern continues. 
+
+The pattern in a case may also be followed by a guard suffix ~\lstinline!unless $e$! with a boolean expression $e$. The guard expression is evaluated as if it was ~\lstinline@if !$e$@. 
+
+In the interest of efficiency the evaluation of a pattern matching expression may try patterns in some other order than the textual sequence, even parallelized (indeed, compiler would not decide this on its own -- it has to be specified with an annotation or a pragma (\sref{sec:annotations}) applied to the pattern matching expression). This might affect evaluation through side effects in guards. However, it is guaranteed that a guard expression is evaluated only if the pattern it guards matches.
+
+If the selector of a pattern match is an instance of a \code{sealed} class (\sref{sec:modifiers}), the compilation of the pattern matching expression can emit warnings, which diagnose that a given set of patterns is not exhaustive, i.e. there is a possibility of a \code{No_Match_Error} being raised at runtime. 
+
 
 
 
