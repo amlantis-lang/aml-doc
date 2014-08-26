@@ -953,6 +953,10 @@ are simplified pattern matching expressions, though they do not use pattern matc
 \item a set of values defined by another value ~\lstinline!$e_1$.`===`($e$)!.
 \end{itemize}
 
+Let $T$ be the type of the selector expression $e$. The parameter $p_i$ of each invocation of the method ``\lstinline!===!'' is typed with $T$ as its expected type. It is an error if $T$ does not conform to the actual type of the parameter, as the invocation would not be applicable (\sref{sec:function-applications}). The method ``\lstinline!===!'' may be overloaded for multiple parameter types, then overloading resolution (\sref{sec:overloading-resolution}) applies as usual. 
+
+The expected type of every block $b_i$ is the expected type of the whole pattern matching expression. The type of the pattern matching expression is then the weak least upper bound (\sref{sec:conformance}) of the types of all blocks $b_i$.
+
 Multiple values can define a case pattern, for convenience. Note that no variables are bound from the case pattern to the corresponding block.
 
 
