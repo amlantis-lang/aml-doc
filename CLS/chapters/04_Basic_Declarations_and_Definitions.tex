@@ -390,7 +390,7 @@ A variance annotation constrains the way the annotated type variable may appear 
 
 \section{Function Declarations \& Definitions}
 
-\syntax\begin{lstlisting}[escapechar=`]
+\syntax\begin{lstlisting}
 Dcl           ::= 'def' Fun_Dcl 'end' ['def']
                 | 'message' Fun_Dcl 'end' ['message']
                 | 'function' Fun_Dcl 'end' ['function']
@@ -415,11 +415,12 @@ Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] variable_id 
                 [':' Param_Type] [':=' Expr]
-                | Literalw
-Param_Extra   ::= [Param_Io] [Param_Rw] ['*' | '**' | '&'] [':']
+                | Literal
+Param_Extra   ::= ['lazy'] [Param_Io] [Param_Rw] 
+                  ['*' | '&' | '^']
 Param_Io      ::= 'in' ['out'] | 'out'
 Param_Rw      ::= 'val' | 'var'
-Param_Type    ::= Type | '`\$`' constant_id | '=>' (Type | '_')
+Param_Type    ::= ['=>' | '=>>'] (Type | tp_id | '_')
 \end{lstlisting}
 
 % TBD: update Fun_Def to include the optional rescue ... rescue ... ensure
@@ -448,7 +449,7 @@ The order in which different kinds of value parameters may appear is as follows:
 
 \item $n$ post mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
 
-\item $n$ named parameters (\sref{sec:named-parameters}): \lstinline@:$x$ : $T$@ or \lstinline@:$x$ : $T$ := $e$@, where $n \ge 0$. 
+\item $n$ named parameters (\sref{sec:named-parameters}): \lstinline@:$x$ : $T$@ or \lstinline@^$x$: $T$ := $e$@, where $n \ge 0$. 
 
 \item $n$ captured named parameters (\sref{sec:captured-named-parameters}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
 
@@ -479,24 +480,92 @@ Parameters may be optionally flagged with \code{var} and \code{val} keywords, mo
 
 
 
+\subsection{Parameter Evaluation Strategies}
+\label{sec:param-eval-strategies}
+
+Note: This section applies (from the other side of the wall) to function applications (\sref{sec:function-applications}) as well, but it's pointless to have it duplicated over there. 
+
+Coral utilizes five parameter (resp. argument) evaluation strategies. Every strategy defers evaluation of argument values until the function application is resolved, using only arguments' expected types -- see (\sref{sec:overloading-resolution}). 
+
+\paragraph{Call-by-value, strict}
+Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. This includes explicit parameter values (\sref{sec:explicit-parameters}).
+
+\paragraph{Call-by-reference, strict}
+Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are described in (\sref{sec:io-parameters}) as {\em output parameters}. 
+
+\paragraph{Call-by-name, non-strict}
+The argument is not evaluated until accessed, and is re-evaluated each time it is accessed, providing another tool to create DSLs. Those are described in (\sref{sec:by-name-parameters}). 
+
+\paragraph{Call-by-need, non-strict}
+Also known as {\em lazy evaluation}, this is a memoized version of {\em call-by-name} strategy. The difference is, {\em call-by-need} parameters are not re-evaluated, once they are evaluated. 
+
+\paragraph{Call-by-future, non-deterministic}
+This is a rather experimental feature of Coral, depending on whether the Coral VM is capable of parallelization and whether there are defined standard tools for ``system'' parallelization. These are described in (\sref{sec:by-future-parameters}).
+
+
+
+
+
 
 \subsection{By-Name Parameters}
 \label{sec:by-name-parameters}
 
 \syntax\begin{lstlisting}
-Param_Type ::= '=>' [Type | '_']
+Param_Extra ::= ['lazy'] ['in'] ['val']
+                ['*' | '^']
+Param_Type  ::= '=>' (Type | tp_id | '_')
 \end{lstlisting}
 
-The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function. That is, the argument is evaluated using {\em call-by-name}. 
+The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function.
 
 The by-name modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). The by-name modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
 
-By-name parameters require a specific application (\sref{sec:by-name-arguments}). A by-name parameter bound to a wildcard type ``\lstinline!_!'' matches any type of by-name argument. 
+A by-name parameter bound to a wildcard type ``\lstinline!_!'' matches any type of by-name argument. 
 
 By-name parameters with default value expressions evaluate the default value expression each time the parameter is accessed, unlike optional parameters that evaluate the default value expression only once. 
 
-By-name parameters imply the \code{val} flag, and disallow the \code{var} flag. 
 
+
+
+
+
+\subsection{By-Need Parameters}
+\label{sec:by-need-parameters}
+
+\syntax\begin{lstlisting}
+Param_Extra ::= 'lazy' ['in'] [Param_Rw]
+                ['*' | '^']
+\end{lstlisting}
+
+The parameter definition may be preceded by \code{lazy} keyword. This indicates that the corresponding argument is not evaluated before function application, but instead is evaluated the first time used within the function. 
+
+The by-need modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). The by-need modifier implies \code{val} parameter and is allowed for \code{var} parameters. 
+
+By-need parameters with default value expressions evaluate the default value expression the first time the parameter is accessed, like optional parameters that evaluate the default value expression only once. 
+
+
+
+
+
+
+\subsection{By-Future Parameters}
+\label{sec:by-future-parameters}
+
+\syntax\begin{lstlisting}
+Param_Extra ::= ['lazy'] ['in'] ['val']
+                ['*' | '^']
+Param_Type  ::= '=>>' (Type | tp_id | '_')
+\end{lstlisting}
+
+By-future uses a concurrent evaluation strategy: the value of a future expression is computed concurrently with the flow of the rest of the program (on a new thread/worker). When the value of the future is needed, the invoking thread blocks until the future finishes computing, if it has not already completed by then. 
+
+This strategy is non-deterministic, as the evaluation can occur at any time between when the future is created (when the function is applied) and when the value of the future is used. 
+
+The by-future modifier is disallowed for output parameters (\sref{sec:io-parameters} \& \sref{sec:io-arguments}) and for implicit parameters (\sref{sec:implicit-parameters}). The by-future modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
+
+By-future parameters with default value expressions evaluate the default value also as a future value, if the argument is not explicitly given. 
+
+By-future parameter prefix is omitted from examples of valid parameter definitions, but it's allowed occurrence is the same as of by-name parameters (\sref{sec:by-name-parameters}). 
 
 
 
@@ -509,7 +578,7 @@ By-name parameters imply the \code{val} flag, and disallow the \code{var} flag.
 Param ::= Literal
 \end{lstlisting}
 
-The parameter may be specified by its literal value. Such parameters may only appear where positional parameters may appear. The type of the parameter is the type of the literal value. Methods with explicit parameters are preferred during method resolution to methods with the same parameter types (\sref{sec:function-applications}), but it is an error if more than one method with explicit parameters match the function application. 
+The parameter may be specified by its literal value. Such parameters may only appear where positional parameters may appear. The type of the parameter is the inferred type of the literal value. Methods with explicit parameters are preferred during method resolution to methods with the same parameter types (\sref{sec:function-applications}), but it is an error if more than one method with explicit parameters match the function application. 
 
 The recommendation for usage of these parameters are: 
 \begin{itemize}
@@ -611,7 +680,7 @@ in var *$x$: $T$
 in val *$x$: $T$
 \end{lstlisting}
 
-Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em repeated} parameter inside the method is then a list type \lstinline!List[$T$]!. Methods with repeated parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). 
+Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em repeated} parameter inside the method is then a list type \lstinline!Sequence[$T$]!. Methods with repeated parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). 
 
 If a repeated parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the list. Repeated parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 
@@ -658,40 +727,40 @@ sum *xs
 
 Named parameters are of the forms:
 \begin{lstlisting}
-:$x$ : $T$
-var :$x$ : $T$
-val :$x$ : $T$
-in :$x$ : $T$
-in var :$x$ : $T$
-in val :$x$ : $T$
-out :$x$ : $T$
-out var :$x$ : $T$
-in out :$x$ : $T$
-in out var :$x$ : $T$
-:$x$ : $T$ := $e$
-var :$x$ : $T$ := $e$
-val :$x$ : $T$ := $e$
-in :$x$ : $T$ := $e$
-in var :$x$ : $T$ := $e$
-in val :$x$ : $T$ := $e$
-:$x$ : => $T$
-val :$x$ : => $T$
-in :$x$ : => $T$
-in val :$x$ : => $T$
-:$x$ : => $T$ := $e$
-val :$x$ : => $T$ := $e$
-in :$x$ : => $T$ := $e$
-in val :$x$ : => $T$ := $e$
+^$x$: $T$
+var ^$x$: $T$
+val ^$x$: $T$
+in ^$x$: $T$
+in var ^$x$: $T$
+in val ^$x$: $T$
+out ^$x$: $T$
+out var ^$x$: $T$
+in out ^$x$: $T$
+in out var ^$x$: $T$
+^$x$: $T$ := $e$
+var ^$x$: $T$ := $e$
+val ^$x$: $T$ := $e$
+in ^$x$: $T$ := $e$
+in var ^$x$: $T$ := $e$
+in val ^$x$: $T$ := $e$
+^$x$: => $T$
+val ^$x$: => $T$
+in ^$x$: => $T$
+in val ^$x$: => $T$
+^$x$: => $T$ := $e$
+val ^$x$: => $T$ := $e$
+in ^$x$: => $T$ := $e$
+in val ^$x$: => $T$ := $e$
 \end{lstlisting}
 
 Captured named parameters are of the form: 
 \begin{lstlisting}
-**$x$ : $T$
-var **$x$ : $T$
-val **$x$ : $T$
-in **$x$ : $T$
-in var **$x$ : $T$
-in val **$x$ : $T$
+**$x$: $T$
+var **$x$: $T$
+val **$x$: $T$
+in **$x$: $T$
+in var **$x$: $T$
+in val **$x$: $T$
 \end{lstlisting}
 
 Named parameters are a way of allowing users of the method to write down arguments in any order, provided that their name is given at function application (\sref{sec:function-applications} \& \sref{sec:named-optional-arguments}). Named parameters may have a default value expression and may be both input and output. Named parameters are disallowed for repeated parameters. Named parameters inside the method is then accessible the same way as a positional parameter. 

@@ -173,20 +173,20 @@ Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified as
 
 \syntax\begin{lstlisting}
 Simple_Expr1   ::= Simple_Expr1 Argument_Exprs 
-Argument_Exprs ::= '(' [Arg_Exprs] ')' [Block_Expr]
-                 | '(' [Arg_Exprs ','] '*' Expr ')' [Block_Expr]
-                 | '(' [Arg_Exprs ','] ['*' Expr ','] '**' Expr ')'
-                   [Block_Expr]
-                 | Arg_Exprs [Block_Expr2]
-                 | [Arg_Exprs ','] '*' Expr [Block_Expr2]
-                 | [Arg_Exprs ','] ['*' Expr ','] '**' Expr
-                   [Block_Expr2]
+Argument_Exprs ::= Parens_Args {Parens_Args} [Block_Expr] 
+                 | Poetry_Args [Block_Expr2]
                  | Block_Expr
-Arg_Exprs      ::= Arg_Expr {',' Arg_Expr}
-Arg_Expr       ::= Expr
+                 
+Parens_Args ::= '(' Args_Expr ')'
+Poetry_Args ::= Args_Expr
+Args_Expr   ::= [[Arg_Exprs ','] '*' Expr ','] Arg_Exprs [',' '**' Expr]
+              | [Arg_Exprs ','] '*' Expr [',' '**' Expr]
+              | '**' Expr
+Arg_Exprs   ::= Arg_Expr {',' Arg_Expr}
+Arg_Expr    ::= [['out'] [variable_id ':'] | '&'] Expr
 \end{lstlisting}
 
-% TBD: extend this section, note tuple of arguments
+% TBD: extend this section
 
 
 
@@ -1189,12 +1189,11 @@ Statement can be an import via a use clause (\sref{sec:use-clauses}), a definiti
 
 
 
-\section{Conversions}
-
-\subsection{Explicit Conversions}
-
-\subsection{Implicit Conversions}
+\section{Implicit Conversions}
 \label{sec:implicit-conversions}
+
+\subsection{Overloading Resolution}
+\label{sec:overloading-resolution}
 
 \section{Workflows}
 \label{sec:workflows}

@@ -7,11 +7,11 @@
 Type                ::= Function_Type
                       | Compound_Type [Existential_Clauses]
 Function_Type       ::= Function_Args {'->' Function_Args} 
-                        '->' Return_Type
+                        '->' Type
 Function_Args       ::= Compound_Type
                       | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg        ::= [Param_Io] ['*'] [':' variable_id] Param_Type
-                      | '&' Function_Type
+Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['^'] variable_id ':'] 
+                        Param_Type
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
 Existential_Dcl     ::= 'type' Type_Dcl
@@ -296,13 +296,12 @@ The \code{refinement} keyword may also be omitted from a compound type that cons
 \label{sec:function-types}
 
 \syntax\begin{lstlisting}
-Type          ::= [Function_Args {'->' Function_Args}] 
-                  '->' Return_Type
+Type          ::= Function_Args {'->' Function_Args}
+                  '->' Type
 Function_Args ::= Compound_Type
                 | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg  ::= [Param_Io] ['*'] [':' variable_id] Param_Type
-                | '&' Function_Type
-Return_Type   ::= Type | '(' ')'
+Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['^'] variable_id ':']
+                  Param_Type
 \end{lstlisting}
 
 The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. Empty arguments list is indeed also possible as \lstinline@-> $R$@, equivalent to \lstinline@() -> $R$@.
@@ -313,14 +312,14 @@ Function types are shorthands for class types that conform to the \lstinline@Fun
 
 \begin{lstlisting}[escapechar=`]
 protocol Function_$n$[-`\$`$T_1$ $\commadots$ -`\$`$T_n$, +`\$`$R$]
-  message apply ($x_1$ : `\$`$T_1$ $\commadots$ $x_n$ : `\$`$T_n$): `\$`$R$
+  message apply ($x_1$: `\$`$T_1\ \commadots\ x_n$: `\$`$T_n$): `\$`$R$
   $\ldots$
 end protocol
 \end{lstlisting}
 
 Function types are covariant in their result type and contravariant in their argument types (\sref{sec:variance-of-type-parameters}).
 
-A function return type may be declared as simple ``\lstinline!()!'', which is equivalent to the return type of ~\code{Unit}, which in turn is equivalent to empty return type, similar to \lstinline[language=C]!void! in C-related languages. Such a type is then written equivalently as either ~\lstinline!($S$) -> ()!~ or ~\lstinline!($S$) -> Unit!. 
+A function that returns ``nothing'' may be declared as returning the type \code{Unit}, which is similar to \lstinline[language=C]!void! in C-related languages. Such a type is then written as ~\lstinline!($S$) -> Unit!. 
 
 Function arguments may be optionally annotated with more requirements: 
 \begin{itemize}
@@ -331,10 +330,13 @@ Parameter prefixed with \code{Param_Io} defines whether the parameter is require
 Parameter prefixed with ``\lstinline!*!'' is a requirement of a repeated parameter. 
 
 \item 
-Parameter prefixed with ~\lstinline!:$x$!~ is a requirement of a named parameter. Note that a requirement of a parameter capturing other named parameters is not available. 
+Parameter prefixed with ~\lstinline!^$x$!~ is a requirement of a parameter named $x$.
+
+\item 
+Parameter prefixed with ~\lstinline!**!~ is a requirement of a captured named parameters. 
 
 \item
-Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements on the particular block. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullability}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}). 
+Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullability}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}).
 \end{itemize}
 
 
