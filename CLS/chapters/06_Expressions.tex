@@ -696,6 +696,7 @@ A while loop expression repeats evaluation of the expression $e_2$ as long as $e
 
 
 \subsection{Pure Loops}
+\label{sec:pure-loops}
 
 \syntax\begin{lstlisting}
 Loop_Expr  ::= [Label_Dcl] 'loop'
@@ -953,7 +954,15 @@ are simplified pattern matching expressions, though they do not use pattern matc
 \item a set of values defined by another value ~\lstinline!$e_1$.`===`($e$)!.
 \end{itemize}
 
-Let $T$ be the type of the selector expression $e$. The parameter $p_i$ of each invocation of the method ``\lstinline!===!'' is typed with $T$ as its expected type. It is an error if $T$ does not conform to the actual type of the parameter, as the invocation would not be applicable (\sref{sec:function-applications}). The method ``\lstinline!===!'' may be overloaded for multiple parameter types, then overloading resolution (\sref{sec:overloading-resolution}) applies as usual. 
+Let $T$ be the type of the selector expression $e$. The parameter $p_i$ of each invocation of the method ``\lstinline!===!'' is typed with $T$ as its expected type and \code{Boolean} as the return type. It is an error if $T$ does not conform to the actual type of the parameter, as the invocation would not be applicable (\sref{sec:function-applications}). The method ``\lstinline!===!'' may be overloaded for multiple parameter types, then overloading resolution (\sref{sec:overloading-resolution}) applies as usual. 
+
+The method ``\lstinline!===!'' is defined basically as follows:
+\begin{lstlisting}
+operator === ($x$: $T$): Boolean
+  $\ldots$
+end
+\end{lstlisting}
+where $x$ is the parameter name and $T$ is the expected type of the parameter, and the type of the selector expression $e$. 
 
 The expected type of every block $b_i$ is the expected type of the whole pattern matching expression. The type of the pattern matching expression is then the weak least upper bound (\sref{sec:conformance}) of the types of all blocks $b_i$.
 
@@ -985,6 +994,12 @@ Explicit return expressions unconditionally change the flow of programs by makin
 Return_Expr ::= ['memoize'] 'return' [Expr] [Cond_Modifier1]
 \end{lstlisting}
 
+A return expression ~\lstinline!return $e$!~ must occur inside the body of some enclosing method, or inside a block nested in the body of the innermost enclosing method. Unlike in Scala, the innermost enclosing method in a source program, $f$, does not need to have an explicitly declared result type, as the result type can be inferred as the weak least upper bound of all return paths, including the explicit return path. The return expression evaluates the expression $e$ and returns its value as the result of $f$. The evaluation of any statements or expressions following the return expression is omitted.The type of a return expression is \code{Nothing}.
+
+The expression $e$ may be omitted, then the return expression \code{return} is type-checked and evaluated as if it was ~\lstinline!return ()!, typed as \code{Unit}. 
+
+Returning from a nested block is implemented by throwing and catching a specialized exception, which may be seen by \code{throw}-\code{catch} expressions (\sref{sec:throw-catch-expressions}) between the point of return and the enclosing method. If such a block is captured and run later, at the point where the original call stack frame is long gone, the exception might propagate up the call stack that ran the captured block. Returning from anonymous functions does not affect the enclosing method. 
+
 
 
 
@@ -997,6 +1012,8 @@ Return_Expr ::= ['memoize'] 'return' Var_Def 'do'
                 Block_Stat {semi Block_Stat} 
                 'end' ['return']
 \end{lstlisting}
+
+A structured return expression is practically the same as explicit return expression. The variable defined in it has its scope extended to the following block statements, which are evaluated, and then the variable is returned. 
 
 
 
@@ -1014,7 +1031,11 @@ Label_Dcl  ::= 'label' label_name
 label_name ::= variable_id | constant_id
 \end{lstlisting}
 
-Local jumps transfer control from \code{goto} statements to the statements following a \code{label}. 
+Local jumps transfer control from the points of \code{goto} statements to the statements following a \code{label}. Such a jump may only occur inside of the same function, i.e. it is not possible to jump from one method to another. Also, the jump can't happen to be from outside of a loop into a loop, but the other way around is possible. The only loop expressions that may be jumped out of are the pure loop (\sref{sec:pure-loops}) and a \code{while} loop, which are not transformed as comprehensions into method calls. 
+
+
+
+
 
 
 \subsection{Continuations}
@@ -1039,13 +1060,33 @@ Delimited continuations are defined with \code{reset} and \code{shift} functions
 Catch_Expr  ::= Catch_Expr1 | Catch_Expr2
 Catch_Expr1 ::= 'begin' Block 
                 'catch' semi When_Clauses
+                ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
                 'end'
 Catch_Expr2 ::= '{' Block '}'
                 'catch' '{' When_Clauses '}'
+                ['ensure' '{' Block_Stat {semi Block_Stat} '}']
 Throw_Expr  ::= 'throw' Expr
 \end{lstlisting}
 
+A throw expression ~\lstinline!throw $e$!~ evaluates the expression $e$. The type of this expression must conform to \code{Throwable}. It is an error if $e$ evaluates to \code{nil} or ~\lstinline!()!. If there is an active \code{begin}-\code{catch} expression that handles the thrown value, evaluation is resumed with the handler, otherwise a thread executing the \code{throw} is aborted. The type of a \code{throw} expression is \code{Nothing}. 
 
+A \code{begin}-\code{catch} expression is of the form ~\lstinline!{ $b$ } catch $h$!, where $h$ is a handler pattern matching anonymous function (\sref{sec:pattern-matching-anon-fun})
+\begin{lstlisting}
+{ when $p_1$ then $b_1$ $\ldots$ when $p_k$ then $b_k$ else $b_{k+1}$ } .
+\end{lstlisting}
+
+This expression is evaluated by evaluating the block $b$ -- if evaluation of $b$ does not throw any value, the result of $b$ is returned, otherwise the handler $h$ is applied to the thrown value. If the handler $h$ contains a \code{when} clause matching the thrown value, the first such clause is invoked (and may throw another value, or the same value). If the handler contains no such clause, the value is re-thrown. 
+
+Let $T$ be the expected type of the \code{begin}-\code{catch} expression. The block $b$ is expected to conform to $T$. The handler $h$ is expected to conform to type ~\lstinline!Partial_Function[Throwable, $T$]!. The type of the \code{begin}-\code{catch} expression is the weak least upper bound (\sref{sec:conformance}) of the type of $b$ and the result type of $h$. 
+
+A \code{begin}-\code{ensure} expression ~\lstinline!{ $b$ } ensure { $e$ }!~ evaluates the block $b$. If evaluation of $b$ does not cause any value to be thrown, the block $e$ is evaluated. If any value is thrown during evaluation of $e$, the evaluation of the whole expression is aborted with the thrown value. If no value is thrown during evaluation of $e$, the result of $b$ is returned as the result of the whole expression, unless $e$ contains an explicit \code{return} (\sref{sec:return-expressions}) -- in that case, the value returned from $e$ replaces the value returned from $b$, even if $b$ returns a value explicitly. 
+
+If a value is thrown during evaluation of $b$, the \code{ensure} block $e$ is also evaluated. If another value is thrown during evaluation of $e$, evaluation of the whole expression is aborted with the new thrown value and the previous is discarded. If no value is thrown during evaluation of $e$, the original value thrown from $b$ is re-thrown once evaluation of $e$ has completed, unless $e$ again contains an explicit \code{return} (\sref{sec:return-expressions}) -- in that case, the value thrown from $b$ is discarded, and the value returned from $e$ is returned. 
+
+
+The block $b$ is expected to conform to the expected type of the whole expression and the \code{ensure} block $e$ is expected to conform to type \code{Unit}. 
+
+An expression ~\lstinline!{ $b$ } catch $e_1$ ensure { $e_2$ }!~ is a shorthand for ~\lstinline!{{ $b$ } catch $e_1$ } ensure { $e_2$ }!. 
 
 
 
