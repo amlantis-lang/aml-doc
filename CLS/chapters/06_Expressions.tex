@@ -1053,7 +1053,7 @@ Delimited continuations are defined with \code{reset} and \code{shift} functions
 
 
 
-\section{Throw \& Catch Expressions}
+\section{Throw, Catch \& Ensure Expressions}
 \label{sec:throw-catch-expressions}
 
 \syntax\begin{lstlisting}
@@ -1101,19 +1101,32 @@ Raiseable  ::= string_literal
              | Expr
 \end{lstlisting}
 
+A raise expression ~\lstinline!raise $e$!~ is similar to ~\lstinline!throw $e$! (\sref{sec:throw-catch-expressions}), it throws a value (raises an error) that is expected to be of type \code{Raiseable}. It has three variants: 
+\begin{itemize}
+\item[] \lstinline!raise $s$!, where $s$ is a string provided to constructor of the type \code{Runtime_Error}. 
+\item[] \lstinline!raise $T$, $s$!, where $s$ is a string provided to constructor of the type $T$. 
+\item[] \lstinline!raise $e$!, where $e$ is an expression, whose type is expected to conform to \code{Raiseable}, and whose result value will be raised after its evaluation. 
+\item[] \lstinline!raise!, which raises a value of type \code{Runtime_Error} without any message. Such errors should not propagate outside of the method that raises them. 
+\end{itemize}
+
+\code{Raiseable} is a subtype of \code{Throwable}. 
 
 
 
 
 
-\subsection{Rescue \& Ensure Expressions}
+
+
+\subsection{Rescue Expressions}
 
 \syntax\begin{lstlisting}
 Rescue_Expr  ::= [Label_Dcl] (Rescue_Expr1 | Rescue_Expr2)
 Rescue_Expr1 ::= 'begin' Block 
+                 'rescue' [Pattern [Guard]] semi Rescue_Block
                  {'rescue' [Pattern [Guard]] semi Rescue_Block }
                  ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
 Rescue_Expr2 ::= '{' Block '}' 
+                 'rescue' [Pattern [Guard]] '{' Rescue_Block '}'
                  {'rescue' [Pattern [Guard]] '{' Rescue_Block '}'}
                  ['ensure' '{' Block_Stat {semi Block_Stat} '}']
 Fun_Stats    ::= Block
@@ -1124,6 +1137,15 @@ Rescue_Stat  ::= Block_Stat | Retry_Expr
 Retry_Expr   ::= 'retry' [label_name] [Cond_Modifier1]
 \end{lstlisting}
 
+Rescue expression ~\lstinline!rescue $h$!~ is similar to catch expression (\sref{sec:throw-catch-expressions}), with two major differences: First, each \code{rescue} is followed by \code{when} clause; second, all \code{rescue} expressions in the same scope form together a handler $h$, where rules from catch expressions apply, only that $h$ is expected to conform to type ~\lstinline!Partial_Function[Raiseable, $T$]!, where $T$ is the expected type of the whole \code{begin}-\code{rescue} expression. 
+
+The syntactic overlap with \code{ensure} expression signifies that the same expression with the exact same behavior may be used with \code{rescue} expressions as well. 
+
+Optionally, the \code{rescue} may appear before any \code{begin} keyword, being connected to the function body instead as the expression protected agains raiseables (this does not apply to \code{catch}), where the \code{begin} is implied to be at the very start of the function's body. 
+
+The ~\lstinline!retry $l$!~ expression is available inside of each raiseable handler block, and evaluating it restarts evaluation of the whole expression since \code{begin} of the labeled rescue expression, or if no label is given, then of the innermost (if nested) rescue expression. Again, it is not available in catch handler block. 
+
+The keyword ~\lstinline[language=Java]!try!~ is not available in Coral -- in Coral, there is no trying, there is doing or not doing.  
 
 
 
