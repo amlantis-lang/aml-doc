@@ -39,6 +39,11 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 % let: immutable values, patterns
 % let!: immutable values (see async...)
 
+
+
+
+
+
 \section{Value Declarations \& Definitions}
 \label{sec:value-dcl-def}
 
@@ -403,27 +408,38 @@ A variance annotation constrains the way the annotated type variable may appear 
 
 
 \section{Function Declarations \& Definitions}
+\label{sec:function-decls-defs}
 
 \syntax\begin{lstlisting}
 Dcl           ::= 'def' Fun_Dcl 'end' ['def']
                 | 'message' Fun_Dcl 'end' ['message']
                 | 'function' Fun_Dcl 'end' ['function']
+                | 'operator' Op_Dcl 'end' ['operator']
 Fun_Dcl       ::= Fun_Sig ':' Type
+Op_Dcl        ::= Op_Sig ':' Type
 Def           ::= 'def' Fun_Def 'end' ['def']
                 | 'def' Fun_Alt_Def
                 | 'method' Fun_Def 'end' ['method']
                 | 'method' Fun_Alt_Def
                 | 'function' Fun_Def 'end' ['function']
                 | 'function' Fun_Alt_Def
+                | 'operator' Op_Def 'end' ['operator']
+                | 'operator' Op_Alt_Def 'end' ['operator']
 Fun_Def       ::= Fun_Sig [':' Return_Type] [Fun_Dec] [semi Fun_Stats]
 Fun_Alt_Def   ::= Fun_Sig [':' Return_Type] ':=' Expr
+Op_Def        ::= Op_Sig [':' Return_Type] [Fun_Dec] [semi Fun_Stats]
+Op_Alt_Def    ::= Op_Sig [':' Return_Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Fun_Dec_Exprs [semi] 'begin'
 Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
 Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
+Op_Sig        ::= Op_Path [Fun_Tpc] Param_Clauses
 Fun_Tpc       ::= '[' Type_Param {',' Type_Param} ']'
 Function_Path ::= function_id
                 | 'self' '.' function_id
                 | variable_id '.' function_id
+Op_Path       ::= op_id
+                | 'self' '.' op_id
+                | variable_id '.' op_id
 Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
 Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
@@ -453,6 +469,8 @@ An optional type parameter clause $tps$ introduces one or more type parameters, 
 
 A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an invisible function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
 
+An operator declaration/definition is also a function declaration/definition, only it does not require backticks around the operator's name. 
+
 The order in which different kinds of value parameters may appear is as follows:
 \begin{enumerate}
 \item $n$ mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
@@ -465,7 +483,7 @@ The order in which different kinds of value parameters may appear is as follows:
 
 \item $n$ named parameters (\sref{sec:named-parameters}): ~\lstinline@^$x$: $T$ := $e$@, where $n \ge 0$. 
 
-\item $n$ captured named parameters (\sref{sec:captured-named-parameters}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
+\item $n$ capturing named parameter (\sref{sec:capturing-named-parameter}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
 
 \item $n$ captured block parameters (\sref{sec:captured-block-parameter}): \lstinline@&$x$: $T$@, where $0 \le n \le 1$.
 \end{enumerate}
@@ -737,7 +755,7 @@ sum *xs
 
 \subsection{Named Parameters}
 \label{sec:named-parameters}
-\label{sec:captured-named-parameters}
+\label{sec:capturing-named-parameter}
 
 Named parameters are of the forms:
 \begin{lstlisting}
@@ -767,7 +785,7 @@ in ^$x$: => $T$ := $e$
 in val ^$x$: => $T$ := $e$
 \end{lstlisting}
 
-Captured named parameters are of the form: 
+Capturing named parameter are of the form: 
 \begin{lstlisting}
 **$x$: $T$
 var **$x$: $T$
@@ -779,9 +797,9 @@ in val **$x$: $T$
 
 Named parameters are a way of allowing users of the method to write down arguments in any order, provided that their name is given at function application (\sref{sec:function-applications} \& \sref{sec:named-optional-arguments}). Named parameters may have a default value expression and may be both input and output. Named parameters are disallowed for repeated parameters. Named parameters inside the method is then accessible the same way as a positional parameter. 
 
-Captured named parameters are capturing any other applied named parameters that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). They are declared after the block of named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary[Symbol, $T$]!. Methods with captured named parameters take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. Captured named parameters are disallowed for repeated parameters, output parameters and by-name parameters. 
+Capturing named parameter are capturing any other applied named parameters that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). They are declared after the block of named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary[Symbol, $T$]!. Methods with capturing named parameter take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. capturing named parameter are disallowed for repeated parameters, output parameters and by-name parameters. 
 
-If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. Captured named parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
+If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. capturing named parameter are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 
 
 
