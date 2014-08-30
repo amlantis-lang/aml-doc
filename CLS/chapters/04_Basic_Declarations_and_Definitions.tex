@@ -11,7 +11,7 @@ Dcl         ::= 'val' Val_Dcl
               | 'function' Fun_Dcl 'end' ['function']
               | 'type' Type_Dcl
 Pat_Var_Def ::= 'val' Pat_Def
-              | 'var' Pat_Def
+              | 'var' Var_Def
               | 'let' ['!'] variable_id ':=' Expr
 Def         ::= Pat_Var_Def
               | 'def' Fun_Def
@@ -187,9 +187,11 @@ A value definition ~\lstinline@val $p_1 \commadots p_n: T$ := $e$@~ is a shortha
 \label{sec:variable-dcl-def}
 
 \syntax\begin{lstlisting}
-Dcl ::= 'var' Var_Dcl
+Dcl         ::= 'var' Var_Dcl
 Pat_Var_Def ::= 'var' Var_Def
-Var_Dcl ::= var_ids ':' Type
+Var_Dcl     ::= var_ids ':' Type
+Var_Def     ::= Pat_Def
+              | var_ids ':' Type ':=' '_'
 \end{lstlisting}
 
 A variable declaration \lstinline@var $x$: $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$: $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$: $T$+ introduces a mutable class instance variable of type $T$. 
@@ -199,6 +201,18 @@ A variable definition \lstinline@var $x$: $T$ := $e$@ defines $x$ as a name of t
 Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dcl-def}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
 
 The name of any declared or defined variable must not end with ``\lstinline@_=@''. 
+
+A variable definition ~\lstinline!var $x$: $T$ := _!~ introduces a mutable variable with type $T$ and a default initial value. The default value depends on the type $T$ as follows:
+\begin{quote}\begin{tabular}{ll}
+\code{0} & if $T$ is \code{Integer} or one of its subrange types, \\
+\code{0L} & if $T$ is \code{Long},\\
+\lstinline@0.0f@ & if $T$ is \code{Float},\\
+\lstinline@0.0d@ & if $T$ is \code{Double},\\
+\code{no} & if $T$ is \code{Boolean},\\
+\lstinline@()@ & if $T$ is \code{Unit}, \\
+\code{nil} & for all other types $T$.
+\end{tabular}\end{quote}
+It is an error if the type $T$ is not nullable and is expected to have a default value at the same time. 
 
 The following shorthands are recognized:
 \begin{itemize}
@@ -449,7 +463,7 @@ The order in which different kinds of value parameters may appear is as follows:
 
 \item $n$ post mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
 
-\item $n$ named parameters (\sref{sec:named-parameters}): \lstinline@:$x$ : $T$@ or \lstinline@^$x$: $T$ := $e$@, where $n \ge 0$. 
+\item $n$ named parameters (\sref{sec:named-parameters}): ~\lstinline@^$x$: $T$ := $e$@, where $n \ge 0$. 
 
 \item $n$ captured named parameters (\sref{sec:captured-named-parameters}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
 
