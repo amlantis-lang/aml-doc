@@ -78,7 +78,7 @@ Stable_Id        ::= path_id
                    | Path '.' path_id
                    | [path_id '.'] 'super' [Class_Qualifier] 
                      '.' path_id
-Class_Qualifier  ::= '[' path_id ']'
+Class_Qualifier  ::= '[' Container_Path ']'
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Coral's type system. 
@@ -436,22 +436,22 @@ Extra properties of parameters are as follows: a \lstinline@*@ for variable argu
 def a: -> Integer // or def a () -> Integer
 def b (x : Integer): Boolean
 def c (x : Integer): (y : String, z : String) -> String
-def d (:x : Integer): Integer
+def d (^x : Integer): Integer
 def e (*x : Integer): Integer
-def f (Integer): ()
-def g (Integer)(Integer): Integer
-def h (Integer): (Integer) -> Integer
+def f (x: Integer): Unit
+def g (x: Integer)(y: Integer): Integer
+def h (x: Integer): (y: Integer) -> Integer
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}
 a : () $\mapsto$ Integer
-b : (Integer) $\mapsto$ Boolean
-c : (Integer) $\mapsto$ (String, String) $\mapsto$ String
-d : (:x Integer) $\mapsto$ Integer
-e : (*Integer) $\mapsto$ Integer
-f : (Integer) $\mapsto$ ()
-g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
-g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
+b : (x: Integer) $\mapsto$ Boolean
+c : (x: Integer) $\mapsto$ (y: String, z: String) $\mapsto$ String
+d : (~x: Integer) $\mapsto$ Integer
+e : (*x: Integer) $\mapsto$ Integer
+f : (x: Integer) $\mapsto$ ()
+g : (x: Integer) $\mapsto$ (y: Integer) $\mapsto$ Integer
+g : (x: Integer) $\mapsto$ (Integer) $\mapsto$ Integer
 \end{lstlisting}
 
 The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of return types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
