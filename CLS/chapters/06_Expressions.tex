@@ -482,6 +482,7 @@ A memoized function's body is not evaluated, if it was once called with the same
 
 Memoization is better with small parameter numbers, so that searching the result values cache would not actually take longer than evaluation of the function's body. Functions that are defined with the \code{function} keyword (\sref{sec:function-decls-defs}) may opt-in to implicit memoization\footnote{E.g., based on the computed complexity of the function. If the function is decided to be simple, then memoization could actually worsen performance.}, as well as functions declared as \code{transparent} (\sref{sec:statements}). Functions declared as \code{opaque} (\sref{sec:statements}) should not be memoized. 
 
+Parameters of memoization\footnote{Parameters include things like: cache policy, ttl, cache size and so on.} may be controlled, even on per-function basis, with use of specialized annotations and pragmas. 
 
 
 
