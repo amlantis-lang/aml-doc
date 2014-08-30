@@ -280,10 +280,15 @@ The function $f$ must be applicable to its arguments $a_1 \commadots a_n$ of typ
 
 If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, the function $f$ is applicable if all of the following conditions hold:
 \begin{itemize}
-\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches $x_i$. 
-\item For every positional argument $a_i$, the type $S_i$ is compatible with $T_i$. 
-\item The given block or the last argument prefixed with ~\lstinline!&! is of a type compatible with the type of the captured block parameter, if such parameter is defined. 
+
+\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a captured named parameters and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the captured named parameters. 
+
+\item For every positional argument $a_i$, the type $S_i$ is compatible with its corresponding $T_i$. 
+
+\item The given block or the last argument prefixed with ``\lstinline!&!'' is of a type compatible with the type of the captured block parameter, if such parameter is defined. 
+
 \item If the expected type of the function application is defined, the result type $R$ is compatible to it. 
+
 \item For every argument $p_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. 
 \end{itemize}
 
@@ -355,7 +360,7 @@ The optimization will not happen if the application results in a different (poss
 \subsection{Input \& Output Arguments}
 \label{sec:io-arguments}
 
-\subsection{Consecutive Invocations, Curried Functions \& Partial Applications}
+\subsection{Curried Functions \& Partial Applications}
 
 \subsection{Function Compositions \& Pipelines}
 
