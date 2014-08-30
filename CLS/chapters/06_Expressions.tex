@@ -31,7 +31,8 @@ Expr        ::= Cond_Expr
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [op_id Infix_Expr]
 Simple_Expr ::= Block_Expr
-              | Simple_Expr1 ['_']
+              | ['&'] Simple_Expr1
+              | '&' '(' Simple_Expr1 ')'
 Result_Expr ::= Anon_Params '->' Block 
               | ['memoize'] Expr
 \end{lstlisting}
@@ -1167,7 +1168,7 @@ Nameless_Params ::= Nameless_Param {',' Nameless_Param}
 Nameless_Param  ::= '_' [':' Compound_Type]
 \end{lstlisting}
 
-The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names. 
+The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Coral, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
 
 If the expected type of an anonymous function is of the form ~\lstinline!Function_$n$[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
 
@@ -1185,8 +1186,29 @@ In the case of a single untyped formal parameter, ~\lstinline!($x$) -> { $b$ }!~
 A formal parameter may also be a wildcard represented by an underscore ``\lstinline!_!''. In that case, a fresh name for the parameter is chosen arbitrarily. 
 
 A parameter of an anonymous function may optionally be preceded by an \code{implicit} modifier. In that case the parameter is labeled \code{implicit} (\sref{sec:implicit-params-views}); however the parameter section itself does not count as an implicit parameter section in the sense of (\sref{sec:implicit-parameters}). Such a parameter ~\lstinline!implicit $x_i$!~ is then added transparently to the block $b$ as ~\lstinline!implicit val $y_i$ := $x_i$!, where $y_i$ is a fresh name. Also, therefore arguments to anonymous functions always have to be given explicitly. 
-
 % TBD: decide whether to add placeholder syntax: _.map(_ + 1)
+
+\example Examples of anonymous functions:
+\begin{lstlisting}
+// identity function
+x -> { x }
+
+// curried function composition
+f -> g -> x -> { f(g(x)) }
+
+// a summation function
+(x: Integer, y: Integer) -> { x + y }
+
+// a function which takes an empty parameter list,
+// increments a non-local variable (via closure)
+// and returns the new value
+() -> { count += 1; count }
+
+// a function that ignores its argument and returns 5
+_ -> { 5 }
+\end{lstlisting}
+
+
 
 
 
@@ -1195,19 +1217,22 @@ A parameter of an anonymous function may optionally be preceded by an \code{impl
 \subsection{Method Values}
 
 \syntax\begin{lstlisting}
-Simple_Expr ::= Simple_Expr1 '_'
+Simple_Expr ::= '&' Simple_Expr1
+              | '&' '(' Simple_Expr1 ')'
 \end{lstlisting}
+
+The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
 
 \example The method values in the left column are each equivalent to the anonymous functions (\sref{sec:anonymous-functions}) on their right. 
 \begin{lstlisting}[deletekeywords={range}]
-Math.sin _                (x)      -> { Math.sin(x) }
-Array.range _             (x1, x2) -> { Array.range(x1, x2) }
-List.map_2 _              (x1, x2) -> (x3) -> { List.map_2(x1, x2)(x3) }
-List.map_2(xs, ys) _      (x)      -> { List.map_2(xs, xy)(x) }
-42.* _                    (x)      -> { 42 * x }
+&(Math.sin)                (x)      -> { Math.sin(x) }
+&(Array.range)             (x1, x2) -> { Array.range(x1, x2) }
+&(List.map_2)              (x1, x2) -> (x3) -> { List.map_2(x1, x2)(x3) }
+&(List.map_2(xs, ys))      (x)      -> { List.map_2(xs, xy)(x) }
+&(42.`*`)                  (x)      -> { 42 * x }
 \end{lstlisting}
 
-
+Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
 
 
 
@@ -1278,8 +1303,23 @@ Statement can be an import via a use clause (\sref{sec:use-clauses}), a definiti
 \section{Implicit Conversions}
 \label{sec:implicit-conversions}
 
+\subsection{Value Conversions}
+\label{sec:value-conversions}
+
+\subsection{Method Conversions}
+\label{sec:method-conversions}
+
 \subsection{Overloading Resolution}
 \label{sec:overloading-resolution}
+
+\subsection{Local Type Inference}
+\label{sec:local-type-inference}
+
+\subsection{Eta-Expansion}
+\label{sec:eta-expansion}
+
+\subsection{Dynamic Member Selection}
+\label{sec:dynamic-member-selection}
 
 \section{Workflows}
 \label{sec:workflows}
