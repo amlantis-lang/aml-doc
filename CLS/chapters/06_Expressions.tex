@@ -116,6 +116,23 @@ Selection    ::= ['?'] (importable_id | variable_id)
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
 
+A simple name $x$ refers to a value as specified in (\sref{sec:identifiers-names-scopes}). If $x$ is bound by a definition or a declaration in an enclosing class or object $C$, it is taken to be equivalent (at the resolution time) to the selection ~\lstinline!$C$.self.$x$!, where $C$ is taken to refer to the class or object containing $x$, even if the type name $C$ is shadowed at the occurrence of $x$. 
+
+If $r$ is a stable identifier (\sref{sec:type-paths}) of type $T$, the selection ~\lstinline!$r$.$x$!~ refers to a member $m$ of $r$ that is identified in $T$ by the name $x$. 
+
+For other expressions $e$, ~\lstinline!$e$.$x$!~ is typed as if it was ~\lstinline!{ val $y$ := $e$; $y$.$x$ }!, for some fresh name $y$. 
+
+The selection ~\lstinline!$e$.?$x$!~ is typed as if it was 
+\begin{lstlisting}
+{ val $y$ := $e$; if $y$ != nil then $y$.$x$ else nil }
+\end{lstlisting}
+for some fresh name $y$; also called {\em safe navigation} or {\em safe selection}. 
+
+The expected type of a designator's prefix is undefined. The type of a designator is the type $T$ of the entity it refers to. 
+
+The selection ~\lstinline!$e$.$x$!~ is evaluated by first evaluating the qualifier expression $e$, which yields an object $r$. The selection's result is then the member $m$ of $r$ that is either defined by $m$ or defined by a definition overriding $m$. 
+
+
 
 
 
@@ -137,11 +154,17 @@ Simple_Expr1 ::= [Path '.'] 'self'
                | [Path '.'] (ivar_id | cvar_id)
 \end{lstlisting}
 
-The expression \code{self} stands always for the current instance in the context and function resolution searches in the actual class of the instance. 
+The expression \code{self} stands always for the current instance in the context (and in function resolution searches in the actual class of the instance) in the innermost template containing the reference (thus excluding blocks and anonymous functions). 
 
-The expression \code{this} is the same as \code{self}, except that function resolution searches from the class that this expression appears in, possibly skipping overrides. 
+The expression \code{this} is the same as \code{self}, except that function resolution searches from the class that this expression appears in, possibly skipping overrides in subtypes of the actual class of \code{self}. The \code{this} expression is interchangeable with \code{self} in the following paragraphs, although use of \code{self} is preferred. 
 
-% TBD: expand the description, include ivars, cvars
+The expression ~\lstinline!$C$.self!~ refers to the current instance in the context of the enclosing (or even directly enclosing) type $C$. It is an error if $C$ is not an enclosing type. The type of the expression is the same as ~\lstinline!$C$.self.type!. 
+
+A reference ~\lstinline!super.$m$!~ refers to a method or type $m$ in the least proper supertype of the innermost template containing the reference. It evaluates to the member $m'$ in the actual supertype of that template, which is equal to $m$ or which overrides $m$. If $m$ refers to a method, then the method must be either concrete, or the template containing the reference must have a member $m'$, which overrides $m$ and which is labeled \code{abstract override}. 
+
+A reference ~\lstinline!$C$.super.$m$!~ refers to a method or type $m$ in the least proper supertype of the innermost class or object definition named $C$, which encloses the reference. It evaluates to the member $m'$ in the actual supertype of that template, which is equal to $m$ or which overrides $m$. If $m$ refers to a method, then the method must be either concrete, or the template containing the reference must have a member $m'$, which overrides $m$ and which is labeled \code{abstract override}. 
+
+The \code{super} prefix may be followed by a qualifier ~\lstinline![$T$]!, as in ~\lstinline!$C$.super[$T$].$m$!. In this case, the reference is to the type or method $m$ in the parent class or trait of $C$, whose simple name is $T$. The qualifier allows also paths, in case multiple supertypes had the same simple name, working as a suffix search -- the name $T$ then refers the parent class or trait of $C$, whose qualified name ends with $T$. It evaluates to the member $m'$ in the actual supertype of that template, which is equal to $m$ or which overrides $m$. If $m$ refers to a method, then the method must be either concrete, or the template containing the reference must have a member $m'$, which overrides $m$ and which is labeled \code{abstract override}. 
 
 
 
@@ -153,12 +176,12 @@ The expression \code{this} is the same as \code{self}, except that function reso
 
 \syntax\begin{lstlisting}
 Use_Expr    ::= Use_Expr_As | Use_Aspect
-Use_Expr_As ::= 'use' Simple_Expr 'as' 
+Use_Expr_As ::= 'use' Simple_Expr ('as' | 'as!')
                 [variable_id ':'] Type [Block_Expr]
 Use_Aspect  ::= 'use' 'aspect' Path [Block_Expr]
 \end{lstlisting}
 
-Use expressions of the form ~\lstinline!use $e$ as $a$: $T$!~ are similar to type cast expressions. Their intention is to rebind an expression to a specific type, and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. 
+Use expressions of the form ~\lstinline!use $e$ as $a$: $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
 
 Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified aspect, either in the scope defined by the given block, or if no block is given, then from that point onward. If the expression is used as a template statement, then the aspect is enabled for the whole template anywhere, if it does not have the block part. 
 
@@ -187,21 +210,152 @@ Arg_Exprs   ::= Arg_Expr {',' Arg_Expr}
 Arg_Expr    ::= [['out'] [variable_id ':'] | '&'] Expr
 \end{lstlisting}
 
-% TBD: extend this section
+A function application ~\lstinline!$f$($a_1 \commadots a_n$) $b$!~ applies the function $f$ to the argument expressions $a_1 \commadots a_n$ and passes the block expression $b$ (\sref{sec:blocks}) into it. 
 
 
 
 
 
 
-\subsection{Named and Optional Arguments}
+\subsection{Argument Evaluation Strategies}
+\label{sec:arg-eval-strategies}
+
+Coral defers evaluation of arguments up to the point of function application, and happens then as specified in parameter evaluation strategies (\sref{sec:param-eval-strategies}). The type that each argument is type-checked against the corresponding parameter type (defined as follows) is the expected type of the argument expression, i.e. not its actual concrete type, which is known only after its evaluation. If the expected type is undefined, then \code{Object} is assumed. Typed expressions (\sref{sec:typed-expressions}) may be used to give the argument expression a concrete expected type. When the argument expression is evaluated, it is evaluated as if it were in the scope of the function application (which it is), so that visibility rules from that scope apply. 
+
+
+
+
+
+
+\subsection{Corresponding Parameters}
+
+The argument expressions $a_1 \commadots a_n$ can be split up to 3 virtual sections: 
+\begin{itemize}
+
+\item[] {\em Positional parameters}. Let's refer to them as $p_{1,i,j}$. These are defined by any number of mandatory parameters (where $i = 1$), followed by any number of optional parameters (where $i = 2$), followed by at most one repeated parameter (where $i = 3$ and $j = 1$), ended by any number of post mandatory parameters (where $i = 4$). 
+
+\item[] {\em Named parameters}. Let's refer to them as $p_{2,i}$, where $i$ is the position of the named parameter among the section of named parameters. 
+
+\item[] {\em Block capturing parameter}. Let's refer to it as $p_{3,1}$
+
+\end{itemize}
+To pair argument expressions with corresponding parameters, the following steps are to be taken:
+\begin{enumerate}
+
+\item Say that a {\em positional argument} is of the form $a_i$. 
+
+\item Say that a {\em named argument} is of the form ~\lstinline!$x_i$: $a'_i$!, where $x_i$ is one of the named parameter names from the named parameters section. 
+
+\item Say that $n_1$ is the count of positional arguments. If the last argument is prefixed with ``\lstinline!&!'':
+\begin{itemize} 
+\item If the captured block parameter is defined and a block $b$ is given, count the last argument also as a positional argument. It is an error if there are named arguments before it. 
+\item If the captured block parameter is defined and a block $b$ is not given, do not count the last argument as a positional argument. 
+\item If the captured block parameter is not defined and a block $b$ is given, count the last argument also as a positional argument. It is an error if there are named arguments before it. 
+\item If the captured block parameter is not defined and a block $b$ is not given, count the last argument also as a positional argument. It is an error if there are named arguments before it. 
+\end{itemize}
+
+\item Say that $m_1$ is the count of mandatory parameters. Pair each $a_i$ for $1 \leq i \leq m_1$ with $p_{1,1,i}$. 
+
+\item Say that $m_2$ is the count of post mandatory parameters. Pair each $a_i$ for $(n_1 - m_2) \leq i \leq m_2$ with $p_{1,4,i}$.
+
+\item Say that $m_3$ is the count of optional parameters. Pair each $a_i$ for $m_1 < i < m_2$ with $p_{1,2,i}$, if $p_{1,2,i}$ is an optional parameter. If $p_{1,2,i}$ is not an optional parameter, collect the arguments that don't have a corresponding optional parameter into a sequence and pair it as a single argument with $p_{1,3,1}$. This finishes the positional arguments section. 
+
+\item Let $\sigma i$ be a substitution from the named argument name's position in the function application's named arguments section to its position in the named parameters section of the function parameters definition. If the named argument has a name that is not defined in the function parameters definition, then the position of the captured named parameters is returned, if it exists. It is an error if the substitution does not return any position, in the sense that the function is not applicable to the given arguments, defined also as follows. 
+
+\item Say that $n_2$ is the count of named arguments. Pair each $a_{\sigma i}$ for $1 \leq i \leq n_2$ with $p_{2,i}$. 
+
+\item Say that $n_3$ is the count of arguments given after the section of named arguments. If $n_3 = 0$, then pair the given block $b$ with $p_{3,1}$, or pair \code{nil} with $p_{3,1}$, if no block $b$ is given. If $n_3 = 1$, then pair the last unpaired argument with $p_{3,1}$. If there is no unpaired argument left, then again pair \code{nil} with $p_{3,1}$. If $n_3 > 1$, it is an error, in the sense that the function is not applicable to the given arguments, defined also as follows. 
+\end{enumerate}
+
+The type of each argument expression $a_i$ is typed with the corresponding parameter type $T_i$ as expected type. 
+
+
+
+
+
+
+\subsection{Applicable Function}
+
+The function $f$ must be applicable to its arguments $a_1 \commadots a_n$ of types $S_1 \commadots S_n$. 
+
+If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, the function $f$ is applicable if all of the following conditions hold:
+\begin{itemize}
+\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches $x_i$. 
+\item For every positional argument $a_i$, the type $S_i$ is compatible with $T_i$. 
+\item The given block or the last argument prefixed with ~\lstinline!&! is of a type compatible with the type of the captured block parameter, if such parameter is defined. 
+\item If the expected type of the function application is defined, the result type $R$ is compatible to it. 
+\item For every argument $p_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. 
+\end{itemize}
+
+If $f$ is a polymorphic method, it is applicable if local type inference (\sref{sec:local-type-inference}) can determine type arguments, so that the instantiated method is applicable. If $f$ is of a value type, it is applicable if it has a method member named \code{apply}, which is applicable. Note that if explicit type parameters are given to the polymorphic method, type application (\sref{sec:type-applications}) happens prior to function application. 
+
+If a function application appears to be an argument to another function application (let's call it a nested function application), the expected type of the nested function application is used to determine, whether the outer function is applicable, but the nested function application is not evaluated until time specified by argument evaluation strategy (\sref{sec:arg-eval-strategies}) corresponding to the argument. Local type inference may indeed occur for the nested function application, if it involves a polymorphic method, but again, only using the available expected types. 
+
+If an argument expression is prefixed with ``\lstinline!*!'' (let's call it a {\em sequence argument expression}, or {\em sequence-splat}, or just {\em splat}), it is expanded into multiple argument expressions, as its expected type is ~\lstinline!Sequence[$S$]! and $S$ is the expected (and usually actual) type of the arguments resulting from the expansion. The expansion uses methods of the \code{Sequence} type to determine the length of the sequence and its type, which are then inserted instead of the sequence argument (and the contents of the sequence have their evaluation deferred). The sequence should have a reasonable length, and must not be infinite. Such sequence arguments can appear in the function application multiple times (unlike the repeated parameter), but only in the section of positional arguments. 
+
+If an argument expression is prefixed with ``\lstinline!**!'' (let's call it a {\em map argument expression}, or {\em map-splat}), it is expanded into multiple argument expressions, as its expected type is ~\lstinline!Map[Symbol, $S$]! and $S$ is the expected (and usually actual) type of the arguments resulting from the expansion. The expansion uses methods of the \code{Map} type to determine the length of the map and its type, which are then inserted instead of the map argument (and the contents of the map have their evaluation deferred). The map should have a reasonable length, and must not be infinite. Such map arguments can appear in the function application multiple times (unlike the repeated parameter), but only in the section of named arguments. 
+
+\example Assume the following function, which computes the sum of variable number of arguments:
+\begin{lstlisting}
+def sum (*xs: Integer) := (O /: xs) ((x, y) -> { x + y })
+\end{lstlisting}
+Then 
+\begin{lstlisting}
+sum 1, 2, 3, 4
+sum (1, 2, 3, 4)
+sum *%[1, 2, 3, 4]
+sum (*%[1, 2, 3, 4])
+sum 1, 2, *%[3, 4]
+sum (1, 2, *%[3, 4])
+sum 1, *%[2, 3], 4
+sum (1, *%[2, 3], 4)
+\end{lstlisting}
+all yield $10$ as result. On the other hand,
+\begin{lstlisting}
+sum %[1, 2, 3, 4]
+\end{lstlisting}
+would not be applicable. Moreover, (note the extra space before the sequence-splat operator),
+\begin{lstlisting}
+sum * %[1, 2, 3, 4]
+\end{lstlisting}
+would be interpreted as 
+\begin{lstlisting}
+sum.`*`(%[1, 2, 3, 4])
+\end{lstlisting}
+which is an infix expression rather than a function application. On the other hand, a space may appear between the function name and the arguments list.
+
+
+
+
+
+\subsection{Tail-call optimization}
+
+A function application usually allocates a new stack frame on the program's runtime stack for the current thread. However, if at least one of the following conditions holds and function calls itself as its last action, the application is executed using the stack frame of the caller, replacing arguments and rewinding stack pointer to the first instruction, called {\em tail-call optimization}:
+\begin{itemize}
+\item The function is local and not overloaded. 
+\item The function is \code{final}. 
+\item The function is \code{private} or ~\lstinline!private[self]!. 
+\item The function is annotated so that tail-call optimization is explicitly allowed. 
+\item A pragma allowing tail-call optimizations is effective in the scope of the tail call. 
+\end{itemize}
+The optimization will not happen if the application results in a different (possibly overloaded or overridden) variant of the caller function being applied, and a warning is issued if the tail-call optimization was explicitly expected (either via an annotation or a pragma). 
+
+
+
+
+
+\subsection{Named \& Optional Arguments}
 \label{sec:named-optional-arguments}
 
-\subsection{By-Name Arguments}
+\subsection{By-Name, By-Need \& By-Future Arguments}
 \label{sec:by-name-arguments}
+\label{sec:by-need-arguments}
+\label{sec:by-future-arguments}
 
 \subsection{Input \& Output Arguments}
 \label{sec:io-arguments}
+
+\subsection{Consecutive Invocations, Curried Functions \& Partial Applications}
 
 \subsection{Function Compositions \& Pipelines}
 
@@ -247,13 +401,18 @@ Unlike languages like Java, Scala, C\# and similar, Coral does not have dedicate
 
 
 \section{Blocks}
+\label{sec:blocks}
 
 \syntax\begin{lstlisting}
-Block_Expr  ::= Block_Expr1 | Block_Expr2
-Block_Expr1 ::= '{' [Block_Args semi] Block '}'
-Block_Expr2 ::= 'do' [Block_Args semi] Block 'end'
-Block_Args  ::= '|' [Params] '|' [':' Type]
-Block       ::= {Block_Stat semi} [Result_Expr]
+Block_Expr      ::= Block_Expr1 | Block_Expr2
+Block_Expr1     ::= '{' [Block_Args semi] Block '}'
+Block_Expr2     ::= 'do' [Block_Args semi] Block 'end'
+Block_Args      ::= '|' [Params] [Block_Shadowing] '|' [':' Type]
+Block_Shadowing ::= ';' [Shad_Val_Dcl {',' Shad_Val_Dcl}]
+Shad_Val_Dcl    ::= 'val' Val_Dcl
+                  | 'var' Var_Dcl
+                  | 'def' Def_Dcl
+Block           ::= {Block_Stat semi} [Result_Expr]
 \end{lstlisting}
 
 
