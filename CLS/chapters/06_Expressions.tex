@@ -1685,11 +1685,72 @@ An alias to a function name creates a duplicate record in method table of a clas
 \section{Implicit Conversions}
 \label{sec:implicit-conversions}
 
+Implicit conversions can be applied to expressions whose type does not match their expected type, to qualifiers in selections, and to unapplied methods. The available implicit conversions are given in the next two sub-sections.
+
+We say that a type $T$ is {\em compatible} to a type $U$ if $T$ weakly conforms to $T$ after applying eta-expansion (\sref{sec:eta-expansion}) and view applications (\sref{sec:views}).
+
+
+
+
+
+
 \subsection{Value Conversions}
 \label{sec:value-conversions}
 
+The following implicit conversions can be applied to an expression $e$, which is of some value type $T$ and which is type-checked with some expected type $\exptype$. Some of these implicit conversions may be disabled with pragmas.
+
+\paragraph{Overloading resolution}
+If an expression denotes several possible members of a class, overloading resolution (\sref{sec:overloading-resolution}) is applied to pick a unique member. 
+
+\paragraph{Type instantiation}
+An expression $e$ of a polymorphic type
+\begin{lstlisting}
+[$a_1$ >: $L_1$ <: $U_1 \commadots a_n$ >: $L_n$ <: $U_n$] $\mapsto\ T$
+\end{lstlisting}
+which does not appear as the function part or a type application is converted to a type instance of $T$ by determining with local type inference (\sref{sec:local-type-inference}) instance types $T_1 \commadots T_n$ for the type variables $a_1 \commadots a_n$ and implicitly embedding $e$ in the type application ~\lstinline!$e$[$T_1 \commadots T_n$]! (\sref{sec:type-applications}). 
+
+\paragraph{Numeric widening}
+If $e$ is of a number type which weakly conforms (\sref{sec:conformance}) to the expected type, it is widened to the expected type. 
+
+\paragraph{Numeric narrowing}
+If the expected type has smaller range than the number type of $e$, but the value of $e$ fits into the expected type, it is narrowed to the expected type. 
+
+\paragraph{Value discarding}
+If $e$ is of some value type and the expected type is \code{Unit}, $e$ is converted to the expected type by embedding it in the block ~\lstinline!{ $e$; () }!. 
+
+\paragraph{View application}
+If none of the previous conversions applies, view applications are not disallowed by pragmas (implicitly they are allowed), and $e$'s type does not conform to the expected type $\exptype$, an attempt is made to convert $e$ to the expected type with a view application (\sref{sec:views}). This can happen in compile time only if all necessary type information is available, otherwise, runtime handles it by using specialized instructions (and those instructions are disabled from compilation when view applications are disabled). 
+
+\paragraph{Dynamic member selection}
+If none of the previous conversions applies, and $e$ is a prefix of a selection ~\lstinline!$e$.$x$!, then if $e$'s type conforms to \code{Dynamic_Member_Selecting}, the selection is rewritten according to rules for dynamic member selection (\sref{sec:dynamic-member-selection}). Otherwise, \code{member_not_found} is invoked on the receiver, whose implementation in \code{Object} is to raise an error. 
+
+% TBD: explain in a CFR how dynamic member selecting actually works on the Coral VM level - registering a method fallback chain if a member is not found, here it is like %[:apply_dynamic, :member_not_found], and determine what happens when this is not done (no-op maybe? error maybe? language config error maybe?)
+
+
+
+
+
 \subsection{Method Conversions}
 \label{sec:method-conversions}
+
+The following implicit conversions can be applied to methods which are not applied to some argument list. 
+
+\paragraph{Evaluation}
+A parameterless method $m$ of type ~\lstinline!() -> $T$!~ is always converted to type $T$ by evaluating the expression to which $m$ is bound, unless method value (\sref{sec:method-values}) is used on $m$. 
+
+\paragraph{Implicit application}
+If the method takes only implicit parameters, implicit arguments are passed following the rules of (\sref{sec:implicit-parameters}).
+
+\paragraph{Eta expansion}
+Otherwise, if the expected type $\exptype$ is a function type ~\lstinline!($\Ts'$) -> $T'$!, eta-expansion (\sref{sec:eta-expansion}) is performed on the expression $e$. 
+
+\paragraph{Empty application}
+Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implicitly applied to the empty argument list, yielding ~\lstinline!$e$()!.
+
+
+
+
+
 
 \subsection{Overloading Resolution}
 \label{sec:overloading-resolution}

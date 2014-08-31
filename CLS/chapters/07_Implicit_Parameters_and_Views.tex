@@ -17,11 +17,13 @@ Param_Clauses  ::= {Param_Clause} '(' 'implicit' Params ')'
 An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a method marks the parameters $p_1 \commadots p_n$ as implicit. 
 
 \section{Views}
+\label{sec:views}
 
 \section{View Bounds}
 
 \syntax\begin{lstlisting}
-Type_Param ::= (tp_id | '_') [Type_Param_Clause]               ['>:' Type] ['<:' Type] {'<%' Type}
+Type_Param ::= (tp_id | '_') [Type_Param_Clause]
+               ['>:' Type] ['<:' Type] {'<%' Type}
 \end{lstlisting}
 
 
