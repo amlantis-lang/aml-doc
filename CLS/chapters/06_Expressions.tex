@@ -544,6 +544,58 @@ Shad_Val_Dcl    ::= 'val' Val_Dcl
 Block           ::= {Block_Stat semi} [Result_Expr]
 \end{lstlisting}
 
+A block expression ~\lstinline!{ $s_1$; $\ldots$; $s_n$; $e$ }!~ is constructed from a sequence of block statements $s_1 \commadots s_n$ and a final expression $e$. The statement sequence may not contain two definitions or declarations that bind the same name in the same namespace, except for local function definitions, which then create overloaded local function definitions (behaving pretty much like regular overloaded functions). The final expression may be omitted, in which case the unit value ~\lstinline!()!~ is assumed. 
+
+The expected type of the final expression $e$ is the expected type of the block expression. The expected type of all preceding statements is undefined. 
+
+The type of a block ~\lstinline!{ $s_1$; $\ldots$; $s_n$; $e$ }!~ is ~\lstinline!$T$ for-some { $Q$ }!, where $T$ is the type of $e$ and $Q$ contains existential clauses (\sref{sec:existential-types}) for every value or type name which is free in $T$ and which is defined locally in any of the statements $s_1 \commadots s_n$. We say that the existential clause {\em binds} the occurence of the value or type name. Specifically, 
+\begin{itemize}
+
+\item A locally defined type definition ~\lstinline!type $t$ := $T$!~ is bound by the existential clause ~\lstinline!type $t$ >: $T$ <: $T$!. It is an error if $t$ carries type parameters. 
+
+\item A locally defined value definition ~\lstinline!val $x$: $T$ := $e$!~ is bound by the existential clause ~\lstinline!val $x$: $T$!. 
+
+\item A locally defined class definition ~\lstinline!class $c$ extends $t$!~ is bound by the existential clause ~\lstinline!type $c$ <: $T$!, where $T$ is the least class type of refinement type which is a proper supertype of the type $c$. It is an error if $c$ carries type parameters. 
+
+\item A locally defined object definition ~\lstinline!object $x$ extends $t$!~ is bound by the existential clause ~\lstinline!val $x$: $T$!, where $T$ is the least class type of refinement type which is a proper supertype of the type ~\lstinline!$x$.singleton-type!.
+\end{itemize}
+
+Evaluation of the block entails evaluation of its statement sequence, followed by an evaluation of the final expression $e$, which defines the implicit result of the block. 
+
+
+
+
+
+\subsection{Block Expression as Argument}
+\label{sec:block-arguments}
+
+A block expression may be used as the very last argument in a function application (\sref{sec:function-applications}), being equivalent to an anonymous function. 
+
+As such, the block parameters section is optional to be defined, and its parameters are, unlike with anonymous functions, tolerant to different shapes of given arguments. If parameters of the block are typed and arguments for the corresponding parameters are given, the types of the arguments must be compatible with the expected parameter types. 
+
+If less arguments are provided, the remaining parameters have default values of their types, and it is an error if such parameter is typed with a non-nullable type. 
+
+If more arguments are provided, the extra arguments are discarded and released. 
+
+An explicit return expression (\sref{sec:return-expressions}) within the block is interconnected with the innermost function that defines the block, i.e. evaluating it returns from the function (as well as from the block expression). This does not apply to anonymous functions (\sref{sec:anonymous-functions}), where the return expression is interconnected with the anonymous function itself. 
+
+
+
+
+
+
+\subsection{Variable Closure}
+\label{sec:variable-closure}
+
+Coral uses variable closure when defining a block expression. 
+
+If a block expression is used just as a statement, it implicitly inherits access to all variables and methods defined in the scope in which it itself is defined. 
+
+If a block expression is used as an argument in a function application (\sref{sec:function-applications}), it is used as a functor, and is provided with read and write access to variables in the scope that the function application appears in, and with an access to the \code{self} reference, including any nested ~\lstinline!$C$.self!~ references (\sref{sec:self-this-super}). Write access to variables is provided in a manner equivalent to \code{out} arguments. 
+
+Variable closure is applied to anonymous functions (\sref{sec:anonymous-functions}) as well. 
+
+A block expression may opt-in to {\em shadow variables} that it would otherwise have access to from its scope, specified with the \code{Block_Shadowing} syntax element. Variables and methods with the same names as those of the shadowing variables will not be a part of the variable closure. 
 
 
 
@@ -552,15 +604,12 @@ Block           ::= {Block_Stat semi} [Result_Expr]
 \section{Yield Expressions}
 
 \syntax\begin{lstlisting}
-Yield_Expr ::= 'yield' '(' [Arg_Exprs] ')'
-             | '(' [Arg_Exprs ','] '*' Expr ')'
-             | '(' [Arg_Exprs ','] ['*' Expr ','] '**' Expr ')'
-             | [Arg_Exprs]
-             | [Arg_Exprs ','] '*' Expr
-             | [Arg_Exprs ','] ['*' Expr ','] '**' Expr
+Yield_Expr ::= 'yield' (Parens_Args | Poetry_Args | ())
 \end{lstlisting}
 
+A yield expression ~\lstinline!yield $a_1 \commadots a_n$!~ is a way to invoke the block argument (\sref{sec:function-applications} \& \sref{sec:block-arguments}) and pass it arguments. It's expected type is the result type of the given block argument. 
 
+The \code{yield} keyword is also used in collection comprehensions (\sref{sec:collection-comprehensions}) and generators (\sref{sec:generator-expressions}), with a different meaning. 
 
 
 
@@ -766,8 +815,37 @@ Mul_Exprs       ::= [Expr {',' Expr} ',']
                     ['*'] Expr {',' Expr}
 \end{lstlisting}
 
-% TBD: expand this section with some lovely math expressions
-% TBD: add explanation of what *var is and *expr is here
+Multiple assignment is a way to assign multiple variables at once. On the left-hand side of the assignment are variables separated by commas, where at most one of which may be prefixed with an asterisk ``\lstinline!*!''. On the right-hand side of the assignment are expressions separated by commas, where one or more expressions may be prefixed with an asterisk ``\lstinline!*!'' as a sequence-splat operator. 
+
+The left-hand side of the multiple assignment must contain only variable names that can be assigned to -- so either mutable variables, or declared and not defined variables. 
+
+The right-hand side is expanded into a single sequence of expressions in the following way:
+\begin{enumerate}
+\item Say that $e_1 \commadots e_n$ are the original right-hand side expressions. 
+
+\item For each $e_i$, where $1 \leq i \leq n$, if $e_i$ is prefixed with a sequence-splat operator, replace $e_i$ with a comma-separated expressions $e_{i,j}$, where $j$ is the index of the sub-expression contained in the original $e_i$, and move to the next expression $e_{i+1}$. 
+\end{enumerate}
+
+To match the left-hand side variable names with the expanded right-hand side expressions, match first the variables until the one prefixed with an asterisk, if any, and remove the matched expressions. Count variables that are following the one prefixed with an asterisk as $m$ and match them with the remaining expressions, starting from expression $n - m$ where $n$ is the count of the remaining expressions, or from the first expression, if $m \geq n$. If $m \leq n$, then collect the remaining expressions into a sequence and assign it to the variable prefixed with an asterisk. In any case, if there are less expressions available than variables to assign to, assign the extra variables with \code{nil}. If there are more expressions than variables to assign to and no variable is prefixed with an asterisk, then the extra expressions are discarded and released. 
+
+The multiple assignment evaluates all expressions on the right-hand side of the assignment prior to the actual assignment. The expected type of each assigned expression is the expected type of the corresponding variable it assigns to, or if the corresponding variable is prefixed with an asterisk, then the expected type is the expected type of the elements of the sequence declared by that variable. 
+
+\example The following examples show how multiple assignment works. 
+\begin{lstlisting}
+// swap two variables
+a, b := b, a
+
+// `a` will be `e`
+// `b` will be the first element of `f` (if `f` contains anything)
+// `d` will be the last element of `f` (if `f` contains anything)
+// `c` will be the remaining elements of `f` (if `f` contains anything)
+// if `f` is an empty sequence, then `b` and `d` are assigned nil
+//   and `c` is an empty sequence
+// if `f` has one element, then `d` is assigned nil 
+//   and `c` is assigned an empty sequence
+// if `f` has two elements, then `c` is assigned an empty sequence
+a, b, *c, d := e, *f
+\end{lstlisting}
 
 
 
@@ -1191,6 +1269,7 @@ def transpose[$A](xss: List[List[$A]]): List[List[$A]] :=
 
 
 \section{Collection Comprehensions}
+\label{sec:collection-comprehensions}
 
 \syntax\begin{lstlisting}
 List_Literal       ::= '%' Collection_Flags '[' 'for' Generator_Expr ']'
