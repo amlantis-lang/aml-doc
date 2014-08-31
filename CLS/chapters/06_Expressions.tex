@@ -476,7 +476,7 @@ Function composition and pipelining makes more sense with the use of positional 
 \subsection{Memoization}
 \label{sec:memoization}
 
-How to memoize a function's result it described in (\sref{sec:return-expressions}).
+How to memoize a function's result is described in (\sref{sec:return-expressions}).
 
 A memoized function's body is not evaluated, if it was once called with the same arguments (based on equality, not identity), and if that result value is still memoized. If so, the memoized result value is immediately returned without evaluation of the function's body, which can speed up execution of some functions significantly. Such functions should however be referentially transparent in best-case scenario (\sref{sec:function-decls-defs} \& \sref{sec:statements}) or at least tolerant to being memoized. 
 
@@ -492,9 +492,14 @@ Parameters of memoization\footnote{Parameters include things like: cache policy,
 \label{sec:type-applications}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= Simple_Expr (Type_Args [UoM_Args] | UoM_Args)
+Simple_Expr1 ::= Simple_Expr Type_Args
 \end{lstlisting}
 
+A type application ~\lstinline!$e$[$T_1 \commadots T_n$]!~ instantiates a polymorphic value $e$ of type ~\lstinline![$a_1$ >: $L_1$ <: $U_1$ $\commadots$ $a_n$ >: $L_n$ <: $U_n$] $\mapsto\ S$!~ with argument types $T_1 \commadots T_n$. Every argument type $T_i$ must obey the corresponding bounds $L_i$ and $U_i$. That is, for each $i = 1 \commadots n$, we must have $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$. The type of the application is $\sigma S$. 
+
+If the function part $e$ is of some value type, the type application is taken to be equivalent to ~\lstinline!$e$.apply[$T_1 \commadots T_n$]!, i.e. the application of an \code{apply} method defined by $e$. 
+
+Type applications can be omitted if local type inference (\sref{sec:local-type-inference}) can infer best type arguments for a polymorphic function from the types of the actual function arguments and the expected result type. 
 
 
 

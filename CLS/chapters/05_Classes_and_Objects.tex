@@ -1494,7 +1494,7 @@ Types that do not require the ``\code{constant_id}'' are those that are ``sorts'
 \section{Units of Measure}
 \label{sec:units-of-measure}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[mathescape=false]
 Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'unit-of-measure' 
                    [semi Unit_Convs {semi Unit_Convs}]
 Unit_Name      ::= variable_id | constant_id
@@ -1504,7 +1504,7 @@ Unit_Convs     ::= Unit_Name ':=' Unit_Conv
 Unit_Conv      ::= '(' Unit_Conv ')'
                  | Unit_Elem [Unit_Op Unit_Elem]
                  | Unit_Conv Unit_Op Unit_Conv
-Unit_Elem      ::= number_literal | Unit_Name
+Unit_Elem      ::= number_literal | ['$'] Unit_Name |
 Unit_Op        ::= '*' | '/' | '**'
 \end{lstlisting}
 
@@ -1550,10 +1550,10 @@ In addition to type parameters and dependency parameters of each type, every typ
 
 \syntax\begin{lstlisting}[mathescape=false]
 UoM_Params ::= '[<' UoM_Param {',' UoM_Param} '>]'
-UoM_Param  ::= '$' Unit_Name
+UoM_Param  ::= '$' Unit_Name ['<:' ['$'] Unit_Name]
 \end{lstlisting}
 
-Names of unit of measure parameters must not clash with names of type parameters, otherwise it is a compile-time error. 
+Names of unit of measure parameters must not clash with names of type parameters or other unit of measure parameters, otherwise it is a compile-time error. 
 
 \paragraph{\em Persistence of Units of Measure}
 There is a huge difference between the way F\# handles units of measure and Coral's way. In F\#, the unit of measure information is lost after compilation, but persists in Coral in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
