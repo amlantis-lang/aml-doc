@@ -1663,9 +1663,19 @@ Statements occur as parts of blocks and templates. Despite their name, they are 
 
 Function statements is an umbrella term for a series of statements and expressions, so their effective value is more complex. 
 
+An expression that is used as a statement can have an arbitrary value type. An expression statement $e$ is evaluated by evaluating $e$ and discarding and releasing the result of the evaluation. 
+
+Block statements may be definitions, which bind local names in the block. The only modifier allowed in all block-local definitions is \code{implicit}. When prefixing a class or object definition, modifiers \code{abstract}, \code{final} and \code{sealed} are also permitted (\sref{sec:modifiers}).
+
+Evaluation of a statement sequence entails evaluation of the statements in the order they are written. This behavior can be overridden for statement sequences in workflows (\sref{sec:workflows}).
+
 Statement can be an import via a use clause (\sref{sec:use-clauses}), a definition or an expression, or it can be empty. Statements used in the template of a class definition can also be declarations. 
 
+A function that is declared with \code{transparent} in its \code{declare} block, is visible as referentially transparent, and therefore the compiler and possibly the runtime as well are given the possibility to replace function applications of this same function with its previously computed result with the same arguments on the same receiver instance. In that sense, it is similar to memoization (\sref{sec:memoization}), but skips one call stack frame and works better during compilation, unlike memoization, which is a runtime feature. On the other hand, a function that is declared with \code{opaque} in its \code{declare} block, is visible as referentially opaque and those optimizations are disabled for it, so the function is re-evaluated each time it is applied. 
 
+A function that is declared with \code{native} in its \code{declare} block, has its body defined outside of Coral source files, possibly in other languages, native to the platform of the Coral VM. For now, some CSL functions are declared this way and a possibility to let users define their own native functions is upcoming in future versions of Coral. Note that the native implementation of the function would have to match the expected platform of the Coral VM, or maybe the expression would map platforms to the native implementations of the function. 
+
+An alias to a function name creates a duplicate record in method table of a class or a duplicate variable pointing to the aliased function name. From that scope on, the functions are bound by name, and aliased function names are also inherited. It is an error if a subtype tries to override an aliased function name. 
 
 
 
