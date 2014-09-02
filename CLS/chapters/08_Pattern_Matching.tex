@@ -302,7 +302,7 @@ A reference to a class $C$, ~\lstinline!$p$.$C$!, ~\lstinline!$p$.type!~ or ~\ls
 The bottom type \code{Nothing} (with singleton instance \code{nil}) is the only type pattern that matches \code{nil} (only), but its preferable to match against ~\lstinline!Option[$T$]! with implicit conversion of \code{nil} to object \code{None}. 
 
 \item[]
-A singleton type ~\lstinline!$p$.singleton-type!. This type pattern matches only the value denoted by the path $p$ (only the single value denoted by the path $p$, since \code{nil} is not matched). 
+A singleton type ~\lstinline!$p$.type!. This type pattern matches only the value denoted by the path $p$ (only the single value denoted by the path $p$, since \code{nil} is not matched). 
 
 \item[]
 A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$][<$t_1 \ldots t_n$>]!, where the $a_i$ are type variable patterns or wildcards ``\lstinline!_!'' and $u_i$ are unit of measure kinds. This type pattern matches all values which match $T$ for some arbitrary instantiation of the type variables and wildcards.  

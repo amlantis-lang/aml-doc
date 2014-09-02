@@ -1165,7 +1165,8 @@ Interfaces are filtered versions of classes and traits with only declarations an
 \label{sec:object-definitions}
 
 \syntax\begin{lstlisting}
-Object_Def ::= constant_id (Class_Tmpl_Env | Trait_Tmpl_Env)
+Object_Def ::= (constant_id | variable_id) 
+               (Class_Tmpl_Env | Trait_Tmpl_Env)
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Coral has one scope for both types and terms. 
@@ -1621,13 +1622,11 @@ let vr := Variant_Record(Traffic_Light.Red).
 \section{Nullability}
 \label{sec:nullability}
 
-Every type in Coral conforms to \code{Object}. In turn, \code{Nothing} conforms to any type. But, the only instance of \code{Nothing}, which is a singleton accessed with the keyword \code{nil}, can not be assigned to every typed variable. If a type is declared as nullable, then it can. If a type is declared as not-nullable, which is the implicit preference for every type, then it can not.\footnote{An original idea was to make every type not-nullable and force users to use the \code{Option} type for every no-object scenario. But then, what would \code{nil} be good for?}
+Every type in Coral conforms to \code{Object}. In turn, \code{Nothing} conforms to any type, in spite of nullability of the particular type. But, the only instance of \code{Nothing}, which is a singleton accessed with the keyword \code{nil}, can not be assigned to every typed variable. If a type is declared as nullable, then it can. If a type is declared as not-nullable, which is the implicit preference for every type, then it can not.\footnote{An original idea was to make every type not-nullable and force users to use the \code{Option} type for every no-object scenario. But then, what would \code{nil} be good for?}
 
 The implicit preference may be changed in two levels. These levels are {\em preferred nullability} and {\em explicit nullability} (\sref{sec:nullable-types}). 
 
 Preferred nullability is switched by annotations on each class: \code{Nullable}. The annotation has one positional parameter of type \code{Boolean} defining what the nullability will be (\code{yes} for nullable types, \code{no} for not-nullable types), and a named parameter \lstinline[deletekeywords={override}]!:override! of type \code{Boolean}, defining whether subclasses may override this preference, and implicitly set to \code{yes}, meaning that subclasses may override this preference by default. 
-
-All types in Coral are not-nullable implicitly to prevent \code{Method_Not_Found_Error}s, resulting from sending messages to \code{nil}. But it is clear that for some cases, nullability of types may be desired, such as with dictionaries, so that \code{nil} can be returned for keys that have no value in the dictionary. However, it is preferred to use the \code{Option} type wherever possible to indicate that the value may not be present, and moreover, the \code{Option} type can be used in pattern matching even for values that are not of the \code{Option} type, utilizing an extractor pattern (\sref{sec:extractor-patterns}) with \code{Some} and a constant pattern (\sref{sec:constant-patterns}) with \code{None}, instead of constructor patterns (\sref{sec:constructor-patterns}). This is again different from Scala, where \code{Some} and \code{None} can't be used to match any value, only \code{Option} values. This difference in Coral makes nullable types and the \code{Option} type interoperable in pattern matching. 
 
 \example Here are all four versions of the nullability annotation. 
 \begin{lstlisting}[deletekeywords={override}]

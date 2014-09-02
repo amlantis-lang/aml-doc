@@ -22,9 +22,9 @@ Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type}
                       | ['refinement'] Refine_Stats
 Annot_Type          ::= {Annotation} Simple_Type
 Simple_Type         ::= Simple_Type [Type_Args] [Dep_Args] [UoM_Args]
-                      | Simple_Type '#' constant_id
+                      | Simple_Type '#' id
                       | Stable_Id
-                      | Path '.' ('type' | 'singleton-type')
+                      | Path '.' 'type'
                       | '(' Types ')'
 Types               ::= Type {',' Type}
 \end{lstlisting}
@@ -105,6 +105,8 @@ The empty path $\epsilon$ (which can not be written explicitly in user programs)
 \lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
 \end{itemize}
 
+Paths introduce also {\em path dependent types}, if the referenced member is a type. 
+
 
 
 
@@ -125,11 +127,9 @@ Every value in Coral has a type which is of one of the following forms.
 
 \syntax\begin{lstlisting}
 Simple_Type ::= Path '.' 'type'
-Simple_Type ::= Path '.' 'singleton-type'
 \end{lstlisting}
 
-A singleton type is of the form \lstinline@$p$.singleton-type@ and a special type that denotes the set of values consisting of \code{nil} and the value denoted by $p$. A value type, on the other hand, is a special type that denotes the set of values consisting of \code{nil} and every value that conforms to the type of value denoted by $p$.\footnote{This is useful when using a value as prototype of new values.}
-
+A singleton type is of the form \lstinline@$p$.type@ and a special type that denotes the set of values consisting of \code{nil} and the value denoted by $p$, in spite of nullability.
 
 
 
@@ -139,10 +139,29 @@ A singleton type is of the form \lstinline@$p$.singleton-type@ and a special typ
 \label{sec:type-projection}
 
 \syntax\begin{lstlisting}
-Simple_Type ::= Simple_Type '#' constant_id
+Simple_Type ::= Simple_Type '#' id
 \end{lstlisting}
 
 A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. This is useful i.e. with nested classes that belong to the class instances, not the class object. 
+
+% example based on: http://stackoverflow.com/a/9444487/473180
+\example A sample code that shows off what type projections are good for:
+\begin{lstlisting}
+class A {
+  class B {}
+  def f (b: B): Unit   := Console.print_line "Got my B."
+  def g (b: A#B): Unit := Console.print_line "Got a B."
+}
+
+val a1 := A.new
+val a2 := A.new
+a2.f a1.B.new     // type mismatch, found a1.B, required a2.B
+a2.g a1.B.new     // prints "Got a B." to stdout
+a2.f a2.B.new     // prints "Got my B." to stdout
+\end{lstlisting}
+This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
+
+% TBD: add example with graphs from http://www.scala-lang.org/old/node/115, as Coral does the same thing
 
 
 
@@ -150,6 +169,7 @@ A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $
 
 
 \subsection{Type Designators}
+\label{sec:type-designators}
 
 \syntax\begin{lstlisting}
 Simple_Type ::= Stable_Id
@@ -157,9 +177,33 @@ Simple_Type ::= Stable_Id
 
 A type designator refers to a named value type. It can be simple or qualified. All such type designators are shorthands for type projections. 
 
-Specifically, the unqualified type name $t$ where $t$ is bound in some class, object or module $C$ is taken as a shorthand for \lstinline@$C$.self.type#$t$@. If $t$ is not bound in a class, object or module, then $t$ is taken as a shorthand for \lstinline@$\epsilon$.type#$t$@. 
+Specifically, the unqualified type name $t$ where $t$ is bound in some class $C$ is taken as a shorthand for ~\lstinline@$C$.self.type#$t$@. If $t$ is bound in some object\footnote{Also in class object methods.} or module $C$, it is taken as a shorthand for ~\lstinline@$C$.type#$t$@. If $t$ is not bound in a class, object or module, then $t$ is taken as a shorthand for ~\lstinline@$\epsilon$.type#$t$@. 
 
-A qualified type designator has the form \lstinline@$p$.$t$@, where $p$ is a path (\sref{sec:type-paths}) and $t$ is a type name. Such a type designator is equivalent to the type projection \lstinline@$p$.type#$t$@. 
+A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a path (\sref{sec:type-paths}) and $t$ is a type name. Such a type designator is equivalent to the type projection ~\lstinline@$p$.type#$t$@. 
+
+\example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
+\begin{lstlisting}
+t = $\epsilon$.type#t // "global space"
+Number = Lang~[coral].type#Number // predefined import of Lang~[coral]
+
+object An_Object {
+  type t
+  t = An_Object.type#t // bound by object
+}
+
+class A_Class {
+  type t
+  def a_method := {
+    t = A_Class.self.type#t // bound by class
+  }
+  class << self
+    type u
+    u = A_Class.type#u // bound by (class) object
+  end
+  t = A_Class.self.type#t // bound by class
+  self.u = A_Class.type#u // bound by (class) object
+}
+\end{lstlisting}
 
 
 
@@ -330,10 +374,10 @@ Parameter prefixed with \code{Param_Io} defines whether the parameter is require
 Parameter prefixed with ``\lstinline!*!'' is a requirement of a repeated parameter. 
 
 \item 
-Parameter prefixed with ~\lstinline!^$x$!~ is a requirement of a parameter named $x$.
+Parameter prefixed with ``\lstinline!^!'' is a requirement of a parameter named $x$.
 
 \item 
-Parameter prefixed with ~\lstinline!**!~ is a requirement of a captured named parameters. 
+Parameter prefixed with ``\lstinline!**!'' is a requirement of a captured named parameters. 
 
 \item
 Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullability}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}).
@@ -353,13 +397,92 @@ Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
 Existential_Dcl     ::= 'type' Type_Dcl
                       | 'val' Val_Dcl
-                      | 'var' Var_Dcl
 \end{lstlisting}
 
-An existential type has the form \lstinline@$T$ for-some {$Q$}@, where $Q$ is a sequence of type declarations. Let \lstinline@$t_1$[$\tps_1$] >: $L_1$ <: $U_1$ $\commadots$ $t_n$[$\tps_n$] >: $L_n$ <: $U_n$@ be the types declared in $Q$. 
+An existential type has the form ~\lstinline@$T$ for-some { $Q$ }@, where $Q$ is a sequence of type declarations (\sref{sec:type-decls-aliases}). Let ~\lstinline@$t_1$[$\tps_1$] >: $L_1$ <: $U_1\ \commadots\ t_n$[$\tps_n$] >: $L_n$ <: $U_n$@~ be the types declared in $Q$ (any of the type parameter sections ~\lstinline![$\tps_i$]!~ might be missing). The scope of each type $t_i$ includes the type $T$ and the existential clause $Q$. The type variables $t_i$ (occurring in the sequence $Q$) are said to be {\em bound} in the type ~\lstinline!$T$ for-some { $Q$ }!. Type variables that occur in a type $T$, but which are not bound in $T$, are said to be {\em free} in $T$. 
 
-A {\em type instance} of \lstinline@$T$ for-some {$Q$}@ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, \lstinline@$L_i$ <: $t_i$ <: $U_i$@. The set of values denoted by the existential type \lstinline@$T$ for-some {$Q$}@ is the union of the set of values of all its type instances. 
+A {\em type instance} of ~\lstinline@$T$ for-some { $Q$ }@~ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, $\sigma L_i \conforms \sigma t_i \conforms \sigma U_i$. The set of values denoted by the existential type \lstinline@$T$ for-some { $Q$ }@ is the union of the set of values of all its type instances. In other words, a type instance of an existential type is a type application (\sref{sec:type-applications}) of the type ~\lstinline@$T$ for-some { $Q$ }@, where the applied type arguments conform to the bounds, or are free in ~\lstinline@$T$ for-some { $Q$ }@. 
 
+A {\em skolemization} of ~\lstinline@$T$ for-some { $Q$ }@~ is a type instance $\sigma T$, where $\sigma$ is the substitution $[t_1 := t'_1 \commadots t_n := t'_n]$ and each $t'_i$ is a fresh abstract virtual type with lower bound $\sigma L_i$ and upper bound $\sigma U_i$\footnote{This virtual type $t'_i$ denotes the set of all types, for which $\sigma L_i \conforms \sigma t'_i \conforms \sigma U_i$.}. Such type instance is inaccessible to user programs, but is essential to type equality and conformance checks, as it describes the set of values denoted by the existential type without an actual existential type, but with a universal type. 
+
+
+
+\paragraph{Simplification rules}
+Existential types obey the following equivalences:
+\begin{enumerate}
+\item
+Multiple \code{for-some} clauses in an existential type can be merged. E.g., ~\lstinline@$T$ for-some { $Q$ } for-some { $Q'$ }@~ is equivalent to ~\lstinline@$T$ for-some { $Q$; $Q'$ }@. 
+
+\item
+Unused quantifications can be dropped. E.g., ~\lstinline@$T$ for-some { $Q$; $Q'$ }@, where none of the types defined in $Q'$ are referred to by $T$ or $Q$, is equivalent to ~\lstinline@$T$ for-some { $Q$ }@. 
+
+\item
+An empty quantification can be dropped. E.g., ~\lstinline@$T$ for-some { }@~ is equivalent to $T$. 
+
+\item
+An existential type ~\lstinline@$T$ for-some { $Q$ }@, where $Q$ contains a clause ~\lstinline!type $t$[$\tps$] >: $L$ <: $U$!~ is equivalent to the type ~\lstinline@$T'$ for-some { $Q$ }@, where $T'$ results from $T$ by replacing every covariant occurrence (\sref{sec:variance-of-type-parameters}) of $t$ in $T$ by $U$ and by replacing every contravariant occurrence of $t$ in $T$ by $L$. 
+\end{enumerate}
+
+
+
+\paragraph{Existential quantification over values}
+As a syntactic convenience, the bindings clause in an existential type may also contain value declarations ~\lstinline!val $x$: $T$!. An existential type ~\lstinline@$T$ for-some { $Q$; val $x$: $S$; $Q'$ }@~ is treated as a shorthand for the type ~\lstinline@$T'$ for-some { $Q$; type $t$ <: $S$; $Q'$ }@, where $t$ is a fresh type name and $T'$ results from $T$ by replacing every occurrence of ~\lstinline!$x$.type!~ with $t$. 
+
+
+
+\paragraph{Placeholder syntax for existential types}
+Coral supports a placeholder syntax for existential types. A {\em wildcard type} is of the form ~\lstinline!_ >: $L$ <: $U$!. Both bound clauses may be omitted. If a lower bound clause ~\lstinline!_ >: $L$!~ is omitted, ~\lstinline!_ >: Nothing!~ is assumed. If an upper bound clause ~\lstinline!_ <: $U$!~ is omitted, ~\lstinline!_ >: Object!~ is assumed. A wildcard type is a shorthand for an existentially quantified type variable, where the existential quantification is implicit. 
+
+A wildcard type must appear as a type argument of a parameterized type. Let ~\lstinline!$T$ := $p$.$c$[$\targs$, $T$, $\targs'$]!~ be a parameterized type, where $\targs$, $\targs'$ may be empty and $T$ is a wildcard type ~\lstinline!_ >: $L$ <: $U$!. Then $T$ is equivalent to the existential type
+\begin{lstlisting}
+$p$.$c$[$\targs$, $t$, $\targs'$] for-some { type $t$ >: $L$ <: $U$ }
+\end{lstlisting}
+where $t$ is a fresh type variable. Wildcard types may also appear as parts of compound types (\sref{sec:compound-types}), function types (\sref{sec:function-types}) or tuple types (\sref{sec:tuple-types}). Their expansion is then the expansion in the equivalent parameterized type. 
+
+\example Assume the class definitions
+\begin{lstlisting}[mathescape=false]
+class Ref[$T] {}
+abstract class Outer { type T }
+\end{lstlisting}
+Here are some examples of existential types:
+\begin{lstlisting}[mathescape=false]
+Ref[$T] for-some { type $T <: Number }
+Ref[x.T] for-some { val x: Outer }
+Ref[x_type#T] for-some { type x_type <: Outer }
+\end{lstlisting}
+The last two types in this list are equivalent. An alternative formulation of the first type above using wildcard syntax is:
+\begin{lstlisting}
+Ref[_ <: Number]
+\end{lstlisting}
+which is equivalent to Java's
+\begin{lstlisting}[language=Java]
+Ref<? super Number>
+\end{lstlisting}
+\lstinline!Ref[_ <: Number]!~ then represents any type constructed by the type\code{Ref} parameterized with a type that is \code{Number} or any type that conforms to \code{Number}. 
+\lstinline!Ref[_ >: Number]!~ would then represents any type constructed by the type \code{Ref} parameterized with a type that is \code{Number} or any type that \code{Number} conforms to. 
+
+\example The type ~\lstinline!List[List[_]]!~ is equivalent to the existential type
+\begin{lstlisting}[mathescape=false]
+List[List[$T] for-some { type $T }]  .
+\end{lstlisting}
+
+\example Assume a covariant type
+\begin{lstlisting}[mathescape=false]
+class List[+$T] {}
+\end{lstlisting}
+The type 
+\begin{lstlisting}[mathescape=false]
+List[$T] for-some { type $T <: Number }
+\end{lstlisting}
+is equivalent (by simplification rule 4 above\footnote{As ~\lstinline[mathescape=false]!$T!~ appears in covariant position in \code{List}, its upper bound can replace the type variable in \code{List}.}) to
+\begin{lstlisting}[mathescape=false]
+List[Number] for-some { type $T <: Number }
+\end{lstlisting}
+which is in turn equivalent (by simplification rules 2 and 3 above\footnote{The type variable ~\lstinline[mathescape=false]!$T!~ is unused, and after dropping it, the quantification is empty.}) to
+\begin{lstlisting}[mathescape=false]
+List[Number]  .
+\end{lstlisting}
+Since this \code{List} type is covariant in its type parameter, then e.g. ~\lstinline!List[Integer]!~ is still a subtype of ~\lstinline!List[Number]!. 
 
 
 
@@ -400,6 +523,7 @@ Dependent types in Coral are implemented by simple indexed types. Dependent type
 Integer@[42]
 String@[42]
 \end{lstlisting}
+Note that ~\lstinline!Integer@[42]!~ is basically equivalent to ~\lstinline!42.type!. 
 
 
 
@@ -464,7 +588,7 @@ The difference between the ``\code{g}'' and ``\code{h}'' functions is that using
 \subsection{Polymorphic Method Types}
 \label{sec:polymorphic-method-types}
 
-A polymorphic method type is the same as a regular method type, but enhanced with a type parameters section. It is denoted internally as \lstinline@[$\tps$]$ \mapsto T$@, where \lstinline@[$\tps$]@ is a type parameter section ~\lstinline@[$a_1$ >: $L_1$ <: $U_1$ $\commadots$ $a_n$ >: $L_n$ <: $U_n$]@ for some $n \geq 0$ and $T$ is a (value or method) type. This type represents (only\footnote{Not anonymous.}) named methods that take type arguments $S_1 \commadots S_n$, for which the lower bounds $L_1 \commadots L_n$ conform (\sref{sec:conformance}) to the type arguments and the type arguments conform and the upper bounds $U_1 \commadots U_n$ and that yield results of type $T$. No explicit lower bound implies \code{Nothing} to be the corresponding lower bound, no explicit upper bound implies \code{Object} to be the corresponding upper bound. As usual, lower bound must conform to the corresponding upper bound. 
+A polymorphic method type is the same as a regular method type, but enhanced with a type parameters section. It is denoted internally as \lstinline@[$\tps$]$ \mapsto T$@, where \lstinline@[$\tps$]@ is a type parameter section ~\lstinline@[$\pm a_1$ >: $L_1$ <: $U_1$ $\commadots$ $\pm a_n$ >: $L_n$ <: $U_n$]@ for some $n \geq 0$ and $T$ is a (value or method) type. This type represents (only\footnote{Not anonymous.}) named methods that take type arguments $S_1 \commadots S_n$, for which the lower bounds $L_1 \commadots L_n$ conform (\sref{sec:conformance}) to the type arguments and the type arguments conform and the upper bounds $U_1 \commadots U_n$ and that yield results of type $T$. No explicit lower bound implies \code{Nothing} to be the corresponding lower bound, no explicit upper bound implies \code{Object} to be the corresponding upper bound. As usual, lower bound must conform to the corresponding upper bound. 
 
 \example The declarations
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
@@ -515,22 +639,22 @@ Equivalence ($\equiv$) between types is the smallest congruence, such that the f
 
 \begin{itemize}
 \item
-If $t$ is defined by a type alias \lstinline@type t is T@, then $t$ is equivalent to $T$. 
+If $t$ is defined by a type alias ~\lstinline@type t := T@, then $t$ is equivalent to $T$. 
 
 \item
-If a path $p$ has a singleton type \lstinline@$q$#singleton-type@, then \lstinline@$p$#singleton-type $\equiv$ $q$#singleton-type@. 
+If a path $p$ has a singleton type ~\lstinline@$q$.type@, then \lstinline@$p$.type $\equiv\ q$.type@. 
 
 \item
 Two compound types (\sref{sec:compound-types}) are equivalent, if the sequences of their components are pairwise equivalent, occur in the same order and their refinements are equivalent.
 
-\item 
-Two refinements (\sref{sec:compound-types} \& TBD: named refinements) are equivalent, if they bind the same names and the modifiers, types and bounds of every declared entity are equivalent in both refinements. Two equivalent refinements, both or one attached to a compound type, do not imply the compound types to be equivalent. This applies to both anonymous and named refinements. 
+\item
+Two refinements (\sref{sec:compound-types} \& \sref{sec:refinements}) are equivalent, if they bind the same names and the modifiers, types and bounds of every declared entity are equivalent in both refinements. 
 
 \item
-Two method types (\sref{sec:method-types}) are equivalent, if they have equivalent return types, both have the same number of parameters and corresponding parameters have equivalent types and extra properties. Names of parameters matter for method type equivalence only with named parameters. 
+Two method types (\sref{sec:method-types}) are equivalent, if they have equivalent return types, both have the same number of parameters and corresponding parameters have equivalent types and extra properties. Names of the parameters matter for method type equivalence only with named parameters. 
 
 \item
-Two polymorphic method types (\sref{sec:polymorphic-method-types}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as lower and upper bounds of corresponding type parameters. 
+Two polymorphic method types (\sref{sec:polymorphic-method-types}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
 
 \item
 Two existential types (\sref{sec:existential-types}) are equivalent, if they have the same number of quantifiers and the quantified types as well as lower and upper bounds of corresponding quantifiers are equivalent. 
@@ -567,8 +691,83 @@ A type variable $t$ conforms to its upper bound and its lower bound conforms to 
 \item
 A class type or a parameterized type conforms to any of its base types. 
 
+\item 
+A singleton type ~\lstinline!$p$.type!~ conforms to the type of the path $p$.
+
+\item
+A type projection ~\lstinline!$T$#$t$!~ conforms to ~\lstinline!$U$#$t$!~ if $T$ conforms to $U$. 
+
+\item 
+A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
+\begin{itemize}
+\item If the $i^{\superth}$ type parameter of $T$ is declared covariant, then $T_i \conforms U_i$.
+\item If the $i^{\superth}$ type parameter of $T$ is declared contravariant, then $U_i \conforms T_i$.
+\item If the $i^{\superth}$ type parameter of $T$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
+\item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
 \end{itemize}
 
+\item
+A unit of type $N$ conforms to unit of type $U$ if $N$ extends $U$ or if $N \equiv U$. 
+
+\item
+A parameterized type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lstinline!$T$[<$U_1 \commadots U_n$>]!~ if the following conditions hold for $i = 1 \commadots n$.
+\begin{itemize}
+\item For the $i^{\superth}$ type parameter of $T$, $N_i \conforms U_i$.
+\end{itemize}
+
+\item
+A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$][<$N_1 \commadots N_m$>]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$][<$V_1 \commadots V_m$>]!~ if the following conditions hold.
+\begin{itemize}
+\item The virtual type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!. 
+\item The virtual type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lstinline!$T$[<$V_1 \commadots V_n$>]!. 
+\end{itemize}
+
+\item
+A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$U$[$U_1 \commadots U_m$]!~ if $T$ is a subclass/subtrait of $U$, $T$ provides all type arguments to $U$ and the following conditions hold for $i = 1 \commadots m$. Note that if $T \equiv U$, then the previous rule applies. Let $T_i$ be a type argument that $T$ passes as a type argument $U_i$ to its supertype $U$ (either a type or a type variable). This basically means that $T$ can either pass its own type arguments into its supertype in arbitrary order, or pass types as type arguments to $U$. If $T$ defines extra type parameters, it does not affect its conformance to $U$. 
+\begin{itemize}
+\item If the $i^{\superth}$ type parameter of $U$ is declared covariant, then $T_i \conforms U_i$.
+\item If the $i^{\superth}$ type parameter of $U$ is declared contravariant, then $U_i \conforms T_i$.
+\item If the $i^{\superth}$ type parameter of $U$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
+\item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
+\end{itemize}
+
+\item 
+A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ { $R$ }!~ conforms to each of its component types $T_i$. 
+
+\item 
+If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ { $R$ }!. 
+
+\item
+The existential type ~\lstinline!$T$ for-some { $Q$ }!~ conforms to $U$, if its skolemization (\sref{sec:existential-types}) conforms to $U$. This also means that the $t'_i$ type variables have to fall in between $U$'s type parameter bounds. 
+
+\item
+The type $T$ conforms to the existential type ~\lstinline!$U$ for-some { $Q$ }!~ if $T$ conforms to at least one of the type instances (\sref{sec:existential-types}) of ~\lstinline!$U$ for-some { $Q$ }!. 
+
+\item
+If $T_i \equiv T'_i$ for $i = 1 \commadots n$ and $R \conforms R'$, then the method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ R$!~ conforms to ~\lstinline!($p'_1$: $T'_1 \commadots p'_n$: $T'_n$) $\mapsto\ R'$!. 
+
+\item
+The polymorphic type or type constructor 
+\begin{lstlisting}
+[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto\ T$
+\end{lstlisting}
+conforms to the polymorphic type or type constructor 
+\begin{lstlisting}
+[$\pm a_1$ >: $L'_1$ <: $U'_1 \commadots \pm a_n$ >: $L'_n$ <: $U'_n$] $\mapsto\ T'$
+\end{lstlisting}
+if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ for $i = 1 \commadots n$. 
+
+\item
+Polymorphic types or type constructors $T$ and $T'$ must also fulfil the following. We characterize $T$ and $T'$ by their type parameter clauses ~\lstinline![$a_1 \commadots a_n$]!~ and ~\lstinline![$a'_1 \commadots a'_n$]!, where an $a_i$ or $a'_i$ may include a variance annotation, annotations, a higher-order type parameter clauses, and bounds. Then, $T$ conforms to $T'$ if any list ~\lstinline![$t_1 \commadots t_n$]!~ -- with declared variances, annotations, bounds and higher-order type parameter clauses -- of valid type arguments for $T'$ is also a valid list of type arguments for $T$ and ~\lstinline!$T$[$t_1 \commadots t_n$] <: $T'$[$t_1 \commadots t_n$]!. Note that this entails that:
+\begin{itemize}
+\item The bounds on $a_i$ must be the same or weaker than the corresponding bounds declared for $a'_i$. 
+\item The variance of $a_i$ must match the variance of $a'_i$, where covariance matches covariance, contravariance matches contravariance and any variance matches invariance. 
+\item If annotation of $a'_i$ restricts conformance (\sref{sec:annotations}), then the corresponding annotation of $a_i$ must conform to it. 
+\item Recursively, these restrictions apply to the corresponding higher-order type parameter clauses of $a_i$ and $a'_i$. 
+\end{itemize}
+
+\end{itemize}
+% TBD: conformance of dependent types, important! 
 
 
 

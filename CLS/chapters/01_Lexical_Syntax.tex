@@ -51,6 +51,7 @@ id_rest       ::= {letter | digit | '_'}
 id_rest_con   ::= id_rest [id_rest_mid]
 id_rest_fun   ::= id_rest [id_rest_mid] [['_'] op_id]
 id_rest_mid   ::= id_rest {('/' | '+' | '-') id_rest}
+id            ::= variable_id | constant_id
 importable_id ::= simple_id
                 | function_id
                 | constant_id
@@ -77,28 +78,28 @@ The following names are the reserved words.
 abstract      advice        advice-execution            after
 alias         annotation    arguments     around        as
 aspect        begin         before        bitfield      break
-broken        case          cast          catch         class
-clone         cloned        constant      constructor   declare
-def           delta         destructor    digits        do
-else          elsif         end           ensure        enum
-execution     exhausted     extends       final         for
-for-some      function      get           goto          handler 
-if            indexed-with  implements    implicit      in
-include       interface     invoke        is            label
-lazy          let           loop          match         memoize
-message       method        module        native        next
-nil           no            object        of            opaque
-operator      out           override      pointcut      pragma
-prepend       private       property      protected     protocol
-public        raise         raising       range         record
-redo          refine        refinement    rescue        retry
-return        returning     requires      reverse       sealed
-self          set           singleton-type              skip
-step          super         target        then          this
-throw         throwing      trait         transparent   type
-unless        until         union         unit-of-measure 
-use           val           var           yes           weak
-when          while         with          yield
+broken        case          catch         class         clone
+cloned        constant      constructor   declare       def
+delta         destructor    digits        do            else
+elsif         end           ensure        enum          execution
+exhausted     extends       final         for           for-some
+function      get           goto          handler       if
+indexed-with  implements    implicit      in            include
+interface     invoke        is            label         lazy
+let           loop          match         memoize       message
+method        module        native        next          nil
+no            object        of            opaque        operator
+out           override      pointcut      pragma        prepend
+private       property      protected     protocol      public
+raise         raising       range         record        redo
+refine        refinement    rescue        retry         return
+returning     requires      reverse       sealed        self
+set           skip          step          super         target
+then          this          throw         throwing      trait
+transparent   type          unless        until         union
+unit-of-measure             use           val           var
+yes           weak          when          while         with
+yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.

@@ -557,7 +557,7 @@ The type of a block ~\lstinline!{ $s_1$; $\ldots$; $s_n$; $e$ }!~ is ~\lstinline
 
 \item A locally defined class definition ~\lstinline!class $c$ extends $t$!~ is bound by the existential clause ~\lstinline!type $c$ <: $T$!, where $T$ is the least class type of refinement type which is a proper supertype of the type $c$. It is an error if $c$ carries type parameters. 
 
-\item A locally defined object definition ~\lstinline!object $x$ extends $t$!~ is bound by the existential clause ~\lstinline!val $x$: $T$!, where $T$ is the least class type of refinement type which is a proper supertype of the type ~\lstinline!$x$.singleton-type!.
+\item A locally defined object definition ~\lstinline!object $x$ extends $t$!~ is bound by the existential clause ~\lstinline!val $x$: $T$!, where $T$ is the least class type of refinement type which is a proper supertype of the type ~\lstinline!$x$.type!.
 \end{itemize}
 
 Evaluation of the block entails evaluation of its statement sequence, followed by an evaluation of the final expression $e$, which defines the implicit result of the block. 
@@ -1642,6 +1642,8 @@ Block_Stat    ::= Use
 Template_Stat ::= Use
                 | {Annotation} {Modifier} Def
                 | {Annotation} {Modifier} Dcl
+                | 'include' Container_Path [Cond_Modifier]
+                | 'prepend' Container_Path [Cond_Modifier]
                 | Expr
                 | Alias_Expr
                 | ()
