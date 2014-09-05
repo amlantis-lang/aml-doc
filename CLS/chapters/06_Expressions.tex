@@ -111,7 +111,7 @@ A reference to any other member of the \code{nil} object causes \code{Method_Not
 Simple_Expr1 ::= Path
                | '(' Anon_Class ')' '.' Selection
                | Simple_Expr '.' Selection
-Selection    ::= ['?'] (importable_id | variable_id)
+Selection    ::= ['?'] id
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
@@ -177,7 +177,7 @@ The \code{super} prefix may be followed by a qualifier ~\lstinline![$T$]!, as in
 \syntax\begin{lstlisting}
 Use_Expr    ::= Use_Expr_As | Use_Aspect
 Use_Expr_As ::= 'use' Simple_Expr ('as' | 'as!')
-                [variable_id ':'] Type [Block_Expr]
+                [id ':'] Type [Block_Expr]
 Use_Aspect  ::= 'use' 'aspect' Path [Block_Expr]
 \end{lstlisting}
 
@@ -207,7 +207,7 @@ Args_Expr   ::= [[Arg_Exprs ','] '*' Expr ','] Arg_Exprs [',' '**' Expr]
               | [Arg_Exprs ','] '*' Expr [',' '**' Expr]
               | '**' Expr
 Arg_Exprs   ::= Arg_Expr {',' Arg_Expr}
-Arg_Expr    ::= [['out'] [variable_id ':'] | '&'] Expr
+Arg_Expr    ::= [['out'] [id ':'] | '&'] Expr
 \end{lstlisting}
 
 A function application ~\lstinline!$f$($a_1 \commadots a_n$) $b$!~ applies the function $f$ to the argument expressions $a_1 \commadots a_n$ and passes the block expression $b$ (\sref{sec:blocks}) into it. 
@@ -765,7 +765,7 @@ An annotated expression $a_1\ \ldots\ a_n\ e$ attaches annotations $a_1\ \ldots\
 \section{Assignments}
 
 \syntax\begin{lstlisting}
-Assign_Expr ::= [Simple_Expr '.'] variable_id ':=' Expr
+Assign_Expr ::= [Simple_Expr '.'] id ':=' Expr
               | Mul_Assign_Expr
 Update_Expr ::= Simple_Expr1 Argument_Exprs ':=' Expr
 \end{lstlisting}
@@ -809,8 +809,8 @@ f(i, j) := (e_1, e_2)        f.update(i, j)((e_1, e_2))
 
 \syntax\begin{lstlisting}
 Mul_Assign_Expr ::= Mul_Vars ':=' Mul_Exprs
-Mul_Vars        ::= [variable_id {',' variable_id} ',']
-                    ['*'] variable_id {',' variable_id}
+Mul_Vars        ::= [(id | '_') {',' (id | '_')} ',']
+                    ['*'] (id | '_') {',' (id | '_')}
 Mul_Exprs       ::= [Expr {',' Expr} ',']
                     ['*'] Expr {',' Expr}
 \end{lstlisting}
@@ -829,6 +829,8 @@ The right-hand side is expanded into a single sequence of expressions in the fol
 To match the left-hand side variable names with the expanded right-hand side expressions, match first the variables until the one prefixed with an asterisk, if any, and remove the matched expressions. Count variables that are following the one prefixed with an asterisk as $m$ and match them with the remaining expressions, starting from expression $n - m$ where $n$ is the count of the remaining expressions, or from the first expression, if $m \geq n$. If $m \leq n$, then collect the remaining expressions into a sequence and assign it to the variable prefixed with an asterisk. In any case, if there are less expressions available than variables to assign to, assign the extra variables with \code{nil}. If there are more expressions than variables to assign to and no variable is prefixed with an asterisk, then the extra expressions are discarded and released. 
 
 The multiple assignment evaluates all expressions on the right-hand side of the assignment prior to the actual assignment. The expected type of each assigned expression is the expected type of the corresponding variable it assigns to, or if the corresponding variable is prefixed with an asterisk, then the expected type is the expected type of the elements of the sequence declared by that variable. 
+
+If the name of the assigned variable is ``\lstinline!_!'', the assignment for that variable is not evaluated and is discarded. 
 
 \example The following examples show how multiple assignment works. 
 \begin{lstlisting}
@@ -1305,7 +1307,7 @@ Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Cond_Block
 Case_Patterns  ::= Case_Pattern {',' Case_Pattern}
 Case_Pattern   ::= Stable_Id
                  | literal [('..' | '...') literal]
-                 | variable_id
+                 | id
                  | Infix_Expr
 \end{lstlisting}
 
@@ -1399,7 +1401,7 @@ Jump_Expr  ::= Goto_Expr | Label_Dcl
 Goto_Expr  ::= 'goto' label_name [Cond_Modifier1]
 Label_Dcl  ::= 'label' label_name 
              | '<<' label_name '>>'
-label_name ::= variable_id | constant_id
+label_name ::= plain_id
 \end{lstlisting}
 
 Local jumps transfer control from the points of \code{goto} statements to the statements following a \code{label}. Such a jump may only occur inside of the same function, i.e. it is not possible to jump from one method to another. Also, the jump can't happen to be from outside of a loop into a loop, but the other way around is possible. The only loop expressions that may be jumped out of are the pure loop (\sref{sec:pure-loops}) and a \code{while} loop, which are not transformed as comprehensions into method calls. 
@@ -1530,10 +1532,10 @@ Anon_Fun        ::= Anon_Params '->' '{' Block '}'
 Result_Expr     ::= Anon_Params '->' Block 
 Anon_Params     ::= Bindings {'->' Bindings}
                   | Param_Clause
-                  | '(' ['implicit'] variable_id ')'
+                  | '(' ['implicit'] id ')'
                   | '(' [Nameless_Param] ')'
 Bindings        ::= '(' Binding {',' Binding} ')'
-Binding         ::= (variable_id | '_') [':' Type]
+Binding         ::= (id | '_') [':' Type]
 Nameless_Params ::= Nameless_Param {',' Nameless_Param}
 Nameless_Param  ::= '_' [':' Compound_Type]
 \end{lstlisting}

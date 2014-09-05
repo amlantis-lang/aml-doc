@@ -10,7 +10,7 @@ Function_Type       ::= Function_Args {'->' Function_Args}
                         '->' Type
 Function_Args       ::= Compound_Type
                       | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['^'] variable_id ':'] 
+Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['^'] id ':'] 
                         Param_Type
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
@@ -65,11 +65,7 @@ Types in Coral are represented by objects that are members of the \code{Class} t
 \label{sec:type-paths}
 
 \syntax\begin{lstlisting}
-path_id          ::= constant_id 
-                   | variable_id
-                   | function_id
-                   | op_id
-                   | path_id [Type_Args] [UoM_Args]
+path_id          ::= id [Type_Args]
 Path             ::= Stable_Id
                    | [path_id '.'] ('this' | 'self')
                    | 'self' '[' 'cloned' ']'
@@ -83,7 +79,7 @@ Class_Qualifier  ::= '[' Container_Path ']'
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Coral's type system. 
 
-A path is one of the following: \footnote{This section might need a review of what a path is, since we claim that the referenced entity is a member, yet the syntax only mentions \code{constant_id}.}
+A path is one of the following:
 
 \begin{itemize}
 \item 
@@ -344,7 +340,7 @@ Type          ::= Function_Args {'->' Function_Args}
                   '->' Type
 Function_Args ::= Compound_Type
                 | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['^'] variable_id ':']
+Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['^'] id ':']
                   Param_Type
 \end{lstlisting}
 
@@ -501,30 +497,6 @@ A nullable type has the form \lstinline!$T$?! or \lstinline@$T$!@, where ``\code
 Explicitly nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly nullable, overriding the preference of $T$. Explicitly not-nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly not-nullable, overriding the preference of $T$. Explicit nullability of already nullable types is redundant, as is explicit non-nullability of already not-nullable types. Explicit nullability of the \code{Option} type is also redundant and is in fact ignored. 
 
 Nullable types in this form can appear as types of variables, parameters and return types. 
-
-
-
-
-
-
-\subsection{Dependent Types}
-\label{sec:dependent-types}
-
-\syntax\begin{lstlisting}
-Simple_Type ::= Simple_Type Dep_Args
-Dep_Args    ::= '@[' Dep_Arg {',' Dep_Arg} ']'
-Dep_Arg     ::= variable_id | Dep_Sort_Val
-\end{lstlisting}
-
-Dependent types in Coral are implemented by simple indexed types. Dependent types are explained in greater detail in \sref{sec:dependent-types-decl}. 
-
-\example The following are examples of dependent types representing the number 42 and all strings of length 42:
-\begin{lstlisting}
-Integer@[42]
-String@[42]
-\end{lstlisting}
-Note that ~\lstinline!Integer@[42]!~ is basically equivalent to ~\lstinline!42.type!. 
-
 
 
 
@@ -767,7 +739,13 @@ Polymorphic types or type constructors $T$ and $T'$ must also fulfil the followi
 \end{itemize}
 
 \end{itemize}
-% TBD: conformance of dependent types, important! 
+
+A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 
+\begin{itemize}
+\item A value declaration or definition that defines a name $x$ with type $T$ subsumes a value or method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
+\item A method declaration or definition that defines a name $x$ with type $T$ subsumes a method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
+\item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$][<$N_1 \commadots N_o$>] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$][<$N_1 \commadots N_o$>] := $T'$!~ if $T \equiv T'$. 
+\end{itemize}
 
 
 

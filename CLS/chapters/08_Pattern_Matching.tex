@@ -14,13 +14,13 @@
 
 \syntax\begin{lstlisting}
 Pattern        ::= Pattern1 {'|' Pattern1}
-Pattern1       ::= ['implicit'] variable_id ':' Type_Pat
+Pattern1       ::= ['implicit'] var_id ':' Type_Pat
                  | '_' ':' Type_Pat
                  | Pattern2
-Pattern2       ::= ['implicit'] variable_id ['@' Simple_Pattern]
+Pattern2       ::= ['implicit'] var_id ['@' Simple_Pattern]
                  | Simple_Pattern
 Simple_Pattern ::= ['*'] '_'
-                 | ['*'] variable_id
+                 | ['*'] var_id
                  | literal
                  | Stable_Id
                  | Stable_Id '(' [Patterns] ')' 
@@ -42,7 +42,7 @@ Patterns       ::= Pattern {',' Pattern}
 
 \syntax\begin{lstlisting}
 Simple_Pattern ::= '_'
-                 | variable_id
+                 | var_id
 \end{lstlisting}
 
 A variable pattern $x$ is a simple identifier which starts with a lower case letter. It matches any value and binds the variable name to that value. The type of $x$ is the expected type of the pattern as given from the outside. A special case is the wild-card pattern ``\lstinline!_!'', which is treated as if it was a fresh variable on each occurence, and which does not bind itself to the value, i.e., it is alone equivalent to the \code{else} clause of \code{When_Clauses}. 
@@ -57,7 +57,7 @@ A variable pattern $x$ is a simple identifier which starts with a lower case let
 
 \syntax\begin{lstlisting}
 Simple_Pattern ::= '_' ':' Type_Pat
-                 | variable_id ':' Type_Pat
+                 | var_id ':' Type_Pat
 Type_Pat       ::= Type
 \end{lstlisting}
 
@@ -72,7 +72,7 @@ A typed pattern ~\lstinline!$x$: $T$!~ consists of a pattern variable $x$ and a 
 \label{sec:pattern-binders}
 
 \syntax\begin{lstlisting}
-Pattern2 ::= variable_id '@' Simple_Pattern
+Pattern2 ::= var_id '@' Simple_Pattern
 \end{lstlisting}
 
 A pattern binder ~\lstinline!$x$ @ $p$!~ consists of a pattern variable $x$ and a pattern $p$. The type of the variable $x$ is the type $T$ resulting from the pattern $p$. This pattern matches any value $v$ matched by the pattern $p$, provided the type of $v$ is also an instance of $T$, and it binds the variable name to that value. 
@@ -192,7 +192,7 @@ An \code{unapply_sequence} method in an object $x$ matches the pattern ~\lstinli
 
 \syntax\begin{lstlisting}
 Simple_Pattern ::= Stable_Id '(' [Patterns ','] 
-                   '*' (variable_id | '_')
+                   '*' (var_id | '_')
                    [',' Patterns] ')'
 \end{lstlisting}
 

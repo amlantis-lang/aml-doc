@@ -30,8 +30,8 @@ Class_Parents  ::= Constr {['prepend'] 'with' Annot_Type}
 Trait_Parents  ::= Annot_Type {['prepend'] 'with' Annot_Type}
 Template_Body  ::= [Self_Type] Template_Stat {semi Template_Stat}
 Self_Type      ::= 'requires' 'self' ':' Type semi
-                 | 'requires' [variable_id ':'] Type semi
-                 | 'use' ['self'] 'as' variable_id [':' Type] semi
+                 | 'requires' [id ':'] Type semi
+                 | 'use' ['self'] 'as' id [':' Type] semi
 \end{lstlisting}
 
 A template defines the type signature, behaviour and initial state of a trait, class of objects or of a single object. Templates for part of instance creation expressions (constructors, see \sref{sec:constructor-invocations} \& \sref{sec:constructor-destructor-def}), class definitions and object definitions. A template ~\lstinline!$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }!~ consists of constructor invocation $sc$, which defines the template's {\em superclass}, trait references $mt_1 \commadots mt_n$ $(n \geq 0)$, which statically define the template's included traits\footnote{Including protocols, which are also traits.}, and a statement sequence $\stats$, which contains initialization code and additional member definitions \& declarations for the template. Unlike in Scala, all trait references in class/trait parents need not to be exhaustive, as more prepended/included traits may be defined as a part of the template body. Trait references declared using \code{prepend with} are prepended to the template body instead of included (\sref{sec:include-classes}). 
@@ -186,7 +186,7 @@ Metaclasses of classes may be accessed using the following language construct.
 \syntax\begin{lstlisting}
 Metaclass_Access ::= 'class' '<<' Metaclass_Obj semi 
                      [Exprs] 'end'
-Metaclass_Obj    ::= Type | Path | 'self' | variable_id
+Metaclass_Obj    ::= Type | Path | 'self' | id
 \end{lstlisting}
 
 \example The following code shows how metaclasses are nested in case of \code{Object} type. Don't try this at home though. 
@@ -535,7 +535,7 @@ Local_Modifier   ::= 'implicit'
                    | 'abstract'
 Access_Modifier  ::= 'public'
                    | ('protected' | 'private') [Access_Qualifier]
-Access_Qualifier ::= '[' (constant_id | 'self') ']'
+Access_Qualifier ::= '[' (id | 'self') ']'
 \end{lstlisting}
 
 Access modifiers may appear in two forms:
@@ -693,7 +693,7 @@ This is just for the sake of completeness, since change from public to public is
 
 \syntax\begin{lstlisting}
 Tmpl_Def            ::= 'class' Class_Def
-Class_Def           ::= constant_id [Type_Param_Clause] 
+Class_Def           ::= id [Type_Param_Clause] 
                         [Dep_Params] [UoM_Params]
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
@@ -702,7 +702,7 @@ Class_Param_Clauses ::= {Annotation} [Access_Modifier]
 Class_Param_Clause  ::= '(' [Class_Params] ')'
 Class_Params        ::= Class_Param {',' Class_Param}
 Class_Param         ::= {Annotation} [{Modifier} ('val' | 'var')]
-                        variable_id [':' Param_Type] [':=' Expr]
+                        id [':' Param_Type] [':=' Expr]
 Class_Tmpl_Env      ::= 'extends' [Early_Defs] Class_Parents
                         semi [Template_Body] 'end' ['class']
                       | ['extends' [Early_Defs]] 
@@ -714,7 +714,7 @@ A class definition defines the type signature, behavior and initial state of a c
 
 The most general form of a class definition is
 \begin{lstlisting}
-class $c$ [$\tps$] @[$\dps$] [<$\uomps$>] 
+class $c$ [$\tps$]
   $\as$ $m$($\ps_1$)$\ldots$($\ps_n$)
   extends $t$
 \end{lstlisting}
@@ -727,12 +727,6 @@ $c$ is the name of the class to be defined.
 
 \item[]
 $\tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline![$\tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Coral, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Coral in runtime. 
-
-\item[]
-$\dps$ is a non-empty list of indexing parameters for dependent types (\sref{sec:dependent-types-decl}). The indexing parameter section \lstinline!@[$\dps$]! may be omitted. A class with an indexing parameter section is called {\em indexed}. Indexing arguments are reified in Coral, i.e. indexing arguments are preserved in runtime. 
-
-\item[]
-$\uomps$ is a non-empty list of unit of measure parameters for aggregated types (\sref{sec:units-of-measure}). The unit of measure parameter section \lstinline![<$\uomps$>]! may be omitted. A class with a unit of measure parameter section is called {\em aggregated with units of measure}. Units of measure arguments are reified in Coral, i.e. units of measure arguments are preserved in runtime. 
 
 \item[]
 $\as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If any annotations are given at this point, they apply to the primary constructor of the class. 
@@ -1036,7 +1030,7 @@ Method ~\lstinline!to_string: () $\mapsto$ String!~ returns a string representat
 
 \syntax\begin{lstlisting}
 Tmpl_Def       ::= 'trait' Trait_Def
-Trait_Def      ::= constant_id [Type_Param_Clause] [UoM_Params] 
+Trait_Def      ::= id [Type_Param_Clause] [UoM_Params] 
                    Trait_Tmpl_Env
 Trait_Tmpl_Env ::= 'extends' [Early_Defs] Trait_Parents
                    semi [Template_Body] 'end' ['trait']
@@ -1081,7 +1075,7 @@ Second, refinements that are basically traits designed to be locally prepended t
 
 \syntax\begin{lstlisting}
 Tmpl_Def            ::= 'refinement' Refinement_Def
-Refinement_Def      ::= constant_id 'refine' constant_id 
+Refinement_Def      ::= id 'refine' id 
                         Refinement_Tmpl_Env
 Refinement_Tmpl_Env ::= '{' [Template_Body] '}'
                       | (semi | 'begin') [Template_Body] 
@@ -1108,7 +1102,7 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 
 \syntax\begin{lstlisting}
 Tmpl_Def     ::= 'protocol' Pro_Def
-Pro_Def      ::= constant_id [Type_Param_Clause] [UoM_Params]
+Pro_Def      ::= id [Type_Param_Clause]
                  Pro_Tmpl_Env
 Pro_Tmpl_Env ::= 'extends' Trait_Parents
                  semi [Template_Body] 'end' ['trait']
@@ -1145,8 +1139,7 @@ Protocol references are preferred to traits to be used by library designers to d
 Tmpl_Def      ::= ['case'] 'interface' [Ifc_Qualifier] Ifc_Def
 Ifc_Qualifier ::= '[' Ifc_Kind ']'
 Ifc_Kind      ::= 'class' | 'trait' | 'object'
-Ifc_Def       ::= constant_id [Type_Param_Clause] 
-                  [Dep_Params] [UoM_Params]
+Ifc_Def       ::= id [Type_Param_Clause]
                   [Class_Param_Clauses] Ifc_Tmpl_Env
 Ifc_Tmpl_Env  ::= 'extends' Class_Parents
                   semi [Template_Body] 'end' ['interface']
@@ -1165,8 +1158,7 @@ Interfaces are filtered versions of classes and traits with only declarations an
 \label{sec:object-definitions}
 
 \syntax\begin{lstlisting}
-Object_Def ::= (constant_id | variable_id) 
-               (Class_Tmpl_Env | Trait_Tmpl_Env)
+Object_Def ::= id (Class_Tmpl_Env | Trait_Tmpl_Env)
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Coral has one scope for both types and terms. 
@@ -1206,7 +1198,7 @@ Case objects are pretty much similar to case classes (\sref{sec:case-classes}). 
 
 \syntax\begin{lstlisting}
 Tmpl_Def        ::= 'aspect' Aspect_Def
-Aspect_Def      ::= constant_id Aspect_Tmpl_Env
+Aspect_Def      ::= id Aspect_Tmpl_Env
 Aspect_Tmpl_Env ::= '{' Aspect_Body '}'
                   | 'begin' Aspect_Body 'end' ['aspect']
 Aspect_Body     ::= Template_Stat 
@@ -1224,11 +1216,13 @@ Aspect_Stat     ::= Advice_Stat
 \label{sec:unions}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= constant_id 'is' 'union' 'of'
+Const_Type_Def ::= id 'is' 'union' 'of'
                    '(' Type {semi Type} ')'
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
+
+Unions are indeed virtually ``tagged'' with the actual type that they represent at the runtime moment, although when it comes to overloading resolution, the union type is used, as it is the expected type. 
 
 
 
@@ -1239,254 +1233,14 @@ Union types represent multiple types, possibly unrelated. Union types are abstra
 \label{sec:enums}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= constant_id [Superclass] 'is' ['bitfield'] 
+Const_Type_Def ::= id [Superclass] 'is' ['bitfield'] 
                    'enum' '(' Enum_Field {semi Enum_Field} ')'
-Enum_Field     ::= constant_id [':=' scalar_literal]
+Enum_Field     ::= id [':=' scalar_literal]
 \end{lstlisting}
 
 % TODO: when primary constructors are introduced, add them to enums as well
 
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
-
-
-
-
-
-
-\section{Dependent Type Declarations}
-\label{sec:dependent-types-decl}
-
-Dependent types consist of three kinds of types in Coral. First, there are {\em indexed types} (\sref{sec:indexed-types}), that are at the core of dependent types. Not every type in Coral is indexed. Secondly, there are two types that are similar and sometimes interchangeable: {\em constrained types} (\sref{sec:constrained-types}) and {\em range types} (\sref{sec:range-types}), each making use of indexed types in a specific way. Arguments applied to these types are then described in \sref{sec:dependent-types}. 
-
-Dependent types are neither concrete nor abstract. They only add a way of indexing existing types and defining subsets of all instances. As a side-effect of this restriction, variables involved in dependent type declarations are not involved in the rest of the class declarations and definitions, and for that reason don't need to be distinguished from other variables. 
-
-Dependent types (\sref{sec:dependent-types}) are allowed in these positions: 
-\begin{enumerate}
-\item Function parameters. 
-\item Function return types. 
-\item Variable declarations and definitions. 
-\item Type conversions. 
-\end{enumerate}
-
-
-
-
-
-
-\subsection{Indexed Types}
-\label{sec:indexed-types}
-
-\syntax\begin{lstlisting}
-Dep_Params         ::= '@[' Index_Param {',' Index_Param} ']'
-Index_Param        ::= variable_id [':' Simple_Type]
-Indexed_Class_Expr ::= Class_Expr
-                     | Indexed_By_Clause
-Indexed_By_Clause  ::= 'indexed-with' Indexing_Expr
-Indexing_Expr      ::= '{|' Index_Param {',' Index_Param} '|'
-                       [Index_Exprs] '}'
-                     | '(' Index_Param {',' Index_Param} ')' '->'
-                       '{' [Index_Exprs] '}'
-Index_Exprs        ::= Index_Expr {[semi] Index_Expr}
-Index_Expr         ::= Index_Var Index_Op Index_Val
-                     | Index_Val [Index_Op Index_Var]
-                     | '(' Index_Var Index_Op Index_Var ')'
-                     | '(' Index_Expr [Index_Con Index_Expr] ')'
-Index_Var          ::= variable_id 
-                     | ivar_id
-                     | 'self'
-Index_Val          ::= variable_id 
-                     | ivar_id 
-                     | literal
-                     | constant_id
-                     | Index_Fun '(' Index_Var {',' Index_Var} ')'
-\end{lstlisting}
-
-Indexed types declare what their index is, based on combinations of their input (indexing) variables, instance variables and operators and functions working with these. Since the scope of testing these {\em indexing constraints} is limited to cases listed in \sref{sec:dependent-types-decl}, independent on the intrinsic state of the instances, the instances may appear in states that do not conform to the constraints in between each indexing constraint test, but to pass as the dependent type, they must conform to the indexing constraint at the time the test is invoked, that is: 
-\begin{enumerate}
-\item Method resolution time (function parameters). 
-\item Returning from a function (function return types). 
-\item Getting assigned to a variable. 
-\item Getting converted to a type (unless the conversion is implicit to a different type). 
-\end{enumerate}
-
-Indexed types basically render {\em subsets of the original type}, each such subset may or may not overlay any previous subsets (based on the ordering of chosen sorts) -- that is up to the indexing expressions to define. 
-
-Note that implicit conversions (\sref{sec:implicit-conversions}) can't apply to dependent types, since that would be a conversion from the same type to a subset of the same type. 
-
-\paragraph{\em Sorts}
-This part of Coral is inspired by the ATS language. ``Sorts'' are a types for which the language knows ordering of their values implicitly:
-\begin{itemize}
-\item \code{Boolean}.
-\item \code{Integer}.
-\item \code{Float}.
-\item \code{Char}.
-\item Every \code{enum} type (\sref{sec:enums}), where the ordering is given by the order in which each enumerated value appears. 
-\item Every type constrained from a pre-existing sort (\sref{sec:constrained-types}).
-\end{itemize}
-
-See references of these ``sort'' types for more details on their particular ordering. 
-
-``Sorts'' are the types allowed as types of {\em indexing variables} (see \code{Index_Param} syntax). If no type is specified, \code{Integer} ``sort'' is implied. 
-
-For the mentioned reasons, \code{Dep_Sort_Val} (used in \sref{sec:dependent-types}) are values that are members of ``sorts''. 
-
-Note that the \code{Index_Exprs} are optional -- meaning that the entire ``sort'' is used for indexing, not only a subset of it. 
-
-\paragraph{\em Indexing Operators}
-Indexing operators used to declare indexing constraints are the following for the \code{Index_Op} syntax:
-\begin{itemize}
-\item \lstinline!~! (bitwise negation): \lstinline!(Number) $\mapsto$ Number!
-\item \lstinline!+! (addition): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!-! (subtraction): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!*! (multiplication): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!**! (exponentiation): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!/! (division): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!%! (modulo): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!>! (greater than): \lstinline!(Number, Number) $\mapsto$ Boolean!
-\item \lstinline!>=! (greater than or equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
-\item \lstinline!<! (less than): \lstinline!(Number, Number) $\mapsto$ Boolean!
-\item \lstinline!<=! (less than or equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
-\item \lstinline!=! (equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!)
-\item \lstinline!<>! (not equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
-\item \lstinline@!=@ (not equal to): \lstinline!(Number, Number) $\mapsto$ Boolean!
-\item \lstinline@!@ (boolean negation): \lstinline!(Boolean) $\mapsto$ Boolean!
-\item \lstinline!||! (boolean disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
-\item \lstinline!&&! (boolean conjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
-\item \lstinline!^^! (boolean exclusive disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
-\item \lstinline!|! (bitwise or): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!&! (bitwise and): \lstinline!(Number, Number) $\mapsto$ Number!
-\item \lstinline!^! (bitwise xor): \lstinline!(Number, Number) $\mapsto$ Number!
-\end{itemize}
-These operators are static\footnote{That is, not overridable by user programs.}. In the list, \code{Number} can also be replaced by \code{Char}, but not by \code{Complex}. 
-
-\paragraph{\em Indexing Functions}
-Functions that can be used to constrain the indexing are also static and limited to work only with a restricted number of types:
-\begin{itemize}
-\item \lstinline!size: (List) $\mapsto$ Number!
-\item \lstinline!length: (String) $\mapsto$ Number!
-\item \lstinline!empty?: (List) $\mapsto$ Boolean!
-\item \lstinline!empty?: (String) $\mapsto$ Boolean!
-\item \lstinline!max: (*Number) $\mapsto$ Number!
-\item \lstinline!min: (*Number) $\mapsto$ Number!
-\item \lstinline!avg: (*Number) $\mapsto$ Number!
-\item \lstinline!sum: (*Number) $\mapsto$ Number!
-\item \lstinline!abs: (*Number) $\mapsto$ Number!
-\item \lstinline!sgn: (Number) $\mapsto$ Number!
-\item \lstinline!log: (Number, Number) $\mapsto$ Number!
-\item \lstinline!ln: (Number) $\mapsto$ Number!
-\item \lstinline!even?: (Number) $\mapsto$ Boolean!
-\item \lstinline!odd?: (Number) $\mapsto$ Boolean!
-\item \lstinline!concat: (*String) $\mapsto$ String!
-\item \lstinline!coalesce: (*Object) $\mapsto$ Object!
-\item \lstinline!lowercase: (String) $\mapsto$ String!
-\item \lstinline!uppercase: (String) $\mapsto$ String!
-\end{itemize}
-
-\paragraph{\em Indexing Constraint Concatenation}
-If there are multiple indexing constraints separated by the \lstinline![semi]! syntax, boolean conjunction is implied. Indexing constraints may be joined by a different boolean operations (\code{Index_Con}): 
-\begin{itemize}
-\item \lstinline!||! (boolean disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
-\item \lstinline!&&! (boolean conjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
-\item \lstinline!^^! (boolean exclusive disjunction): \lstinline!(Boolean, Boolean) $\mapsto$ Boolean!
-\end{itemize}
-
-\example The following is an example on how a \code{String} type might index itself: 
-\begin{lstlisting}
-class String @[length: Integer]
-  indexed-with (length) -> {@length = length}
-end
-\end{lstlisting}
-
-
-
-
-
-
-\subsection{Constrained Types}
-\label{sec:constrained-types}
-
-\syntax\begin{lstlisting}
-Type_Def      ::= constant_id [Type_Param_Clause] ':=' 
-                  Type [Dep_Params_C]
-Dep_Params_C  ::= '@[|' Index_Param {',' Index_Param} '|'
-                  [Index_Exprs_C] ']'
-                | '@(' Index_Param {',' Index_Param} ')'
-                  '->' '{' [Index_Exprs_C] '}'
-Index_Exprs_C ::= Index_Expr_C {[semi] Index_Expr_C}
-Index_Expr_C  ::= Index_Var_C Index_Op Index_Val_C
-                | Index_Val_C [Index_Op Index_Var_C]
-                | '(' Index_Var_C Index_Op Index_Var_C ')'
-                | '(' Index_Expr_C 
-                  [Index_Con Index_Expr_C] ')'
-Index_Var_C   ::= variable_id
-Index_Val_C   ::= variable_id
-                | literal
-                | constant_id
-                | Index_Fun '(' Index_Var_C 
-                  {',' Index_Var_C} ')'
-\end{lstlisting}
-
-Constrained types are basically manipulations over the indexing types, constraining the indexing parameters of the indexed type, where the order of the parameters is the same as of the original indexed type (and the actual used parameter name is irrelevant, but is better to be the same). 
-
-No additional instance variable can be constrained by a constrained type directly. 
-
-The number of the parameters for every constrained type must be the same as the number of the parameters of the original indexed type, but it is irrelevant if any of these parameters is used in the constraining expression (but for it to make sense, at least one should be used). If the constraining expression is of the form ~\lstinline!$p_i$ = $j_i$! for every parameter $p_i$ (without any further constraints), the constrained type is equivalent to the dependent type (\sref{sec:dependent-types}) ~\lstinline!$T$@[$j_1 \commadots j_n$]! for $n$ indexing parameters. 
-
-The type of the indexing variable is implied to be the same as of the original indexed type. 
-
-\example Here is an example of how Coral might declare the \code{Char} type:
-\begin{lstlisting}
-type Char := String @[|length| length = 1]
-type Char := String @(length) -> {length = 1}
-\end{lstlisting}
-Notice how the constraint only uses the already existing indexing variable. This is in turn equivalent to the dependent type:
-\begin{lstlisting}
-type Char := String @[1]
-\end{lstlisting}
-
-\example Here is an example of how Coral might declare simply ``short'' strings type:
-\begin{lstlisting}
-type Short_String := String @[|length| length <= 255]
-type Short_String := String @(length) -> {length <= 255}
-\end{lstlisting}
-
-\example Here is an example of a different constrained type: 
-\begin{lstlisting}
-type Even_Positive_Integers := Integer @[|i| even?(i); i >= 0]
-type Even_Positive_Integers := Integer @(i) -> {even?(i); i >= 0}
-\end{lstlisting}
-This constrained type declares \code{Even_Positive_Ints} to be positive integers that are even at the same time. 
-
-
-
-
-
-
-\subsection{Range Types}
-\label{sec:range-types}
-
-\syntax\begin{lstlisting}
-Const_Type_Def  ::= constant_id 'is' 'range' 
-                    (Range_Type_Expr 
-                  | '(' Ranged_Type_Expr ')' [':' Path])
-Range_Type_Expr ::= Infix_Expr ('..' | '...') Infix_Expr
-\end{lstlisting}
-
-Range types are similar to constrained types, but limited in a few ways: they can constrain only indexed types that are indexed with exactly one indexing variable. The range expression is converted into the corresponding indexing constraint. Note that the value of each infix expression on both sides is expected to result in a ``sort'' value, and both are dynamically evaluated on range type definition time.  
-
-\example An example of a constrained type interchangeable with a range type:
-\begin{lstlisting}
-type Positive_Integers := Integer @(i) -> {i >= 0}
-type Positive_Integers is range 
-  (0 .. +Integer.Infinity) : Integer 
-end type
-type Positive_Integers is range
-  0 .. +Integer.Infinity
-end type
-\end{lstlisting}
-
-Types that do not require the ``\code{constant_id}'' are those that are ``sorts'' at the same time, so that the indexed type can be inferred. 
-
 
 
 
@@ -1498,14 +1252,12 @@ Types that do not require the ``\code{constant_id}'' are those that are ``sorts'
 \syntax\begin{lstlisting}[mathescape=false]
 Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'unit-of-measure' 
                    [semi Unit_Convs {semi Unit_Convs}]
-Unit_Name      ::= variable_id | constant_id
-                   ['extends' Superunit_Name]
-Superunit_Name ::= variable_id | constant_id
+Unit_Name      ::= id ['extends' id]
 Unit_Convs     ::= Unit_Name ':=' Unit_Conv
 Unit_Conv      ::= '(' Unit_Conv ')'
                  | Unit_Elem [Unit_Op Unit_Elem]
                  | Unit_Conv Unit_Op Unit_Conv
-Unit_Elem      ::= number_literal | ['$'] Unit_Name |
+Unit_Elem      ::= number_literal | id |
 Unit_Op        ::= '*' | '/' | '**'
 \end{lstlisting}
 
@@ -1551,7 +1303,7 @@ In addition to type parameters and dependency parameters of each type, every typ
 
 \syntax\begin{lstlisting}[mathescape=false]
 UoM_Params ::= '[<' UoM_Param {',' UoM_Param} '>]'
-UoM_Param  ::= '$' Unit_Name ['<:' ['$'] Unit_Name]
+UoM_Param  ::= id ['<:' id]
 \end{lstlisting}
 
 Names of unit of measure parameters must not clash with names of type parameters or other unit of measure parameters, otherwise it is a compile-time error. 
@@ -1570,13 +1322,13 @@ There is a huge difference between the way F\# handles units of measure and Cora
 \syntax\begin{lstlisting}
 Const_Type_Def    ::= Record_Name 'is' ['abstract'] 'record'
                       [semi] Record_Components
-Record_Name       ::= constant_id [Type_Param_Clause] [Param_Clause]
+Record_Name       ::= id [Type_Param_Clause] [Param_Clause]
 Record_Components ::= Record_Component {semi Record_Component}
                       [Superclass]
 Record_Component  ::= 'val' Val_Dcl
                     | 'var' Var_Dcl
-                    | 'case' variable_id semi 
-                      {'when' constant_id 
+                    | 'case' id semi 
+                      {'when' id 
                       ('then' | nl) 
                       Record_Components} 'end' ['case']
 \end{lstlisting}

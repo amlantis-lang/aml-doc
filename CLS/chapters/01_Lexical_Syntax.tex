@@ -33,43 +33,43 @@ Operator characters. These consist of all printable ASCII characters \UnicodeRan
 
 \newpage
 
+
+
+
+
+
 \section{Identifiers}
 \label{sec:identifiers}
 
 \syntax\begin{lstlisting}
-simple_id     ::= (lower | '_') [id_rest]
-variable_id   ::= simple_id | '_' | '`' simple_id '`'
-ivar_id       ::= '@' simple_id
-cvar_id       ::= '@@' simple_id
-op_id         ::= opchar {opchar}
-function_id   ::= simple_id [id_rest_fun]
-                | '`' simple_id [id_rest_fun] '`'
-                | '`' op_id '`'
-constant_id   ::= upper [id_rest_con]
-                | '`' upper [id_rest_con] '`'
-id_rest       ::= {letter | digit | '_'}
-id_rest_con   ::= id_rest [id_rest_mid]
-id_rest_fun   ::= id_rest [id_rest_mid] [['_'] op_id]
-id_rest_mid   ::= id_rest {('/' | '+' | '-') id_rest}
-id            ::= variable_id | constant_id
-importable_id ::= simple_id
-                | function_id
-                | constant_id
+op_id    ::= opchar {opchar}
+var_id   ::= lower id_rest
+plain_id ::= upper id_rest
+           | ['@' | '@@'] var_id
+id       ::= plain_id
+           | '`' simple_string_literal '`'
+id_rest  ::= {letter | digit | opchar}
 \end{lstlisting}
 
-There are three kinds of identifiers.
+There are more kinds of identifiers.
 
-First, \textit{variable identifiers}, which are simply a lower-case letter followed by arbitrary sequence of letters (any-case), digits and underscores, or just one underscore (which has special meaning). Additionally, \textit{instance variable identifiers} are just prepended with a ``\lstinline|@|'' sign and \textit{class instance variable identifiers} are just prefixed with ``\lstinline|@@|''. 
+First, {\em variable identifiers}, which suggest that the identifier represents a value or a variable. 
 
-Second, \textit{function identifiers}, which are the most complicated ones. They can start as a variable identifier, then optionally followed by one of ``\lstinline@/@'', ``+'' and ``\lstinline@-@'', and then optionally ended with ``\lstinline@?@'', ``\lstinline@!@'' or ``\lstinline@=@''. Furthermore, function identifiers ending with ``\lstinline@=@'' are never used at call site with this last character, but without it and as a target of an assignment expression (they are naming simple setters). 
+Second, {\em constant identifiers}, which suggest that the identifier represents a constant value, or a type.
 
-And third, \textit{constant identifiers}, which are just like function identifiers, but starting with an upper-case letter, never just an underscore and never ending with ``\lstinline@?@'', ``\lstinline@!@'' or ``\lstinline@=@''.
+Third, {\em instance variable identifiers}, which are used to distinguish between local values, variables and instance variables. Those start with ~\lstinline!@!~ for instance variables and  ~\lstinline!@@!~ for class object variables. 
 
 An identifier may also be formed by an identifier between back-quotes (``\lstinline!$~$`$~$!''), to resolve possible name clashes with Coral keywords. Instance variable names (\code{ivar_id}) and class instance variable names (\code{cvar_id}) never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
 Coral programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
 
+
+
+
+
+
 \section{Keywords}\label{sec:keywords}
+
 A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in most other languages, keywords are not being recognized inside of paths, except for a few specific cases.
 
 The following names are the reserved words.
@@ -84,25 +84,29 @@ delta         destructor    digits        do            else
 elsif         end           ensure        enum          execution
 exhausted     extends       final         for           for-some
 function      get           goto          handler       if
-indexed-with  implements    implicit      in            include
-interface     invoke        is            label         lazy
-let           loop          match         memoize       message
-method        module        native        next          nil
-no            object        of            opaque        operator
-out           override      pointcut      pragma        prepend
-private       property      protected     protocol      public
-raise         raising       range         record        redo
-refine        refinement    rescue        retry         return
-returning     requires      reverse       sealed        self
-set           skip          step          super         target
-then          this          throw         throwing      trait
-transparent   type          unless        until         union
-unit-of-measure             use           val           var
-yes           weak          when          while         with
-yield
+implements    implicit      in            include       interface
+invoke        is            label         lazy          let
+loop          match         memoize       message       method
+module        native        next          nil           no
+object        of            opaque        operator      out
+override      pointcut      pragma        prepend       private
+property      protected     protocol      public        raise
+raising       range         record        redo          refine
+refinement    rescue        retry         return        returning
+requires      reverse       sealed        self          set
+skip          step          super         target        then
+this          throw         throwing      trait         transparent
+type          unless        until         union         unit-of-measure
+use           val           var           yes           weak
+when          while         with          yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
+
+
+
+
+
 
 \section{Newline Characters}\label{sec:newlinecharacters}
 
@@ -122,37 +126,27 @@ If the token immediately preceding the newline can not terminate an expression a
 
 Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end@, \lstinline@opaque@, \lstinline@native@, \lstinline@next@, \lstinline@nil@, \lstinline@no@, \lstinline@redo@, \lstinline@retry@, \lstinline@return@, \lstinline@self@, \lstinline@skip@, \lstinline@super@, \lstinline@this@, \lstinline@transparent@, \lstinline@yes@, \lstinline@yield@.
 
+
+
+
+
+
 \section{Operators}\label{sec:operators}
 A set of identifiers is reserved for language features, some of which may be overridden by user space implementations. Operators have language-defined precedence rules that are supposed to usually comply to user expectations (principle of least surprise), and another desired precedence may be obtained by putting expressions with operators inside of parenthesis pairs. 
 
-The following character sequences are the operators recognized by Coral. 
+Binary (infix) operators have to be separated by whitespace or parentheses on both sides, unary operators by whitespace on left side -- the right side is what they are bound to. 
 
-\begin{lstlisting}
-:=     +=     -=     *=     **=    /=     %=     ||=    &&=    ^^= 
-|=     &=     |=     [      ^=     ~=     <<     >>     <<<    >>> 
-<<=    >>=    <<<=   >>>=   ;      =      !=     ==     !==    === 
-!===   =~     !~     <>     <      >      <=     >=     <=>    + 
--      *      **     /      div    %      mod    ||     or     && 
-and    !      not    ^^     xor    |      &      ^      ~      .. 
-...    ,      ->     <-     ~>     <~     =>     ::     :      <: 
-:>     <<|    |>>    <|     |>     (      )      [      ]      { 
-}      .      [<     >]     >:     .?     .!     rem
-\end{lstlisting}
 
-Some of these operators have multiple meanings, usually up to two. Some are binary, some are unary, none is ternary. 
 
-Binary (infix) operators have to be separated by whitespace or non-letter characters on both sides, unary operators on left side – the right side is what they are bound to. 
 
-Unary operators are: \lstinline@+@, \lstinline@-@, \lstinline@&@, \lstinline@not@, \lstinline@!@ and \lstinline@~@. The first three of these are binary as well. The \lstinline@;@ operator is used to separate expressions (see \nameref{sec:newlinecharacters}). Parentheses are postcircumfix operators. Coral has no postfix operators. 
 
-Coral allows for custom user-defined operators, but those have the lowest precedence and need to be parenthesized in order to express any precedence. Such custom operators can't be made of letter characters. 
 
 \section{Literals}\label{sec:literals}
 
 There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
 
 \syntax\begin{lstlisting}
-literal ::= integer_literal
+Literal ::= integer_literal
 	      | floating_point_literal
 	      | complex_literal
 	      | character_literal
@@ -162,6 +156,11 @@ literal ::= integer_literal
 	      | Collection_Literal
 	      | 'nil'
 \end{lstlisting}
+
+
+
+
+
 
 \subsection{Integer Literals}\label{sec:integerliterals}
 
@@ -323,13 +322,10 @@ interpolable_symbol  ::= ':"' {int_string_element} '"'
 
 Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Coral does not require their ids to be constant in time. 
 
-\subsection{Type Parameters}\label{sec:typeparameterliterals}
 
-\syntax\begin{lstlisting}[mathescape=false]
-tp_id ::= '$' constant_id
-\end{lstlisting}
 
-Type parameters are not members of any type, rather they stand-in for a real type, like a variable which only holds types. 
+
+
 
 \subsection{Regular Expression Literals}\label{sec:regexpliterals}
 
@@ -345,6 +341,11 @@ regexp_flags       ::= printable_char {printable_char}
 \end{lstlisting}
 
 Regular expression literals are members of the type \lstinline@Regular_Expression@ with alias of \lstinline@Regexp@. 
+
+
+
+
+
 
 \subsection{Collection Literals}\label{sec:collectionliterals}
 
@@ -377,7 +378,6 @@ List literal collection flags:
 
 Dictionary literals collection flags:
 
-
 \begin{enumerate}
 \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the dictionary frozen. 
 \item Flag \lstinline@l@ = \textbf{l}inked, makes the dictionary a member of \lstinline@Linked_Hash_Dictionary@ (also has alias \lstinline@Linked_Hash_Map@).
@@ -394,6 +394,11 @@ Bag literal collection flags:
 
 Linked collections have a predictable iteration order in case of bags and dictionaries, or are simply stored differently in case of lists.  
 
+
+
+
+
+
 \section{Whitespace \& Comments}\label{sec:whitespacecomments}
 
 Tokens may be separated by whitespace characters and/or comments. Comments come in two forms: 
@@ -403,4 +408,8 @@ A single-line comment is a sequence of characters that starts with \lstinline@//
 A multi-line comment is a sequence of characters between \lstinline@/*@ and \lstinline@*/@. Multi-line comments may be nested. 
 
 Documentation comments are multi-line comments that start with \lstinline@/*!@. 
+
+
+
+
 

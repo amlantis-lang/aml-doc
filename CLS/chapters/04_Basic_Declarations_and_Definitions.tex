@@ -12,7 +12,7 @@ Dcl         ::= 'val' Val_Dcl
               | 'type' Type_Dcl
 Pat_Var_Def ::= 'val' Pat_Def
               | 'var' Var_Def
-              | 'let' ['!'] variable_id ':=' Expr
+              | 'let' ['!'] id ':=' Expr
 Def         ::= Pat_Var_Def
               | 'def' Fun_Def
               | 'method' Fun_Def 'end' ['method']
@@ -51,14 +51,13 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 Dcl         ::= 'val' Val_Dcl
 Val_Dcl     ::= var_ids ':' Type
 Pat_Var_Def ::= 'val' Pat_Def
-              | 'let' ['!'] variable_id ':=' Expr
+              | 'let' ['!'] id ':=' Expr
 Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Expr
               | [[var_ids ','] 
-                '*' variable_id] var_ids
+                '*' id] var_ids
                 ':=' [[Expr {',' Expr} ','] '*' Expr] 
                 Expr {',' Expr}
-var_ids     ::= var_id {',' var_id}
-var_id      ::= variable_id | ivar_id | cvar_id
+var_ids     ::= id {',' id}
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -293,8 +292,8 @@ Assignment to properties is translated automatically into a setter function call
 \begin{lstlisting}
 Prop_Get_Impl ::= '(' ')' '->' '{' Block '}'
                 | '{' Block '}'
-Prop_Set_Impl ::= '(' variable_id ')' '->' '{' Block '}'
-                | '{' '|' variable_id '|' semi Block '}'
+Prop_Set_Impl ::= '(' id ')' '->' '{' Block '}'
+                | '{' '|' id '|' semi Block '}'
 \end{lstlisting}
 
 Property implementations are restricted to parameterless block expressions for property getters and to block expressions with one parameter for property setters. If the property is specified with a \code{get} or \code{set}, but without a property getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
@@ -308,11 +307,11 @@ Property implementations are restricted to parameterless block expressions for p
 
 \syntax\begin{lstlisting}
 Dcl      ::= 'type' Type_Dcl 'end' ['type']
-Type_Dcl ::= constant_id [Type_Param_Clause] [Dep_Params] 
-             [UoM_Params] ['>:' Type] ['<:' Type]
+Type_Dcl ::= id [Type_Param_Clause] 
+             ['>:' Type] ['<:' Type]
 Def      ::= 'type' Type_Def
-Type_Def ::= constant_id [Type_Param_Clause] [Dep_Params] 
-             [UoM_Params] (':=' | 'is') ['alias'] Type
+Type_Def ::= id [Type_Param_Clause] 
+             (':=' | 'is') ['alias'] Type
 \end{lstlisting}
 
 A {\em type declaration} \lstinline!type $t$[$\tps$]@[$\dps$][<$\uomps$>] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. Omitting indexing parameter clause \lstinline!@[$\dps$]! or units of measure parameter clause \lstinline@[<$\uomps$>]@ does not affect whether $t$ abstracts over a first-order type, since these parameters only restrict subsets of the type $t$, instead of constructing new types. 
@@ -372,23 +371,45 @@ type My_Collection <: Iterable end
 Type_Param_Clause  ::= '[' Variant_Type_Param 
                        {',' Variant_Type_Param} ']'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
-Type_Param         ::= (tp_id | '_') [Type_Param_Clause]
+                     | '<' (id | '_') ['<:' id] '>'
+Type_Param         ::= (id | '_') [Type_Param_Clause]
                        ['>:' Type] ['<:' Type]
+                       {'<%' Type} {':' Type}
 \end{lstlisting}
 
-Type parameters appear in type definitions, class definitions and function definitions. 
+Type parameters appear in type definitions, class definitions and function definitions. In this section we consider only type parameter definitions with lower bounds ~\lstinline!>: $L$!~ and upper bounds ~\lstinline!<: $U$!, whereas a discussion of context bounds ~\lstinline!: $T$!~ and view bounds ~\lstinline!<% $T$!~ is deferred to chapter about implicit parameters and views (\sref{sec:implicit-params-views}).
 
-The most general form of a first-order type parameter is ~\lstinline!@{$a_1$}$\ldots$@{$a_n$} $\pm$ $t$ >: $L$ <: $U$!. $L$ is a lower bound and $U$ is an upper bound. These bounds constrain possible type arguments for the parameter. It is an error if $L$ does not conform to $U$.\footnote{This is sometimes detectable as soon as during compilation.} Then, $\pm$ is a {\em variance} (\sref{sec:variance-of-type-parameters}), i.e. an optional prefix of either \lstinline@+@ or \lstinline@-@. The type parameter may be preceded by one or more annotation applications (\sref{sec:annotated-exprs} \& \sref{sec:annotations}).
+The most general form of a first-order type parameter is ~\lstinline!@{$a_1$}$\ldots$@{$a_n$} $\pm\ t$[$\tps$] >: $L$ <: $U$!. $L$ is a lower bound and $U$ is an upper bound. These bounds constrain possible type arguments for the parameter. It is an error if $L$ does not conform to $U$. Then, $\pm$ is a {\em variance} (\sref{sec:variance-of-type-parameters}), i.e. an optional prefix of either \lstinline@+@ or \lstinline@-@. The type parameter may be preceded by one or more annotation applications (\sref{sec:annotated-exprs} \& \sref{sec:annotations}).
+
+The names of all type parameters must be pairwise different in their enclosing type parameter clause. The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause. However, a type parameter may not be bounded directly or indirectly by itself. 
+
+A type parameter may also contain a nested type parameter. This is for cases when the expected type argument is a type constructor. 
+
+The above scoping restrictions are generalized to the case of nested type parameter clauses, which declare higher-order type parameters. Higher-order type parameters (the type parameters of a type parameter $t$) are only visible in their immediately surrounding parameter clause (possibly including clauses at a deeper nesting level) and in the bounds of $t$. Therefore, their names must only be pairwise different from the names of other visible type parameters. Since the names of higher-order type parameters are thus often irrelevant, they may be denoted with a ``\lstinline!_!'', which is nowhere visible. 
+
+A type parameter name may optionally be surrounded with angle brackets, ~\lstinline!<$t$ <: $u$>!. This makes the parameter name $t$ stand in for a unit of measure parameter, which may have an upper bound $u$, representing the abstract unit of measure. As units of measure do not have any deeper hierarchy structure, variance annotations are not applicable to them. 
 
 \example The following are some well-formed type parameter clauses:
-\begin{lstlisting}[escapechar=`]
-[`\$`S, `\$`T]
-[@{Specialized} `\$`S, `\$`T]
-[`\$`Ex <: Raisable]
-[`\$`A <: Comparable[`\$`B], `\$`B <: `\$`A]
+\begin{lstlisting}
+[S, T]
+[@[specialized] S, T]
+[Ex <: Raiseable]
+[A <: Comparable[B], B <: A]
+[A, B >: A, C >: A <: B]
+[M[X], N[X]]
+[M[_], N[_]] // equivalent to previous clause
+[M[X <: Bound[X]], Bound[_]]
+[M[+X] <: Iterable[X]]
+[E, <Length_Unit <: length>]
+\end{lstlisting}
+The following type parameter clauses are illegal:
+\begin{lstlisting}
+[A >: A]                  // illegal, 'A' has itself as bound
+[A <: B, B <: C, C <: A]  // illegal, 'A' has itself as bound
+[A, B, C >: A <: B]       // illegal lower bound 'A' of 'C'
+                          // does not conform to upper bound 'B'
 \end{lstlisting}
 
-% TBD! Not complete.
 
 
 
@@ -398,11 +419,72 @@ The most general form of a first-order type parameter is ~\lstinline!@{$a_1$}$\l
 \section{Variance of Type Parameters}
 \label{sec:variance-of-type-parameters}
 
-Variance annotations indicate how instances of parameterised types relate with respect to subtyping (\sref{sec:conformance}). A ``\lstinline!+!'' variance indicates a covariant dependency, a ``\lstinline!-!'' variance indicates a contravariant dependency, and an empty variance indicates an invariant dependency. 
+Variance annotations indicate how instances of parameterized types relate with respect to subtyping (\sref{sec:conformance}). A ``\lstinline!+!'' variance indicates a covariant dependency, a ``\lstinline!-!'' variance indicates a contravariant dependency, and an empty variance indicates an invariant dependency. 
 
-A variance annotation constrains the way the annotated type variable may appear in the type or class which binds the type parameter. 
+A variance annotation constrains the way the annotated type variable may appear in the type or class which binds the type parameter. In a type definition ~\lstinline!type $T$[$\tps$] := $S$!, or a type declaration ~\lstinline!type $T$[$\tps$] >: $L$ <: $U$!, type parameters labeled ``\lstinline!+!'' must only appear in covariant position, whereas type parameters labeled ``\lstinline!-!'' must only appear in contravariant position. Analogously, for a class definition ~\lstinline!class $C$[$\tps$]($\ps$) extends $T$ { requires $x$: $S\ \ldots$ }!, type parameters labeled ``\lstinline!+!'' must only appear in covariant position in the self type $S$ and the parent template $T$, whereas type parameters labeled ``\lstinline!-!'' must only appear in contravariant position in the self type $S$ and the parent template $T$.
 
-% TBD! Far from complete, variance is a complex topic. 
+The variance position of a type parameter in a type or template is defined as follows. Let the opposite of covariance be contravariance, and the opposite of invariance be itself. The top-level of the type or template is always in covariant position. The variance position changes at the following constructs. 
+\begin{itemize}
+\item The variance position of a method parameter is the opposite of the variance position of the enclosing parameter clause. 
+\item The variance position of a type parameter is the opposite of the variance position of the enclosing type parameter clause. 
+\item The variance position of the lower bound of a type declaration or a type parameter is the opposite of the variance position of the type declaration or the type parameter. 
+\item The type of a mutable variable is always in invariant position. 
+\item The right-hand side of a type alias is always in invariant position. 
+\item The prefix $S$ of a type projection ~\lstinline!$S$#$T$!~ is always in invariant position. 
+\item For a type argument $T$ of a type ~\lstinline!$S$[$\ldots T \ldots$]!: If the corresponding type parameter is invariant, then $T$ is in invariant position. If the corresponding type parameter is is contravariant, the variance position of $T$ is the opposite of the variance position of the enclosing type ~\lstinline!$S$[$\ldots T \ldots$]!. 
+\end{itemize}
+
+References to the type parameters in object-private or object-protected values, types, variables, or methods (\sref{sec:modifiers}) of the class are not checked for their variance position. In these members the type parameter may appear anywhere without restricting its legal variance annotations. 
+
+\example The following variance annotation is legal. 
+\begin{lstlisting}
+abstract class P [+A, +B] {
+  def first: A end
+  def second: B end
+}
+\end{lstlisting}
+With this variance annotation, type instances of $P$ subtype covariantly with respect to their arguments. For instance, 
+\begin{lstlisting}
+P[Error, String] <: P[Throwable, Object]  .
+\end{lstlisting}
+If the members of $P$ are mutable variables, the same variance annotation becomes illegal. 
+\begin{lstlisting}
+abstract class P [+A, +B](x: A, y: B) {
+  var @first: A := x   // error: illegal variance:
+  var @second: B := y  // 'A', 'B' occur in invariant position
+}
+\end{lstlisting}
+If the mutable variables are object-private, the class definition becomes legal again: 
+\begin{lstlisting}
+abstract class R [+A, +B](x: A, y: B) {
+  private[self] var @first: A := x   // ok
+  private[self] var @second: B := y  // ok
+}
+\end{lstlisting}
+
+\example The following variance annotation is illegal, since $a$ appears in contravariant position in the parameter of \code{append}:
+\begin{lstlisting}
+abstract class Sequence [+A] {
+  def append (x: Sequence[A]): Sequence[A] end
+    // error: illegal variance, 'A' occurs in contravariant position
+}
+\end{lstlisting}
+The problem can be avoided by generalizing the type of \code{append} by means of lower bound:
+\begin{lstlisting}
+abstract class Sequence [+A] {
+  def append [B >: A] (x: Sequence[B]): Sequence[B] end
+    // error: illegal variance, 'A' occurs in contravariant position
+}
+\end{lstlisting}
+
+\example Here is a case where a contravariant type parameter is useful. 
+\begin{lstlisting}
+abstract class Output_Channel [-A] {
+  def write (x: A): Unit
+}
+\end{lstlisting}
+With that annotation, we have that \code{Output_Channel[Object]} conforms to \code{Output_Channel[String]}. That is, a channel on which one can write any object can substitute for a channel on which one can write only strings. 
+ 
 
 
 
@@ -435,16 +517,16 @@ Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
 Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
 Op_Sig        ::= Op_Path [Fun_Tpc] Param_Clauses
 Fun_Tpc       ::= '[' Type_Param {',' Type_Param} ']'
-Function_Path ::= function_id
-                | 'self' '.' function_id
-                | variable_id '.' function_id
+Function_Path ::= id
+                | 'self' '.' id
+                | id '.' id
 Op_Path       ::= op_id
                 | 'self' '.' op_id
-                | variable_id '.' op_id
+                | id '.' op_id
 Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
 Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
-Param         ::= {Annotation} [Param_Extra] variable_id 
+Param         ::= {Annotation} [Param_Extra] id 
                 [':' Param_Type] [':=' Expr]
                 | Literal
 Param_Extra   ::= ['lazy'] [Param_Io] [Param_Rw] 
@@ -961,13 +1043,13 @@ Import_Expr     ::= Single_Import
                   | '{' Import_Exprs '}'
                   | '_'
 Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
-Single_Import   ::= importable_id ['as' [constant_id | '_']]
+Single_Import   ::= importable_id ['as' [id | '_']]
 Container_Path  ::= Module_Path ['.' Constant_Path]
                   | [Root] Constant_Path
 Module_Path     ::= [Root] Module_Selector {'.' Module_Selector}
 Constant_Path   ::= Const_Selector {'.' Const_Selector}
-Module_Selector ::= constant_id [Vendor_Arg]
-Const_Selector  ::= constant_id
+Module_Selector ::= id [Vendor_Arg]
+Const_Selector  ::= id
 Root            ::= 'Root' '~'
 Vendor_Arg      ::= '~[' vendor_domain ']'
 vendor_domain   ::= vendor_char {vendor_char}

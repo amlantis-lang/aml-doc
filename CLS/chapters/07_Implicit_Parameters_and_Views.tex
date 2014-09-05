@@ -22,8 +22,10 @@ An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a me
 \section{View Bounds}
 
 \syntax\begin{lstlisting}
-Type_Param ::= (tp_id | '_') [Type_Param_Clause]
-               ['>:' Type] ['<:' Type] {'<%' Type}
+Type_Param ::= (id | '_') [Type_Param_Clause]
+               ['>:' Type] ['<:' Type]
+               {'<%' Type} {':' Type}
+             | '<' (id | '_') '>' ['<:' id]
 \end{lstlisting}
 
 
