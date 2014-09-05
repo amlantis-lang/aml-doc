@@ -311,7 +311,7 @@ A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$][<$t_1 \ldots t_n$
 A compound type pattern ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, where each $T_i$ is a type pattern. This type pattern matches all values that are matched by each of the type patterns $T_i$, and in this sense it is equivalent to the pattern ~\lstinline!$T_1$ & $\ldots$ & $T_n$!. 
 \end{itemize}
 
-Types are not subject to any type erasure, so it is basically safe to use any other type as type pattern (e.g. constrained types -- \sref{sec:constrained-types}), unlike in Scala. 
+Types are not subject to any type erasure (\sref{sec:reified-types}), so it is basically safe to use any other type as type pattern, unlike in Scala. 
 
 A {\em type variable pattern} is a simple identifier which starts with a lower case letter. 
 

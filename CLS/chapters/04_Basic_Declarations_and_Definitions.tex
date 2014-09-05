@@ -314,7 +314,7 @@ Type_Def ::= id [Type_Param_Clause]
              (':=' | 'is') ['alias'] Type
 \end{lstlisting}
 
-A {\em type declaration} \lstinline!type $t$[$\tps$]@[$\dps$][<$\uomps$>] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. Omitting indexing parameter clause \lstinline!@[$\dps$]! or units of measure parameter clause \lstinline@[<$\uomps$>]@ does not affect whether $t$ abstracts over a first-order type, since these parameters only restrict subsets of the type $t$, instead of constructing new types. 
+A {\em type declaration} \lstinline!type $t$[$\tps$] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
 
 If a type declaration appears as a member declaration of a type, implementations of the type may implement $t$ with any type $T$, for which $L \conforms T \conforms U$. It is an error if $L$ does not conform to $U$. Either or both bounds may be omitted. If the lower bound $L$ is omitted, the bottom type \code{Nothing} is implied. If the upper bound $U$ is omitted, the top type \code{Object} is implied. 
 
@@ -325,26 +325,26 @@ The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!
 To illustrate nested scoping, these declarations are all equivalent: 
 \begin{itemize}
 \item[]
-~\lstinline[mathescape=false]!type t[m[$x] <: Bound[$x], Bound[$x]] end! 
+~\lstinline!type t[m[x] <: Bound[x], Bound[x]] end! 
 
 \item[]
-~\lstinline[mathescape=false]!type t[m[$x] <: Bound[$x], Bound[$y]] end!
+~\lstinline!type t[m[x] <: Bound[x], Bound[y]] end!
 
 \item[]
-~\lstinline[mathescape=false]!type t[m[$x] <: Bound[$x], Bound[_]] end!,
+~\lstinline!type t[m[x] <: Bound[x], Bound[_]] end!,
 \end{itemize} 
-as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline[mathescape=false]!$x!~ is unrelated to the first two occurrences, but may confuse the reader. 
+as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline!x!~ is unrelated to the first two occurrences, but may confuse the reader. 
 
 A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$[$\tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $\tps$ itself. 
 
 It is an error if a type alias refers recursively to the defined type constructor itself. 
 
 \example The following are legal type declarations and aliases:
-\begin{lstlisting}[escapechar=@]
+\begin{lstlisting}
 type Integer_List := List[Integer]
 type T <: Comparable[T] end
-type Two[@\$@A] := Tuple_2[@\$@A, @\$@A]
-type My_Collection[+@\$@X] <: Iterable[@\$@X] end
+type Two[A] := Tuple_2[A, A]
+type My_Collection[+X] <: Iterable[X] end
 \end{lstlisting}
 The following are illegal:
 \begin{lstlisting}

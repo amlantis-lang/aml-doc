@@ -21,7 +21,7 @@ Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type}
                         ['with' ['refinement'] Refine_Stats]
                       | ['refinement'] Refine_Stats
 Annot_Type          ::= {Annotation} Simple_Type
-Simple_Type         ::= Simple_Type [Type_Args] [Dep_Args] [UoM_Args]
+Simple_Type         ::= Simple_Type [Type_Args]
                       | Simple_Type '#' id
                       | Stable_Id
                       | Path '.' 'type'
@@ -210,10 +210,10 @@ class A_Class {
 \label{sec:parameterized-types}
 
 \syntax\begin{lstlisting}
-Simple_Type ::= Simple_Type [Type_Args] [UoM_Args]
+Simple_Type ::= Simple_Type [Type_Args]
 Type_Args   ::= '[' Types ']'
-Types       ::= Type {',' Type}
-UoM_Args    ::= '[<' uom_expr '>]'
+Types       ::= Type_Arg {',' Type_Arg}
+Type_Arg    ::= Type | '<' uom_expr '>'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
@@ -224,14 +224,14 @@ Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds 
 \label{example:parameterized-types}
 Given the generic type definitions: 
 
-\begin{lstlisting}[escapechar=@]
-class Tree_Map[@\$@A <: Comparable[@\$@A], @\$@B] $\ldots$ end
-class List[@\$@A] $\ldots$ end
+\begin{lstlisting}
+class Tree_Map[A <: Comparable[A], B] $\ldots$ end
+class List[A] $\ldots$ end
 class I; implements Comparable[I]; $\ldots$ end
 
-class F[@\$@M[_], @\$@X] $\ldots$ end
-class S[@\$@K <: String] $\ldots$ end
-class G[@\$@M[@\$@Z <: @\$@I], @\$@I] $\ldots$ end
+class F[M[_], X] $\ldots$ end
+class S[K <: String] $\ldots$ end
+class G[M[Z <: I], I] $\ldots$ end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
@@ -564,15 +564,15 @@ A polymorphic method type is the same as a regular method type, but enhanced wit
 
 \example The declarations
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-def empty[@\$@A]: List[@\$@A]
-def union[@\$@A <: Comparable[@\$@A]] (x : Set[@\$@A], 
-         xs : Set[@\$@A]): Set[@\$@A]
+def empty[A]: List[A]
+def union[A <: Comparable[A]] (x : Set[A], 
+         xs : Set[A]): Set[A]
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-empty : [@\$@A >: Nothing <: Object] () $\mapsto$ List[@\$@A]
-union : [@\$@A >: Nothing <: Comparable[@\$@A]] (Set[@\$@A], 
-        Set[@\$@A]) $\mapsto$ Set[@\$@A]
+empty : [A >: Nothing <: Object] () $\mapsto$ List[A]
+union : [A >: Nothing <: Comparable[A]] (Set[A], 
+        Set[A]) $\mapsto$ Set[A]
 \end{lstlisting}
 
 
@@ -584,6 +584,20 @@ union : [@\$@A >: Nothing <: Comparable[@\$@A]] (Set[@\$@A],
 \label{sec:type-constructors}
 
 A type constructor is in turn represented internally much like a polymorphic method type. \lstinline@[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto T$@ represents a type that is expected by a type constructor parameter. The difference is that the represented internal entity is not a method, but a type, creating higher-kinded types. 
+
+
+
+
+
+\section{Any-Value Type}
+\label{sec:any-value-type}
+
+\syntax\begin{lstlisting}
+Type ::= 'Any'
+\end{lstlisting}
+
+This type does not represent a concrete value type, but any value or non-value type. It is used in places where dynamic typing is desired. 
+
 
 
 
@@ -669,6 +683,9 @@ A singleton type ~\lstinline!$p$.type!~ conforms to the type of the path $p$.
 \item
 A type projection ~\lstinline!$T$#$t$!~ conforms to ~\lstinline!$U$#$t$!~ if $T$ conforms to $U$. 
 
+\item
+A unit of measure type $t$ conforms to another unit of measure type $u$ if and only if $t \equiv u$ or $t$ extends $u$, where $us$ is an abstract unit of measure type. 
+
 \item 
 A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
 \begin{itemize}
@@ -685,22 +702,6 @@ A unit of type $N$ conforms to unit of type $U$ if $N$ extends $U$ or if $N \equ
 A parameterized type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lstinline!$T$[<$U_1 \commadots U_n$>]!~ if the following conditions hold for $i = 1 \commadots n$.
 \begin{itemize}
 \item For the $i^{\superth}$ type parameter of $T$, $N_i \conforms U_i$.
-\end{itemize}
-
-\item
-A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$][<$N_1 \commadots N_m$>]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$][<$V_1 \commadots V_m$>]!~ if the following conditions hold.
-\begin{itemize}
-\item The virtual type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!. 
-\item The virtual type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lstinline!$T$[<$V_1 \commadots V_n$>]!. 
-\end{itemize}
-
-\item
-A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$U$[$U_1 \commadots U_m$]!~ if $T$ is a subclass/subtrait of $U$, $T$ provides all type arguments to $U$ and the following conditions hold for $i = 1 \commadots m$. Note that if $T \equiv U$, then the previous rule applies. Let $T_i$ be a type argument that $T$ passes as a type argument $U_i$ to its supertype $U$ (either a type or a type variable). This basically means that $T$ can either pass its own type arguments into its supertype in arbitrary order, or pass types as type arguments to $U$. If $T$ defines extra type parameters, it does not affect its conformance to $U$. 
-\begin{itemize}
-\item If the $i^{\superth}$ type parameter of $U$ is declared covariant, then $T_i \conforms U_i$.
-\item If the $i^{\superth}$ type parameter of $U$ is declared contravariant, then $U_i \conforms T_i$.
-\item If the $i^{\superth}$ type parameter of $U$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
-\item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
 \end{itemize}
 
 \item 
@@ -744,8 +745,17 @@ A declaration or definition in some compound type of class type $C$ {\em subsume
 \begin{itemize}
 \item A value declaration or definition that defines a name $x$ with type $T$ subsumes a value or method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
 \item A method declaration or definition that defines a name $x$ with type $T$ subsumes a method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
-\item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$][<$N_1 \commadots N_o$>] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$][<$N_1 \commadots N_o$>] := $T'$!~ if $T \equiv T'$. 
+\item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T'$!~ if $T \equiv T'$. 
+\item A type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!~ subsumes a type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L'$ <: $U'$!, if $L' \conforms L$ and $U \conforms U'$. 
+\item A type or class definition that binds a type name $t$ subsumes an abstract type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!, if $L \conforms t \conforms U$. 
 \end{itemize}
+
+The ($\conforms$) relation forms partial order between types, i.e. it is transitive, antisymmetric and reflexive. The terms {\em least upper bound} and {\em greatest lower bound} of a set of types are understood to be relative to that order. 
+
+\paragraph{Note}
+The least upper bound or the greatest lower bound of a set of types does not always exist. Coral is free to reject a term which has a type specified as a least upper bound or a greatest lower bound, and that bound would be more complex than a preset limit, e.g. this could happen with infinite bounds sequence. 
+
+The least upper bound or the greatest lower bound might also not be unique. If there are several such bounds, Coral is free to pick up any of them. 
 
 
 
@@ -755,4 +765,31 @@ A declaration or definition in some compound type of class type $C$ {\em subsume
 \label{sec:weak-conformance}
 
 For now, {\em weak conformance} is a relation defined on members of the \code{Number} type as a relaxation of conformance. The relation is simple: a type $t$ weakly conforms to another type $u$ when $u$'s size contains all values of $t$ (we say that $t$ can be converted to $u$ without precision loss). 
+
+A {\em weak least upper bound} is a least upper bound with respect to weak conformance. 
+
+
+
+
+
+\section{Reified Types}
+\label{sec:reified-types}
+
+Unlike in Java or Scala, {\em type erasure} does not exist in Coral. Instead, type arguments are {\em reified} -- meaning that they persist in runtime. This is achieved by generating a lightweight subtype of parameterized types, containing basically just a reference to the parameterized type and a tuple of type arguments. This also implies that each new combination of type arguments to the exact same parameterized type creates a new lightweight subtype.
+
+Reified types have some major effects on programs in Coral:
+\begin{itemize}
+
+\item Type arguments are accessible in runtime. The actual type argument can be inspected via reflection. 
+
+\item Type arguments do not go away after compilation. This means, for example, that mutable collections should have invariant type parameters, since a hypothetical \code{List[+T]} can have type instance \code{List[String]} assigned to a variable bound to be a \code{List[Object]}, but instances of other subclasses than those that conform to \code{String} will not be able to be added to the collection. This is in fact true even if Coral did have type erasure -- the difference is, with reified types, the addition of a new incompatible value will fail immediately, unlike with type erasure, where retrieving the added value would fail later. 
+\end{itemize}
+
+
+
+
+
+
+
+
 
