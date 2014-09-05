@@ -117,15 +117,16 @@ Every value in Coral has a type which is of one of the following forms.
 
 
 
-\subsection{Value \& Singleton Type}
-\label{sec:value-types}
+\subsection{Singleton Type}
 \label{sec:singleton-types}
 
 \syntax\begin{lstlisting}
 Simple_Type ::= Path '.' 'type'
 \end{lstlisting}
 
-A singleton type is of the form \lstinline@$p$.type@ and a special type that denotes the set of values consisting of \code{nil} and the value denoted by $p$, in spite of nullability.
+A singleton type is of the form \lstinline@$p$.type@, where $p$ is a path pointing to a value. The type denotes the set of values consisting of \code{nil} and the value denoted by $p$, in spite of nullability.
+
+A {\em stable type} is either a singleton type or a type which is declared to be a subtype of a trait \code{Singleton_Type}. 
 
 
 
@@ -422,7 +423,7 @@ An existential type ~\lstinline@$T$ for-some { $Q$ }@, where $Q$ contains a clau
 
 
 \paragraph{Existential quantification over values}
-As a syntactic convenience, the bindings clause in an existential type may also contain value declarations ~\lstinline!val $x$: $T$!. An existential type ~\lstinline@$T$ for-some { $Q$; val $x$: $S$; $Q'$ }@~ is treated as a shorthand for the type ~\lstinline@$T'$ for-some { $Q$; type $t$ <: $S$; $Q'$ }@, where $t$ is a fresh type name and $T'$ results from $T$ by replacing every occurrence of ~\lstinline!$x$.type!~ with $t$. 
+As a syntactic convenience, the bindings clause in an existential type may also contain value declarations ~\lstinline!val $x$: $T$!. An existential type ~\lstinline@$T$ for-some { $Q$; val $x$: $S$; $Q'$ }@~ is treated as a shorthand for the type ~\lstinline@$T'$ for-some { $Q$; type $t$ <: $S$ with Singleton_Type; $Q'$ }@, where $t$ is a fresh type name and $T'$ results from $T$ by replacing every occurrence of ~\lstinline!$x$.type!~ with $t$. 
 
 
 
@@ -444,7 +445,7 @@ Here are some examples of existential types:
 \begin{lstlisting}[mathescape=false]
 Ref[$T] for-some { type $T <: Number }
 Ref[x.T] for-some { val x: Outer }
-Ref[x_type#T] for-some { type x_type <: Outer }
+Ref[x_type#T] for-some { type x_type <: Outer with Singleton_Type }
 \end{lstlisting}
 The last two types in this list are equivalent. An alternative formulation of the first type above using wildcard syntax is:
 \begin{lstlisting}
@@ -593,10 +594,12 @@ A type constructor is in turn represented internally much like a polymorphic met
 \label{sec:any-value-type}
 
 \syntax\begin{lstlisting}
-Type ::= 'Any'
+Simple_Type ::= 'Any'
 \end{lstlisting}
 
-This type does not represent a concrete value type, but any value or non-value type. It is used in places where dynamic typing is desired. 
+This type does not represent a single concrete value type, but any concrete type. It is used in places where dynamic typing is desired. 
+
+With respect to overloading resolution (\sref{sec:value-conversions}), this type is always the least specific. 
 
 
 

@@ -83,8 +83,8 @@ Auxiliary templates do not need to be eager loaded. There are basically three ma
 
 To declare a template as an open template, the following annotations are available. All templates are implicitly open, so the annotations are only useful to prevent implicit inheriting from \code{Object}, if the intended leading template inherits from a different base class. 
 \begin{lstlisting}
-@{Open_Template :leading}
-@{Open_Template :auxiliary}
+@[Open_Template :leading]
+@[Open_Template :auxiliary]
 \end{lstlisting}
 
 
@@ -453,7 +453,7 @@ If $M$ is labeled \lstinline!protected!, then $M'$ must also be labeled \lstinli
 If $M'$ is labeled \lstinline!protected!, then $M'$ must also be labeled \lstinline!protected! or \lstinline!public!. 
 
 \item
-If $M'$ is not an abstract member, then $M$ should be labeled \lstinline!override! or annotated \lstinline!@{Override}!. Furthermore, one of the possibilities must hold:
+If $M'$ is not an abstract member, then $M$ should be labeled \lstinline!override! or annotated \lstinline!@[Override]!. Furthermore, one of the possibilities must hold:
 \begin{itemize}
 \item either $M$ is defined in a subclass of the class where $M'$ is defined,
 \item or both $M$ and $M'$ override a third member $M''$, which is defined in a base class of both the classes containing $M$ and $M'$.
@@ -1380,10 +1380,10 @@ Preferred nullability is switched by annotations on each class: \code{Nullable}.
 
 \example Here are all four versions of the nullability annotation. 
 \begin{lstlisting}[deletekeywords={override}]
-@{Nullable yes, override: yes}
-@{Nullable yes, override: no}
-@{Nullable no, override: yes}
-@{Nullable no, override: no}
+@[Nullable yes, override: yes]
+@[Nullable yes, override: no]
+@[Nullable no, override: yes]
+@[Nullable no, override: no]
 \end{lstlisting}
 
 

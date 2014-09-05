@@ -28,6 +28,7 @@ Expr        ::= Cond_Expr
               | Anon_Class
               | Metaclass_Access
               | Workflow_Expr
+              | Quasiquote_Expr
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [op_id Infix_Expr]
 Simple_Expr ::= Block_Expr
@@ -1770,6 +1771,62 @@ Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implic
 
 \section{Workflows}
 \label{sec:workflows}
+
+
+
+
+
+
+\section{Syntactic Forms}
+
+\subsection{Quasi-quotation}
+\label{sec:quasi-quotation}
+
+\syntax\begin{lstlisting}
+Quasiquote_Expr ::= '`(' Any_Expr ')'
+Any_Expr        ::= Expr
+                  | Block_Stat {semi Block_Stat}
+                  | Template_Stat {semi Template_Stat}
+                  | Alias_Expr
+                  | Compilation_Unit
+                  | Top_Stat_Seq
+Expr            ::= '#{' Expr '}'
+\end{lstlisting}
+
+Quasi-quote expression ~\lstinline!`( $e$ )!~ is basically a well-formed piece of Coral source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasiquote]}.
+
+Quasi-quote expressions may optionally be interpolated, so that values or other nodes may be injected into the represented AST. There are the following ways to interpolate the AST:
+\begin{itemize}
+\item Interpolating expression ~\lstinline!#{ $e$ }!, where $e$'s value is expanded into the AST as is. If the expression would require parentheses around it in the source, then parentheses have to be around the interpolating expression.\footnote{Note that the same delimiters are used to interpolate string literals.}
+\item The \code{@[unquote]} annotation, which puts parentheses around the annotated expression. 
+\item The \code{@[splice]} annotation, where the annotated expression is expanded into the AST as is. 
+\end{itemize}
+
+A quasi-quote without any interpolation is equivalent to a quote (\sref{sec:quotation}). 
+
+Quasi-quotes are useful in combination with macros (\sref{sec:macros}). 
+
+
+
+
+
+
+\subsection{Quotation}
+\label{sec:quotation}
+
+A quote expression is basically a quasi-quote, but without any interpolation. The annotation that marks an expression for quotation is \code{@[quote]}. 
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
