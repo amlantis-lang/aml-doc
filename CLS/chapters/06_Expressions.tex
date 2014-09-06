@@ -65,7 +65,7 @@ What we call ``statement'', in context of Coral is in fact yet another kind of a
 \section{Literals}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= literal
+Simple_Expr1 ::= Literal
 \end{lstlisting}
 
 Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate, including non-scalar literals (collection literals). 
@@ -1759,6 +1759,28 @@ Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implic
 
 \subsection{Overloading Resolution}
 \label{sec:overloading-resolution}
+
+If an identifier or selection $e$ references several members of a class, the context of the reference is used to identify a unique member, if possible. The way this is done depends on whether or not $e$ is used as a function. Let $\mathcal{A}$ be the set of members referenced by $e$. 
+
+Assume first that $e$ appears as a function in an application, as in ~\lstinline!$e$($e_1 \commadots e_m$)!.
+
+One first determines the set of functions that is potentially applicable based on the {\em shape} of the arguments. 
+
+The shape of an argument expression $e$, written ~\lstinline!$\shape$($e$)!, is a type that is defined as follows:
+\begin{itemize}
+\item For a function expression ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) -> $b$!, the shape is ~\lstinline!(Any$\commadots\,$Any) -> $\shape$($b$)!, where \code{Any} occurs $n$ times in the argument type. 
+\item For a named argument ~\lstinline!$n$: $e$!, the shape is ~\lstinline!@[named_arg :$n$] $\shape$($e$)!, which is an annotated type.\footnote{This is different from e.g. Scala, since Coral supports captured named arguments, which make the definition of applicable functions different.} % TBD: fix the name of the annotation as it will be chosen over time. 
+\item For all other expressions, the shape is \code{Nothing}. 
+\end{itemize}
+
+Let $\mathcal{B}$ be the set of alternatives in $\mathcal{A}$ that are {\em applicable} (\sref{sec:function-applications}) to expressions ~\lstinline!($e_1 \commadots e_n$)!~ of types ~\lstinline!($\shape$($e_1$)$\commadots \shape$($e_n$))!. If there is precisely one alternative in $\mathcal{B}$, that alternative is chosen. It is an error if that alternative is not applicable to the expected types of the argument expressions. 
+
+Otherwise, let $S_1 \commadots S_m$ be the vector of types obtained by typing each argument with an undefined expected type (kind of equivalent to typing it with \code{Any}). (to be continued)
+
+
+
+
+
 
 \subsection{Local Type Inference}
 \label{sec:local-type-inference}

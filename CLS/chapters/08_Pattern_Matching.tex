@@ -21,7 +21,7 @@ Pattern2       ::= ['implicit'] var_id ['@' Simple_Pattern]
                  | Simple_Pattern
 Simple_Pattern ::= ['*'] '_'
                  | ['*'] var_id
-                 | literal
+                 | Literal
                  | Stable_Id
                  | Stable_Id '(' [Patterns] ')' 
                  | '(' [Patterns] ')'
@@ -94,7 +94,7 @@ end match
 \label{sec:literal-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= literal
+Simple_Pattern ::= Literal
 \end{lstlisting}
 
 A literal pattern $L$ matches any value that is equal (in terms of ~\lstinline!=!) to the literal $L$. The type of $L$ must conform to the expected type of the pattern. Literal kinds that are considered legal with this pattern are: string literals, number literals, boolean literals and the \code{nil} value. 
@@ -226,7 +226,7 @@ Simple_Pattern ::= Pattern '~>' Pattern
                  | Pattern '<~' Pattern
 \end{lstlisting}
 
-A list pattern is a pattern specialized to match elements of list instances. A list pattern of the form ~\lstinline!$p_1$ ~> $p_2$!~ matches a list, where $p_1$ matches the head element of the list and $p_2$ matches the remainder of the list, ending with the tail element. A list pattern of the form ~\lstinline!$p_1$ <~ $p_2$!~ matches a list, where $p_1$ matches the tail element of the list and $p_2$ matches the remained of the list, starting with the head element. If the list has one element, then the matched remainder is \code{nil}. 
+A list pattern\footnote{This is in fact a simplified form of an infix pattern, which is a feature that might be enabled in future versions.} is a pattern specialized to match elements of list instances. A list pattern of the form ~\lstinline!$p_1$ ~> $p_2$!~ matches a list, where $p_1$ matches the head element of the list and $p_2$ matches the remainder of the list, ending with the tail element. A list pattern of the form ~\lstinline!$p_1$ <~ $p_2$!~ matches a list, where $p_1$ matches the tail element of the list and $p_2$ matches the remained of the list, starting with the head element. If the list has one element, then the matched remainder is \code{nil}. 
 
 
 
