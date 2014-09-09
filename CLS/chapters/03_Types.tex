@@ -345,15 +345,25 @@ Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['^'] id ':']
                   Param_Type
 \end{lstlisting}
 
-The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. Empty arguments list is indeed also possible as \lstinline@-> $R$@, equivalent to \lstinline@() -> $R$@.
+The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. 
+
+Function argument types may be annotated with some extra properties. In that case, these map to annotations of their types, defined as follows:
+\begin{itemize}
+\item ``\code{out}'' maps to \code{@[out_param]}. 
+\item ``\code{in}'' maps to no annotation, as it is implied, and if the parameter is \code{out}-only, the function is still applicable. 
+\item ``\code{*}'' maps to \code{@[repeated_param]}. 
+\item ``\code{**}'' maps to \code{@[capturing_named_param]}. 
+\item ``\code{&}'' maps to \code{@[captured_block_param]}. 
+\item ``\code{^$\id$}'' maps to \code{@[named_param :$\id$]}. For now, the leading ``\code{^}'' may be omitted, as it could be implied, but it's generally better to not omit it. 
+\end{itemize}
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
 
 Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Coral library for any $n \ge 0$:
 
-\begin{lstlisting}[escapechar=`]
-protocol Function_$n$[-`\$`$T_1$ $\commadots$ -`\$`$T_n$, +`\$`$R$]
-  message apply ($x_1$: `\$`$T_1\ \commadots\ x_n$: `\$`$T_n$): `\$`$R$
+\begin{lstlisting}
+protocol Function_$n$[-$T_1 \commadots\,$-$T_n$, +$R$]
+  message apply ($x_1$: $T_1 \commadots x_n$: $T_n$): $R$
   $\ldots$
 end protocol
 \end{lstlisting}
@@ -379,6 +389,16 @@ Parameter prefixed with ``\lstinline!**!'' is a requirement of a captured named 
 \item
 Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullability}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}).
 \end{itemize}
+
+\paragraph{Note}
+Although the function type alone allows to attach the extra annotations to types of arguments in a \code{1:1} manner (and therefore types of parameters), due to how conformance is defined for function types, it is not always desirable to use them. The only argument extra that might be of any use is the captured block argument, so that a requirement of a passed block is marked (not caring about the actual style of the block passing). 
+
+\example The following definition of functions \code{g} and \code{h} conform to a definition of a function \code{f}, and there are many more such functions that conform to \code{f}. And vice versa, \code{f} conforms to both \code{g} and \code{h}, although the latter two are more specific than the first one (\sref{sec:overloading-resolution}). 
+\begin{lstlisting}
+def f (*x: Integer) end
+def g (x: Integer, y: Integer) end
+def h (x: Integer, y: Integer, z: Integer) end
+\end{lstlisting}
 
 
 
@@ -515,7 +535,7 @@ The types explained in the following paragraphs do not appear explicitly in prog
 \subsection{Method Types}
 \label{sec:method-types}
 
-A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of parameter names, types and extra properties $(ep_1 : T_1 \commadots ep_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments named $p_1 \commadots p_n$ of types $T_1 \commadots T_n$, have extra properties $e$ and return a result of type $R$. Names of parameters are either simple identifiers (for positional argument passing) or symbol literals (\sref{sec:symbolliterals}, for named arguments passing -- they make difference between method types with possibly same parameter types, therefore the name is a part of the method type along with the associated parameter type\footnote{This means that, for simplicity, if we have a method with one parameter, which is a named parameter, represented by having its name expressed with a symbol literal, and the parameters have an equivalent type, but different names, the method types are not equivalent.}). 
+A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of types  $(p_1 : T_1 \commadots p_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments of types $T_1 \commadots T_n$ and return a result of type $R$. Types of parameters are possibly annotated with conformance restricting annotations (\sref{sec:annotations}). 
 
 Method types associate to the right:\footnote{Like in Haskell or Scala.} \newline
 $(Ps_1) \mapsto (Ps_2) \mapsto R$ is treated as $(Ps_1) \mapsto ((Ps_2) \mapsto R)$. 
@@ -542,13 +562,13 @@ def h (x: Integer): (y: Integer) -> Integer
 produce the typings
 \begin{lstlisting}
 a : () $\mapsto$ Integer
-b : (x: Integer) $\mapsto$ Boolean
-c : (x: Integer) $\mapsto$ (y: String, z: String) $\mapsto$ String
-d : (~x: Integer) $\mapsto$ Integer
-e : (*x: Integer) $\mapsto$ Integer
-f : (x: Integer) $\mapsto$ ()
-g : (x: Integer) $\mapsto$ (y: Integer) $\mapsto$ Integer
-g : (x: Integer) $\mapsto$ (Integer) $\mapsto$ Integer
+b : (Integer) $\mapsto$ Boolean
+c : (Integer) $\mapsto$ (y: String, z: String) $\mapsto$ String
+d : (@[named_param :x] Integer) $\mapsto$ Integer
+e : (@[repeated_param :x] Integer) $\mapsto$ Integer
+f : (Integer) $\mapsto$ Unit
+g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
+g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
 \end{lstlisting}
 
 The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of return types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
@@ -640,7 +660,7 @@ Two compound types (\sref{sec:compound-types}) are equivalent, if the sequences 
 Two refinements (\sref{sec:compound-types} \& \sref{sec:refinements}) are equivalent, if they bind the same names and the modifiers, types and bounds of every declared entity are equivalent in both refinements. 
 
 \item
-Two method types (\sref{sec:method-types}) are equivalent, if they have equivalent return types, both have the same number of parameters and corresponding parameters have equivalent types and extra properties. Names of the parameters matter for method type equivalence only with named parameters. 
+Two method types (\sref{sec:method-types}) are equivalent, if they are {\em override-equivalent} (\sref{sec:method-signature}) and have equivalent return types. 
 
 \item
 Two polymorphic method types (\sref{sec:polymorphic-method-types}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
@@ -708,7 +728,7 @@ A parameterized type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lst
 \end{itemize}
 
 \item 
-A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ { $R$ }!~ conforms to each of its component types $T_i$. 
+A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
 
 \item 
 If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ { $R$ }!. 
@@ -742,6 +762,12 @@ Polymorphic types or type constructors $T$ and $T'$ must also fulfil the followi
 \item Recursively, these restrictions apply to the corresponding higher-order type parameter clauses of $a_i$ and $a'_i$. 
 \end{itemize}
 
+\item 
+A function type ~\lstinline!($T_1 \commadots T_n$) -> $R$!~ (name it $f$) conforms to a function type ~\lstinline!($T'_1 \commadots T'_m$) -> $R'$!~ (name it $f'$), if types of arguments that are applicable to $f'$ are also applicable to $f$ (\sref{sec:function-applications}), and if $R$ conforms to $R'$. This includes reordering of named arguments/parameters and handling of repeated/optional parameters, and also variances -- since although $f$ might be applied to whatever $f'$ might be applied to, $f'$ might not be applied to whatever $f$ might be applied to (and vice versa).
+
+\item
+Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
+ 
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 

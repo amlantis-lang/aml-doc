@@ -540,7 +540,7 @@ Param_Type    ::= ['=>' | '=>>'] (Type | tp_id | '_')
 
 A function declaration has the form of \lstinline@def $f$ $psig$: $T$@, where $f$ is the function's name, $psig$ is its parameter signature and $T$ is its return type. 
 
-A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$tps$]@, followed by zero or more value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
+A function definition \lstinline@def $f$ $psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$\tps$]@, followed by zero or more value parameter clauses \lstinline@($\ps_1$)$\ldots$($\ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
 
 Multiple parameter clauses render curried functions. 
 
@@ -548,7 +548,7 @@ The type of the function body is expected to conform (\sref{sec:conformance}) to
 
 If the function's result type is given as one of ``\lstinline!()!'' or \code{Unit}, the function's implicit return value is stripped and it is an error if a return statement occurs in the function body with a value to be returned, unless the return value is specified again as ``\lstinline!()!''.
 
-An optional type parameter clause $tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
+An optional type parameter clause $\tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
 
 A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an invisible function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
 
@@ -575,18 +575,18 @@ For every parameter $p_{i,j}$ with a default value expression, a function named
 \begin{lstlisting}[escapechar=`]
 default`\$`$n$
 \end{lstlisting}
-is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@[$tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
+is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@[$\tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
 
 The scope of a formal value parameter name $x$ comprises all subsequent parameter clauses, as well as the method return type and the function body, if they are given.
 
 \example In the method
-\begin{lstlisting}[escapechar=`]
-def compare[`\$`T](a: `\$`T := 0)(b: `\$`T := a) := (a = b)
+\begin{lstlisting}
+def compare[T](a: T := 0)(b: T := a) := (a = b)
 \end{lstlisting}
 the default expression \code{0} is type-checked with an undefined expected type. When applying \lstinline@compare()@\footnote{Without any explicit arguments.}, the default value \code{0} is inserted and \code{T} is instantiated to \code{Number}. The functions computing the default arguments have the forms\footnote{See, at the moment \lstinline[mathescape=false]!default$2! is called, the parameter \code{a} is already computed and passed as an argument to it.}:
 \begin{lstlisting}[escapechar=`]
-def default`\$`1[`\$`T]: Number := 0
-def default`\$`2[`\$`T](a: `\$`T): `\$`T := a
+def default`\$`1[T]: Number := 0
+def default`\$`2[T](a: T): T := a
 \end{lstlisting}
 
 Parameters may be optionally flagged with \code{var} and \code{val} keywords, modifying their mutability inside the method. Some combinations are disallowed, as explained in the following sections. All parameters are implicitly \code{val}-flagged, unless the parameter kind implies a \code{var} flag, such as an output parameter (\sref{sec:io-parameters}).
@@ -777,6 +777,8 @@ in val $x$: => $T$ := $e$
 
 Optional parameters may not have any modifiers, except for input/output modifiers (\sref{sec:io-parameters})\footnote{Optional parameters are always ``input'', so that declaration is always redundant.} and by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have a {\em default value expressions} and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for output parameters and repeated parameters. 
 
+Optional parameters add the annotation (\sref{sec:annotations}) \code{@[optional_param]} to the corresponding parameter type of the function trait. 
+
 
 
 
@@ -922,6 +924,19 @@ This section is {\em normative}.
 Users should design their functions in a way that makes them having as few parameters as possible. 
 
 In this spirit, an ideal count of parameters lies between 0 and 2 (nullary, unary and binary functions). Named parameters should be used with only up to one positional\footnote{In this sense, optional and repeated parameters are also positional, because they are applied on a particular numbered position rather than named.} parameter. Functions with more than 4 different parameters should be avoided. 
+
+
+
+
+
+\subsection{Method Signature}
+\label{sec:method-signature}
+
+Two methods are {\em override-equivalent}, if they have the same signatures. 
+
+Two methods have the same signature, if they have the same name, the same type parameters (if any) and the same types of parameters, including conformance restraining annotations. 
+
+Note that this does not put any restriction on the 
 
 
 

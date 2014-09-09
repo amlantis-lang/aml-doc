@@ -265,7 +265,7 @@ To pair argument expressions with corresponding parameters, the following steps 
 
 \item Say that $n_2$ is the count of named arguments. Pair each $a_{\sigma i}$ for $1 \leq i \leq n_2$ with $p_{2,i}$. 
 
-\item Say that $n_3$ is the count of arguments given after the section of named arguments. If $n_3 = 0$, then pair the given block $b$ with $p_{3,1}$, or pair \code{nil} with $p_{3,1}$, if no block $b$ is given. If $n_3 = 1$, then pair the last unpaired argument with $p_{3,1}$. If there is no unpaired argument left, then again pair \code{nil} with $p_{3,1}$. If $n_3 > 1$, it is an error, in the sense that the function is not applicable to the given arguments, defined also as follows. 
+\item Say that $n_3$ is the count of arguments given after the section of named arguments. If $n_3 = 0$, then pair the given block $b$ with $p_{3,1}$, or pair \code{nil} with $p_{3,1}$, if no block $b$ is given. If $n_3 = 1$, then pair the last unpaired argument with $p_{3,1}$. If $n_3 > 1$, it is an error, in the sense that the function is not applicable to the given arguments, defined also as follows. 
 \end{enumerate}
 
 The type of each argument expression $a_i$ is typed with the corresponding parameter type $T_i$ as expected type. 
@@ -282,7 +282,7 @@ The function $f$ must be applicable to its arguments $a_1 \commadots a_n$ of typ
 If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, the function $f$ is applicable if all of the following conditions hold:
 \begin{itemize}
 
-\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a capturing named parameter and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the capturing named parameter. 
+\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a capturing named parameter and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the capturing named parameter.
 
 \item For every positional argument $a_i$, the type $S_i$ is compatible with its corresponding $T_i$. 
 
@@ -290,7 +290,9 @@ If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, t
 
 \item If the expected type of the function application is defined, the result type $R$ is compatible to it. 
 
-\item For every argument $p_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. See (\sref{sec:io-arguments}) for details. 
+\item For every argument $a_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. See (\sref{sec:io-arguments}) for details. 
+
+\item Every formal parameter $p_j$: $T_j$ which is not specified by either a positional or a named argument has a default value (\sref{sec:optional-parameters} \& \sref{sec:named-parameters}). 
 \end{itemize}
 
 If $f$ is a polymorphic method, it is applicable if local type inference (\sref{sec:local-type-inference}) can determine type arguments, so that the instantiated method is applicable. If $f$ is of a value type, it is applicable if it has a method member named \code{apply}, which is applicable. Note that if explicit type parameters are given to the polymorphic method, type application (\sref{sec:type-applications}) happens prior to function application. 
@@ -1760,10 +1762,11 @@ Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implic
 \subsection{Overloading Resolution}
 \label{sec:overloading-resolution}
 
-If an identifier or selection $e$ references several members of a class, the context of the reference is used to identify a unique member, if possible. The way this is done depends on whether or not $e$ is used as a function. Let $\mathcal{A}$ be the set of members referenced by $e$. 
+If an identifier or selection $e$ references several members of a class, the context of the reference is used to identify a unique member, if possible. The way this is done depends on whether or not $e$ is used as a function. Note that even if overloaded resolution picks up a unique member, that member still may not be applied in regard of the actual expected types of the function application. Let $\mathcal{A}$ be the set of members referenced by $e$. 
 
-Assume first that $e$ appears as a function in an application, as in ~\lstinline!$e$($e_1 \commadots e_m$)!.
+Assume that $e$ appears as a function in an application, as in ~\lstinline!$e$($e_1 \commadots e_m$)!.
 
+\paragraph{Shape-based overloading resolution}
 One first determines the set of functions that is potentially applicable based on the {\em shape} of the arguments. 
 
 The shape of an argument expression $e$, written ~\lstinline!$\shape$($e$)!, is a type that is defined as follows:
@@ -1773,9 +1776,57 @@ The shape of an argument expression $e$, written ~\lstinline!$\shape$($e$)!, is 
 \item For all other expressions, the shape is \code{Nothing}. 
 \end{itemize}
 
-Let $\mathcal{B}$ be the set of alternatives in $\mathcal{A}$ that are {\em applicable} (\sref{sec:function-applications}) to expressions ~\lstinline!($e_1 \commadots e_n$)!~ of types ~\lstinline!($\shape$($e_1$)$\commadots \shape$($e_n$))!. If there is precisely one alternative in $\mathcal{B}$, that alternative is chosen. It is an error if that alternative is not applicable to the expected types of the argument expressions. 
+Let $\mathcal{B}$ be the set of alternatives in $\mathcal{A}$ that are {\em applicable} (\sref{sec:function-applications}) to expressions ~\lstinline!($e_1 \commadots e_n$)!~ of types ~\lstinline!($\shape$($e_1$)$\commadots \shape$($e_n$))!. If there is precisely one alternative in $\mathcal{B}$, that alternative is chosen. It is an error if that alternative is not applicable to the expected types of the argument expressions -- the method is unapplied (\sref{sec:value-conversions}). 
 
-Otherwise, let $S_1 \commadots S_m$ be the vector of types obtained by typing each argument with an undefined expected type (kind of equivalent to typing it with \code{Any}). (to be continued)
+\paragraph{Argument counts based overloading resolution}
+Otherwise, let $S_1 \commadots S_m$ be the vector of types obtained by typing each argument with an undefined expected type (kind of equivalent to typing it with \code{Any}), keeping the annotations of named arguments attached (from the previous step with the shape of arguments). For every member $m$ in $\mathcal{B}$, one determines whether it is applicable to expressions ~\lstinline!($e_1 \commadots e_m$)!~ of types $S_1 \commadots S_m$, which drops requirements set up by ~\lstinline!$\shape$($e$)!, namely those for function expressions, and therefore members in $\mathcal{B}$ are more likely to be selected. It is an error if none of the members in $\mathcal{B}$ are applicable -- the method is unapplied. If there is one single applicable alternative, that alternative is chosen. 
+
+\paragraph{Applicability based overloading resolution}
+Otherwise, let $\mathcal{C}$ be the set of applicable alternatives in the application to $e_1 \commadots e_m$. It is again an error if $\mathcal{C}$ is empty. Otherwise, one chooses the {\em most specific} alternative among the alternatives in $\mathcal{C}$, according to the following definition of being  ``more specific than''.
+
+\begin{definition}
+The {\em relative weight} of an alternative $A$ over an alternative $B$ is defined as the sum of relative weights of each argument $e_i$ in the application to $e_1 \commadots e_m$. In the following equation, $A_i$ is the type of the parameter corresponding to $e_i$ in the alternative $A$, and $B_i$ is the type of the parameter corresponding to $e_i$ in the alternative $B$. 
+
+\[\begin{array}{l l}
+\weight(A, B) &= \sum_{i=1}^{m} \pweight(A_i, B_i) \\
+\pweight(t, u) &= \cweight(t, u) + \rweight(t)
+\end{array}
+\]
+
+\[\begin{array}{l l}
+\cweight(t, u) &= \left\{ 
+  \begin{array}{l l}
+    1 & \textrm{if $t \conforms u$}\\
+    0 & \textrm{otherwise}
+  \end{array} \right. \\
+\rweight(t) &= \left\{ 
+  \begin{array}{l l}
+    1 & \textrm{unless $t$ is a repeated or a capturing parameter}\\
+    0 & \textrm{otherwise}
+  \end{array} \right.
+\end{array}\]
+\end{definition}
+
+An alternative $A$ is {\em more specific than} an alternative $B$, if the relative weight of $A$ over $B$ is greater than the relative weight of $B$ over $A$. 
+
+It is an error if there is no alternative in $\mathcal{C}$ which is more specific than all other alternatives in $\mathcal{C}$ -- the method is unapplied. 
+
+\example Assume the following overloaded function definitions:
+\begin{lstlisting}
+def f (*x: Integer) end             // 1.
+def f (x: Integer) end              // 2.
+def f (x: Integer, y: Integer) end  // 3.
+\end{lstlisting}
+
+In the application \code{f(1)}, there are two applicable alternatives in regard to both shape and argument counts -- the first two. Applicability test gives relative weight to $(1)$ over $(2)$ of $1$, since it has a repeated parameter, and relative weight to $(2)$ over $(1)$ of 2, therefore the second is chosen. 
+
+In the application \code{f(1, 2)}, there are again two applicable alternatives -- the first and the last. Applicability test gives relative weight to $(1)$ over $(3)$ of $2$, since it has a repeated parameter matching both arguments, and relative weight to $(3)$ over $(1)$ of $4$, therefore the second is chosen. 
+
+In the application \code{f(1, 2, 3)}, there is only one applicable alternative (the first), which can be detected (as soon as) based on the shape of its argument expressions. 
+
+% TBD: maybe add more examples? including named arguments, optional arguments...
+
+% TBD: decide whether overloading is needed in other cases than function application - guess is that not, since Coral should not allow such bad things such as a function value and a function that is override-equivalent to that value function in the same scope, so the same goes with simple parameterized types and in no way with just expected type (like what, decide on a member based on what the caller is expecting? no.) // check http://stackoverflow.com/questions/7768669/overloading-a-method-based-on-a-type-parameter
 
 
 
