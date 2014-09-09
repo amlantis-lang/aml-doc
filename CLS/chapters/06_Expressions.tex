@@ -282,13 +282,13 @@ The function $f$ must be applicable to its arguments $a_1 \commadots a_n$ of typ
 If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, the function $f$ is applicable if all of the following conditions hold:
 \begin{itemize}
 
-\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a capturing named parameter and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the capturing named parameter.
+\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a capturing named parameter and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the capturing named parameter.
 
-\item For every positional argument $a_i$, the type $S_i$ is compatible with its corresponding $T_i$. 
+\item For every positional argument $a_i$, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with its corresponding $T_i$. 
 
-\item The given block or the last argument prefixed with ``\lstinline!&!'' is of a type compatible with the type of the captured block parameter, if such parameter is defined. 
+\item The given block or the last argument prefixed with ``\lstinline!&!'' is of a type compatible (\sref{sec:implicit-conversions}) with the type of the captured block parameter, if such parameter is defined. 
 
-\item If the expected type of the function application is defined, the result type $R$ is compatible to it. 
+\item If the expected type of the function application is defined, the result type $R$ is compatible (\sref{sec:implicit-conversions}) to it. 
 
 \item For every argument $a_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. See (\sref{sec:io-arguments}) for details. 
 
@@ -1743,7 +1743,7 @@ If none of the previous conversions applies, and $e$ is a prefix of a selection 
 The following implicit conversions can be applied to methods which are not applied to some argument list. 
 
 \paragraph{Evaluation}
-A parameterless method $m$ of type ~\lstinline!() -> $T$!~ is always converted to type $T$ by evaluating the expression to which $m$ is bound, unless method value (\sref{sec:method-values}) is used on $m$. 
+A parameterless method $m$ of type ~\lstinline!() -> $T$!~ is always converted to type $T$ by evaluating the expression to which $m$ is bound, unless method value (\sref{sec:method-values}) is used on $m$. This evaluation (as well as other method conversions) happens when the expression is to be evaluated (see argument evaluation strategies), so the expected type of a parameterless method can be converted to be an expected type $T$. 
 
 \paragraph{Implicit application}
 If the method takes only implicit parameters, implicit arguments are passed following the rules of (\sref{sec:implicit-parameters}).
@@ -1752,7 +1752,7 @@ If the method takes only implicit parameters, implicit arguments are passed foll
 Otherwise, if the expected type $\exptype$ is a function type ~\lstinline!($\Ts'$) -> $T'$!, eta-expansion (\sref{sec:eta-expansion}) is performed on the expression $e$. 
 
 \paragraph{Empty application}
-Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implicitly applied to the empty argument list, yielding ~\lstinline!$e$()!.
+Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implicitly applied to the empty argument list, yielding ~\lstinline!$e$()!. 
 
 
 
@@ -1764,7 +1764,9 @@ Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implic
 
 If an identifier or selection $e$ references several members of a class, the context of the reference is used to identify a unique member, if possible. The way this is done depends on whether or not $e$ is used as a function. Note that even if overloaded resolution picks up a unique member, that member still may not be applied in regard of the actual expected types of the function application. Let $\mathcal{A}$ be the set of members referenced by $e$. 
 
-Assume that $e$ appears as a function in an application, as in ~\lstinline!$e$($e_1 \commadots e_m$)!.
+\subsubsection{Function in an application}
+
+Assume first that $e$ appears as a function in an application, as in ~\lstinline!$e$($e_1 \commadots e_m$)!.
 
 \paragraph{Shape-based overloading resolution}
 One first determines the set of functions that is potentially applicable based on the {\em shape} of the arguments. 
@@ -1823,6 +1825,29 @@ In the application \code{f(1)}, there are two applicable alternatives in regard 
 In the application \code{f(1, 2)}, there are again two applicable alternatives -- the first and the last. Applicability test gives relative weight to $(1)$ over $(3)$ of $2$, since it has a repeated parameter matching both arguments, and relative weight to $(3)$ over $(1)$ of $4$, therefore the second is chosen. 
 
 In the application \code{f(1, 2, 3)}, there is only one applicable alternative (the first), which can be detected (as soon as) based on the shape of its argument expressions. 
+
+\subsubsection{Function in a type application}
+
+Assume next that $e$ appears as a function in a type application, as in ~\lstinline!$e$[$\targs$]!. Then let $\mathcal{B}$ be the set of all alternatives in $\mathcal{A}$ which take the same number of type parameters as there are type arguments in $\targs$ are chosen. It is an error if no such alternative exists -- the type application is unapplied. If there is one such alternative, that one is chosen. 
+
+Otherwise, let $\mathcal{C}$ be the set of those alternatives in $\mathcal{B}$ that are applicable to the type arguments, so that the bounds defined by the alternative's type parameters are satisfied. It is an error if no such alternative exists, and it is also an error if there are several such alternatives, as there is (for now) no way to select a unique member. If there is one such alternative, that one is chosen. 
+
+\subsubsection{Expression not in any application}
+
+Assume finally that $e$ does not appear as a function in either an application or a type application. If an expected type is given, let $\mathcal{B}$ be the set of those alternatives in $\mathcal{A}$ which are compatible (\sref{sec:implicit-conversions}) to it. Otherwise, let $\mathcal{B}$ be the same as $\mathcal{A}$. It is an error if there is no such alternative. If there is one such alternative, that one is chosen. 
+
+Otherwise, one chooses the {\em most specific} alternative among the alternatives in $\mathcal{B}$, according to the following definition of being ``more specific than'':
+
+\begin{definition}
+The {\em relative weight} of an alternative $A$ over an alternative $B$ is defined as a number from $0$ to $1$, defined as:
+\begin{itemize}
+\item $1$ if $A \conforms B$, $0$ otherwise.
+\end{itemize}
+\end{definition}
+
+An alternative $A$ is {\em more specific than} an alternative $B$, if the relative weight of $A$ over $B$ is greater than the relative weight of $B$ over $A$. 
+
+It is an error if there is no alternative in $\mathcal{B}$ which is more specific than all other alternatives in $\mathcal{B}$ -- the method is unapplied. 
 
 % TBD: maybe add more examples? including named arguments, optional arguments...
 

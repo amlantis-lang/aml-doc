@@ -420,14 +420,27 @@ Since traits may contain ``class'' methods as well as instance methods, all the 
 \subsection{Class Members}
 \label{sec:class-members}
 
-A class $C$ defined by class definition can define members in its class-level block, can inherit members from all parent classes\footnote{Including an interface and any number of protocols.} and included traits, and can have its members overlayed by all prepended traits. 
+A class $C$ defined by a template ~\lstinline!$C_1$ with $\ldots$ with $C_n$ { $\stats$ }!~ can define members in its statement sequence $\stats$ and can inherit members from all parent classes. Coral uses overloading of methods, therefore it is possible for a class to define and/or inherit several methods with the same name. To decide whether a defined member of a class $C$ overrides a member of a parent class, or whether the two co-exist as overloaded alternatives in $C$, Coral uses the following definition of {\em matching} on members:
 
-Member definitions fall basically into two categories: {\em concrete} \& {\em abstract}. Members of the class $C$ are either {\em directly defined}, {\em overlayed} or {\em inherited}. 
+\begin{definition}
+A member definition $M$ {\em matches} a member definition $M'$, if $M$ and $M'$ bind the same name, and one of the following conditions holds.
+\begin{enumerate}
+\item Neither $M$ nor $M'$ is a method definition.
+\item $M$ is override-matching $M'$ (\sref{sec:method-signature}). 
+\end{enumerate}
+\end{definition}
 
-Concrete members are those that have a definition, abstract members are those that are only declared without any subsequent or preceding definition.\footnote{There is a special case, when a protocol introduces an abstract member, but the class that implements this protocol already inherited or directly defined the matching member.}
+Member definitions fall into two categories: {\em concrete} and {\em abstract}. Members of class $C$ are either {\em directly defined} (i.e. they appear in $C$'s statement sequence $\stats$), or they are {\em inherited}. There are rules that determine the list of members of a class:
 
-Members are instance variables, class instance variables, types, methods \& messages. 
+\begin{definition}
+A {\em concrete member} of a class $C$ is any concrete definition $M$ in some class $C_i \in \lin{C}$, except if there is a preceding (or even prepended) class $C_j \in \lin{C}$, where $j < i$, which directly defines a concrete member $M'$ matching $M$, where the $M'$ is then the concrete member. 
 
+An {\em abstract member} of a class $C$ is any abstract definition $M$ in some class $C_i \in \lin{C}$, except $C$ already contains a concrete member $M'$ matching $M$, or if there is a preceding (or even prepended) class $C_j \in \lin{C}$, where $j < i$, which directly defines a concrete member $M'$ matching $M$, where the $M'$ is then the concrete member. 
+\end{definition}
+
+This definition also determines the overriding relationship between matching members of a class $C$ and its parents (\sref{sec:overriding}). First, a concrete definition always overrides an abstract definition. Second, for definitions $M$ and $M'$, which are both concrete or both abstract, $M$ overrides $M'$ if $M$ appears in a class that precedes (in the linearization of $C$) the class in which $M'$ is defined. 
+
+It is an error if a template directly defines two matching members. 
 
 
 

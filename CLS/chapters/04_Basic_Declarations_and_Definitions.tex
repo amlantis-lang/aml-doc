@@ -917,26 +917,18 @@ If a block parameter type $T$ is given, then the applied block argument must acc
 
 
 
-\subsection{Parameter Kind Combinations}
-
-This section is {\em normative}. 
-
-Users should design their functions in a way that makes them having as few parameters as possible. 
-
-In this spirit, an ideal count of parameters lies between 0 and 2 (nullary, unary and binary functions). Named parameters should be used with only up to one positional\footnote{In this sense, optional and repeated parameters are also positional, because they are applied on a particular numbered position rather than named.} parameter. Functions with more than 4 different parameters should be avoided. 
-
-
-
-
-
 \subsection{Method Signature}
 \label{sec:method-signature}
 
-Two methods are {\em override-equivalent}, if they have the same signatures. 
+Two methods $M$ and $N$ have the same signature, if they have the same name, the same type parameters (if any), the same parameters with equivalent types, and equivalent return type. 
 
-Two methods have the same signature, if they have the same name, the same type parameters (if any) and the same types of parameters, including conformance restraining annotations. 
+The signature of a method $m_1$ is a {\em subsignature} of the signature of a method $m_2$ if either:
+\begin{itemize}
+\item $m_2$ has the same signature as $m_1$, or
+\item the signature of $m_1$ has the same name, the same type parameters (if any), the same parameters with equivalent types, and a return type that conforms to return type of $m_2$. 
+\end{itemize}
 
-Note that this does not put any restriction on the 
+A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsignature of $m_2$. Two method signatures $m_1$ and $m_2$ are {\em override-equivalent}, iff $m_1$ is the same as $m_2$. 
 
 
 
