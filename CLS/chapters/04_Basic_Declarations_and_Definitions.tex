@@ -421,18 +421,27 @@ The following type parameter clauses are illegal:
 
 Variance annotations indicate how instances of parameterized types relate with respect to subtyping (\sref{sec:conformance}). A ``\lstinline!+!'' variance indicates a covariant dependency, a ``\lstinline!-!'' variance indicates a contravariant dependency, and an empty variance indicates an invariant dependency. 
 
-A variance annotation constrains the way the annotated type variable may appear in the type or class which binds the type parameter. In a type definition ~\lstinline!type $T$[$\tps$] := $S$!, or a type declaration ~\lstinline!type $T$[$\tps$] >: $L$ <: $U$!, type parameters labeled ``\lstinline!+!'' must only appear in covariant position, whereas type parameters labeled ``\lstinline!-!'' must only appear in contravariant position. Analogously, for a class definition ~\lstinline!class $C$[$\tps$]($\ps$) extends $T$ { requires $x$: $S\ \ldots$ }!, type parameters labeled ``\lstinline!+!'' must only appear in covariant position in the self type $S$ and the parent template $T$, whereas type parameters labeled ``\lstinline!-!'' must only appear in contravariant position in the self type $S$ and the parent template $T$.
+A variance annotation constrains the way the annotated type variable may appear in the type or class which binds the type parameter. In a type definition ~\lstinline!type $T$[$\tps$] := $S$!, or a type declaration ~\lstinline!type $T$[$\tps$] >: $L$ <: $U$!, type parameters labeled ``\lstinline!+!'' must only appear in covariant position (positive), whereas type parameters labeled ``\lstinline!-!'' must only appear in contravariant position (negative), and type parameters without any variance annotation can appear in any variance position. Analogously, for a class definition ~\lstinline!class $C$[$\tps$]($\ps$) extends $T$ { requires $x$: $S\ \ldots$ }!, type parameters labeled ``\lstinline!+!'' must only appear in covariant position in the self type $S$ and the parent template $T$, whereas type parameters labeled ``\lstinline!-!'' must only appear in contravariant position in the self type $S$ and the parent template $T$.
 
-The variance position of a type parameter in a type or template is defined as follows. Let the opposite of covariance be contravariance, and the opposite of invariance be itself. The top-level of the type or template is always in covariant position. The variance position changes at the following constructs. 
+The variance position of a type parameter in a type or template is defined as follows. Let the opposite of covariance be contravariance (thus positive positions are flipped to negative positions and vice versa), and the opposite of invariance be itself. The top-level of the type or template is always in covariant position (positive). The variance position changes at the following constructs. 
 \begin{itemize}
 \item The variance position of a method parameter is the opposite of the variance position of the enclosing parameter clause. 
 \item The variance position of a type parameter is the opposite of the variance position of the enclosing type parameter clause. 
 \item The variance position of the lower bound of a type declaration or a type parameter is the opposite of the variance position of the type declaration or the type parameter. 
-\item The type of a mutable variable is always in invariant position. 
-\item The right-hand side of a type alias is always in invariant position. 
-\item The prefix $S$ of a type projection ~\lstinline!$S$#$T$!~ is always in invariant position. 
-\item For a type argument $T$ of a type ~\lstinline!$S$[$\ldots T \ldots$]!: If the corresponding type parameter is invariant, then $T$ is in invariant position. If the corresponding type parameter is is contravariant, the variance position of $T$ is the opposite of the variance position of the enclosing type ~\lstinline!$S$[$\ldots T \ldots$]!. 
+\item The type of a mutable (instance) variable is always in invariant position (negative). 
+\item The right-hand side of a type alias is always in invariant position (negative). 
+\item The prefix $S$ of a type projection ~\lstinline!$S$#$T$!~ is always in invariant position (neutral). 
+\item For a type argument $T$ of a type ~\lstinline!$S$[$\ldots T \ldots$]!: If the corresponding type parameter is covariant, then the variance position stays unchanged. If the corresponding type parameter is invariant (no variance annotation), then $T$ is in invariant position (neutral). If the corresponding type parameter is contravariant, the variance position of $T$ is the opposite of the variance position of the enclosing type ~\lstinline!$S$[$\ldots T \ldots$]!. 
 \end{itemize}
+
+\example In the following example, variance of positions is annotated with $^+$ (for positive) or $^-$ (for negative):
+\begin{lstlisting}
+abstract class Cat[-T$^+$, +U$^+$] {
+  def meow [W$^-$] (volume: T$^-$, listener: Cat[U$^+$, T$^-$]$^-$):
+    Cat[Cat[U$^+$, T$^-$]$^-$, U$^+$]$^+$
+}
+\end{lstlisting}
+The positions of the type parameter, \code{W}, and the two value parameters, \code{volume} and \code{listener}, are all negative (flipped on type parameters and method parameters). Looking at the result type of \code{meow}, the position of the first \code{Cat[U, T]} argument is negative, because \code{Cat}'s first type parameter, \code{T}, is annotated with a ``\code{-}''. The type \code{U} inside this argument is again in a positive position (two flips), whereas the type \code{T} inside that argument is still in negative position. 
 
 References to the type parameters in object-private or object-protected values, types, variables, or methods (\sref{sec:modifiers}) of the class are not checked for their variance position. In these members the type parameter may appear anywhere without restricting its legal variance annotations. 
 

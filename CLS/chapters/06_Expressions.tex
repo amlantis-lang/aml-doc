@@ -211,7 +211,7 @@ Arg_Exprs   ::= Arg_Expr {',' Arg_Expr}
 Arg_Expr    ::= [['out'] [id ':'] | '&'] Expr
 \end{lstlisting}
 
-A function application ~\lstinline!$f$($a_1 \commadots a_n$) $b$!~ applies the function $f$ to the argument expressions $a_1 \commadots a_n$ and passes the block expression $b$ (\sref{sec:blocks}) into it. 
+A function application ~\lstinline!$f$($e_1 \commadots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \commadots e_n$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
 
 
 
@@ -229,6 +229,7 @@ Coral defers evaluation of arguments up to the point of function application, an
 
 
 \subsection{Corresponding Parameters}
+\label{sec:corresponding-parameters}
 
 The argument expressions $a_1 \commadots a_n$ can be split up to 3 virtual sections: 
 \begin{itemize}
@@ -447,24 +448,24 @@ Function composition is usually defined by operators such as ``\lstinline!|>>!''
 Function pipeline is usually defined by operators such as ``\lstinline!|>!'' for unary functions, ``\lstinline!||>!'' for binary functions and so on, and ``\lstinline!<|!'' for unary functions, ``\lstinline!<||!'' for binary functions, in reverse order. 
 
 These operators for unary functions can be defined as follows, e.g.:
-\begin{lstlisting}[mathescape=false]
-trait Function_1 [-$T, +$R]
+\begin{lstlisting}
+trait Function_1 [-T, +R]
 begin
 
   // right-associative
-  operator |>> [-$T1] (g: $T1 -> $T): $T1 -> $R := 
-    (a: $T1) -> { self(g(a)) }
+  operator |>> [T1] (g: T1 -> T): T1 -> R := 
+    (a: T1) -> { self(g(a)) }
 
   // left-associative
-  operator <<| [-$T1] (g: $T1 -> $T): $T1 -> $R :=
-    (a: $T1) -> { self(g(a)) }
+  operator <<| [T1] (g: T1 -> T): T1 -> R :=
+    (a: T1) -> { self(g(a)) }
 
   // right-associative
-  operator |> (a: $T): $R :=
+  operator |> (a: T): R :=
     self(a)
 
   // left-associative
-  operator <| (a: $T): $R := 
+  operator <| (a: T): R := 
     self(a)
     
 end trait
@@ -1694,7 +1695,7 @@ An alias to a function name creates a duplicate record in method table of a clas
 
 Implicit conversions can be applied to expressions whose type does not match their expected type, to qualifiers in selections, and to unapplied methods. The available implicit conversions are given in the next two sub-sections.
 
-We say that a type $T$ is {\em compatible} to a type $U$ if $T$ weakly conforms to $T$ after applying eta-expansion (\sref{sec:eta-expansion}) and view applications (\sref{sec:views}).
+We say that a type $T$ is {\em compatible} to a type $U$ if $T$ weakly conforms to $T$ after applying eta-expansion (\sref{sec:eta-expansion}) and view applications (\sref{sec:views}), if necessary.
 
 
 
@@ -1743,7 +1744,7 @@ If none of the previous conversions applies, and $e$ is a prefix of a selection 
 The following implicit conversions can be applied to methods which are not applied to some argument list. 
 
 \paragraph{Evaluation}
-A parameterless method $m$ of type ~\lstinline!() -> $T$!~ is always converted to type $T$ by evaluating the expression to which $m$ is bound, unless method value (\sref{sec:method-values}) is used on $m$. This evaluation (as well as other method conversions) happens when the expression is to be evaluated (see argument evaluation strategies), so the expected type of a parameterless method can be converted to be an expected type $T$. 
+A parameterless method $m$ of type ~\lstinline!() -> $T$!~ is always converted to type $T$ by evaluating the expression to which $m$ is bound. 
 
 \paragraph{Implicit application}
 If the method takes only implicit parameters, implicit arguments are passed following the rules of (\sref{sec:implicit-parameters}).
@@ -1811,7 +1812,10 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
 
 An alternative $A$ is {\em more specific than} an alternative $B$, if the relative weight of $A$ over $B$ is greater than the relative weight of $B$ over $A$. 
 
-It is an error if there is no alternative in $\mathcal{C}$ which is more specific than all other alternatives in $\mathcal{C}$ -- the method is unapplied. 
+If there are more alternatives in $\mathcal{C}$ that are equally most specific, one chooses one of them as in overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{C}$ here, and the expected type is the expected type of the function application. 
+
+\paragraph{Note}
+As overloading on return type is possible, note that overloading based on arguments takes precedence over overloading on return type, even if overloading on return type would make different alternative to be chosen. 
 
 \example Assume the following overloaded function definitions:
 \begin{lstlisting}
@@ -1833,8 +1837,9 @@ Assume next that $e$ appears as a function in a type application, as in ~\lstinl
 Otherwise, let $\mathcal{C}$ be the set of those alternatives in $\mathcal{B}$ that are applicable to the type arguments, so that the bounds defined by the alternative's type parameters are satisfied. It is an error if no such alternative exists, and it is also an error if there are several such alternatives, as there is (for now) no way to select a unique member. If there is one such alternative, that one is chosen. 
 
 \subsubsection{Expression not in any application}
+\label{sec:overloading-resolution-no-app}
 
-Assume finally that $e$ does not appear as a function in either an application or a type application. If an expected type is given, let $\mathcal{B}$ be the set of those alternatives in $\mathcal{A}$ which are compatible (\sref{sec:implicit-conversions}) to it. Otherwise, let $\mathcal{B}$ be the same as $\mathcal{A}$. It is an error if there is no such alternative. If there is one such alternative, that one is chosen. 
+Assume finally that $e$ does not appear as a function in either an application or a type application, (or that overloading resolution on a function in an application was left with several most specific alternatives). If an expected type is given, let $\mathcal{B}$ be the set of those alternatives in $\mathcal{A}$ which are compatible (\sref{sec:implicit-conversions}) to it. Otherwise, let $\mathcal{B}$ be the same as $\mathcal{A}$. It is an error if there is no such alternative. If there is one such alternative, that one is chosen. 
 
 Otherwise, one chooses the {\em most specific} alternative among the alternatives in $\mathcal{B}$, according to the following definition of being ``more specific than'':
 
@@ -1847,7 +1852,7 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
 
 An alternative $A$ is {\em more specific than} an alternative $B$, if the relative weight of $A$ over $B$ is greater than the relative weight of $B$ over $A$. 
 
-It is an error if there is no alternative in $\mathcal{B}$ which is more specific than all other alternatives in $\mathcal{B}$ -- the method is unapplied. 
+It is an error if there is no alternative in $\mathcal{B}$ which is more specific than all other alternatives in $\mathcal{B}$ -- the method is unapplied.\footnote{This can be fixed e.g. by using typed expressions (\sref{sec:typed-expressions}).}
 
 % TBD: maybe add more examples? including named arguments, optional arguments...
 
@@ -1860,6 +1865,54 @@ It is an error if there is no alternative in $\mathcal{B}$ which is more specifi
 
 \subsection{Local Type Inference}
 \label{sec:local-type-inference}
+
+Local type inference infers type arguments to be passed to expressions of polymorphic type. Say $e$ is of a type ~\lstinline![$a_1$ >: $L_1$ <: $U_1 \commadots a_n$ >: $L_n$ <: $U_n$] $\mapsto\ T$!~ and no explicit type arguments are given. 
+
+Local type inference converts this expression to a type application ~\lstinline!$e$[$T_1 \commadots T_n$]!. The choice of the type arguments $T_1 \commadots T_n$ depends on the context in which the expression appears and on the expected type $\exptype$. 
+
+Local type inference is not always able to infer all type arguments, and sometimes may even infer useless ones -- in that cases, explicit type arguments are to be used to solve the problems. 
+
+\paragraph{Case 1: Selections}
+If the expression appears as a prefix of a selection with a name $x$, then type inference is {\em deferred} to the whole expression \code{$e$.$x$}. That is, if \code{$e$.$x$} has type $S$, it is now treated as having type ~\lstinline![$a_1$ >: $L_1$ <: $U_1 \commadots a_n$ >: $L_n$ <: $U_n$] $\mapsto\ S$!, and local type inference is applied in turn to infer type arguments for $a_1 \commadots a_n$, using the context in which \code{$e$.$x$} appears. 
+
+\paragraph{Case 2: Values}
+If the expression $e$ appears as a value without being applied to some value arguments in a function application, the type arguments are inferred by solving a constraint system which relates the expression's type $T$ with the expected type $\exptype$. Without loss of generality we can assume that $T$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home again). Solving means finding a substitution $\sigma$ of types $T_i$ for the type parameters $a_i$, such that all of the following conditions hold:
+\begin{itemize}
+\item None of inferred types $T_i$ is a singleton type (\sref{sec:singleton-types}). % TBD: decide whether this restriction can be removed
+\item All type parameter bounds are satisfied, i.e. $\sigma L_i \conforms \sigma a_i$ and also $\sigma a_i \conforms \sigma U_i$ for $i = 1 \commadots n$. 
+\item The expression's type conforms to the expected type, i.e. $\sigma T \conforms \sigma \exptype$. 
+\end{itemize}
+
+It is an error if no such substitution exists. If several substitutions exist, local type inference will choose for each type variable $a_i$ a minimal or a maximal type $T_i$ of the solution space (where a maximal type is closer to \code{Object} and minimal is closer to \code{Nothing}). A {\em maximal} type $T_i$ will be chosen if the type parameter $a_i$ appears contravariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression. A {\em minimal} type $T_i$ will be chosen in all other situations, i.e. if the type variable appears covariantly, non-variantly or not at all\footnote{In fact, this particular case with the type not appearing at all might be changed in future versions of Coral to defer inference for it.} in the type $T$. We call such a substitution $\sigma$ an {\em optimal solution} of the given constraint system for the type $T$. 
+
+\paragraph{Case 3: Methods}
+This case applies if the expression $e$ appears in an application \code{$e$($d_1 \commadots d_m$)}. In that case $T$ is a method type ~\lstinline!($p_1$: $R_1 \commadots p_n$: $R_n$) $\mapsto\ T'$!. Without loss of generality we can assume that the result type $T'$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home, yet again). Once computes first the types $S_j$ of the argument expressions $d_j$, using two alternative schemes. Each argument expression $d_j$ is typed first with the expected type $R_j$, in which the type parameters $a_1 \commadots a_n$ are taken as type constants. If this fails the argument $d_j$ is typed instead with an expected type $R'_j$, which results from $R_j$ by replacing every type parameter in $a_1 \commadots a_n$ with $\udef$. 
+
+In a second step, type arguments are inferred by solving a constraint system, which relates the method's type with the expected type $\exptype$ and the argument types $S_1 \commadots S_m$. Solving the constraint system means finding a substitution $\sigma$ of types $T_i$ for the type parameters $a_i$, such that all of the following conditions hold:
+\begin{itemize}
+\item None of inferred types $T_i$ is a singleton type (\sref{sec:singleton-types}). % TBD: decide whether this restriction can be removed
+\item All type parameter bounds are satisfied, i.e. $\sigma L_i \conforms \sigma a_i$ and also $\sigma a_i \conforms \sigma U_i$ for $i = 1 \commadots n$. 
+\item The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' \conforms \sigma \exptype$. 
+\item Each argument type weakly conforms (\sref{sec:conformance}) to the corresponding formal parameter type (\sref{sec:corresponding-parameters}), i.e. $\sigma S_j \conforms _w \sigma R_j$ for $j = 1 \commadots m$. 
+\end{itemize}
+
+It is an error if no such substitution exists. If several solutions exists, an optimal one for the type $T'$ is chosen. 
+
+All or parts of an expected type $\exptype$ may be undefined. The rules for conformace (\sref{sec:conformance}) are extended to this case by adding the rule that for any type $T$, the following two statements are always true:
+\begin{itemize}
+\item $\udef \conforms T$
+\item $T \conforms \udef$
+\end{itemize}
+
+It is possible that no minimal or maximal solution for a type variable exists, which is an error. Because ``$\conforms$'' is a partial order, it is also possible that a solution set has several optimal solutions for a type. In that case, Coral is free to pick any one of them. 
+
+% TBD: add examples, moar examples
+
+
+
+
+
+
 
 \subsection{Eta-Expansion}
 \label{sec:eta-expansion}
