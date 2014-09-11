@@ -1906,6 +1906,48 @@ All or parts of an expected type $\exptype$ may be undefined. The rules for conf
 
 It is possible that no minimal or maximal solution for a type variable exists, which is an error. Because ``$\conforms$'' is a partial order, it is also possible that a solution set has several optimal solutions for a type. In that case, Coral is free to pick any one of them. 
 
+\example Consider the two methods, where \code{List} is covariant in its type parameter:
+\begin{lstlisting}
+def cons [A] (x: A, xs: List[A]): List[A] := x ~> xs
+def list_nil [B]: List[B] := List.Nil
+\end{lstlisting}
+and the definition
+\begin{lstlisting}
+val xs := cons(1, list_nil)  .
+\end{lstlisting}
+
+The application of \code{cons} is typed with an undefined expected type. This application is completed by local type inference to \code{cons[Integer](1, list_nil)}. Here, one uses the following reasoning to infer the type argument \code{Integer} for the type parameter \code{A}:
+
+First, the argument expressions are typed. The first argument \code{1} has type \code{Integer}, whereas the second argument \code{list_nil} is itself polymorphic. One tries to type \code{list_nil} with an expected type \code{List[A]}. This leads to the constraint system
+\begin{lstlisting}
+List[?B] <: List[A]  ,
+\end{lstlisting}
+where we have labeled \code{?B} with a question mark to indicate that it is a variable in the constraint system. Because class \code{List} is covariant, the optimal solution of this constraint is a minimal type, 
+\begin{lstlisting}
+B := Nothing  .
+\end{lstlisting}
+
+In the second step, one solves the following constraint system for the type parameter \code{A} of \code{cons}:
+\begin{lstlisting}
+Integer <: ?A              // for the parameter x
+List[Nothing] <: List[?A]  // for the parameter xs
+List[?A] <: $\udef$        // for the result type
+\end{lstlisting}
+
+The optimal solution of this constraint system is 
+\begin{lstlisting}
+A := Integer  ,
+\end{lstlisting}
+so \code{Integer} is the type inferred for \code{A}. 
+
+The optimal solution is found based on the following reasoning: 
+\begin{enumerate}
+\item Solutions for the first constraint are types \code{Integer} and its supertypes.
+\item Solutions for the second constraint are \code{Nothing} and all supertypes of \code{Nothing}, basically any type. Together with the first constraint, only those types from the solution of the first constraint are possible. 
+\item Solutions for the third constraint are all types. Together with the first two constraint, only those types from the solution of the first constraint are possible. 
+\item Therefore, the minimal type is chosen from the solution space, as \code{A} appears covariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression (which is \code{List[A]}), which is in turn \code{Integer}. 
+\end{enumerate}
+
 % TBD: add examples, moar examples
 
 
