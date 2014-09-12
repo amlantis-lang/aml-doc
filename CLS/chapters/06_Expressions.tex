@@ -1948,8 +1948,29 @@ The optimal solution is found based on the following reasoning:
 \item Therefore, the minimal type is chosen from the solution space, as \code{A} appears covariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression (which is \code{List[A]}), which is in turn \code{Integer}. 
 \end{enumerate}
 
-% TBD: add examples, moar examples
+\example Consider now the definition
+\begin{lstlisting}
+val ys := cons("abc", xs)  ,
+\end{lstlisting}
+where \code{xs} is defined as type \code{List[Integer]} as before. In this case local type inference proceeds as follows.
 
+First, the argument expressions are typed. The first argument \code{"abc"} is of type \code{String}. The second argument \code{xs} is first tried to be typed with expected type \code{List[A]}. This leads to the constraint system
+\begin{lstlisting}
+List[Integer] <: List[?A]
+\end{lstlisting}
+
+In a second step, one solves the following constraint system for the type parameter \code{A} of \code{cons}:
+\begin{lstlisting}
+String <: ?A
+List[Integer] <: List[?A]
+List[?A] <: $\udef$
+\end{lstlisting}
+
+The optimal solution of this constraint system is
+\begin{lstlisting}
+A := Object  ,
+\end{lstlisting}
+so \code{Object} is the type inferred for \code{A}. 
 
 
 
@@ -1959,11 +1980,74 @@ The optimal solution is found based on the following reasoning:
 \subsection{Eta-Expansion}
 \label{sec:eta-expansion}
 
+{\em Eta-expansion} converts an expression of a method type (not a function application) to an equivalent expression of a function type. It is especially useful to prevent re-evaluation of the expression's subexpressions, if the expression is passed using a by-name strategy. It proceeds in two steps. 
+
+First, one identifies the maximal subexpressions of $e$, let's say these are $e_1 \commadots e_m$. For each of these, one creates a fresh name $x_i$. Let $e'$ be the expression resulting from replacing every maximal subexpression $e_i$ in $e$ by the corresponding fresh name $x_i$. Second, one creates a fresh name $y_i$ for every argument type $T_i$ of the method, for $i = 1 \commadots n$, using named arguments and parameters as defined by the method. The result of eta-conversion is then: 
+\begin{lstlisting}
+val $x_1$ := $e_1$
+$\ldots$
+val $x_m$ := $e_m$
+($y_1$: $T_1 \commadots y_n$: $T_n$) -> $e'$($y_1 \commadots y_n$)
+\end{lstlisting}
+
+
+
+
+
+
+
 \subsection{Dynamic Member Selection}
 \label{sec:dynamic-member-selection}
 
+Coral defines a marker trait \code{Dynamic_Member_Selecting} that enables dynamic invocations rewriting without resorting to use error handling mechanisms to implement dynamic dispatch. 
+
+Instances $x$ of this trait allow method invocations \code[deletekeywords={method}]{$x$.method(args)} for arbitrary method \code[deletekeywords={method}]{method} and argument lists \code{args}, as well as property accesses \code[deletekeywords={property}]{$x$.property} for arbitrary property names \code[deletekeywords={property}]{property}. 
+
+If an invocation is not implemented by $x$ (i.e. if type checking fails and no other implicit conversion provides a way to proceed with the invocation), it is virtually rewritten according to the following rules:
+
+\begin{lstlisting}[deletekeywords={property,method}]
+foo.method("blah")      foo.apply_dynamic(:method)("blah")
+foo.method(x: "blah")   foo.apply_dynamic_named(:method)((:x, "blah"))
+foo.method(1, x: 2)     foo.apply_dynamic_named(:method)(
+                            (nil, 1), (:x, "blah"))
+foo.property            foo.select_dynamic(:property)
+foo.property := 10      foo.update_dynamic(:property)(10)
+foo.array(10)           foo.apply_dynamic(:array)(10)
+foo.array(10) := 11     foo.select_dynamic(:array).update(10)(11)
+\end{lstlisting}
+
+
+
+
+
+
 \section{Workflows}
 \label{sec:workflows}
+
+Workflows are basically a syntax sugar for a block expression that is passed as an argument to a workflow builder (an object that conforms to \code{Workflow_Builder}). In the following translation table, the left column presents the constructs, and the right column its de-sugared form, where $b$ is the workflow builder. Note that it has to be statically known at compile time that an object is an instance of \code{Workflow_Builder} for this language feature to work properly.
+
+\begin{lstlisting}
+b do cexpr end              b.delay(() -> { cexpr })
+let pat := expr; cexpr      let pat := expr; cexpr
+let! pat := expr; cexpr     b.bind(expr, (pat) -> { cexpr })
+return expr                 b.return(expr)
+return! expr                b.return_from(expr)
+yield expr                  b.yield(expr)
+yield! expr                 b.yield_from(expr)
+for pat in expr             b.for(expr, (pat) -> { cexpr })
+  loop cexpr end 
+while expr loop cexpr end   b.while(
+                                () -> { expr }, 
+                                b.delay(() -> { cexpr }))
+if expr then cexpr1         if expr then cexpr1 else cexpr2 end
+  else cexpr2 end
+if expr then cexpr          if expr then cexpr else b.zero
+cexpr1; cexpr2              b.combine(cexpr1, b.delay(() -> { cexpr2 }))
+begin cexpr1                b.catch(expr, (v) -> { match v { cexpr2 } })
+  catch cexpr2 end
+begin cexpr1                b.ensure(cexpr1, () -> { cexpr2 })
+  ensure cexpr2 end
+\end{lstlisting}
 
 
 
