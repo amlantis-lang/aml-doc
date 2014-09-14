@@ -11,6 +11,31 @@ Local_Modifier ::= 'implicit'
 Param_Clauses  ::= {Param_Clause} '(' 'implicit' Params ')'
 \end{lstlisting}
 
+Template members and parameters labeled with \code{implicit} modifier can be passed to implicit parameters (\sref{sec:implicit-parameters}) and can be used as implicit conversions called views (\sref{sec:views}). 
+
+\example The following code defined an abstract class of monoids and two concrete implementations, \code{String_Monoid} and \code{Int_Monoid}. The two implementations are marked implicit and will be used throughout the following discussions. 
+\begin{lstlisting}
+abstract class Monoid [A] extends Semi_Group [A] {
+  def unit: A end
+  def add (x: A, y: A): A end
+}
+object Monoids {
+  implicit object String_Monoid extends Monoid[String] {
+    def unit: String := ""
+    def add (x: String, y: String): String := x + y
+  }
+  implicit object Int_Monoid extends Monoid[Integer] {
+    def unit: Integer := 0
+    def add (x: Integer, y: Integer): Integer := x + y
+  }
+}
+\end{lstlisting}
+
+
+
+
+
+
 \section{Implicit Parameters}
 \label{sec:implicit-parameters}
 
