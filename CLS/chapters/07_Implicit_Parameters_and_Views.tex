@@ -39,7 +39,14 @@ object Monoids {
 \section{Implicit Parameters}
 \label{sec:implicit-parameters}
 
-An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a method marks the parameters $p_1 \commadots p_n$ as implicit. 
+An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a method marks the parameters $p_1 \commadots p_n$ as implicit. A method or constructor can have at most one implicit parameter list, and it must be the last parameter list given. 
+
+A method with implicit parameters can be applied to arguments just like normal method. In this case the \code{implicit} label has no effect. However, if such a method misses arguments for its implicit parameters (determined by a missing consecutive function application -- \sref{sec:partial-applications}), such arguments will be automatically provided, if possible. 
+
+
+
+
+
 
 \section{Views}
 \label{sec:views}
