@@ -4,7 +4,14 @@
 \chapter{Implicit Parameters \& Views}
 \label{sec:implicit-params-views}
 
+
+
+
+
+
+
 \section{The Implicit Modifier}
+\label{sec:implicit-modifier}
 
 \syntax\begin{lstlisting}
 Local_Modifier ::= 'implicit'
@@ -13,7 +20,7 @@ Param_Clauses  ::= {Param_Clause} '(' 'implicit' Params ')'
 
 Template members and parameters labeled with \code{implicit} modifier can be passed to implicit parameters (\sref{sec:implicit-parameters}) and can be used as implicit conversions called views (\sref{sec:views}). 
 
-\example The following code defined an abstract class of monoids and two concrete implementations, \code{String_Monoid} and \code{Int_Monoid}. The two implementations are marked implicit and will be used throughout the following discussions. 
+\example\label{ex:impl-monoid} The following code defined an abstract class of monoids and two concrete implementations, \code{String_Monoid} and \code{Int_Monoid}. The two implementations are marked implicit and will be used throughout the following discussions. 
 \begin{lstlisting}
 abstract class Monoid [A] extends Semi_Group [A] {
   def unit: A end
@@ -42,6 +49,42 @@ object Monoids {
 An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a method marks the parameters $p_1 \commadots p_n$ as implicit. A method or constructor can have at most one implicit parameter list, and it must be the last parameter list given. 
 
 A method with implicit parameters can be applied to arguments just like normal method. In this case the \code{implicit} label has no effect. However, if such a method misses arguments for its implicit parameters (determined by a missing consecutive function application -- \sref{sec:partial-applications}), such arguments will be automatically provided, if possible. 
+
+The actual arguments that are eligible to be passed to an implicit parameter of type $T$ fall into two categories.
+\begin{itemize}
+\item First, eligible are all identifiers $x$ that can be accessed at the point of the method call without a prefix and that denote an implicit definition (\sref{sec:implicit-modifier}) or an implicit parameter. An eligible identifier may thus be a local name, or a member of an enclosing template, or it may have been made accessible without a prefix through a use clause (\sref{sec:use-clauses}). 
+\item If there are no eligible identifiers under the previous rule, then, second, eligible are also all \code{implicit} members of some object that belongs to the implicit scope of the implicit parameter's type, $T$. 
+\end{itemize}
+
+% TBD: base classes
+The {\em implicit scope} of a type $T$ consists of the type $T$ itself and all classes and class objects that are associated with the type $T$. Here, we say a class $C$ is {\em associated} with a type $T$, if it is a base class of some part of $T$. The {\em parts} of a type $T$ are:
+\begin{itemize}
+\item If $T$ is a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, the union of the parts of $T_1 \commadots T_n$, as well as $T$ itself.
+\item If $T$ is a parameterized type ~\lstinline!$S$[$T_1 \commadots T_n$]!, the union of the parts of $S$ and $T_1 \commadots T_n$. 
+\item If $T$ is a singleton type \code{$p$.type}, the parts of the type of $p$. 
+\item If $T$ is a type projection ~\lstinline!$S$#$U$!, the parts of $S$ as well as $T$ itself.
+\item If $T$ is a union type ~\lstinline!union of ($T_1$; $\ldots$; $T_n$)!, the union of all types $T_1 \commadots T_n$. 
+\item In all other cases, just $T$ itself. 
+\end{itemize}
+
+If there are several eligible arguments which match the implicit parameter's type, a most specific one will be chosen using the rules of overloading resolution without any application (\sref{sec:overloading-resolution}). If the parameter has a default argument and no implicit argument can be found, the default argument is used. 
+
+\example Assuming the classes from \ref{ex:impl-monoid}, here is a method which computes the sum of a list of elements using the monoid's \code{add} and \code{unit} operations.
+\begin{lstlisting}
+def sum [A] (xs: List[A])(implicit m: Monoid[A]): A 
+  if xs.is_empty?
+    m.unit
+  else
+    m.add xs.head, sum xs.tail
+  end
+end
+\end{lstlisting}
+
+The monoid in question is marked as an implicit parameter, and can therefore be inferred based on the type of the list. Consider e.g. the call
+\begin{lstlisting}
+sum %[1, 2, 3]
+\end{lstlisting}
+in a context where \code{String_Monoid} and \code{Int_Monoid} are visible. We know that the formal type parameter \code{A} of \code{sum} needs to be instantiated to \code{Integer}. The only eligible object which matches the implicit formal parameter type \code{Monoid[Integer]} is \code{Int_Monoid}, thus this object will be passed as implicit parameter. 
 
 
 
