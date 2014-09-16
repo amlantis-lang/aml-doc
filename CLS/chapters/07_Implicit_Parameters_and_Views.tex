@@ -94,7 +94,29 @@ in a context where \code{String_Monoid} and \code{Int_Monoid} are visible. We kn
 \section{Views}
 \label{sec:views}
 
-\section{View Bounds}
+Implicit parameters and method can also define implicit conversions called {\em views}. A {\em view} from type $S$ to type $T$ is defined by an implicit value, which has function type ~\lstinline!$S$ -> $T$!, or ~\lstinline!(() -> $S$) -> $T$!, or by a method convertible to a value of one of those function types. 
+
+Views are applied in the following situations.
+\begin{enumerate}
+\item If an expression $e$ is of a type $T$, and $T$ does not conform to the expression's expected type $\exptype$. In this case an implicit $v$ is searched, which is applicable to $e$ and whose result type conforms to $\exptype$, and this process makes $T$ compatible with $\exptype$. The search proceeds as in the case of implicit parameters, where the implicit scopes are the scope of $T$ followed by the scope of $\exptype$, searched in this order. If such a view is found, the expression $e$ is converted to \code{$v$($e$)}. 
+
+\item In a selection \code{$e$.$m$} with $e$ of a type $T$, if the selector $m$ does not denote an accessible member of $T$, including restrictions imposed by access modifiers, i.e. the member $m$ may actually exist in $T$. In this case, a view $v$ is searched which is applicable to $e$ and whose result contains an accessible member named $m$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If such a view is found, the selection \code{$e$.$m$} is converted to \code{$v$($e$).$m$}. 
+
+\item In a selection \code{$e$.$m$($\args$)} with $e$ of a type $T$, if the selector $m$ denotes some members of $T$, but none of these members is applicable to the arguments $\args$. In this case a view $v$ is searched, which is applicable to $e$ and whose result contains a member $m$, which is applicable to $\args$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If such a view is found, the selection \code{$e$.$m$($\args$)} is converted to \code{$v$($e$).$m$($\args$)}. 
+\end{enumerate}
+
+The implicit view, if it is found, can accept its argument $e$ as a a call-by-value based or call-by-name based parameter, and no precedence is imposed on the views. It is an error if there are multiple equally specific views that differ only in the parameter evaluation strategy. 
+
+As for implicit parameters, overloading resolution (\sref{sec:overloading-resolution}) is applied if there are several possible candidates.\footnote{The overloading resolution here is for the case of function applications, and the shape takes into account just one argument and corresponding parameter pair.}
+
+
+
+
+
+
+\section{View \& Context Bounds}
+\label{sec:view-bounds}
+\label{sec:context-bounds}
 
 \syntax\begin{lstlisting}
 Type_Param ::= (id | '_') [Type_Param_Clause]
@@ -102,5 +124,35 @@ Type_Param ::= (id | '_') [Type_Param_Clause]
                {'<%' Type} {':' Type}
              | '<' (id | '_') '>' ['<:' id]
 \end{lstlisting}
+
+A type parameter $A$ of a method or a non-trait class may have one or more view bounds ~\lstinline!$A$ <% $T$!. In this case, the type parameter may be instantiated to any type $S$, which is convertible by an application of a view to the bound $T$.
+
+A type parameter $A$ of a method or a non-trait class may have one or more view bounds ~\lstinline!$A$ : $T$!. In this case, the type parameter may be instantiated to any type $S$ for which {\em evidence} exists at the instantiation point that $S$ satisfies the bound $T$. Such evidence consists of an implicit value with type \code{$T$[$S$]}. 
+
+A method or class containing type parameters with view or context bounds is treated as being equivalent to a method with implicit parameters, and if it already contains explicitly some implicit parameters, those are added right after the section of any positional parameters and before the section of any named parameters. Consider the case of a single parameter with a view and/or context bounds, such as: 
+\begin{lstlisting}
+def $f$ [$A$ <% $T_1$ $\ldots$ <% $T_m$ : $U_1$ : $U_n$] ($\ps$): $R$ := $\ldots$
+\end{lstlisting}
+
+Then the method definition above is equivalent to
+\begin{lstlisting}
+def $f$ [$A$] ($\ps$)(implicit $v_1$: $A$ -> $T_1 \commadots v_m$: $A$ -> $T_m$,
+                        $w_1$: $U_1$[$A$]$\commadots w_n$: $U_n$[$A$]): $R$ := $\ldots$
+\end{lstlisting}
+where the $v_i$ and $w_j$ are fresh names for the newly introduced implicit parameters. These parameters are called {\em evidence parameters}. 
+
+If a class or method has several view- or context-bounded type parameters, each such type parameter is expanded into evidence parameters in the order they appear and all the resulting evidence parameters are concatenated in one implicit parameter section. Since traits do not have constructor parameters, such translation is impossible for them. 
+
+If the type of a context-bound parameter uses the type parameter in its definition, then the translation is simple -- it stays the same and the type argument is still possibly inferred. Such type is then called a {\em partially applied type}, although all type arguments are necessarily provided in the end. It is an error if the type is a parameterized type and it does not use the type parameter that it is context-bound with. Thus, a context bound ~\lstinline!$A$ : $T$!~ is in fact a shortcut for ~\lstinline!$A$ : $T$[$A$]!. 
+
+\example The following example shows a method with a context-bound parameter using a partially applied type, and the resulting translation below it. 
+\begin{lstlisting}
+def f [T : T -> String](t: T) := $\ldots$
+def f [T] (t: T)(implicit $w_1$: Function_1[T, String]) := $\ldots$
+\end{lstlisting}
+
+
+
+
 
 
