@@ -1223,24 +1223,6 @@ Aspect_Stat     ::= Advice_Stat
 
 
 
-
-\section{Unions}
-\label{sec:unions}
-
-\syntax\begin{lstlisting}
-Const_Type_Def ::= id 'is' 'union' 'of'
-                   '(' Type {semi Type} ')'
-\end{lstlisting}
-
-Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
-
-Unions are indeed virtually ``tagged'' with the actual type that they represent at the runtime moment, although when it comes to overloading resolution, the union type is used, as it is the expected type. 
-
-
-
-
-
-
 \section{Enums}
 \label{sec:enums}
 

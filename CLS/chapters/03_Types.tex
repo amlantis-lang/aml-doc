@@ -523,6 +523,25 @@ Nullable types in this form can appear as types of variables, parameters and ret
 
 
 
+
+\subsection{Unions}
+\label{sec:unions}
+
+\syntax\begin{lstlisting}
+Const_Type_Def ::= id 'is' 'union' 'of'
+                   '(' Type {semi Type} ')'
+\end{lstlisting}
+
+Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
+
+Unions are indeed virtually ``tagged'' with the actual type that they represent at the runtime moment, although when it comes to overloading resolution, the union type is used, as it is the expected type. 
+
+
+
+
+
+
+
 \section{Non-Value Types}
 
 The types explained in the following paragraphs do not appear explicitly in programs, they are internal and do not represent any type of value directly. 
@@ -605,6 +624,49 @@ union : [A >: Nothing <: Comparable[A]] (Set[A],
 \label{sec:type-constructors}
 
 A type constructor is in turn represented internally much like a polymorphic method type. \lstinline@[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto T$@ represents a type that is expected by a type constructor parameter. The difference is that the represented internal entity is not a method, but a type, creating higher-kinded types. 
+
+
+
+
+
+
+\section{Base Types \& Member Definitions}
+\label{sec:base-types}
+\label{sec:member-definitions}
+
+Types of class members depend on the way the members are referenced. Central here are these notions:
+\begin{enumerate}
+\item The notion of the set of base types of a type $T$.
+\item The notion of a type $T$ in some class $C$ seen from some prefix type $S$.
+\item The notion of the set of member bindings of some type $T$. 
+\end{enumerate}
+
+These notions are defined mutually recursively as follows. 
+
+\begin{enumerate}
+
+\item
+The set of {\em base types} of a type is a set of class types, given as follows.
+\begin{itemize}
+\item The base types of a class type $C$ with parents $T_1 \commadots T_n$ are $C$ itself, as well as the base types of the compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!. 
+\item The base types of an aliased type are the base types of its alias. 
+\item The base types of an abstract type\footnote{E.g. type members.} are the base types of its upper bound. 
+\item The base types of a parameterized type ~\lstinline!$C$[$T_1 \commadots T_n$]!~ are the base types of type $C$, where every occurence of a type parameter $a_i$ of $C$ has been replaced by the corresponding parameter type $T_i$. 
+\item The base types of a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ are set of base classes of all $T_i$'s. 
+\item The base types of a type projection ~\lstinline!$S$#$T$!~ are determined as follows: If $T$ is an alias or an abstract type, the previous clauses apply. Otherwise, $T$ must be a (possibly parameterized) class type, which is defined in some class $B$. Then the base types of ~\lstinline!$S$#$T$!~ are the base types of $T$ in $B$ as seen from the prefix type $S$. 
+\item The base types of an existential type ~\lstinline!$T$ for-some { $Q$ }!~ are all types ~\lstinline!$S$ for-some { $Q$ }!, where $S$ is a base type of $T$. 
+\end{itemize}
+
+\item
+The notion of a type {\em $T$ in class $C$ seen from some prefix type $S$} makes sense only if the prefix type $S$ has a type instance of class $C$ as a base type, say ~\lstinline!$S'$#$C$[$T_1 \commadots T_n$]!. Then we define it as follows.
+\begin{itemize}
+\item If ~\lstinline!$S$ = $\epsilon$.type!, then $T$ in $C$ seen from $S$ is $T$ itself. 
+\item Otherwise, if $S$ is an existential type ~\lstinline!$S'$ for-some { $Q$ }!, and $T$ in $C$ seen from $S'$ is $T'$, then $T$ in $C$ seen from $S$ is ~\lstinline!$T'$ for-some { $Q$ }!. 
+\end{itemize}
+
+\end{enumerate}
+
+
 
 
 
@@ -728,10 +790,10 @@ A parameterized type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lst
 \end{itemize}
 
 \item 
-A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
+A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
 
 \item 
-If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ { $R$ }!. 
+If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ with { $R$ }!. 
 
 \item
 The existential type ~\lstinline!$T$ for-some { $Q$ }!~ conforms to $U$, if its skolemization (\sref{sec:existential-types}) conforms to $U$. This also means that the $t'_i$ type variables have to fall in between $U$'s type parameter bounds. 
