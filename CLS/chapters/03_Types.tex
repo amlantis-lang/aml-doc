@@ -649,11 +649,17 @@ These notions are defined mutually recursively as follows.
 The set of {\em base types} of a type is a set of class types, given as follows.
 \begin{itemize}
 \item The base types of a class type $C$ with parents $T_1 \commadots T_n$ are $C$ itself, as well as the base types of the compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!. 
+
 \item The base types of an aliased type are the base types of its alias. 
+
 \item The base types of an abstract type\footnote{E.g. type members.} are the base types of its upper bound. 
+
 \item The base types of a parameterized type ~\lstinline!$C$[$T_1 \commadots T_n$]!~ are the base types of type $C$, where every occurence of a type parameter $a_i$ of $C$ has been replaced by the corresponding parameter type $T_i$. 
+
 \item The base types of a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ are set of base classes of all $T_i$'s. 
+
 \item The base types of a type projection ~\lstinline!$S$#$T$!~ are determined as follows: If $T$ is an alias or an abstract type, the previous clauses apply. Otherwise, $T$ must be a (possibly parameterized) class type, which is defined in some class $B$. Then the base types of ~\lstinline!$S$#$T$!~ are the base types of $T$ in $B$ as seen from the prefix type $S$. 
+
 \item The base types of an existential type ~\lstinline!$T$ for-some { $Q$ }!~ are all types ~\lstinline!$S$ for-some { $Q$ }!, where $S$ is a base type of $T$. 
 \end{itemize}
 
@@ -661,8 +667,38 @@ The set of {\em base types} of a type is a set of class types, given as follows.
 The notion of a type {\em $T$ in class $C$ seen from some prefix type $S$} makes sense only if the prefix type $S$ has a type instance of class $C$ as a base type, say ~\lstinline!$S'$#$C$[$T_1 \commadots T_n$]!. Then we define it as follows.
 \begin{itemize}
 \item If ~\lstinline!$S$ = $\epsilon$.type!, then $T$ in $C$ seen from $S$ is $T$ itself. 
+
 \item Otherwise, if $S$ is an existential type ~\lstinline!$S'$ for-some { $Q$ }!, and $T$ in $C$ seen from $S'$ is $T'$, then $T$ in $C$ seen from $S$ is ~\lstinline!$T'$ for-some { $Q$ }!. 
+
+\item Otherwise, if $T$ is the $i^{\superth}$ type parameter of some class $D$, then:
+\begin{itemize}
+\item If $S$ has a base type ~\lstinline!$D$[$U_1 \commadots U_n$]!, for some type parameters $U_1 \commadots U_n$, then $T$ in $C$ seen from $S$ is $U_i$. 
+\item Otherwise, if $C$ is defined in a class $C'$, then $T$ in $C$ seen from $S$ is the same as $T$ in $C'$ seen from $S'$. 
+\item Otherwise, if $C$ is not defined in another class, then $T$ in $C$ seen from $S$ is $T$ itself. 
 \end{itemize}
+
+\item Otherwise, if $T$ is the singleton type ~\lstinline!$D$.self.type!~ for some class $D$, then:
+\begin{itemize}
+\item If $D$ is a subclass of $C$ and $S$ has a type instance of class $D$ among its base types, then $T$ in $C$ seen from $S$ is $S$. 
+\item Otherwise, if $C$ is defined in a class $C'$, then $T$ in $C$ seen from $S$ is the same as $T$ in $C'$ seen from $S'$. 
+\item Otherwise, if $C$ is not defined in another class, then $T$ in $C$ seen from $S$ is $T$ itself. 
+\end{itemize}
+
+\item
+If $T$ is some other type, then the described mapping is performed on all its type components. 
+
+\end{itemize}
+
+If $T$ is a possibly parameterized class type, where $T$'s class is defined in some other class $D$, and $S$ is some prefix type, then we use ``$T$ seen from $S$'' as a shorthand for ``$T$ in $D$ seen from $S$''. 
+
+\item
+The {\em member bindings} of a type $T$ are:
+\begin{enumerate}
+\item All bindings $d$, such that there exists a type instance of some class $C$ among the base types of $T$ and there exists a definition or declaration of $d'$ in $C$, such that $d$ results from $d'$ by replacing every type $T'$ in $d'$ with $T'$ in $C$ seen from $T$.
+\item All bindings of the type's refinement (\sref{sec:compound-types}), if it has one. 
+\end{enumerate}
+
+The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding $d_t$ of the type $t$ in $S$. In that case, we also say that {\em ~\lstinline!$S$#$t$!~ is defined by $d_t$}. 
 
 \end{enumerate}
 
