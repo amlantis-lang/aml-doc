@@ -31,6 +31,8 @@ Annotations are classes that must conform to \code{Annotation}, and which can th
 
 Annotations always appear before element that they annotate, and if multiple annotations are applied, their order is preserved in respect of reflection, although the actual order may or may not matter. 
 
+% TBD: add reference of annotations as they become clear and well-defined
+% as now there are just a few mentioned throughout the CLS, but it's too few to properly categorize them
 
 
 
@@ -49,7 +51,7 @@ Pragmas are basically annotations that are applied in its scope from that point 
 \section{Macros}
 \label{sec:macros}
 
-Macros are a way to directly manipulate with abstract syntax trees. Unlike in languages such as C, macros in Coral are written using the same language. The only essential restriction here is that while compiling a Coral module or another source file, every macro that is applied in it must be pre-compiled, e.g. available from a separate compilation phase. 
+Macros are a way to directly manipulate with abstract syntax trees. Unlike in languages such as C, macros in Coral are written using the same language. The only essential restriction here is that while compiling a Coral module or another source file, every macro that is applied in it must be pre-compiled, e.g. available from a separate compilation phase, and applied in the same compilation phase, not runtime. The only way to apply macros in runtime is by ad-hoc compilation. 
 
 Macro authors are encouraged to use syntactic forms (\sref{sec:syntactic-forms}) to manipulate and generate abstract syntax trees. 
 
@@ -65,8 +67,8 @@ A macro is defined as a regular function, but it's body is required to pass invo
 
 \example The following code is an example implementation of a simple \code{assert} macro. 
 \begin{lstlisting}[deletekeywords={message}]
-// import a whitebox context
-use Lang~[coral].Reflection.Macros.Whitebox.Context
+// import a blackbox context
+use Lang~[coral].Reflection.Macros.Blackbox.Context
 
 // define the macro
 def macro assert (condition: Boolean, message: String_Like): Unit := 
@@ -87,13 +89,38 @@ object Asserts {
 }
 \end{lstlisting}
 
+Macros can be applied as an intermediate step by IDEs, so that their resulting transformations could be viewed prior to proceeding with compilation. 
 
 
 
 
-\subsection{Whitebox Macros}
 
-\subsection{Blackbox Macros}
+\subsection{Whitebox \& Blackbox Macros}
+\label{sec:whitebox-blackbox-macros}
+
+{\em Blackbox macros} are such macros that exactly follow their type signature, including the result type, and therefore can be treated as blackboxes. Their implementations are irrelevant to understanding their behavior. On the otherhand, {\em whitebox macros} do not necessarily follow their type signature, which they have, but only as an approximation, which may or may not be precise. Therefore, whitebox macros may be used to create e.g. type providers, fundep materialization or extractor macros. 
+
+Blackbox macros have the following restrictions applied to them:
+\begin{enumerate}
+\item As an application of a blackbox macro expands into a tree $x$, the expansion is wrapped in a typed expression ~\lstinline!($x$ as $T$)!, where $T$ is the declared result type of the blackbox macro with type arguments and path dependencies applied in consistency with the particular macro application being expanded. This invalidates blackbox macros as a possible implementation of type providers. 
+\item When an application of a blackbox macro still has undetermined type parameters even after type inference, these type parameters are forcedly inferred, in the same manner as type inference works for normal methods. This invalidates blackbox macros from creating fundep materialization. On the contrary, whitebox macros defer type inference of undetermined type parameters until the macro application is expanded. 
+\item When an application of a blackbox macro is used as an implicit candidate, no expansion is performed until the particular macro is finally selected as the result of the search for an implicit. 
+\item It is an error if a blackbox macro is used as an extractor in pattern match. 
+\end{enumerate}
+
+
+
+
+
+
+\subsection{Macro Annotations}
+\label{sec:macro-annotations}
+
+Macro annotations are a combination of macros and annotations -- such that a macro annotation is basically an annotation that defines a method \code{apply_macro} with a single macro definition, where the definition has exactly one parameter list with exactly one parameter of a reflection type that the macro annotation can be applied to. The same annotation may also define the implementation method of the macro, but that is not required. The macro definition has to return a single value, or multiple values via a tuple. The single value may be \code{Unit}, therefore effectively discarding the annotated expression or definition. 
+
+Macro annotations are the most suitable way to create type providers. 
+
+
 
 
 

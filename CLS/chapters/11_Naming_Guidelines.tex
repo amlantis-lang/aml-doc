@@ -1,4 +1,44 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
-\chapter{Naming Guidelines}
+\chapter{Design Guidelines}
+
+This chapter is {\em non-normative}, but it should be followed nonetheless. 
+
+\section{Userland Naming Guide}
+
+The naming guidelines are particularly inspired by Ada. The purpose of the decisions made here is to improve readability over time required to write programs, as developers tend to spend a lot more time staring into source code and trying to understand it than actually writing it. 
+
+The general rule of thumb is to use full words separated by underscores, or if the special character is more suitable for the purpose, with that character. 
+
+\example Examples of the naming recommended for Coral:
+\begin{lstlisting}
+Some_Class_Name
+E-Mail
+do_something_with_something
+\end{lstlisting}
+
+Another recommended approach is to use names as long as necessary, but not longer; and if a shortcut for the name exists that is widely recognized, that shortcut may be used as an alias. 
+
+The \code{camelCase} is deprecated, as it worsens readability and in some cases even yields misleading names, such as \code{withOut} method, which reads as ``without'', but in fact means ``with `out'\,'', where the name recommended by Coral, \code{with_out}, makes the intention way more clear. Camel case should be used iff the name that it represents itself is known in that form and placing an underscore in between would actually make it represent something else. 
+
+For methods that return boolean values, the rule is to name them with one of the following patterns:
+\begin{lstlisting}
+is_$\mbox{\sl something}$?
+has_$\mbox{\sl something}$?
+$\mbox{\sl something}$?
+\end{lstlisting}
+The latter case is especially better for cases where the method accepts parameters, the former two for parameterless methods. 
+
+For methods that modify the receiver, raise exceptions or errors, or do other potentially dangerous operations, the rule is to name them with the following pattern:
+\begin{lstlisting}
+$\mbox{\sl something}$!
+\end{lstlisting}
+
+Class names and object names should start with an upper-case letter, unless it makes sense to name it otherwise. Method and variable names should start with a lower-case letter. 
+
+Characters such as ``\code{+}'' can be used in names to replace words like ``\code{and}'', although such name inherently suggests possible problems with the named entity. 
+
+\section{Program Parentheses}
+
+Coral supports in many syntactical cases two options for parentheses -- symbol based (e.g. ``\code{(}'' and ``\code{)}'') and word based (e.g. \code{do} and \code{end}). The general rule of thumb here is to use symbol-delimited scopes only inside of word-delimited scopes, preferably for shorter definitions and procedures, or outside of any word-delimited scopes. Reversely, word-delimited scopes should not appear inside of symbol-delimited scopes, unless there is no other option. 
