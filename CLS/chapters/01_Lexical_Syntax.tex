@@ -51,17 +51,13 @@ id       ::= plain_id
 id_rest  ::= {letter | digit | opchar}
 \end{lstlisting}
 
-There are more kinds of identifiers.
+There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
 
-First, {\em variable identifiers}, which suggest that the identifier represents a value or a variable. 
-
-Second, {\em constant identifiers}, which suggest that the identifier represents a constant value, or a type.
-
-Third, {\em instance variable identifiers}, which are used to distinguish between local values, variables and instance variables. Those start with ~\lstinline!@!~ for instance variables and  ~\lstinline!@@!~ for class object variables. 
-
-An identifier may also be formed by an identifier between back-quotes (``\lstinline!$~$`$~$!''), to resolve possible name clashes with Coral keywords. Instance variable names (\code{ivar_id}) and class instance variable names (\code{cvar_id}) never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Coral keywords, and to allow to identify operators. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
 Coral programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
+
+The ``\lstinline[mathescape=false]!$!'' character is reserved. 
 
 
 
@@ -86,19 +82,20 @@ exhausted     extends       final         for           for-some
 function      get           goto          handler       if
 implements    implicit      in            include       interface
 invoke        is            label         lazy          let
-loop          match         memoize       message       method
-module        native        next          nil           no
-object        of            opaque        operator      out
-override      pointcut      pragma        prepend       private
-property      protected     protocol      public        raise
-raising       range         record        redo          refine
-refinement    rescue        retry         return        returning
-requires      reverse       sealed        self          set
-skip          step          super         target        then
-this          throw         throwing      trait         transparent
-type          unless        until         union         unit-of-measure
-use           val           var           yes           weak
-when          while         with          yield
+loop          macro         match         memoize       message
+method        module        native        next          nil
+no            object        of            opaque        operator
+out           override      pointcut      pragma        prepend
+private       property      protected     protocol      public
+raise         raising       range         record        redo
+refine        refinement    rescue        retry         return
+returning     requires      reverse       sealed        self
+set           skip          step          super         target
+then          this          throw         throwing      trait
+transparent   type          unless        until         union
+unit-of-measure             use           val           var
+yes           weak          when          while         with
+yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.

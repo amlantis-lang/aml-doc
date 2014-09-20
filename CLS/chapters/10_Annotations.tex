@@ -7,3 +7,94 @@
 \label{sec:macros}
 
 % TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits lik Function_n may use it in its type parameters to apply the parameter extras to the apply method
+
+\syntax\begin{lstlisting}
+Annotation     ::= '@[' Simple_Type [NB_Arg_Exprs] ']'
+NB_Arg_Exprs   ::= Parens_Args {Parens_Args}
+                 | Poetry_Args
+Annotation_Def ::= 'annotation' Class_Def
+Expr           ::= Pragma
+Pragma         ::= 'pragma' Simple_Type [NB_Arg_Exprs]
+Def            ::= 'def' 'macro' Fun_Def 'end' ['def']
+                 | 'def' 'macro' Fun_Alt_Def
+\end{lstlisting}
+
+Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Coral, possibly affecting the resulting bytecode and abstract syntax trees. 
+
+
+
+
+
+\section{Annotations}
+
+Annotations are classes that must conform to \code{Annotation}, and which can thus be applied in annotated expressions and annotated definitions or types. 
+
+Annotations always appear before element that they annotate, and if multiple annotations are applied, their order is preserved in respect of reflection, although the actual order may or may not matter. 
+
+
+
+
+
+
+\section{Pragmas}
+\label{sec:pragmas}
+
+Pragmas are basically annotations that are applied in its scope from that point on and in any nested scopes, not binding to just a single expression, definition or a type. Some annotations can only be applied as a pragma. 
+
+
+
+
+
+
+\section{Macros}
+\label{sec:macros}
+
+Macros are a way to directly manipulate with abstract syntax trees. Unlike in languages such as C, macros in Coral are written using the same language. The only essential restriction here is that while compiling a Coral module or another source file, every macro that is applied in it must be pre-compiled, e.g. available from a separate compilation phase. 
+
+Macro authors are encouraged to use syntactic forms (\sref{sec:syntactic-forms}) to manipulate and generate abstract syntax trees. 
+
+A macro is defined as a regular function, but it's body is required to pass invocation to a method that implements the macro body, where every parameter type $T$ is replaced with ~\lstinline!c.Expr[$T$]!, and where \code{c} is the first parameter of type \code{Context}. The macro implementation has exactly two parameter lists: 
+\begin{enumerate}
+\item A parameter list with exactly one parameter of type either
+\begin{itemize}
+\item \code{Lang~[coral].Reflection.Macros.Whitebox.Context} or 
+\item \code{Lang~[coral].Reflection.Macros.Blackbox.Context}.
+\end{itemize} 
+\item A parameter list with the parameters of the macro definitions, with the described parameter type translation applied. 
+\end{enumerate}
+
+\example The following code is an example implementation of a simple \code{assert} macro. 
+\begin{lstlisting}[deletekeywords={message}]
+// import a whitebox context
+use Lang~[coral].Reflection.Macros.Whitebox.Context
+
+// define the macro
+def macro assert (condition: Boolean, message: String_Like): Unit := 
+    Asserts.assert_impl
+
+// implement the macro
+object Asserts {
+  def assert_impl 
+      (c: Context)
+      (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit :=
+    `(
+      if !#{cond}
+        raise #{msg}
+      else
+        ()
+      end
+    )
+}
+\end{lstlisting}
+
+
+
+
+
+\subsection{Whitebox Macros}
+
+\subsection{Blackbox Macros}
+
+
+
+
