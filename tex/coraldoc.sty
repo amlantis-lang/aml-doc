@@ -16,6 +16,9 @@
 % fancy headings
 \RequirePackage[clearempty]{titlesec}
 
+\newcommand{\docversion}{unknown}
+\renewcommand{\maketitlehookb}{\begin{center} {\large Version \docversion}\end{center}}
+
 \newcommand{\mychaptername}{Chapter}
 \titleformat{name=\chapter}
    [display]
