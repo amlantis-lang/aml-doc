@@ -8,8 +8,6 @@
 
 
 
-
-
 \section{The Implicit Modifier}
 \label{sec:implicit-modifier}
 
@@ -19,6 +17,8 @@ Param_Clauses  ::= {Param_Clause} '(' 'implicit' Params ')'
 \end{lstlisting}
 
 Template members and parameters labeled with \code{implicit} modifier can be passed to implicit parameters (\sref{sec:implicit-parameters}) and can be used as implicit conversions called views (\sref{sec:views}). 
+
+If the member marked with \code{implicit} is a class, it makes the primary constructor of the class available for implicit conversions as a function. Such primary constructor may take exactly one non-implicit argument in its first parameter list. 
 
 \example\label{ex:impl-monoid} The following code defined an abstract class of monoids and two concrete implementations, \code{String_Monoid} and \code{Int_Monoid}. The two implementations are marked implicit and will be used throughout the following discussions. 
 \begin{lstlisting}

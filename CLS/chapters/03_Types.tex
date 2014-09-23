@@ -5,10 +5,10 @@
 
 \syntax\begin{lstlisting}
 Type                ::= Function_Type
-                      | Compound_Type [Existential_Clauses]
+                      | Infix_Type [Existential_Clauses]
 Function_Type       ::= Function_Args {'->' Function_Args} 
                         '->' Type
-Function_Args       ::= Compound_Type
+Function_Args       ::= Infix_Type
                       | '(' [Function_Arg {',' Function_Arg}] ')'
 Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['^'] id ':'] 
                         Param_Type
@@ -20,6 +20,7 @@ Existential_Dcl     ::= 'type' Type_Dcl
 Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type} 
                         ['with' ['refinement'] Refine_Stats]
                       | ['refinement'] Refine_Stats
+Infix_Type          ::= Compound_Type {op_id [nl] Compound_Type}
 Annot_Type          ::= {Annotation} Simple_Type
 Simple_Type         ::= Simple_Type [Type_Args]
                       | Simple_Type '#' id
@@ -333,13 +334,29 @@ The \code{refinement} keyword may also be omitted from a compound type that cons
 
 
 
+\subsection{Infix Types}
+\label{sec:infix-types}
+
+\syntax\begin{lstlisting}
+Infix_Type ::= Compound_Type {op_id [nl] Compound_Type}
+\end{lstlisting}
+
+An infix type $T_1\ \op\ T_2$ consists of an infix operator $\op$, which gets applied to two type operands $T_1$ and $T_2$. The type is equivalent to the type application ~\lstinline!$\op$[$T_1$, $T_2$]!. The infix operator $\op$ may be an arbitrary identifier, and is expected to represent a type constructor. 
+
+Infix type may also result from an infix expression (\sref{sec:prefix-infix-ops}), if such operator name is not found on the result type of the expression that it is applied to. In any case, precedence and associativity rules of operators apply here as well. 
+
+
+
+
+
+
 \subsection{Function Types}
 \label{sec:function-types}
 
 \syntax\begin{lstlisting}
 Type          ::= Function_Args {'->' Function_Args}
                   '->' Type
-Function_Args ::= Compound_Type
+Function_Args ::= Infix_Type
                 | '(' [Function_Arg {',' Function_Arg}] ')'
 Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['^'] id ':']
                   Param_Type
@@ -409,7 +426,7 @@ def h (x: Integer, y: Integer, z: Integer) end
 \label{sec:existential-types}
 
 \syntax\begin{lstlisting}[escapechar=@]
-Type                ::= Compound_Type Existential_Clauses
+Type                ::= Infix_Type Existential_Clauses
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
 Existential_Dcl     ::= 'type' Type_Dcl
