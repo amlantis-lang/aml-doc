@@ -1974,6 +1974,22 @@ A := Object  ,
 \end{lstlisting}
 so \code{Object} is the type inferred for \code{A}. 
 
+\example Consider now an unrelated definition
+\begin{lstlisting}
+def test_fun [A, B] (a: A)(b: A, c: B)(d: B) := $\ldots$
+\end{lstlisting}
+
+In the function application
+\begin{lstlisting}
+test_fun(1)(2, "hello")("world")  ,
+\end{lstlisting}
+the type argument $A$ is inferred to be \code{Integer} and $B$ is inferred to be \code{String} in the following type inference. Note that if the type inference for $B$ was not deferred, it would be inferred to \code{Object}, which would not be really helpful. 
+
+With the same definition, the following function application
+\begin{lstlisting}
+val fun := &test_fun(1)  ,
+\end{lstlisting}
+the value of \code{fun} is of a type \code{[B]((Integer, B) -> B -> Object)}
 
 
 
