@@ -1896,9 +1896,11 @@ In a second step, type arguments are inferred by solving a constraint system, wh
 \item Each argument type weakly conforms (\sref{sec:conformance}) to the corresponding formal parameter type (\sref{sec:corresponding-parameters}), i.e. $\sigma S_j \conforms _w \sigma R_j$ for $j = 1 \commadots m$. 
 \end{itemize}
 
+If a type argument does not appear in the expected type and neither in the argument types, it stays defined with an inaccessible value $\udef$, and is possibly inferred in a future inference run, in case of curried functions. The type arguments that are inferred to be $\udef$ preserve their order in a virtual implicit type parameter list of the following parameter lists.
+
 It is an error if no such substitution exists. If several solutions exists, an optimal one for the type $T'$ is chosen. 
 
-All or parts of an expected type $\exptype$ may be undefined. The rules for conformace (\sref{sec:conformance}) are extended to this case by adding the rule that for any type $T$, the following two statements are always true:
+All or parts of an expected type $\exptype$ may be undefined. The rules for conformance (\sref{sec:conformance}) are extended to this case by adding the rule that for any type $T$, the following two statements are always true:
 \begin{itemize}
 \item $\udef \conforms T$
 \item $T \conforms \udef$
