@@ -1896,7 +1896,7 @@ In a second step, type arguments are inferred by solving a constraint system, wh
 \item Each argument type weakly conforms (\sref{sec:conformance}) to the corresponding formal parameter type (\sref{sec:corresponding-parameters}), i.e. $\sigma S_j \conforms _w \sigma R_j$ for $j = 1 \commadots m$. 
 \end{itemize}
 
-If a type argument does not appear in the expected type and neither in the argument types, it stays defined with an inaccessible value $\udef$, and is possibly inferred in a future inference run, in case of curried functions. The type arguments that are inferred to be $\udef$ preserve their order in a virtual implicit type parameter list of the following parameter lists.
+If a type argument does not appear in the expected type and neither in the argument types, it stays defined with an inaccessible value $\udef$, and is possibly inferred in a future inference run, in case of curried functions. The type arguments that are inferred to be $\udef$ are deferred and preserve their order in a virtual implicit type parameter list of the following parameter lists.\footnote{This is different from Scala, where Scala will infer all type arguments of the first parameter list, even if it would infer not very helpful types.}
 
 It is an error if no such substitution exists. If several solutions exists, an optimal one for the type $T'$ is chosen. 
 
@@ -2003,7 +2003,7 @@ val $x_m$ := $e_m$
 
 Coral defines a marker trait \code{Dynamic_Member_Selecting} that enables dynamic invocations rewriting without resorting to use error handling mechanisms to implement dynamic dispatch. 
 
-Instances $x$ of this trait allow method invocations \code[deletekeywords={method}]{$x$.method(args)} for arbitrary method \code[deletekeywords={method}]{method} and argument lists \code{args}, as well as property accesses \code[deletekeywords={property}]{$x$.property} for arbitrary property names \code[deletekeywords={property}]{property}. 
+Instances $x$ of this trait allow method invocations ~\lstinline[deletekeywords={method}]!$x$.method(args)! for arbitrary method ~\lstinline[deletekeywords={method}]!method!~ and argument lists \code{args}, as well as property accesses ~\lstinline[deletekeywords={property}]!$x$.property! for arbitrary property names ~\lstinline[deletekeywords={property}]!property!. 
 
 If an invocation is not implemented by $x$ (i.e. if type checking fails and no other implicit conversion provides a way to proceed with the invocation), it is virtually rewritten according to the following rules:
 
