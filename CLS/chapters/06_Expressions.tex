@@ -1985,11 +1985,17 @@ test_fun(1)(2, "hello")("world")  ,
 \end{lstlisting}
 the type argument $A$ is inferred to be \code{Integer} and $B$ is inferred to be \code{String} in the following type inference. Note that if the type inference for $B$ was not deferred, it would be inferred to \code{Object}, which would not be really helpful. 
 
-With the same definition, the following function application
+With the same definition, in the following function application
 \begin{lstlisting}
 val fun := &test_fun(1)  ,
 \end{lstlisting}
-the value of \code{fun} is of a type \code{[B]((Integer, B) -> B -> Object)}
+the value of \code{fun} is of a type \code{[B]((Integer, B) -> B -> Object)}.
+
+Still with the same definition, in the following function application
+\begin{lstlisting}
+val fun := &test_fun(1)(2, "hello")  ,
+\end{lstlisting}
+the value of \code{fun} is of a type \code{String -> Object}.
 
 
 
