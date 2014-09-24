@@ -26,6 +26,7 @@ Simple_Type         ::= Simple_Type [Type_Args]
                       | Simple_Type '#' id
                       | Stable_Id
                       | Path '.' 'type'
+                      | Literal ['.' 'type']
                       | '(' Types ')'
 Types               ::= Type {',' Type}
 \end{lstlisting}
@@ -128,6 +129,23 @@ Simple_Type ::= Path '.' 'type'
 A singleton type is of the form \lstinline@$p$.type@, where $p$ is a path pointing to a value. The type denotes the set of values consisting of \code{nil} and the value denoted by $p$, in spite of nullability.
 
 A {\em stable type} is either a singleton type or a type which is declared to be a subtype of a trait \code{Singleton_Type}. 
+
+
+
+
+
+\subsubsection{Literal-Based Singleton Type}
+\label{sec:literal-based-singleton-type}
+
+\syntax\begin{lstlisting}
+Simple_Type ::= Literal ['.' 'type']
+\end{lstlisting}
+
+A singleton type based on a literal is of the form \lstinline@$l$.type@, where $l$ is a literal. The type denotes the set of values consisting of \code{nil} and every literal value that is equal to $l$. 
+
+A {\em stable type} is either a literal-based singleton type or a type which is declared to be a subtype of a trait \code{Literal_Singleton_Type}. 
+
+In contexts where a type is expected, the ``\code{.type}'' part of the type can be omitted. 
 
 
 
