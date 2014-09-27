@@ -3,19 +3,106 @@
 
 \section*{Preface}
 
+The {\em Coral Virtual Machine} (the CVM) is a specification for a set of programs and program components. Those programs should enable the Coral programming language (and possibly many more) to execute on virtually any {\em host platform} that the CVM is implemented on. 
+
+
+
 
 
 \chapter{Abstraction vs. the Platform}
 
+Like JVM, a CVM should shield users of its programming languages from specifics of each platform as much as possible. E.g. numbers -- each platform has specific representations of numbers, some of which may fit into the languages, some may need to be represented in a more virtual form, like the \code{Decimal} in Coral, which represents virtually any non-complex number digit-by-digit. 
+
+However, users may need to access the platform natively, in some limited program scope. For that purpose, a CVM should provide a native interface, which would inherently be specific to the platform and to the technology that a CVM is built with, but most likely it could be just a set of bindings written in the C language. 
+
+A CVM has to also provide ways for inter-program communication. A special channel may be available for CVM-to-CVM communications, and platform's standard channels should also be available, e.g. sockets, shared memory, or messaging services. The range of available non-CVM-to-CVM channels is inherently limited by the host platform and implementation status of a CVM. 
+
+
+
+
+
 \section{Bytecode Portability}
 
-\section{Target Platforms}
+A single bytecode format is required for any CVM. A file containing such a bytecode must be executable by any CVM, regardless of the host platform. This single bytecode format is derived from the needs of the Coral programming language, and is tagged with a {\em dialect} -- basically a short identifier of the language that is supposed to serve as its backend. Therefore, the single bytecode format is portable to any host platform that has the backing language installed. 
+
+It is however possible for the language to define a CVM extension, that would be able to transform any bytecode format it needs into a CVM-compatible one. Such extension should be portable between each host platform. 
+
+If a program that targets a CVM is to contain native code alongside with CVM bytecode, then such program is limited to the host platforms that the native code is compatible with. This native code could be distributed in these major ways: 
+\begin{itemize}
+\item A dynamic library to be loaded at runtime as an extension for a CVM. A CVM then provides a runtime environment for the library. 
+\item A separate executable to be executed as a separate process from a CVM, possibly from within a shell. Such an executable is executed in the context of the host platform, not a CVM. 
+\end{itemize}
+
+
+
+
+
+\section{Host Platforms}
+
+The initially supported host platforms should be these:
+\begin{itemize}
+\item Mac OS X (initially 10.9+)
+\item Windows (initially 8.1+)
+\item GNU/Linux and BSD (initially only recent versions)
+\end{itemize}
+
+More platforms are indeed welcome to become supported, but these are the main ones. 
+
+
+
+
+
 
 \chapter{The Abstraction}
 
+With abstraction, we here have the concepts of human-to-computer and language-to-computer communication in mind. Users will use a programming language of choice to communicate with a host platform, in a way that is friendly to them and independent of the host platform, except where needed. 
+
+
+
+
+
+
+
 \section{The Languages}
 
+Initially, the Coral programming language is the primary supported language and may also serve as a intermediary between any further supported languages, using its own data types and instruction sequences. 
+
+A language definition for a CVM is basically a set of callbacks to be invoked for various reasons, e.g. method lookup, PSI or AST manipulations and so on. A language should also contain a compiler, which will provide a way to transform a source file set written using it into a form that is understandable by a CVM. 
+
+A CVM will provide primarily constructs to support the Coral programming language, but it may also be extended in the future to add more constructs for other languages, if ever needed. 
+
+A CVM should support programs written in several languages by keeping track of origins of values -- thus each language may use e.g. different object layouts, and yet still make its values available to objects coming from other languages via CVM's shared protocols. Such tracking should be implemented using a small tracking label, possibly a number mapped to loaded language definitions. 
+
+For the supported language, as Coral is a hybrid language (it could be seen as both an object-oriented and a non-purely functional), it would be nice if a ML-based or a Lisp-based functional language was supported as well. It might be even possible to create a trans-compiler from other pre-existing languages into CVM bytecode, e.g. Java, C\# or even C. However, such pre-existing languages would need their backing language definition for a CVM to use. 
+
+
+
+
+
 \section{The Bytecodes}
+
+A CVM should natively support only a single bytecode format -- the CVM bytecode. Other bytecode formats may be supported by means of CVM extensions, working as a compiler from the custom bytecode into a CVM bytecode. 
+
+
+
+
+
+\subsection{The CVM Bytecode}
+
+The CVM bytecode is a binary file containing several parts:
+
+\begin{itemize}
+\item Metadata -- the dialect (i.e. the backing language), bytecode version etc.
+\item Constants -- e.g. number literals, strings, symbols, type paths. 
+\item Instruction sequences -- a list of instruction sequences, one per function. The original source file may be a single instruction sequence, as it is with Coral. 
+\end{itemize}
+
+% TBD: as the reference implementation progresses, complete this section
+
+
+
+
+
 
 \chapter{The Components of a Virtual Machine}
 
@@ -25,7 +112,28 @@
 
 \section{Threads}
 
+A CVM runtime is all around {\em threads}. A thread models a computation stream, therefore computations may be parallel. Moreover, each thread may compose of multiple {\em fibers}, which are modelled using separate call stacks, some of which do not need to be complete copies. This also enables continuations, both unlimited and delimited. 
+
+A CVM should prefer native implementation of threads wherever possible, providing an abstraction to the languages, which in turn may provide abstraction to its users. Fibers, on the other hand, are not really easy to implement using native resources. 
+
+Fibers may be passed between threads, but for this to actually work, synchronization has to be implemented to make the threads able to pick up the new fiber. This may happen on a language level as well as user level, or even both (as in Coral, where the language enables passing of fibers between threads, but users have to make up the logic in which the receiving thread will pick up the fiber object). 
+
+
+
+
+
 \section{Call Stacks}
+
+A call stack is the low-level structure of a CVM. It contains a stack of call frames, which are structures containing reference to an instruction sequence, maintaining an instruction pointer, containing references to argument values, the result value and thrown values, and optionally some more metadata, e.g. line numbers and corresponding files. 
+
+A call stack may or may not represent a whole fiber execution, but there is always at least one call stack that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
+
+A call frame internally increments reference count to the instruction sequence that it references, and decrements it again upon being popped off its call stack. 
+
+
+
+
+
 
 \section{Address Spaces \& Objects}
 
