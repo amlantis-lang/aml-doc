@@ -1854,9 +1854,11 @@ An alternative $A$ is {\em more specific than} an alternative $B$, if the relati
 
 It is an error if there is no alternative in $\mathcal{B}$ which is more specific than all other alternatives in $\mathcal{B}$ -- the method is unapplied.\footnote{This can be fixed e.g. by using typed expressions (\sref{sec:typed-expressions}).}
 
+\paragraph{Note}
+This resolution is effectively applied also in cases of nested function applications -- i.e. when a function application is an argument to another function application. If the function application as an argument could be viewed as multiple types, due to overloading on result type, each such type has to be examined, and for that an expected type is required, which is obtained from the function application that receives such an argument. If multiple arguments have multiple types, each combination of these has to be examined for the most specific one for the given expected argument types. The implication of this approach is also that a single function application may result in different method being chosen for different actual argument types, which is also true when the expected type is deferred to some value of unknown type, where that type is known only as soon as the value is set.
+
 % TBD: maybe add more examples? including named arguments, optional arguments...
 
-% TBD: decide whether overloading is needed in other cases than function application - guess is that not, since Coral should not allow such bad things such as a function value and a function that is override-equivalent to that value function in the same scope, so the same goes with simple parameterized types and in no way with just expected type (like what, decide on a member based on what the caller is expecting? no.) // check http://stackoverflow.com/questions/7768669/overloading-a-method-based-on-a-type-parameter
 
 
 
