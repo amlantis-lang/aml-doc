@@ -122,20 +122,39 @@ Fibers may be passed between threads, but for this to actually work, synchroniza
 
 
 
-\section{Call Stacks}
+\section{Stacks}
 
-A call stack is the low-level structure of a CVM. It contains a stack of call frames, which are structures containing reference to an instruction sequence, maintaining an instruction pointer, containing references to argument values, the result value and thrown values, and optionally some more metadata, e.g. line numbers and corresponding files. 
+A {\em stack} is the low-level structure of a CVM. It contains a stack of stackable frames, which are structures containing reference to an instruction sequence, maintaining an instruction pointer (program counter), containing references to argument values, the result value and thrown values, and optionally some more metadata, e.g. line numbers and corresponding files. 
 
-A call stack may or may not represent a whole fiber execution, but there is always at least one call stack that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
+A stack may or may not represent a whole fiber execution, but there is always at least one stack that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
 
-A call frame internally increments reference count to the instruction sequence that it references, and decrements it again upon being popped off its call stack. 
+A stackable frame internally increments reference count to the instruction sequence that it references, and decrements it again upon being popped off its stack. 
 
-
-
-
+A stackable frame may be a control frame, containing the aforementioned elements, or a native frame, filling in for a native method invocation via \code{FFI} (Foreign Function Invocation). A native frame does not need to contain any program counters due to the nature of its execution. The native function is given access to its stackable frame, so it can e.g. return or throw a value. 
 
 
-\section{Address Spaces \& Objects}
+
+
+
+
+\section{Address Spaces \& Values}
+
+A CVM has to give its languages memory zones for allocating new objects. In the context of a CVM, an object and a value are referring to the same concept -- it represents a value that has some address, properties and size. 
+
+Languages are given APIs to handle the memory zones that are managed by a CVM. A language may be happy to work with a single memory zone itself, without giving its users access to creation of new memory zones, but it has to be able to accept objects from multiple memory zones -- this has to be handled transparently. 
+
+The concept of memory zones (each having its own address space) is to abstract a continuous memory block. Every program running on top of CVM is given one main memory zone with preset behavior. New memory zones may have different settings, e.g. one can create a memory zone designed specifically for lightweight objects that are to be released from memory quickly, or even all at once with the whole memory zone. Making changes to a memory zone is protected by a read/write lock, so that single memory operations are atomic. A set of multiple memory operations still has to be manually synchronized. 
+
+Every object has its address, locating it in one of memory zones. Therefore the address is two-part, first identifying its memory zone, and second identifying it within its memory zone. Each address is a view -- an object does not know anything about its address. 
+
+For memory management, every object is tagged with a reference counter, and a list of references for managing weak references, which are essential in reference counted environment. 
+
+Objects are referred to via variable values, which are placeholders for object addresses. Addresses may be cached per-thread, unless the variable is specified to be volatile. 
+
+
+
+
+
 
 \section{Program Structure Information}
 
