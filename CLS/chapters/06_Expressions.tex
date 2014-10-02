@@ -1416,15 +1416,103 @@ Local jumps transfer control from the points of \code{goto} statements to the st
 
 
 \subsection{Continuations}
+\label{sec:continuations}
 
-\paragraph{\em Unlimited continuations}
+
+
+
+
+
+\subsubsection{Unlimited continuations}
 Unlimited continuations are defined by the whole program, as the unlimited continuation allows almost arbitrary non-local jumps. The unlimited continuation is captured with \code{call/cc} function. 
 
-\paragraph{\em Delimited continuations}
+\paragraph{Definitions}
+The following code shows how a function that create unlimited continuations might be defined. 
+\begin{lstlisting}
+protocol Continuation [-A, +B] extends Function_1[A, B] {$\ldots$}
+protocol Unlimited_Continuation [-A] extends Continuation[A, A] {$\ldots$}
+def call/cc [A, B <: A] (&ctx: Unlimited_Continuation[A] -> B?): A end
+\end{lstlisting}
+A continuation, while internally holding a copy of the call stack that it was created in, is basically a function from the value that is passed into it to some other type. Unlimited continuations are restricted in the means that the input and output type has to be the same, as an unlimited continuation directly changes its result value based on that without any further modification -- the modification is to be actually performed by the code that invokes the unlimited continuation. Delimited continuations do not have this restriction, as the captured continuation is well defined and delimited to a particular scope. 
+
+\example The following shows how to invoke a continuation. 
+\begin{lstlisting}
+call/cc {|cont| cont () }
+call/cc {|cont| cont 1 }
+call/cc {|cont| cont 1, 2, 3 }
+\end{lstlisting}
+In this example, each line captures the current continuation, with unlimited scope -- the whole call stack is duplicated for that to be possible. Once a continuation is invoked, the code that follows the corresponding \code{call/cc} is resumed, with the passed arguments being the result value. On the first line, the continuation is immediately invoked with no arguments, therefore the \code{call/cc} returns the unit value ``\code{()}''. On the second line, the continuation is immediately invoked with argument \code{1}, therefore the \code{call/cc} returns the value \code{1}. On the third line, the continuation is immediately invoked with arguments \code{1, 2, 3}, therefore the \code{call/cc} returns the value \code{Sequence(1, 2, 3)}. 
+
+Since invoking the continuation changes history and the return value of \code{call/cc}, the values passed as arguments to its invocation are limited to the expected type of the original application of \code{call/cc}. It is an error if a continuation is invoked with a value of an incompatible type. A similar restriction applies to delimited continuations as well. 
+
+There is no requirement for functions that use unlimited continuations to define their return type with any special annotations regarding continuation passing style -- there would not be any result type available, since the whole remaining program is the result. 
+
+The initial application of \code{call/cc} returns whatever the given block returns, and such value has to be compatible with the expected type of the \code{call/cc} application. If the block itself invokes the continuation, then its return value is discarded and replaced with the arguments of the continuation invocation. 
+
+
+
+
+
+
+
+\subsubsection{Delimited continuations}
 Delimited continuations are defined with \code{reset} and \code{shift} functions. Reset and shift expressions are actually not language constructs, but rather regular functions that have a native implementation capable of unconditionally changing the standard control flow of a program. Moreover, the first \code{shift} expression (which captures the delimited continuation) controls the return value of the \code{reset} expression, which overrides the implicit return expression (\sref{sec:return-expressions}).
 
+The difference between unlimited and delimited continuations is in the scope where the call stack is captured. With delimited continuations, that is defined by the scope of \code{reset} -- once \code{reset} is applied, there is no changing of its value, unlike with unlimited continuations, where the \code{call/cc} is similar to delimited continuation's \code{shift}. 
 
+If the delimited continuation is stored to be used outside of \code{reset}'s bounds, then it can possibly return a value, but never modify the value of the original \code{reset} application.
 
+A \code{reset} application is typed with its expected type and its result type is derived from the statically known contents of its passed block. If at any point there is a \code{Any} type occurring, it might propagate down into the result type. 
+
+\paragraph{Definitions}
+The following code shows how functions that create delimited continuations might be defined. 
+\begin{lstlisting}
+class Shift [+A, -B, +C] (val cont: Continuation[A, B] -> C) {
+  def map [A1] (f: A -> A1): Shift[A1, B, C] := {
+    Shift.new (k: Continuation[A1, B]) -> { cont((x: A) -> k(f(x))) }
+  }
+  def flat_map [A1, B1, C1 <: B] (f: A -> Shift[A1, B1, C1]): 
+      Shift[A1, B1, C] := {
+    Shift.new (k: Continuation[A1, B1]) -> { f(x).cont(k) }
+  }
+}
+def reset [A, C] (ctx: => @[CPS_Param[A, C]] A): C end
+def shift [A, B, C] (cont: Continuation[A, B] -> C): @[CPS_Param[B, C] A
+annotation CPS_Param [-B, +C] {}
+type CPS_Type [A] := CPS_Param[A, A]
+type Suspendable := CPS_Param[Unit, Unit]
+\end{lstlisting}
+
+Here, the \code{ctx} parameter represents the block that is passed to \code{reset}. For typing, each \code{shift} block is virtually converted to a \code{for}-comprehension:
+\begin{lstlisting}
+val ctx := for {
+  $x$ <- Shift.new($y$)
+} yield ($b$)
+\end{lstlisting}
+where $x$ is a name representing the value that is assigned with the value of the \code{shift} application, $y$ is the block passed to \code{shift}, and $b$ is the code continuation that follows the application of \code{shift} (and which may possibly include more \code{shift} applications). 
+
+\example An example of a delimited continuation in use. 
+\begin{lstlisting}
+reset do
+  shift {|cont: Integer -> Integer|
+    cont(5)
+  } + 1
+end
+\end{lstlisting}
+For the type system, it looks as if it was the following code:
+\begin{lstlisting}
+val ctx := for {
+  x <- Shift.new {|cont: Integer -> Integer|
+    cont(5)
+  }
+} yield (x + 1)
+reset(ctx)
+\end{lstlisting}
+
+\paragraph{Note}
+Coral uses stack slice/copy mechanisms instead of code conversions to actually implement both continuations. Due to this, the continuations are technically less limited, but the typing of its expressions may get complicated easily, as the control flow is manipulated on VM level.
+
+% TBD: add the example from http://dcsobral.blogspot.cz/2009/07/delimited-continuations-explained-in.html and explain it step-by-step, incl. the double flat_map
 
 
 
