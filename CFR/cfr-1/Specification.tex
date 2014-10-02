@@ -83,6 +83,8 @@ For the supported language, as Coral is a hybrid language (it could be seen as b
 
 A CVM should natively support only a single bytecode format -- the CVM bytecode. Other bytecode formats may be supported by means of CVM extensions, working as a compiler from the custom bytecode into a CVM bytecode. 
 
+The CVM bytecode format has to be complex and robust enough to accommodate most languages' needs. 
+
 
 
 
@@ -147,9 +149,11 @@ The concept of memory zones (each having its own address space) is to abstract a
 
 Every object has its address, locating it in one of memory zones. Therefore the address is two-part, first identifying its memory zone, and second identifying it within its memory zone. Each address is a view -- an object does not know anything about its address. 
 
-For memory management, every object is tagged with a reference counter, and a list of references for managing weak references, which are essential in reference counted environment. 
+For memory management, every object is tagged with a reference counter, and a list of references of variables for managing weak references, which are essential in reference counted environment. 
 
-Objects are referred to via variable values, which are placeholders for object addresses. Addresses may be cached per-thread, unless the variable is specified to be volatile. 
+Objects are referred to via variable values, which are generally placeholders for object addresses. Addresses may be cached per-thread, unless the variable is specified to be volatile. 
+
+An object can have any number of properties, and also a set of flags that are common throughout every language (e.g. the ``frozen'' state for immutable objects). A property can be another object's address, or it can be a special value provided by a CVM. Some of these include: fiber references, memory zone identifiers, or most importantly, numbers. This abstraction goes deep enough to say that a number can replace an object's address in both properties and variables. Every language is required to be able to handle this level of abstraction. 
 
 
 
@@ -158,8 +162,30 @@ Objects are referred to via variable values, which are placeholders for object a
 
 \section{Program Structure Information}
 
+A program structure information (\code{PSI}) is a forest of tree structures that hold both compile-time and runtime information about types in a program. One of the most important data stored in it are method references. 
+
+Languages may opt in to implement class objects by having their objects point to various subtrees of a PSI. 
+
+
+
+
+
 \section{Inter-VM communication} % pipes between VMs
 
+A CVM has to implement a mechanism for inter-VM communication between programs. Furthermore, such VMs do not have to run on the same computer. The toolchain provided for this communication does not need to be embedded in a CVM and can be shipped separately. 
+
+Also a separate CFR is to be made for this component of a CVM. 
+
+
+
+
+
 \section{Native Components} % File I/O, pipes, locks, ...
+
+A CVM has to also provide guided access to some components that are underneath mapped to native host platform components, e.g. everything input/output or thread synchronization primitives. This is so that a language can be useful (input/output) and also parallelized (synchronization). 
+
+% TBD: as the implementation of a reference CVM progresses, fill in details
+
+
 
 
