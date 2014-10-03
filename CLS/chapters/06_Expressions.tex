@@ -1430,10 +1430,13 @@ Unlimited continuations are defined by the whole program, as the unlimited conti
 The following code shows how a function that create unlimited continuations might be defined. 
 \begin{lstlisting}
 protocol Continuation [-A, +B] extends Function_1[A, B] {$\ldots$}
-protocol Unlimited_Continuation [-A] extends Continuation[A, A] {$\ldots$}
+protocol Unlimited_Continuation [-A] extends Continuation[A, Unit] {$\ldots$}
 def call/cc [A, B <: A] (&ctx: Unlimited_Continuation[A] -> B?): A end
 \end{lstlisting}
+
 A continuation, while internally holding a copy of the call stack that it was created in, is basically a function from the value that is passed into it to some other type. Unlimited continuations are restricted in the means that the input and output type has to be the same, as an unlimited continuation directly changes its result value based on that without any further modification -- the modification is to be actually performed by the code that invokes the unlimited continuation. Delimited continuations do not have this restriction, as the captured continuation is well defined and delimited to a particular scope. 
+
+To vindicate the signature of \code{Unlimited_Continuation[A]}, it extends \code{Continuation[A, Unit]} because when invoked, it does not return any value and instead the given argument is what its \code{call/cc} application returns -- and therefore \code{call/cc} has to return a value of the same type that the unlimited continuation accepts as argument. This is unlike a delimited continuation, where invocation of the continuation does not continue from \code{reset}. 
 
 \example The following shows how to invoke a continuation. 
 \begin{lstlisting}

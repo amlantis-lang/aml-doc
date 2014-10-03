@@ -482,7 +482,6 @@ The problem can be avoided by generalizing the type of \code{append} by means of
 \begin{lstlisting}
 abstract class Sequence [+A] {
   def append [B >: A] (x: Sequence[B]): Sequence[B] end
-    // error: illegal variance, 'A' occurs in contravariant position
 }
 \end{lstlisting}
 
