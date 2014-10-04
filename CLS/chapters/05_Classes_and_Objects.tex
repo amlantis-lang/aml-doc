@@ -713,7 +713,8 @@ Class_Param_Clauses ::= {Annotation} [Access_Modifier]
                         ['(' 'implicit' Class_Params ')']
 Class_Param_Clause  ::= '(' [Class_Params] ')'
 Class_Params        ::= Class_Param {',' Class_Param}
-Class_Param         ::= {Annotation} [{Modifier} ('val' | 'var')]
+Class_Param         ::= {Annotation} ['lazy'] ['in'] 
+                        [{Modifier} ('val' | 'var')]
                         id [':' Param_Type] [':=' Expr]
 Class_Tmpl_Env      ::= 'extends' [Early_Defs] Class_Parents
                         semi [Template_Body] 'end' ['class']
