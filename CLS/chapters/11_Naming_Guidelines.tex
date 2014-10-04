@@ -1,44 +1,175 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
-\chapter{Design Guidelines}
+\chapter{Design Guidelines \& Code Conventions}
 
-This chapter is {\em non-normative}, but it should be followed nonetheless. 
+This chapter introduces the way programs {\em should} be written and laid out in Coral. 
 
-\section{Userland Naming Guide}
 
-The naming guidelines are particularly inspired by Ada. The purpose of the decisions made here is to improve readability over time required to write programs, as developers tend to spend a lot more time staring into source code and trying to understand it than actually writing it. 
 
-The general rule of thumb is to use full words separated by underscores, or if the special character is more suitable for the purpose, with that character. 
 
-\example Examples of the naming recommended for Coral:
+
+
+\section{Introduction}
+
+\subsection{Purpose of Having Code Conventions}
+
+They are important to programmers for many reasons:
+\begin{itemize}
+\item Maintenance of a software is a huge part of its lifetime costs. 
+\item Software is usually not maintained for its whole lifetime by its original author. If you think that is not your case, imagine a future world, where an apocalypse happened. People that survived it might need to update your software for the new environment requirements. Or maybe in a different scenario, mankind reaches another terraformed planet and need to update your software for the new planet’s requirements, probably different time and so on. Still not convinced? 
+\item Code conventions improve the readability of the software, allowing engineers to understand new code more quickly and thoroughly. 
+\item If your software is shipped including its source code, you might want to not feel embarrassed about it, and rather ship it clean. 
+\end{itemize}
+
+
+
+
+
+
+\section{Module Structure \& File Names}
+
+This section lists commonly used module structure and file suffixes and names. 
+
+A module is a directory located in your system at a location unspecified by this specification. In the following sections, it will be referred to as {\em module root}. 
+
+\paragraph{Sources}
+A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Coral sources may be located, or alternatively, it can be forked into more directories, each for a specific language. The directory may then look like:
 \begin{lstlisting}
-Some_Class_Name
-E-Mail
-do_something_with_something
+/src
+    /c
+    /cpp
+    /c-mac
+    /c-windows
+    /clojure
+    /coral
+        /macros
+        /Sub_Module
+        /Another_Submodule
+    /java
+    /haskell
+    /objc
+    /sml
+    /swift
 \end{lstlisting}
 
-Another recommended approach is to use names as long as necessary, but not longer; and if a shortcut for the name exists that is widely recognized, that shortcut may be used as an alias. 
+The directory name consists of a lowercase name of the source language, optionally followed by a platform specifier. A build tool used to create the software may then choose the sources appropriately. 
 
-The \code{camelCase} is deprecated, as it worsens readability and in some cases even yields misleading names, such as \code{withOut} method, which reads as ``without'', but in fact means ``with `out'\,'', where the name recommended by Coral, \code{with_out}, makes the intention way more clear. Camel case should be used iff the name that it represents itself is known in that form and placing an underscore in between would actually make it represent something else. 
+Coral source files have the suffix \code{.coral}. Readme files are not source files, having their name starting with any-case \code{readme}, followed by e.g. \code{.md} for a Markdown-formatted readme. 
 
-For methods that return boolean values, the rule is to name them with one of the following patterns:
+Coral source directory (\code{/src} or \code{/src/coral}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly), which, for Coral, is named \code{build.coral}, and can make use of other files as needed. 
+
+Macros should be placed in a \code{/macros} directory inside of a directory with Coral sources, so e.g. \code{/src/macros} or \code{/src/coral/macros}. Those files may also use other files as needed. A file that contains solely Coral macro definitions may be optionally named with suffix \code{.coralm}, but that is not a requirement. 
+
+A module file may be placed in a Coral sources directory, and is named \code{module.coral}. This file is important in the fact that it defines the module and vendor name for the module, and the vendor name for all nested submodules. 
+
+This directory may be omitted from a release version of your software (usually useful for proprietary software). 
+
+\paragraph{Compiled files}
+A common name for this directory is \code{com}, or \code{compiled}. It follows the same structure as sources directory:
 \begin{lstlisting}
-is_$\mbox{\sl something}$?
-has_$\mbox{\sl something}$?
-$\mbox{\sl something}$?
+/com
+    /c
+    /cpp
+    /c-mac
+    /c-windows
+    /clojure
+    /coral
+        /macros
+        /Sub_Module
+        /Another_Submodule
+    /java
+    /haskell
+    /objc
+    /sml
+    /swift
 \end{lstlisting}
-The latter case is especially better for cases where the method accepts parameters, the former two for parameterless methods. 
 
-For methods that modify the receiver, raise exceptions or errors, or do other potentially dangerous operations, the rule is to name them with the following pattern:
+Coral compiled files (bytecode) have the suffix \code{.coralb}. Readme files might be copied into it, if needed. 
+
+Note that files compiled from other languages, if not bound to Coral environment via native method definitions, may be still used with \code{FFI} mechanisms. 
+
+\paragraph{Binary files}
+A common name for this directory is \code{bin}, or very less commonly \code{binaries}. It is intended to contain any necessary binary files that are not to be compiled during build of the software, but rather just included in it as they are. May include executable binary files. 
+
+\paragraph{Protocol files}
+A common name for this directory is \code{pro}, or \code{protocols}. It is supposed to hold extracted interface of the module for use in other modules outside of this module. Such files contain just \code{interface} and \code{protocol} definitions, which may result by translation from \code{class} and \code{trait} definitions, and also other type definitions that are not regular classes. 
+
+Coral protocol files have the suffix of \code{.coralp}, but their structure is identical to any other Coral source file. 
+
+Module builds that contain just the protocol files are an option to include in vendor directory. 
+
+\paragraph{Resources}
+A common name for this directory is \code{res}, or \code{resources}, the latter may be preferred. Such directory is supposed to hold any files that the module needs, may it be images, sounds or whatever. Its organization is up to the module's maintainer. 
+
+\paragraph{Vendor directory}
+A common name for this directory is \code{ven}, or \code{vendor}, the latter may be preferred. Such directory is supposed to hold vendor directories, which in their leave paths have e.g. modules with only protocol files, so that compiler may bind to their identifiers and use that in building of PSI and for type-checking. A vendor directory may also be used to store the whole compiled vendor module, or be a place to download the module dependency on demand as needed and if possible, if the vendor module is not already present in user's system. 
+
+Dependencies for a module may be defined in the module file, along with version requirements and possibly a network path to download the module. 
+
+A path to a vendor directory follows the reversed URL, each component being represented by a separate directory, like: \code{/vendor/com/example}. 
+
+
+
+
+
+\section{File Organization}
+
+A file in Coral is basically a function, but it is a good idea to keep it organized in sections, if it represents a definition rather than a script. Each section should be separated by blank lines and preceded with a documentation comment if needed (usually when the documented section is a part of a public API). 
+
+Files longer than 1989 lines are cumbersome and should be avoided. Coral has a mechanism of open classes that allows programmers to split longer class definitions into multiple files, one defining the basic parts of the class and locations of its other sources and the others should define the implementation, logically separated. 
+
+
+
+
+
+\subsection{Coral Source Files}
+
+Each Coral source file contains a definition of an implicit function, which is defined by the whole file. Such function may define types, classes, traits, and also do stuff. 
+
+A Coral file whose purpose is to define classes should contain at most one such top-level class (and may include inner classes as needed, indeed). When a private class or interface is associated with a public class, these can be put into the same file. The public class should be the first class defined in the file. 
+
+A typical Coral source file has the following ordering: 
+\begin{enumerate}
+\item Module identification, e.g.:
 \begin{lstlisting}
-$\mbox{\sl something}$!
+module Cool_App~[com.example.heroes]
 \end{lstlisting}
 
-Class names and object names should start with an upper-case letter, unless it makes sense to name it otherwise. Method and variable names should start with a lower-case letter. 
+\item Imports, e.g.:
+\begin{lstlisting}
+use Cool_Library~[com.example.them].{Some_Class as A_Class, _}
+\end{lstlisting}
 
-Characters such as ``\code{+}'' can be used in names to replace words like ``\code{and}'', although such name inherently suggests possible problems with the named entity. 
+\item Pragmas for the whole file, e.g.:
+\begin{lstlisting}
+pragma Profile :Prague
+\end{lstlisting}
 
-\section{Program Parentheses}
+\item The class or type definition(s). 
+\end{enumerate}
 
-Coral supports in many syntactical cases two options for parentheses -- symbol based (e.g. ``\code{(}'' and ``\code{)}'') and word based (e.g. \code{do} and \code{end}). The general rule of thumb here is to use symbol-delimited scopes only inside of word-delimited scopes, preferably for shorter definitions and procedures, or outside of any word-delimited scopes. Reversely, word-delimited scopes should not appear inside of symbol-delimited scopes, unless there is no other option. 
+
+
+
+
+
+\subsection{Class Definition Organization}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
