@@ -1424,6 +1424,7 @@ Local jumps transfer control from the points of \code{goto} statements to the st
 
 
 \subsubsection{Unlimited continuations}
+
 Unlimited continuations are defined by the whole program, as the unlimited continuation allows almost arbitrary non-local jumps. The unlimited continuation is captured with \code{call/cc} function. 
 
 \paragraph{Definitions}
@@ -1459,6 +1460,7 @@ The initial application of \code{call/cc} returns whatever the given block retur
 
 
 \subsubsection{Delimited continuations}
+
 Delimited continuations are defined with \code{reset} and \code{shift} functions. Reset and shift expressions are actually not language constructs, but rather regular functions that have a native implementation capable of unconditionally changing the standard control flow of a program. Moreover, the first \code{shift} expression (which captures the delimited continuation) controls the return value of the \code{reset} expression, which overrides the implicit return expression (\sref{sec:return-expressions}).
 
 The difference between unlimited and delimited continuations is in the scope where the call stack is captured. With delimited continuations, that is defined by the scope of \code{reset} -- once \code{reset} is applied, there is no changing of its value, unlike with unlimited continuations, where the \code{call/cc} is similar to delimited continuation's \code{shift}. 
@@ -1481,7 +1483,7 @@ class Shift [+A, -B, +C] (val cont: Continuation[A, B] -> C) {
 }
 def reset [A, C] (ctx: => @[CPS_Param[A, C]] A): C end
 def shift [A, B, C] (cont: Continuation[A, B] -> C): @[CPS_Param[B, C] A
-annotation CPS_Param [-B, +C] {}
+annotation CPS_Param [-B, +C] {$\ldots$}
 type CPS_Type [A] := CPS_Param[A, A]
 type Suspendable := CPS_Param[Unit, Unit]
 \end{lstlisting}
@@ -1493,6 +1495,9 @@ val ctx := for {
 } yield ($b$)
 \end{lstlisting}
 where $x$ is a name representing the value that is assigned with the value of the \code{shift} application, $y$ is the block passed to \code{shift}, and $b$ is the code continuation that follows the application of \code{shift} (and which may possibly include more \code{shift} applications). 
+
+\paragraph{Note}
+Here, the \code{ctx} parameter is causing the passed block to be used as a positional argument. But for the type system, the annotation \code{@[CPS_Param[A, C]]} makes the type of the argument convert to a \code{for}-comprehension as specified, similar to what workflows (\sref{sec:workflows}) do with their passed blocks. Both conversions may happen dynamically at runtime. Therefore, the passed block is eventually a regular positional argument anyway. 
 
 \example An example of a delimited continuation in use. 
 \begin{lstlisting}
