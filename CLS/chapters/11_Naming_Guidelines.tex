@@ -156,9 +156,166 @@ pragma Profile :Prague
 
 \subsection{Class Definition Organization}
 
+The following list describes the parts of a class definition (or an interface, a protocol, or a trait), in the order that they should appear. 
+
+\begin{enumerate}
+\item {\bfseries Class documentation} \hfill \\
+A class documentation should introduce the class and its purpose to the documentation reader. 
+
+\item {\bfseries Class signature statement} \hfill \\
+According to Coral's syntax, this defines the class' name, parents (including traits), type parameters, primary constructor's parameters and annotations for the class itself and its primary constructor. The primary constructor can also define some (or all) of the class' instance variables. The order of each element is defined by the syntax (\sref{sec:class-definitions}). 
+
+\item {\bfseries Class implementation comment} \hfill \\
+This comment should contain any class-wide information that is considered essential to understand the implementation and wasn't appropriate for the class documentation. 
+
+\item {\bfseries Type declarations} \hfill \\
+Define these early, so that they can be used in the following code. 
+
+\item {\bfseries Superclass instance method invocations} \hfill \\
+Use this section to call superclass instance methods. Imagine methods like \code{has_many} from RoR's \code{ActiveRecord}\footnote{RoR stands for Ruby on Rails.}. 
+
+\item {\bfseries Class instance variables} \hfill \\
+These are variables whose names are prefixed with a double at-sign ``\code{@@}''. Their order should be in decreasing visibility (\sref{sec:modifiers}). Alternatively, if the class object has a separate definition using \code{object} keyword, that should be following the class definition in the same file, preserving the order defined in this list. This also applies to class instance methods. 
+
+\item {\bfseries Class instance methods} \hfill \\
+These methods are defined for the class object and may appear in a separate object definition. Their order should be in decreasing visibility (\sref{sec:modifiers}). Furthermore, factory methods should precede all other methods. 
+
+\item {\bfseries Instance variables} \hfill \\
+These are variables whose names are prefixed with a single at-sign ``\code{@}''. Their order should be in decreasing visibility (\sref{sec:modifiers}).
+
+\item {\bfseries Auxiliary constructors} \hfill \\
+Their order should be in decreasing visibility (\sref{sec:modifiers}).
+
+\item {\bfseries Methods and other members} \hfill \\
+These members should be grouped by functionality rather than by scope or accessibility. This section includes everything else, including method definitions, message declarations, inner classes. 
+\end{enumerate}
 
 
 
+
+
+\section{Indentation}
+
+Tabs with two space displayed width are recommended to be used as the unit of indentation. The displayed width may be customized. If further indentation is required beyond indentation of the scope (e.g. to align names in successive variable definitions), spaces has to be used for the extra indent (so-called ``smart tabs''), but never for the base indentation. 
+
+
+
+
+
+\subsection{Line Length}
+
+Avoid lines longer than 80 characters and try not to exceed 100 characters per line top. Use line breaks to achieve shorter lines. 
+
+
+
+
+
+
+\subsection{Line Wrapping}
+
+When an expression will not fit into a single line, break it according to the following general principles. Note though that Coral is also possibly used in a REPL environment, therefore it's syntax uses line breaks as significant whitespace in many places. This can however be prevented by means of preventing an expression end -- usually by wrapping an expression that is supposed to be continued on the next line in parentheses. 
+
+\begin{itemize}
+\item Break after a comma. 
+\item Break before an operator. 
+\item Prefer higher-level breaks to lower-level breaks. 
+\item Align the new line with the beginning of the expression at the same level on the previous line. Spaces have to be used for this. 
+\item If the previous rules lead to confusing code or to code that's squished up against the right margin, just indent two tabs instead. 
+\item If the main expression on the line is an assignment, don't forget to wrap the assigned expression in parentheses, if it's to be wrapped on the next line. Otherwise, a compile-time error would be raised, as the following operator applications or function applications could not be chained. 
+\item Don't break before a closing parenthesis of a function application.  
+\end{itemize}
+
+\example Here are some examples of breaking function applications: 
+
+\begin{lstlisting}
+// preferable
+function_1 (long_expression_1, long_expression_2, long_expression_3,
+            long_expression_4, long_expression_5)
+val a := function_1 (long_expression_1,
+                     function_2 (long_expression_2,
+                                 long_expression_3))
+// acceptable
+function_1 (long_expression_1, long_expression_2, 
+    long_expression_3, long_expression_4, 
+    long_expression_5)
+val a := function_1 (
+    long_expression_1,
+    function_2 (
+        long_expression_2,
+        long_expression_3))
+\end{lstlisting}
+
+\example Following are examples of breaking an expression with operators. The first is preferred, since the break occurs outside the parenthesized expression, which is at a higher level. 
+
+\begin{lstlisting}
+// prefer
+long_name_1 := long_name_2 * (long_name_3 + long_name_4 - long_name_5)
+               + 4 * long_name_6
+// avoid
+long_name_1 := long_name_2 * (long_name_3 + long_name_4 
+                              - long_name_5) + 4 * long_name_6
+\end{lstlisting}
+
+\example Following are examples of indenting method definitions. The first is the conventional case, the second would shift the second and third line to the far right if it used conventional indentation, so instead it indents two tabs. Also, if a visibility modifier is causing the line to be too long, consider using it as a pragma before the method definition instead (but remember that definitions following it will have the same visibility). 
+
+\begin{lstlisting}
+// conventional indentation
+def some_method (an_arg: Integer, another_arg: Object, 
+                 yet_another: String,
+                 and_still_another: Object): Unit := {
+  $\ldots$
+}
+
+// indent two tabs to avoid very deep indents
+private method self.very_long_method_name (an_arg: Integer,
+    another_arg: Object, yet_another_arg: String, 
+    and_still_another: Object): Unit := {
+  $\ldots$
+}
+\end{lstlisting}
+
+\example Line wrapping conditional statements should generally use the two tabs rule, since conventional one tab indentation makes seeing the body difficult. For example: 
+
+\begin{lstlisting}
+// don't use this indentation
+if ((condition_1 && condition_2)
+  || (condition_3 && condition_4)
+  || !(condition_5 && condition_6))
+  do_something_about_it // this line is easy to miss
+end
+
+// use this indentation instead (notice the extra spaces)
+if (    (condition_1 && condition_2)
+    ||  (condition_3 && condition_4)
+    || !(condition_5 && condition_6))
+  do_something_about_it
+end
+
+// or use this
+if (  (condition_1 && condition_2)
+  ||  (condition_3 && condition_4)
+  || !(condition_5 && condition_6))
+then
+  do_something_about_it // this line is now harder to miss
+end
+\end{lstlisting}
+
+\example Coral does not have any ternary operators, but the following is an equivalent expression:
+
+\begin{lstlisting}
+alpha := if a_long_boolean_expression
+           beta
+         else
+           gamma
+         end
+
+// or alternatively
+alpha := if a_long_boolean_expression
+  beta
+else
+  gamma
+end
+\end{lstlisting}
 
 
 
