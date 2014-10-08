@@ -74,8 +74,7 @@ Path             ::= Stable_Id
                    | Container_Path
 Stable_Id        ::= path_id
                    | Path '.' path_id
-                   | [path_id '.'] 'super' [Class_Qualifier] 
-                     '.' path_id
+                   | [path_id '.'] 'super' [Class_Qualifier]
 Class_Qualifier  ::= '[' Container_Path ']'
 \end{lstlisting}
 
@@ -753,6 +752,8 @@ Simple_Type ::= 'Any'
 This type does not represent a single concrete value type, but any concrete type. It is used in places where dynamic typing is desired. 
 
 With respect to overloading resolution (\sref{sec:value-conversions}), this type is always the least specific. 
+
+In runtime, this type is always dynamically replaced by the type of the actual referenced value -- e.g., if a variable is typed with \code{Any} type, assigned a value, and used in a function application, the type of that value is used, not \code{Any}, unless it would be typed with \code{Any} again (\sref{sec:typed-expressions}). Nonetheless, this does not imply that a value of another type can not be assigned to that same variable -- such variable is still bound to \code{Any}. 
 
 
 

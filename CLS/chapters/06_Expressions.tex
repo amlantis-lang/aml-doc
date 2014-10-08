@@ -47,6 +47,7 @@ Expressions are composed of various keywords, operators and operands. Expression
 
 
 \section{Expression Typing}
+\label{sec:expression-typing}
 
 The typing of expressions is often relative to some {\em expected type} (which might be undefined). When we write ``expression $e$ is expected to conform to type $T$'', we mean:
 \begin{enumerate}
@@ -725,8 +726,8 @@ The re-interpretation is correct always, since, unlike in Scala,
 \label{sec:typed-expressions}
 
 \syntax\begin{lstlisting}
-Cast_Expr  ::= Infix_Expr ('as' | 'as!') Type
-Infix_Expr ::= Infix_Expr ('is' | 'is!') Type
+Cast_Expr  ::= Infix_Expr ('as' | 'as!') (Type | Simple_Expr1)
+Infix_Expr ::= Infix_Expr ('is' | 'is!') (Type | Simple_Expr1)
 \end{lstlisting}
 
 The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. The conversion can take these forms, preferred in the following order:
@@ -743,9 +744,12 @@ The conformance check expression ~\lstinline!$e$ is $T$!~ has type \code{Boolean
 \item As a last resort, type of $e$ overrides the method ~\lstinline!is_instance_of[$T$]()!~ and evaluating it results in \code{yes} value. 
 \end{enumerate}
 
-Note: the conformance check expression as defined here is not used in resolution of function applications (\sref{sec:function-applications}).
+\paragraph{Note} 
+The conformance check expression as defined here is not used in resolution of function applications (\sref{sec:function-applications}).
 
 The typed expression ~\lstinline@$e$ as! $T$@~ works like ~\lstinline!$e$ as $T$!, but only uses the first form. Similarly, the conformance check expression ~\lstinline@$e$ is! $T$@~ works like ~\lstinline!$e$ is $T$!, but it uses only the first condition. The bang character ``\lstinline@!@'' signalizes that the operation is more dangerous, in means of that its easier for the expression $e$ to not successfully convert to the target type or conform to it. 
+
+If an expression is typed to a dynamic path of a (syntactic) type, then the value referenced by such path is expected to be a type, and it is an error if it is not. 
 
 
 
@@ -1951,7 +1955,10 @@ An alternative $A$ is {\em more specific than} an alternative $B$, if the relati
 It is an error if there is no alternative in $\mathcal{B}$ which is more specific than all other alternatives in $\mathcal{B}$ -- the method is unapplied.\footnote{This can be fixed e.g. by using typed expressions (\sref{sec:typed-expressions}).}
 
 \paragraph{Note}
-This resolution is effectively applied also in cases of nested function applications -- i.e. when a function application is an argument to another function application. If the function application as an argument could be viewed as multiple types, due to overloading on result type, each such type has to be examined, and for that an expected type is required, which is obtained from the function application that receives such an argument. If multiple arguments have multiple types, each combination of these has to be examined for the most specific one for the given expected argument types. The implication of this approach is also that a single function application may result in different method being chosen for different actual argument types, which is also true when the expected type is deferred to some value of unknown type, where that type is known only as soon as the value is set.
+This resolution is not applied in case of nested function applications, even though the containing application could possibly provide an expected type for the nested application to successfully select a unique member, based on overloading on result type. This prevents creation of possibly very large matrices of all possible combinations of argument types, which would not only be the product of the simple types of each argument, but also of all supertypes (including traits separate!), which is {\em not feasible}. But argument types have to be know prior to overloading resolution, as if they were to be applied before the containing application, which they probably will be. One way to overcome this limitation is to use dynamic types and type the expression (\sref{sec:typed-expressions}) with a dynamically selected expected type, which has to be {\em specific enough} to make overloading of the nested application possible. After argument types are known, value conversions may be applied to them in order to turn the types from {\em compatible} to {\em conforming}. Therefore, a single function application may still dynamically overload into different unique member being selected with each application. 
+
+\paragraph{Note}
+An important note is that when an identifier $e$ references several members of a class, it also references only those members that are visible (\sref{sec:modifiers}) from the scope where $e$ appears. 
 
 % TBD: maybe add more examples? including named arguments, optional arguments...
 
