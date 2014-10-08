@@ -81,7 +81,7 @@ For the supported language, as Coral is a hybrid language (it could be seen as b
 
 \section{The Bytecodes}
 
-A CVM should natively support only a single bytecode format -- the CVM bytecode. Other bytecode formats may be supported by means of CVM extensions, working as a compiler from the custom bytecode into a CVM bytecode. 
+A CVM should natively support only a single bytecode format -- the CVM bytecode. Other bytecode formats may be supported by means of CVM extensions, working as a compiler from a custom bytecode into a CVM bytecode, primarily to support sort of a transpilation, e.g. from Java's \code{.class} format directly into the CVM bytecode format, if such extension is ever built. 
 
 The CVM bytecode format has to be complex and robust enough to accommodate most languages' needs. 
 
@@ -96,7 +96,7 @@ The CVM bytecode is a binary file containing several parts:
 \begin{itemize}
 \item Metadata -- the dialect (i.e. the backing language), bytecode version etc.
 \item Constants -- e.g. number literals, strings, symbols, type paths. 
-\item Instruction sequences -- a list of instruction sequences, one per function. The original source file may be a single instruction sequence, as it is with Coral. 
+\item Instruction sequence graph -- graph structures of instruction sequences, one per function. Such a graph is represented by a serialized sequence of instruction nodes along with links to other nodes as specified by each node. The original source file may be a single instruction sequence graph, as it is with Coral. 
 \end{itemize}
 
 % TBD: as the reference implementation progresses, complete this section
@@ -106,11 +106,102 @@ The CVM bytecode is a binary file containing several parts:
 
 
 
+\subsubsection{Bytecode File Layout}
+
+The following listing presents basic sections of a CVM bytecode file. 
+
+\begin{enumerate}
+\item Version of bytecode file, major and minor. 
+\item Dialect identifier, determines the backing language for the bytecode file. 
+\item Symbols list, a list of symbols used throughout the bytecode. 
+\item Constants list, a list of constants used throughout the bytecode. These include: integers, floats, strings. 
+\item Type paths list, a list of paths relative to the code described by the bytecode. 
+\item Instruction sequence trees list. 
+\end{enumerate}
+
+
+
+
+
+
+\subsection{Type Paths \& Scopes}
+
+A type path is a simple list structure that consists of: 
+\begin{itemize}
+\item A variable symbol. 
+\item A selection symbol. 
+\item An application symbol sublist. 
+\item A type application symbol sublist. 
+\end{itemize}
+
+A type path relatively to its used position and scope determines a type, either by pointing it to a node of PSI (\sref{sec:psi}), or, with a variable symbol, to an actual type of a value in a variable. The list of possibilities of type paths may get extended with support for more backing languages. 
+
+A type path is built as a sequence of references to symbols in the symbols list and a sequence of designators for each of its node (determining whether a node is a variable symbol, a selection symbol etc.).
+
+A type path can also refer to a type that is made available with a type scope, which includes mechanism that can mark a scope being a parent scope of another scope (this is important for reuse of type scopes -- and type scopes can possibly be reused across different bytecode files as well). When talking Coral, this can be done by using \code{use} clauses to import names into a particular scope -- such types are then available with type paths that start with a selection symbol. 
+
+A type scope can also have a wildcard import, by using an extension of a backing language. When talking Coral, a scope can be tagged with a list of types from which it is built up, along with their versions at the time that import was performed. Thus, Coral is able to detect a dynamic change in a scope and next time that scope is accessed, the language is given an opportunity to refresh the scope and check for duplicates (which would be an error). 
+
+A language has to define the order of search for a type, since a type scope is not the only place where it may look for. The way it defines that is irrelevant to CVM, and it does so by implementing the language bindings (\sref{sec:language-bindings}). 
+
+\begin{itemize}
+\item The type of the function itself, if the language supports higher-order function types and their extension. 
+\item The type of receiver, if any. 
+\item Super-type(s) of receiver, if any. 
+\item The given type scope assembled while evaluating an instruction sequence tree. 
+\item Another related types to the type of receiver (if any) or the type of the function, such as a namespace or a module. 
+\item Use a dynamic callback. 
+\end{itemize}
+
+To resolve a type that is present in the PSI (note that PSI contains both named and anonymous types), a language binding has to be invoked with the assembled type scope and the corresponding type path with variable types resolved automatically by a CVM. 
+
+The backing language then with its implementation defines the order of search (which is arbitrary to each backing language) and either returns a type from PSI, or signals that it could not find a type, which is an error state that is further resolved. Such resolution may be implemented directly in the instruction that failed as a fallback instruction, or if that fails too or is not set up, another language binding (e.g. in Ruby, that could lead to an invocation of \code{const_missing}). 
+
+A very interesting case is when a backing language implements implicit conversions. E.g., say that a type path contains a function application and for some (or maybe even all) of the argument types, the corresponding member is not applicable to the given argument types. The language can make use of an implicit scope -- e.g. search the type scope for a type that can convert a particular argument type to a type that the corresponding member is applicable to, or search some another type for such a conversion. 
+
+To allow the aforementioned behavior, all types referenced from a type scope are tagged with an ``implicit flag'', which (when set) makes the type eligible for implicit search \& querying. 
+
+A CVM helps the backing language by providing an API to look for an implicit conversion on demand (therefore, a particular backing language does not need to make sense of the implicit flags at all). A CVM also tells the language where does that conversion come from, so that the language may choose whether to use it or not. A CVM can also be instructed to only look into the type scope, or some arbitrary other type, to collect all implicit values filtered by the backing language's query. 
+
+With an implicit value for conversion found, the backing language may instruct a CVM to apply the conversions before applying the function that requires the conversions. 
+
+An implicit conversion based on an implicit value is not the only option of converting an argument type though -- a backing language has also the following options of converting an argument type (or even the selection itself): 
+
+\begin{itemize}
+\item An implicit value conversion on argument. 
+\item An implicit value conversion on selection. \footnote{Used in Coral for view application.}
+\item A conversion specified by the language itself (e.g. numeric widening). 
+\item Application conversion. \footnote{Used in Coral for method conversion -- evaluation and empty application.}
+\item Eta-expansion. \footnote{Basically a conversion from a complex type path into a simple path that ends with an application symbol, created by evaluating the preceding nodes up to the last function reference.}
+\item Type application. \footnote{Used in Coral for value conversion -- type instantiation, and also type inference that does not need to be deferred on selections, as the whole selection is made available with the type path, and Coral chooses to treat empty applications as selections.}
+\end{itemize}
+% TBD: determine if more conversions during type resolution are needed. 
+
+A language may indeed choose multiple such conversions (based on its rules) for each component of a type path, and even multiple conversions for one component (e.g. an implicit value conversion followed by an application conversion). It is therefore possible to even replace the whole type path with conversions and cache the resulting conversion (the key in a cache is the type path in the given used position). 
+
+When talking Coral, the language may also implement implicit parameters, along with implicit conversions. Such a feature may be rendered by using an application conversion on a modified type path, adding a flag that such an extra application is implicit (a CVM has to know of such possibility), and then what CVM does is: if the original function application is directly followed by another application (without selecting another member on the previous result), it ignores that application conversion added to the type path, and if not, then another function application happens, based on the newly added ``virtual'' application conversion (and yet again, the language is tasked with resolving each argument type, which is now tagged as implicit, so that it knows that it should\footnote{Really just ``should'', a CVM is not supposed to check whether it did or did not.} only look for implicit values). 
+
+
+
+
+
 \chapter{The Components of a Virtual Machine}
 
-\section{Language Interface}
+\section{Language Interface \& Bindings}
+\label{sec:language-bindings}
+
+\subsection{Compiler Interface}
+
+\subsection{Runtime Interface}
 
 \section{Command Line Interface}
+
+A command line interface to a CVM should enable two main important functions: to start a CVM with a specified program, and to cover compilation of source of programs and libraries. 
+
+
+
+
+
 
 \section{Threads}
 
@@ -130,7 +221,7 @@ A {\em stack} is the low-level structure of a CVM. It contains a stack of stacka
 
 A stack may or may not represent a whole fiber execution, but there is always at least one stack that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
 
-A stackable frame internally increments reference count to the instruction sequence that it references, and decrements it again upon being popped off its stack. 
+A stackable frame internally increments reference count to the instruction sequence tree that it references, and decrements it again upon being popped off its stack. 
 
 A stackable frame may be a control frame, containing the aforementioned elements, or a native frame, filling in for a native method invocation via \code{FFI} (Foreign Function Invocation). A native frame does not need to contain any program counters due to the nature of its execution. The native function is given access to its stackable frame, so it can e.g. return or throw a value. 
 
@@ -161,6 +252,7 @@ An object can have any number of properties, and also a set of flags that are co
 
 
 \section{Program Structure Information}
+\label{sec:psi}
 
 A program structure information (\code{PSI}) is a forest of tree structures that hold both compile-time and runtime information about types in a program. One of the most important data stored in it are method references. 
 
