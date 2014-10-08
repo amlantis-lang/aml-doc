@@ -221,7 +221,7 @@ When an expression will not fit into a single line, break it according to the fo
 \item Prefer higher-level breaks to lower-level breaks. 
 \item Align the new line with the beginning of the expression at the same level on the previous line. Spaces have to be used for this. 
 \item If the previous rules lead to confusing code or to code that's squished up against the right margin, just indent two tabs instead. 
-\item If the main expression on the line is an assignment, don't forget to wrap the assigned expression in parentheses, if it's to be wrapped on the next line. Otherwise, a compile-time error would be raised, as the following operator applications or function applications could not be chained. 
+\item If the main expression on the line is an assignment or a return statement, don't forget to wrap the assigned expression in parentheses, if it's to be wrapped on the next line. Otherwise, a compile-time error would be raised, as the following operator applications or function applications could not be chained. 
 \item Don't break before a closing parenthesis of a function application.  
 \end{itemize}
 
@@ -315,6 +315,142 @@ alpha := if a_long_boolean_expression
 else
   gamma
 end
+\end{lstlisting}
+
+
+
+
+
+\section{Comments}
+
+Coral programs can have two kinds of comments: implementation comments and documentation comments. Implementation comments are delimited by block \code{/* $\ \ldots$ */} or line \code{//}. Documentation comments are delimited by \code{/*! $\ \ldots$ */} or alternatively \code{/** $\ \ldots$ */}. Documentation comments can be extracted by Coral toolchains. 
+
+Implementation comments are meant for commenting-out code (to temporarily disable it) or for comments about the particular implementation. Documentation comments are meant to describe the specification of the code, independently on the actual implementation. 
+
+Comments should be used to provide additional information that is not readily available in the code itself, or can't be, e.g. information how the corresponding module is build. 
+
+Discussion of non-trivial or non-obvious design decisions is appropriate, but should not duplicate information that is already present (and clearly visible) in the code. Such redundant comments are likely to get out of date and deprecated. 
+
+\paragraph{Note}
+If too many comments are necessary to be included in the code, it might be a sign of a poor quality of the code -- consider rewriting it to make it clearer and get rid of the extra comments. 
+
+Comments should not be enclosed in any decorative boxes made of asterisks or whatever else. 
+
+
+
+
+
+\section{Declarations}
+
+
+
+
+
+
+\subsection{One Per Line}
+
+One declaration per line is recommended, since it encourages commenting, unless the declarations are a part of a pattern matching extraction. 
+
+Multiple declaration expressions on the same line using a semicolon to separate them should be avoided, and should definitely not mix variable and function declarations. 
+
+\example The following shows preferred variable declarations and declarations to be avoided:
+\begin{lstlisting}
+// preferred
+level: Integer
+size: Integer
+
+// avoid
+level, size: Integer
+level: Integer; size: Integer
+\end{lstlisting}
+
+\example Another acceptable alternative is to align the names: 
+\begin{lstlisting}
+level:         Integer
+size:          Integer
+current_entry: Object
+\end{lstlisting}
+
+
+
+
+
+\subsection{Placement}
+
+Preferable is to put declarations at the beginning of scopes (blocks). Variable declarations in the middle of code should be avoided. The only exception is in expressions like generators. 
+
+To optimize variable creation, variables do not have to be defined before first used -- Coral provides the \code{lazy} modifier for variables, which takes care of that. 
+
+
+
+
+
+\subsection{Initialization}
+
+Try to initialize every variable as soon as possible, or use the \code{lazy} modifier on it. 
+
+
+
+
+
+
+\section{Class Definitions}
+
+When writing Coral classes, the following formatting rules should be followed: 
+\begin{itemize}
+\item A space between a method name and the parenthesis of its first parameter list, if any. 
+\item Open brace ``\lstinline!{!'' appears at the end of the same line as the declaration statement. 
+\item Open keyword \code{begin} appears on the next line to the declaration statement. 
+\item Closing brace ``\lstinline!}!'' or close keyword \code{end} appears on a line alone (or followed by the keyword appropriate for the closed term). The only exception is when the close brace or close keyword should end the declaration immediately (usually in method declarations or definitions of methods that have an empty body, thus returning a \code{Unit} value). 
+\item The \code{declare} and \code{begin} keywords should appear alone on their lines. 
+\item Members except instance variables and class instance variables are separated by a blank line. 
+\end{itemize}
+
+
+
+
+
+\section{Statements}
+
+
+
+
+
+
+\subsection{Simple Statements}
+
+Each line should contain at most one statement. Avoid grouping statements on one line, unless there is an obvious reason to do so. 
+
+
+
+
+
+\subsection{Compound Statements}
+
+Compounds statements are those enclosed in a block. 
+\begin{itemize}
+\item The enclosed statements should be indented one more level than the compound statement. 
+\item The opening brace or keyword should be at the end of the line that begins the compound statement. The closing brace or keyword should begin a line and be indented to the beginning of the compound statement, unless that indent would be too deep. 
+\end{itemize}
+
+
+
+
+
+\subsection{\code{return} Statements}
+
+A \code{return} statement with a value should not use parentheses unless required by the syntax.
+
+\example For instance: 
+\begin{lstlisting}
+return
+
+return my_disk.size
+
+return (builder
+    .set_title "hello"
+    .set_message "world"
+    .build)
 \end{lstlisting}
 
 
