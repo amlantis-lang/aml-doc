@@ -89,7 +89,12 @@ The CVM bytecode format has to be complex and robust enough to accommodate most 
 
 
 
-\subsection{The CVM Bytecode}
+\chapter{The CVM Bytecode}
+
+
+
+
+
 
 The CVM bytecode is a binary file containing several parts:
 
@@ -99,42 +104,140 @@ The CVM bytecode is a binary file containing several parts:
 \item Instruction sequence graph -- graph structures of instruction sequences, one per function. Such a graph is represented by a serialized sequence of instruction nodes along with links to other nodes as specified by each node. The original source file may be a single instruction sequence graph, as it is with Coral. 
 \end{itemize}
 
-% TBD: as the reference implementation progresses, complete this section
+This chapter describes the CVM Bytecode file format, \code{.coralb}. Each \code{.coralb} file contains definition of a main instruction sequence graph along with additional graphs, which is unlike Java's \code{.class} file format, which only contains definition of a single class. 
+
+A \code{.coralb} file consists of a stream of 8-bit bytes. All 16-bit, 32-bit, 64-bit and 128-bit quantities are constructed by reading in two, four, eight, and sixteen consecutive 8-bit bytes, respectively. Multibyte data items are always stored in big-endian order, where the high bytes come first. 
+
+The types \code{u1}, \code{u2}, \code{u4}, \code{u8} and \code{u16} represent an unsigned one-, two-, four-, eight-, or sixteen-byte quantity, respectively. 
+
+In order to save disk space, numbers can be also expressed with multi-byte constructs. The types \code{m$n$}, where $1 \leq n \leq 20$, then represent 8-bit byte sequences in big-endian order, where only the last 7 bits are used to represent the corresponding number and the very first bit indicates whether the byte is the last byte in a sequence (the bit is \code{0}), or if it does not end a sequence (the bit is \code{1}). The types \code{m1}, \code{m2}, \code{m3} etc. then respectively represent unsigned numbers of 7-bit, 14-bit, 21-bit. The pseudo-type \code{mx} then represents any of these types. 
+
+The \code{.coralb} file format is presented here using pseudo-structures, written in a C-like notation. The contents of these structures are referred to as {\em items}. An item may also be a {\em table}, which consists of zero or more variable-sized items. Due to that fact, a table index may not be used to directly reference a byte offset in the file. 
 
 
 
 
 
 
-\subsubsection{Bytecode File Layout}
+\section{The \code{File} Structure}
 
-The following listing presents basic sections of a CVM bytecode file. 
+A \code{.coralb} file consists of a single \code{File} structure: 
 
-\begin{enumerate}
-\item Version of bytecode file, major and minor. 
-\item Dialect identifier, determines the backing language for the bytecode file. 
-\item Symbols list, a list of symbols used throughout the bytecode. 
-\item Constants list, a list of constants used throughout the bytecode. These include: integers, floats, strings. 
-\item Type paths list, a list of paths relative to the code described by the bytecode. 
-\item Instruction sequence trees list. 
-\end{enumerate}
+\begin{lstlisting}
+File {
+  u4 magic;
+  u4 major_version;
+  u4 minor_version;
+  dialect_info dialect;
+  mx constant_pool_count;
+  cp_info constant_pool[constant_pool_count];
+  mx graphs_count;
+  graph graphs[graphs_count];
+}
+\end{lstlisting}
+
+The items in the \code{File} structure are as follows: 
+
+\begin{description}[font=\ttfamily\mdseries,style=nextline]
+  \item[magic]
+  The \code{magic} item supplies the magic number identifying the \code{.coralb} file format; for the CVM bytecode, it has the value of \code{0xC0124189}. 
+  \item[major\_version, minor\_version]
+  The \code{major_version} along with the following \code{minor_version} items determine the version of the bytecode file format. A particular CVM may only support file formats in a certain range. 
+  \item[dialect]
+  The \code{dialect} item specifies the identifier and version of the backing language of the \code{File} structure. 
+  \item[constant\_pool\_count]
+  The value of the \code{constant_pool_count} item is equal to the number of entries in the \code{constant_pool} table. 
+  \item[constant\_pool]
+  The \code{constant_pool} item is a table of structures representing various string constants, symbols, numbers and other constants that are referred to within the \code{File} structure and its substructures. Each entry in it is tagged with its format. The \code{constant_pool} is indexed from \code{1} to \code{constant_pool_count}. 
+  \item[graphs\_count]
+  The value of the \code{graphs_count} item is equal to the number of entries in the \code{graphs} table. 
+  \item[graphs]
+  The \code{graphs} item is a table of structures representing instruction sequence graphs. The \code{graphs} table is indexed from \code{1} to \code{graphs_count}. 
+\end{description}
 
 
 
 
 
+\section{The \code{constant_pool} Table}
 
-\subsection{Type Paths \& Scopes}
+Instructions refer to items in the \code{constant_pool} table. All entries have the following general format:
+\begin{lstlisting}
+cp_item {
+  u1 tag;
+  u1 data[];
+}
+\end{lstlisting}
+
+Each item in the \code{constant_pool} table must begin with a 1-byte tag indicating the kind of \code{cp_item} entry. The contents of the \code{data} array vary with the value of \code{tag}. The valid tags and their values are listed in \autoref{table:cp-tags}. The format of the additional information in \code{data} varies with the \code{tag} value. 
+
+\begin{table}[h]
+  \caption{Constant pool item tags}
+  \begin{tabular}{ l r }
+    {\bfseries Constant tag} & {\bfseries Value} \\ \hline \hline
+    \code{Const_UTF8} & 1 \\ \hline
+    \code{Const_Type_Path} & 2 \\ \hline
+    \code{Const_Int16} & 3 \\ \hline
+    \code{Const_Int32} & 4 \\ \hline
+    \code{Const_Int64} & 5 \\ \hline
+    \code{Const_Int128} & 6 \\ \hline
+    \code{Const_UInt16} & 7 \\ \hline
+    \code{Const_UInt32} & 8 \\ \hline
+    \code{Const_UInt64} & 9 \\ \hline
+    \code{Const_UInt128} & 10 \\ \hline
+    \code{Const_Float32} & 11 \\ \hline
+    \code{Const_Float64} & 12 \\ \hline
+    \code{Const_Float128} & 13 \\ \hline
+    \code{Const_Decimal} & 14 \\ \hline
+    \code{Const_Symbol} & 15 \\ \hline
+    \code{Const_String} & 16 \\ \hline
+  \end{tabular}
+  \label{table:cp-tags}
+\end{table}
+
+
+
+
+
+\subsection{The \code{Const_UTF8_Item} Structure}
+
+A CVM must use the unmodified UTF-8 format. It is an universal item for text representation, used in both strings and symbols. 
+
+The \code{Const_UTF8_Item} structure is:
+\begin{lstlisting}
+Const_UTF8_Item {
+  u1 tag;
+  mx length;
+  u1 bytes[length];
+}
+\end{lstlisting}
+
+The items of the \code{Const_UTF8_Item} are the following:
+\begin{description}[font=\ttfamily\mdseries,style=nextline]
+  \item[tag]
+  The \code{tag} item of the \code{Const_UTF8_Item} structure has the value \code{Const_UTF8} ($1$). 
+  \item[length]
+  The value of the \code{length} item gives the number of bytes in the \code{bytes} array (not the length of the resulting string or symbol, due to the nature of multi-byte \mbox{UTF-8}). It is not null-terminated, as that would be redundant. If the array ends with a null byte, it is a real part of the data. 
+  \item[bytes]
+  The \code{bytes} array contains the bytes of the string. The bytes may have any value. 
+\end{description}
+
+
+
+
+
+\section{Type Paths \& Scopes}
 
 A type path is a simple list structure that consists of: 
 \begin{itemize}
-\item A variable symbol. 
-\item A selection symbol. 
-\item An application symbol sublist. 
-\item A type application symbol sublist. 
+  \item A variable symbol. 
+  \item A selection symbol. 
+  \item An application symbol sublist. 
+  \item A type application symbol sublist. 
+  \item An expected type path.
 \end{itemize}
 
-A type path relatively to its used position and scope determines a type, either by pointing it to a node of PSI (\sref{sec:psi}), or, with a variable symbol, to an actual type of a value in a variable. The list of possibilities of type paths may get extended with support for more backing languages. 
+A type path---relatively to its used position and scope---determines a type, either by pointing it to a node of PSI (\sref{sec:psi}), or, with a variable symbol, to an actual type of a value in a variable. The list of possibilities of type paths may get extended with support for more backing languages. 
 
 A type path is built as a sequence of references to symbols in the symbols list and a sequence of designators for each of its node (determining whether a node is a variable symbol, a selection symbol etc.).
 
@@ -148,7 +251,7 @@ A language has to define the order of search for a type, since a type scope is n
 \item The type of the function itself, if the language supports higher-order function types and their extension. 
 \item The type of receiver, if any. 
 \item Super-type(s) of receiver, if any. 
-\item The given type scope assembled while evaluating an instruction sequence tree. 
+\item The given type scope assembled while evaluating an instruction sequence graph. 
 \item Another related types to the type of receiver (if any) or the type of the function, such as a namespace or a module. 
 \item Use a dynamic callback. 
 \end{itemize}
@@ -221,7 +324,7 @@ A {\em stack} is the low-level structure of a CVM. It contains a stack of stacka
 
 A stack may or may not represent a whole fiber execution, but there is always at least one stack that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
 
-A stackable frame internally increments reference count to the instruction sequence tree that it references, and decrements it again upon being popped off its stack. 
+A stackable frame internally increments reference count to the instruction sequence graph that it references, and decrements it again upon being popped off its stack. 
 
 A stackable frame may be a control frame, containing the aforementioned elements, or a native frame, filling in for a native method invocation via \code{FFI} (Foreign Function Invocation). A native frame does not need to contain any program counters due to the nature of its execution. The native function is given access to its stackable frame, so it can e.g. return or throw a value. 
 
@@ -254,9 +357,9 @@ An object can have any number of properties, and also a set of flags that are co
 \section{Program Structure Information}
 \label{sec:psi}
 
-A program structure information (\code{PSI}) is a forest of tree structures that hold both compile-time and runtime information about types in a program. One of the most important data stored in it are method references. 
+A program structure information (\code{PSI}) is a forest of graph structures that hold both compile-time and runtime information about types in a program. One of the most important data stored in it are method references. 
 
-Languages may opt in to implement class objects by having their objects point to various subtrees of a PSI. 
+Languages may opt in to implement class objects by having their objects point to various subgraphs of a PSI. 
 
 
 
