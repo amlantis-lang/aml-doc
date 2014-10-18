@@ -834,6 +834,9 @@ A type variable $t$ conforms to its upper bound and its lower bound conforms to 
 \item
 A class type or a parameterized type conforms to any of its base types. 
 
+\item
+A class type or a parameterized type conforms to a union type, iff it conforms to at least one of the union's component types. 
+
 \item 
 A singleton type ~\lstinline!$p$.type!~ conforms to the type of the path $p$.
 

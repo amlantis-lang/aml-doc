@@ -9,7 +9,7 @@ Names in Coral identify various types, values, methods and constants, which are 
 Bindings of different kinds have a different precedence defined on them: 
 
 \begin{enumerate}
-\item Definitions and declarations that are local have the highest precedence. 
+\item Definitions and declarations that are local have the highest precedence.\footnote{Therefore, local variable and definition names are always preferred to any other name. Function parameters are also treated as local in this sense.} 
 \item Explicit \lstinline@use@ clauses (imports) have the next highest precedence.\footnote{Explicit imports have such high precedence in order to allow binding of different names than those that would be otherwise inherited.} 
 \item Wildcard \lstinline@use@ clauses (imports) have the next highest precedence.
 \item Inherited definitions and declarations have the next highest precedence. 
