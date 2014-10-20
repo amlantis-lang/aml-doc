@@ -171,29 +171,33 @@ cp_item {
 
 Each item in the \code{constant_pool} table must begin with a 1-byte tag indicating the kind of \code{cp_item} entry. The contents of the \code{data} array vary with the value of \code{tag}. The valid tags and their values are listed in \autoref{table:cp-tags}. The format of the additional information in \code{data} varies with the \code{tag} value. 
 
-\begin{table}[h]
+\begin{table}[!h]
   \caption{Constant pool item tags}
   \begin{tabular}{ l r }
     {\bfseries Constant tag} & {\bfseries Value} \\ \hline \hline
-    \code{Const_UTF8} & 1 \\ \hline
+    \code{Const_UTF8}      & 1 \\ \hline
     \code{Const_Type_Path} & 2 \\ \hline
-    \code{Const_Int16} & 3 \\ \hline
-    \code{Const_Int32} & 4 \\ \hline
-    \code{Const_Int64} & 5 \\ \hline
-    \code{Const_Int128} & 6 \\ \hline
-    \code{Const_UInt16} & 7 \\ \hline
-    \code{Const_UInt32} & 8 \\ \hline
-    \code{Const_UInt64} & 9 \\ \hline
-    \code{Const_UInt128} & 10 \\ \hline
-    \code{Const_Float32} & 11 \\ \hline
-    \code{Const_Float64} & 12 \\ \hline
-    \code{Const_Float128} & 13 \\ \hline
-    \code{Const_Decimal} & 14 \\ \hline
-    \code{Const_Symbol} & 15 \\ \hline
-    \code{Const_String} & 16 \\ \hline
+    \code{Const_Int8}      & 3 \\ \hline
+    \code{Const_Int16}     & 4 \\ \hline
+    \code{Const_Int32}     & 5 \\ \hline
+    \code{Const_Int64}     & 6 \\ \hline
+    \code{Const_Int128}    & 7 \\ \hline
+    \code{Const_UInt8}     & 8 \\ \hline
+    \code{Const_UInt16}    & 9 \\ \hline
+    \code{Const_UInt32}    & 10 \\ \hline
+    \code{Const_UInt64}    & 11 \\ \hline
+    \code{Const_UInt128}   & 12 \\ \hline
+    \code{Const_Float32}   & 13 \\ \hline
+    \code{Const_Float64}   & 14 \\ \hline
+    \code{Const_Float128}  & 15 \\ \hline
+    \code{Const_Decimal}   & 16 \\ \hline
+    \code{Const_Symbol}    & 17 \\ \hline
+    \code{Const_String}    & 18 \\ \hline
+    \code{Const_Complex}   & 19 \\ \hline
   \end{tabular}
   \label{table:cp-tags}
 \end{table}
+\FloatBarrier
 
 
 
@@ -226,16 +230,66 @@ The items of the \code{Const_UTF8_Item} are the following:
 
 
 
-\section{Type Paths \& Scopes}
+\subsection{The \code{Const_Type_Path_Item} Structure}
 
 A type path is a simple list structure that consists of: 
 \begin{itemize}
   \item A variable symbol. 
   \item A selection symbol. 
-  \item An application symbol sublist. 
-  \item A type application symbol sublist. 
-  \item An expected type path.
+  \item An application type path argument. 
+  \item A type application type path argument. 
+  \item An application comma.
 \end{itemize}
+
+The \code{Const_Type_Path_Item} structure is:
+\begin{lstlisting}
+Const_Type_Path_Item {
+  u1 tag;
+  mx length;
+  mx element_count;
+  u1 element_types[element_count];
+  u1 elements[length];
+}
+\end{lstlisting}
+
+The items of the \code{Const_Type_Path_Item} are the following:
+\begin{description}[font=\ttfamily\mdseries,style=nextline]
+  \item[tag]
+  The \code{tag} item of the \code{Const_Type_Path_Item} structure has the value \code{Const_Type_Path} ($2$). 
+  \item[length]
+  The value of the \code{length} item gives the number of bytes in the \code{elements} array (not the length of the resulting type path).
+  \item[element\_count]
+  The value of the \code{element_count} item gives the number of bytes in the \code{element_types} array.
+  \item[element\_types]
+  The \code{element_types} array contains bytes that mark the type of each element in the \code{elements} array. The valid values of these bytes are listed in \autoref{table:cp-type-path-element-types}. This array is necessary, because there is no possible sub-language that would express a type path with a special syntax within a single byte array, because a CVM supports identifiers made by any \mbox{UTF-8} strings. 
+  \item[elements]
+  The \code{elements} array contains bytes that are in fact multi-byte numbers (the \code{mx} type). Indices from \code{element_types} then refer to the assembled \code{mx} types, not each byte. Values of these numbers are then references to \code{Const_Symbol_Item}s (variables, selections) or another \code{Const_Type_Path_Item}s (applications, type applications, expected type). It is an error if a type path contains more that one expected type element, and it is okay if it does not contain any expected type (the expected type is then undefined). The index of the expected type element within the \code{elements} array is unspecified. There are no bytes for elements that are a comma, as that is expressed by the type already. A zero value of an element signifies an unspecified type element. 
+\end{description}
+
+% TBD: in Coral, union types of e.g. if-expressions is to be expressed with three type paths: one to a special type that Coral as a backing language should resolve to a union type (or to the least upper bound, which can be derived from any union type), and two that represent the possible types of the if-positive and if-negative branches. (note that the negative branch may itself extend into more branches in case of else-if, and it's okay) // the type parameter to a union type is a tuple type
+
+\begin{table}[!h]
+  \caption{Type path element types}
+  \begin{tabular}{ l r p{6cm} }
+    {\bfseries Element type} & {\bfseries Value} & {\bfseries Note} \\ \hline \hline
+    \code{Type_Path_Variable}         & 1   & expects index of a symbol \\ \hline
+    \code{Type_Path_Selection}        & 2   & expects index of a symbol \\ \hline
+    \code{Type_Path_Application}      & 3   & expects index of a type path \\ \hline
+    \code{Type_Path_Type_Application} & 4   & expects index of a type path \\ \hline
+    \code{Type_Path_Expected_Type}    & 5   & expects index of a type path \\ \hline
+    \code{Type_Path_Left_Parens}      & 6   & not present in \code{elements} \\ \hline
+    \code{Type_Path_Right_Parens}     & 7   & not present in \code{elements} \\ \hline
+    \code{Type_Path_Implicit_Flag}    & 128 & not present in \code{elements}, \newline combined with other values \\ \hline
+  \end{tabular}
+  \label{table:cp-type-path-element-types}
+\end{table}
+\FloatBarrier
+
+
+
+
+
+\subsubsection{Type Paths \& Scopes}
 
 A type path---relatively to its used position and scope---determines a type, either by pointing it to a node of PSI (\sref{sec:psi}), or, with a variable symbol, to an actual type of a value in a variable. The list of possibilities of type paths may get extended with support for more backing languages. 
 
@@ -282,7 +336,101 @@ An implicit conversion based on an implicit value is not the only option of conv
 
 A language may indeed choose multiple such conversions (based on its rules) for each component of a type path, and even multiple conversions for one component (e.g. an implicit value conversion followed by an application conversion). It is therefore possible to even replace the whole type path with conversions and cache the resulting conversion (the key in a cache is the type path in the given used position). 
 
-When talking Coral, the language may also implement implicit parameters, along with implicit conversions. Such a feature may be rendered by using an application conversion on a modified type path, adding a flag that such an extra application is implicit (a CVM has to know of such possibility), and then what CVM does is: if the original function application is directly followed by another application (without selecting another member on the previous result), it ignores that application conversion added to the type path, and if not, then another function application happens, based on the newly added ``virtual'' application conversion (and yet again, the language is tasked with resolving each argument type, which is now tagged as implicit, so that it knows that it should\footnote{Really just ``should'', a CVM is not supposed to check whether it did or did not.} only look for implicit values). 
+When talking Coral, the language may also implement implicit parameters, along with implicit conversions. Such a feature may be rendered by using an application conversion on a modified type path, adding a flag that such an extra application is implicit (a CVM has to know of such possibility), and then what CVM does is: if the original function application is directly followed by another application (without selecting another member on the previous result), it ignores that application conversion added to the type path, and if not, then another function application happens, based on the newly added ``virtual'' application conversion (and yet again, the language is tasked with resolving each argument type, which is now tagged as implicit, so that it knows that it should only look for implicit values). 
+
+
+
+
+
+
+\subsection{The \code{Const_Type_(U)Int$n$_Item} Structures}
+
+A CVM provides for its bytecode a rather wide range of integral types for constants, including both signed and unsigned versions. Numbers that fall out of the scope of these types or numbers that have to be as precise as possible have the \code{Const_Type_Decimal_Item} structure available (including real numbers).
+
+The \lstinline!Const_Type_Int$n$_Item! structures are:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Int8_Item {
+  u1 tag;
+  u1 value;
+}
+Const_Int16_Item {
+  u1 tag;
+  u2 value;
+}
+Const_Int32_Item {
+  u1 tag;
+  u4 value;
+}
+Const_Int64_Item {
+  u1 tag;
+  u8 value;
+}
+Const_Int128_Item {
+  u1 tag;
+  u16 value;
+}
+\end{lstlisting}
+\end{minipage}
+
+The \lstinline!Const_Type_UInt$n$_Item! structures are:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_UInt8_Item {
+  u1 tag;
+  u1 value;
+}
+Const_UInt16_Item {
+  u1 tag;
+  u2 value;
+}
+Const_UInt32_Item {
+  u1 tag;
+  u4 value;
+}
+Const_UInt64_Item {
+  u1 tag;
+  u8 value;
+}
+Const_UInt128_Item {
+  u1 tag;
+  u16 value;
+}
+\end{lstlisting}
+\end{minipage}
+
+The presence of a sign bit in each structure is determined by its tag: \code{Intn} items are signed, \code{UIntn} items are not signed. Unsigned versions of these structures have the same layout. 
+
+
+
+
+
+\subsection{The \code{Const_Type_Float$n$_Item} Structure}
+
+A CVM provide for its bytecode three structures for representing floating-point numbers in binary form. Each value is represented using the IEEE 754 $n$-bit precision format. 
+
+The \code{Const_Type_Float$n$_Item} structures are:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Float32_Item {
+  u1 tag;
+  u4 value;
+}
+Const_Float64_Item {
+  u1 tag;
+  u8 value;
+}
+Const_Float128_Item {
+  u1 tag;
+  u16 value;
+}
+\end{lstlisting}
+\end{minipage}
+
+
 
 
 
@@ -290,12 +438,12 @@ When talking Coral, the language may also implement implicit parameters, along w
 
 \chapter{The Components of a Virtual Machine}
 
-\section{Language Interface \& Bindings}
-\label{sec:language-bindings}
+%\section{Language Interface \& Bindings}
+%\label{sec:language-bindings}
 
-\subsection{Compiler Interface}
+%\subsection{Compiler Interface}
 
-\subsection{Runtime Interface}
+%\subsection{Runtime Interface}
 
 \section{Command Line Interface}
 
