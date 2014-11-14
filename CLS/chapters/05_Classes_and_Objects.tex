@@ -763,7 +763,6 @@ $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
 \end{lstlisting}
 for $(n \geq 0)$, which defines the base classes, behavior and initial state of objects of the class. The extends clause ~\lstinline!extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$!~ can be omitted, in which case ~\lstinline!extends Object!~ is implied. The only class that defines $sc$ as ~\lstinline!()!~ is \code{Object} (meaning that it has no superclass) and it is an error if any other class attempts to do the same. 
 
-% TBD: add explicit primary `constructor (_)`
 \end{itemize}
 
 This class definition defines a type ~\lstinline!$c$[$\tps$]!~ and a primary constructor, which, when applied to arguments conforming to types $\ps$, initializes instances of type ~\lstinline!$c$[$\tps$]!~ by evaluating the primary constructor parts defined in the template $t$. 
@@ -803,10 +802,11 @@ object Sensitive {
 The primary constructor is a special function, more special in its syntax than any other function in Coral. Its definition can spread across three syntactically different places inside of a class definition: formal value parameters, explicit field declarations, explicit primary constructor body. Primary constructor without explicitly defined parameters is equivalent to the default constructor. 
 
 \paragraph{\em Primary constructor parameters}
-These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
+These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
 
 \paragraph{\em Explicit primary constructor fields}
-These are instance value definitions inside the class template (\sref{sec:templates}) that use the formal value parameters either with or without any modification. Formal value parameter used without any modification is equivalent to the expression defining the value of an instance value being only the parameter itself. If the parameter is used without modification, it becomes an alias to the instance value implicitly defined by the primary constructor parameter. As the explicit field can be expected to be accessed more often than the original parameter, a Coral VM implementation may opt in to make the implicit instance value being the alias, instead of the explicit field. 
+These are expressions inside the class template (\sref{sec:templates}) that refer to the formal value parameters, and they become an implicit part of the primary constructor. The evaluation happens after early definitions are evaluated and before explicit primary constructor body is evaluated, but combinations of the two approaches should be avoided for the sake of readability. 
+
 \example An example of an explicit primary constructor field. 
 \begin{lstlisting}
 class C (val y: String) {
@@ -823,9 +823,9 @@ PCtor_Def       ::= 'constructor' PCtor_Fun_Def
 PCtor_Fun_Def   ::= '(' '_' ')' (':=' Constr_Expr | Constr_Block)
 Constr_Expr     ::= Self_Invocation
                   | Constr_Block2
-Self_Invocation ::= 'self' Argument_Exprs {Argument_Exprs}
+Self_Invocation ::= 'self' Argument_Exprs
                   | Sup_Invocation
-Sup_Invocation  ::= 'super' [Argument_Exprs {Argument_Exprs}]
+Sup_Invocation  ::= 'super' [Argument_Exprs]
 Constr_Block    ::= Constr_Block1 | Constr_Block2
 Constr_Block1   ::= [semi Constr_Block3] 'end' ['constructor']
 Constr_Block2   ::= '{' [Constr_Block3] '}'
