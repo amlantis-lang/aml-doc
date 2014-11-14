@@ -130,7 +130,7 @@ File {
   u4 minor_version;
   dialect_info dialect;
   mx constant_pool_count;
-  cp_info constant_pool[constant_pool_count];
+  cp_item constant_pool[constant_pool_count];
   mx graphs_count;
   graph graphs[graphs_count];
 }
@@ -175,25 +175,26 @@ Each item in the \code{constant_pool} table must begin with a 1-byte tag indicat
   \caption{Constant pool item tags}
   \begin{tabular}{ l r }
     {\bfseries Constant tag} & {\bfseries Value} \\ \hline \hline
-    \code{Const_UTF8}      & 1 \\ \hline
-    \code{Const_Type_Path} & 2 \\ \hline
-    \code{Const_Int8}      & 3 \\ \hline
-    \code{Const_Int16}     & 4 \\ \hline
-    \code{Const_Int32}     & 5 \\ \hline
-    \code{Const_Int64}     & 6 \\ \hline
-    \code{Const_Int128}    & 7 \\ \hline
-    \code{Const_UInt8}     & 8 \\ \hline
-    \code{Const_UInt16}    & 9 \\ \hline
-    \code{Const_UInt32}    & 10 \\ \hline
-    \code{Const_UInt64}    & 11 \\ \hline
-    \code{Const_UInt128}   & 12 \\ \hline
-    \code{Const_Float32}   & 13 \\ \hline
-    \code{Const_Float64}   & 14 \\ \hline
-    \code{Const_Float128}  & 15 \\ \hline
-    \code{Const_Decimal}   & 16 \\ \hline
-    \code{Const_Symbol}    & 17 \\ \hline
-    \code{Const_String}    & 18 \\ \hline
-    \code{Const_Complex}   & 19 \\ \hline
+    \code{Const_UTF8}                & 1 \\ \hline
+    \code{Const_Type_Path_Mutable}   & 2 \\ \hline
+    \code{Const_Type_Path_Immutable} & 3 \\ \hline
+    \code{Const_Int8}                & 4 \\ \hline
+    \code{Const_Int16}               & 5 \\ \hline
+    \code{Const_Int32}               & 6 \\ \hline
+    \code{Const_Int64}               & 7 \\ \hline
+    \code{Const_Int128}              & 8 \\ \hline
+    \code{Const_UInt8}               & 9 \\ \hline
+    \code{Const_UInt16}              & 10 \\ \hline
+    \code{Const_UInt32}              & 11 \\ \hline
+    \code{Const_UInt64}              & 12 \\ \hline
+    \code{Const_UInt128}             & 13 \\ \hline
+    \code{Const_Float32}             & 14 \\ \hline
+    \code{Const_Float64}             & 15 \\ \hline
+    \code{Const_Float128}            & 16 \\ \hline
+    \code{Const_Decimal}             & 17 \\ \hline
+    \code{Const_Complex}             & 18 \\ \hline
+    \code{Const_Symbol}              & 19 \\ \hline
+    \code{Const_String}              & 20 \\ \hline
   \end{tabular}
   \label{table:cp-tags}
 \end{table}
@@ -230,7 +231,7 @@ The items of the \code{Const_UTF8_Item} are the following:
 
 
 
-\subsection{The \code{Const_Type_Path_Item} Structure}
+\subsection{The \code{Const_Type_Path_*_Item} Structures}
 
 A type path is a simple list structure that consists of: 
 \begin{itemize}
@@ -241,21 +242,22 @@ A type path is a simple list structure that consists of:
   \item An application comma.
 \end{itemize}
 
-The \code{Const_Type_Path_Item} structure is:
+The \code{Const_Type_Path_Mutable_Item} (and \code{Const_Type_Path_Immutable_Item}\footnote{The structures are the same when it comes to their format.}) structures are:
 \begin{lstlisting}
-Const_Type_Path_Item {
+Const_Type_Path_Mutable_Item {
   u1 tag;
   mx length;
   mx element_count;
+  u1 flags;
   u1 element_types[element_count];
   u1 elements[length];
 }
 \end{lstlisting}
 
-The items of the \code{Const_Type_Path_Item} are the following:
+The items of both the \code{Const_Type_Path_Mutable_Item} and \code{Const_Type_Path_Immutable_Item} are the following:
 \begin{description}[font=\ttfamily\mdseries,style=nextline]
   \item[tag]
-  The \code{tag} item of the \code{Const_Type_Path_Item} structure has the value \code{Const_Type_Path} ($2$). 
+  The \code{tag} item of the structure has the value \code{Const_Type_Path_Mutable} ($2$) or \code{Const_Type_Path_Immutable} ($3$). 
   \item[length]
   The value of the \code{length} item gives the number of bytes in the \code{elements} array (not the length of the resulting type path).
   \item[element\_count]
@@ -268,17 +270,37 @@ The items of the \code{Const_Type_Path_Item} are the following:
 
 % TBD: in Coral, union types of e.g. if-expressions is to be expressed with three type paths: one to a special type that Coral as a backing language should resolve to a union type (or to the least upper bound, which can be derived from any union type), and two that represent the possible types of the if-positive and if-negative branches. (note that the negative branch may itself extend into more branches in case of else-if, and it's okay) // the type parameter to a union type is a tuple type
 
+% Addition of immutable type path: this can be used to optimize type path resolution, which is bound to each node and cached along with it. If a type path is immutable, then the node does not need to have a mutable-size cache along with it, because the first item that gets resolved (or is pre-cached) is the only one that will always be resolved, as specified by the backing language. Coral may use immutable type paths e.g. for variables, which certainly never change, as they are local to the evaluated instruction sequence graph. Moreover, if such a type path is nested into another type path, its type version does not need to be a part of the cache entry metadata. Moreover, it can be used with mutable type paths in the following way: selection points to an immutable type path and that is a variable, which gets a fixed value once resolved - usable with constant object references, like the object notation in Coral, and yet - when the parent mutable type path cache item is invalidated, the backing language is given an opportunity to change the underlying object along with the type path by replacing it with a reference to another type path or just reset it to another object, still without needing a full cache.
+
+\begin{table}[!h]
+  \caption{Type path flags}
+  \begin{tabular}{ l r p{6.5cm} }
+    {\bfseries Flag} & {\bfseries Value} & {\bfseries Note} \\ \hline \hline
+    \code{Type_Path_Relative} & 0 & path is relative \\ \hline
+    \code{Type_Path_Rooted} & 1 & path is absolute \\ \hline
+    \code{Type_Path_Private} & 2 & path is not referring to user-accessible type \\ \hline
+    \code{Type_Path_Null_Override} & 4 & path is overriding nullability \\ \hline
+    \code{Type_Path_Nullable} & 8 & path is forced nullable; \newline 0 on this bit is forced non-nullable \\ \hline
+  \end{tabular}
+  \label{table:cp-type-path-flags}
+\end{table}
+\FloatBarrier
+
 \begin{table}[!h]
   \caption{Type path element types}
-  \begin{tabular}{ l r p{6cm} }
+  \begin{tabular}{ l r p{6.5cm} }
     {\bfseries Element type} & {\bfseries Value} & {\bfseries Note} \\ \hline \hline
-    \code{Type_Path_Variable}         & 1   & expects index of a symbol \\ \hline
-    \code{Type_Path_Selection}        & 2   & expects index of a symbol \\ \hline
+    \code{Type_Path_Variable}         & 1   & expects index of a symbol \\ \hline % resolved automatically into an appropriate sub-type-path prior to resolution being passed to the backing language
+    \code{Type_Path_Selection}        & 2   & expects index of a symbol or type path \\ \hline
     \code{Type_Path_Application}      & 3   & expects index of a type path \\ \hline
     \code{Type_Path_Type_Application} & 4   & expects index of a type path \\ \hline
     \code{Type_Path_Expected_Type}    & 5   & expects index of a type path \\ \hline
     \code{Type_Path_Left_Parens}      & 6   & not present in \code{elements} \\ \hline
     \code{Type_Path_Right_Parens}     & 7   & not present in \code{elements} \\ \hline
+    \code{Type_Path_Application_Name} & 8   & expects index of a symbol \\ \hline
+    \code{Type_Path_Projection}       & 9   & not present in \code{elements} \\ \hline % this converts the previous elements into something like Coral's (e).type, and the following t is then (e).type#t
+    \code{Type_Path_Rooted}           & 10  & not present in \code{elements} \\ \hline
+    \code{Type_Path_Splat_Flag}       & 64  & not present in \code{elements}, \newline combined with other values \\ \hline
     \code{Type_Path_Implicit_Flag}    & 128 & not present in \code{elements}, \newline combined with other values \\ \hline
   \end{tabular}
   \label{table:cp-type-path-element-types}
@@ -329,10 +351,10 @@ An implicit conversion based on an implicit value is not the only option of conv
 \item An implicit value conversion on selection. \footnote{Used in Coral for view application.}
 \item A conversion specified by the language itself (e.g. numeric widening). 
 \item Application conversion. \footnote{Used in Coral for method conversion -- evaluation and empty application.}
-\item Eta-expansion. \footnote{Basically a conversion from a complex type path into a simple path that ends with an application symbol, created by evaluating the preceding nodes up to the last function reference.}
+\item Eta-expansion. \footnote{Basically a conversion from a complex type path into a simple path that ends with an application symbol, created by evaluating the preceding nodes up to the last function reference. If the type path is an application, then it gets converted to a selection instead, so that incomplete applications to methods with multiple parameter lists can be converted into partial applications -- and therefore the backing language does not need to care about that, as long as it registers its multi-param-list methods correctly along with ad-hoc lambda support (true for every backing language that has registered an appropriate function type).}
 \item Type application. \footnote{Used in Coral for value conversion -- type instantiation, and also type inference that does not need to be deferred on selections, as the whole selection is made available with the type path, and Coral chooses to treat empty applications as selections.}
 \end{itemize}
-% TBD: determine if more conversions during type resolution are needed. 
+% TBD: determine if more conversions during type resolution are needed. Do this while implementing the type path structure along with the backing language model, so that the backing language has all the tools it needs to proceed as fast and as simply as it can. 
 
 A language may indeed choose multiple such conversions (based on its rules) for each component of a type path, and even multiple conversions for one component (e.g. an implicit value conversion followed by an application conversion). It is therefore possible to even replace the whole type path with conversions and cache the resulting conversion (the key in a cache is the type path in the given used position). 
 
@@ -343,11 +365,11 @@ When talking Coral, the language may also implement implicit parameters, along w
 
 
 
-\subsection{The \code{Const_Type_(U)Int$n$_Item} Structures}
+\subsection{The \code{Const_(U)Int$n$_Item} Structures}
 
-A CVM provides for its bytecode a rather wide range of integral types for constants, including both signed and unsigned versions. Numbers that fall out of the scope of these types or numbers that have to be as precise as possible have the \code{Const_Type_Decimal_Item} structure available (including real numbers).
+A CVM provides for its bytecode a rather wide range of integral types for constants, including both signed and unsigned versions. Numbers that fall out of the scope of these types or numbers that have to be as precise as possible have the \code{Const_Decimal_Item} structure available (including real numbers).
 
-The \lstinline!Const_Type_Int$n$_Item! structures are:
+The \lstinline!Const_Int$n$_Item! structures are:
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}
@@ -374,7 +396,7 @@ Const_Int128_Item {
 \end{lstlisting}
 \end{minipage}
 
-The \lstinline!Const_Type_UInt$n$_Item! structures are:
+The \lstinline!Const_UInt$n$_Item! structures are:
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}
@@ -401,17 +423,17 @@ Const_UInt128_Item {
 \end{lstlisting}
 \end{minipage}
 
-The presence of a sign bit in each structure is determined by its tag: \code{Intn} items are signed, \code{UIntn} items are not signed. Unsigned versions of these structures have the same layout. 
+The presence of a sign bit in each structure is determined by its tag: \code{Int$n$} items are signed, \code{UInt$n$} items are not signed. Unsigned versions of these structures have the same layout. 
 
 
 
 
 
-\subsection{The \code{Const_Type_Float$n$_Item} Structure}
+\subsection{The \code{Const_Float$n$_Item} Structure}
 
-A CVM provide for its bytecode three structures for representing floating-point numbers in binary form. Each value is represented using the IEEE 754 $n$-bit precision format. 
+A CVM provides for its bytecode three structures for representing floating-point numbers in binary form. Each value is represented using the IEEE 754 $n$-bit precision format. 
 
-The \code{Const_Type_Float$n$_Item} structures are:
+The \code{Const_Float$n$_Item} structures are:
 
 \begin{minipage}{\linewidth}
 \begin{lstlisting}
@@ -435,15 +457,159 @@ Const_Float128_Item {
 
 
 
+\subsection{The \code{Const_Decimal_Item} Structure}
+
+A CVM provides for its bytecode a structure for representing arbitrary-precision and arbitrary-size numbers, including integral and real numbers. 
+
+The \code{Const_Decimal_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Decimal_Item {
+  u1 tag;
+  mx length;
+  mx scale;
+  u1 numbers[length];
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+
+\subsection{The \code{Const_Symbol_Item} Structure}
+
+A CVM uses this structure to represent names in programs. 
+
+The \code{Const_Symbol_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Symbol_Item {
+  u1 tag;
+  mx name_index;
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+
+\subsection{The \code{Const_String_Item} Structure}
+
+A CVM uses this structure to represent text literals in programs. 
+
+The \code{Const_String_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_String_Item {
+  u1 tag;
+  mx string_index;
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+
+\subsection{The \code{Const_Complex_Item} Structure}
+
+A CVM uses this structure to represent complex numbers in programs. 
+
+The \code{Const_Complex_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Complex_Item {
+  u1 tag;
+  mx real_index;
+  mx imaginary_index;
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+\section{The \code{graphs} Table}
+
+The \code{graphs} table contains \code{graphs_count} items. Each item represents an instruction sequence graph and has the following general format:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+graph {
+  u1 opcode;
+  u1 data[];
+}
+\end{lstlisting}
+\end{minipage}
+
+Each item in the \code{graphs} table must begin with a 1-byte opcode indicating the kind of \code{graph} entry. The contents of the \code{data} array vary with the value of \code{opcode}. The valid opcodes and their values are listed in \autoref{table:opcodes}. The format of the additional information in \code{data} varies with the \code{opcode} value. 
+
+% TBD: update the table as it is definitely not finished yet
+\begin{table}[!h]
+  \caption{Graph opcodes}
+  \begin{tabular}{ l r }
+    {\bfseries Opcode}         & {\bfseries Value} \\ \hline \hline
+    \code{Op_Noop}             & 1 \\ \hline
+    \code{Op_Sequence}         & 2 \\ \hline
+    \code{Op_Store}            & 3 \\ \hline
+    \code{Op_Store_Multi}      & 4 \\ \hline
+    \code{Op_Branch}           & 5 \\ \hline
+    \code{Op_Branch_Neg}       & 6 \\ \hline
+    \code{Op_Parallel}         & 7 \\ \hline
+    \code{Op_Jump}             & 8 \\ \hline
+    \code{Op_Label}            & 9 \\ \hline
+    \code{Op_Val_Dcl}          & 10 \\ \hline
+    \code{Op_Param_Dcl}        & 11 \\ \hline
+    \code{Op_Result_Dcl}       & 12 \\ \hline
+    \code{Op_Unapply}          & 13 \\ \hline
+    \code{Op_Apply}            & 14 \\ \hline
+    \code{Op_Test_Type}        & 15 \\ \hline
+    \code{Op_Use_Type}         & 16 \\ \hline % use clause
+    \code{Op_Const}            & 17 \\ \hline % including nil - 0 value
+    \code{Op_Val}              & 18 \\ \hline
+    \code{Op_Return}           & 19 \\ \hline
+    \code{Op_Throw}            & 20 \\ \hline
+    \code{Op_Catch}            & 21 \\ \hline
+    \code{Op_Annotated}        & 22 \\ \hline
+    \code{Op_Type_Cache}       & 23 \\ \hline
+    \code{Op_Metadata}         & 24 \\ \hline
+    \code{Op_Native}           & 25 \\ \hline
+    \code{Op_Loop}             & 26 \\ \hline
+    \code{Op_Memoize}          & 27 \\ \hline
+    \code{Op_Self}             & 28 \\ \hline
+    \code{Op_Super}            & 29 \\ \hline
+    \code{Op_Nested_Self}      & 30 \\ \hline
+    \code{Op_Nested_Super}     & 31 \\ \hline
+    \code{Op_Select}           & 32 \\ \hline % method values, can include arguments (useful with method values of methods with multiple parameter lists - apply would fail, select is ok)
+  \end{tabular}
+  \label{table:opcodes}
+\end{table}
+\FloatBarrier
+
+
+
+
+
+
 
 \chapter{The Components of a Virtual Machine}
 
-%\section{Language Interface \& Bindings}
-%\label{sec:language-bindings}
+\section{Language Interface \& Bindings}
+\label{sec:language-bindings}
 
-%\subsection{Compiler Interface}
+\subsection{Compiler Interface}
 
-%\subsection{Runtime Interface}
+\subsection{Runtime Interface}
 
 \section{Command Line Interface}
 
@@ -470,9 +636,9 @@ Fibers may be passed between threads, but for this to actually work, synchroniza
 
 A {\em stack} is the low-level structure of a CVM. It contains a stack of stackable frames, which are structures containing reference to an instruction sequence, maintaining an instruction pointer (program counter), containing references to argument values, the result value and thrown values, and optionally some more metadata, e.g. line numbers and corresponding files. 
 
-A stack may or may not represent a whole fiber execution, but there is always at least one stack that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
+A stack may or may not represent a whole fiber execution, but there is always at least one stack per thread that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
 
-A stackable frame internally increments reference count to the instruction sequence graph that it references, and decrements it again upon being popped off its stack. 
+A stackable frame internally increments reference count to the instruction sequence graph that it references, and decrements it again upon being popped off its stack. This way an instruction sequence graph is persisted during evaluation, while the original function may be already deleted or replaced after a hot swap of code. 
 
 A stackable frame may be a control frame, containing the aforementioned elements, or a native frame, filling in for a native method invocation via \code{FFI} (Foreign Function Invocation). A native frame does not need to contain any program counters due to the nature of its execution. The native function is given access to its stackable frame, so it can e.g. return or throw a value. 
 
