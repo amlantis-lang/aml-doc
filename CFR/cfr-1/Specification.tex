@@ -561,8 +561,8 @@ Each item in the \code{graphs} table must begin with a 1-byte opcode indicating 
     {\bfseries Opcode}         & {\bfseries Value} \\ \hline \hline
     \code{Op_Noop}             & 1 \\ \hline
     \code{Op_Sequence}         & 2 \\ \hline
-    \code{Op_Store}            & 3 \\ \hline
-    \code{Op_Store_Multi}      & 4 \\ \hline
+    \code{Op_Store}            & 3 \\ \hline % assignment
+    \code{Op_Store_Multi}      & 4 \\ \hline % multi-assignment (a, b := b, a)
     \code{Op_Branch}           & 5 \\ \hline
     \code{Op_Branch_Neg}       & 6 \\ \hline
     \code{Op_Parallel}         & 7 \\ \hline
@@ -591,6 +591,11 @@ Each item in the \code{graphs} table must begin with a 1-byte opcode indicating 
     \code{Op_Nested_Self}      & 30 \\ \hline
     \code{Op_Nested_Super}     & 31 \\ \hline
     \code{Op_Select}           & 32 \\ \hline % method values, can include arguments (useful with method values of methods with multiple parameter lists - apply would fail, select is ok)
+    \code{Op_Type_Dcl}         & 33 \\ \hline
+    \code{Op_Type_Def}         & 34 \\ \hline
+    \code{Op_Method_Dcl}       & 35 \\ \hline
+    \code{Op_Method_Def}       & 36 \\ \hline
+    \code{Op_Type_Param_Dcl}   & 37 \\ \hline
   \end{tabular}
   \label{table:opcodes}
 \end{table}
