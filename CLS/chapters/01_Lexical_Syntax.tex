@@ -75,27 +75,27 @@ abstract      advice        advice-execution            after
 alias         annotation    arguments     around        as
 aspect        begin         before        bitfield      break
 broken        case          catch         class         clone
-cloned        constant      constructor   declare       def
-delta         destructor    digits        do            else
-elsif         end           ensure        enum          execution
-exhausted     extends       final         for           for-some
-function      get           goto          handler       if
-implements    implicit      in            include       interface
-invoke        is            label         lazy          let
-loop          macro         match         memoize       message
-method        module        native        next          nil
-no            object        of            opaque        operator
-out           override      pointcut      pragma        prepend
-private       property      protected     protocol      public
-raise         raising       range         record        redo
-refine        refinement    rescue        retry         return
-returning     requires      reverse       sealed        self
-set           skip          step          super         target
-then          this          throw         throwing      trait
-transparent   type          unless        until         union
-unit-of-measure             use           val           var
-yes           weak          when          while         with
-yield
+cloned        constant      constraint    constructor   declare
+def           delta         destructor    digits        do
+else          elsif         end           ensure        enum
+execution     exhausted     extends       final         for
+for-some      function      get           goto          handler
+if            implements    implicit      in            include
+interface     invoke        is            label         lazy
+let           loop          macro         match         memoize
+message       method        module        native        next
+nil           no            object        of            opaque
+operator      optional      out           override      pointcut
+pragma        prepend       private       property      protected
+protocol      public        raise         raising       range
+record        redo          refine        refinement    rescue
+retry         return        returning     requires      reverse
+sealed        self          set           skip          soft
+step          super         target        then          this
+throw         throwing      trait         transparent   type
+unless        unowned       until         union         unit-of-measure
+use           val           var           yes           weak
+when          while         with          yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -259,13 +259,15 @@ Letters in the exponent type and float type literals have to be lower-case in Co
 \subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
 
 \syntax\begin{lstlisting}
-imaginary_literal ::= real_number_literal 'i'
-complex_literal ::= real_number_literal ('+' | '-') imaginary_literal
-	| imaginary_literal ('+' | '-') real_number_literal
+imaginary_literal   ::= real_number_literal 'i'
+complex_literal     ::= [real_number_literal ('+' | '-') ]
+                        imaginary_literal
+	                  | imaginary_literal ('+' | '-') 
+	                    real_number_literal
 real_number_literal ::= integer_literal | float_literal
-number_literal ::= real_number_literal
-	| imaginary_literal
-	| complex_literal
+number_literal      ::= real_number_literal
+	                  | imaginary_literal
+	                  | complex_literal
 \end{lstlisting}
 
 \subsection{Units of Measure}
@@ -311,7 +313,7 @@ String literals are members of the type \lstinline@String@. Single quotes in sim
 
 \syntax\begin{lstlisting}
 symbol_literal       ::= simple_symbol | quoted_symbol
-simple_symbol        ::= ':' simple_id
+simple_symbol        ::= ':' plain_id
 quoted_symbol        ::= simple_quoted_symbol | interpolable_symbol
 simple_quoted_symbol ::= ':'' {string_element} '''
 interpolable_symbol  ::= ':"' {int_string_element} '"'
@@ -359,7 +361,7 @@ Dictionary_Literal ::= '%' Collection_Flags '{' Dict_Exprs '}'
 Bag_Literal        ::= '%' Collection_Flags '(' Exprs ')'
 Dict_Exprs         ::= Dict_Expr {',' Dict_Expr}
 Dict_Expr          ::= Expr '=>' Expr
-	                 | simple_id ':' Expr
+	                 | id ':' Expr
 Collection_Flags   ::= printable_char {printable_char}
 \end{lstlisting}
 

@@ -241,12 +241,15 @@ A variable definition ~\lstinline@var $x_1 \commadots x_n$: $T$ := $e$@~ is a sh
 
 \syntax\begin{lstlisting}
 Prop_Dcl   ::= 'property' ['(' Prop_Specs ')'] simple_id 
-             [':' Type]
+               [':' Type]
 Prop_Specs ::= Prop_Spec {',' Prop_Spec}
-Prop_Spec  ::= ([Access_Modifier] ('get' | 'set')) | 'weak'
+Prop_Spec  ::= ([Access_Modifier] ('get' | 'set')) 
+             | ['optional'] 'weak'
+             | 'unowned'
+             | ['optional'] 'soft'
 Prop_Def   ::= 'property' ['(' Prop_Specs ')'] simple_id 
-             [':' Type]
-             '{' Prop_Impl {semi Prop_Impl} '}'
+               [':' Type]
+               '{' Prop_Impl {semi Prop_Impl} '}'
 Prop_Impl  ::= ('get' Prop_Get_Impl)
              | ('set' Prop_Set_Impl)
              | ('val' ':=' Expr)
@@ -270,6 +273,18 @@ Properties defined with \code{set}\footnote{It is also possible to declare/defin
 \item
 Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@. 
 
+\item
+Properties defined with \code{unowned} are stored as unowned references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Unowned_Reference[$T$]@. 
+
+\item
+Properties defined with \code{soft} are stored as unowned references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Soft_Reference[$T$]@. 
+
+\item
+The getter and setter, including both implicit and explicit versions, automatically wrap (assignment) or unwrap (evaluation) the corresponding reference type. The default values defined with \code{val} or \code{var} do the same. 
+
+\item
+If the property is declared as \code{optional}, then the property is stored in an instance variable of type \code{A_Reference[Option[$T$]]}, where \code{A_Reference} is one of \code{Weak_Reference}, \code{Unowned_Reference} or \code{Soft_Reference}, and is again automatically wrapped and unwrapped as appropriate, but inside the \code{Option[$T$]} type. Should the reference be cleared, then \code{None} is set as the value. 
+
 \end{enumerate}
 
 Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x$_=@, declared as follows:
@@ -279,7 +294,7 @@ def $x$ (): $T$; end
 def $x$_= (y: $T$): (); end
 \end{lstlisting}
 
-Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation. 
+Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation due to implicit conversions (\sref{sec:implicit-conversions}). 
 
 
 
@@ -311,7 +326,7 @@ Type_Dcl ::= id [Type_Param_Clause]
              ['>:' Type] ['<:' Type]
 Def      ::= 'type' Type_Def
 Type_Def ::= id [Type_Param_Clause] 
-             (':=' | 'is') ['alias'] Type
+             (':=' | 'is') [['alias'] Type | 'class']
 \end{lstlisting}
 
 A {\em type declaration} \lstinline!type $t$[$\tps$] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
@@ -535,7 +550,7 @@ Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
 Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] id 
-                [':' Param_Type] [':=' Expr]
+                  [':' Param_Type] [':=' Expr]
                 | Literal
 Param_Extra   ::= ['lazy'] [Param_Io] [Param_Rw] 
                   ['*' | '&' | '^']

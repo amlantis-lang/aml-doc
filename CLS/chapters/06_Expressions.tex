@@ -596,6 +596,8 @@ Coral uses variable closure when defining a block expression.
 
 If a block expression is used just as a statement, it implicitly inherits access to all variables and methods defined in the scope in which it itself is defined. 
 
+Variables are made available via inner hidden instance variables of the implicit function. This includes the \code{self} object of the outer scope, if any methods are to be executed from within the block. Those variables are referenced with a strong reference, and therefore may cause in some situations retain cycles -- this can be solved by using {\em capture lists}, which can override this default behavior and store the reference as either \code{weak}, \code{soft} or \code{unowned} reference, to break the retain cycle.\footnote{Quite useful with lazy definitions of instance variables, where the expression is wrapped in an implicit block.} 
+
 If a block expression is used as an argument in a function application (\sref{sec:function-applications}), it is used as a functor, and is provided with read and write access to variables in the scope that the function application appears in, and with an access to the \code{self} reference, including any nested ~\lstinline!$C$.self!~ references (\sref{sec:self-this-super}). Write access to variables is provided in a manner equivalent to \code{out} arguments. 
 
 Variable closure is applied to anonymous functions (\sref{sec:anonymous-functions}) as well. 
@@ -1744,10 +1746,13 @@ Block_Stat    ::= Use
                 | {Annotation} {Local_Modifier} Tmpl_Def
                 | Expr
                 | Alias_Expr
+                | Capture_Usage
                 | ()
 Template_Stat ::= Use
                 | {Annotation} {Modifier} Def
                 | {Annotation} {Modifier} Dcl
+                | Prop_Dcl
+                | Prop_Def
                 | 'include' Container_Path [Cond_Modifier]
                 | 'prepend' Container_Path [Cond_Modifier]
                 | Expr
@@ -1765,6 +1770,7 @@ Fun_Dec_Expr  ::= {Annotation} Dcl
                 | 'native' [Expr]
                 | ()
 Alias_Expr    ::= 'alias' symbol_literal 'is' symbol_literal
+Capture_Usage ::= 'use' id {',' id} 'as' ('weak' | 'unowned' | 'soft')
 \end{lstlisting}
 
 Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{nil}, or the empty statement/expression, whose value is again \code{nil}. 

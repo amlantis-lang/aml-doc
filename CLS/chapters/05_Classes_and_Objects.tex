@@ -185,7 +185,7 @@ Metaclasses of classes may be accessed using the following language construct.
 
 \syntax\begin{lstlisting}
 Metaclass_Access ::= 'class' '<<' Metaclass_Obj semi 
-                     [Exprs] 'end'
+                     [Template_Body] 'end'
 Metaclass_Obj    ::= Type | Path | 'self' | id
 \end{lstlisting}
 
@@ -715,6 +715,7 @@ Class_Param_Clause  ::= '(' [Class_Params] ')'
 Class_Params        ::= Class_Param {',' Class_Param}
 Class_Param         ::= {Annotation} ['lazy'] ['in'] 
                         [{Modifier} ('val' | 'var')]
+                        ['*' | '&' | '^']
                         id [':' Param_Type] [':=' Expr]
 Class_Tmpl_Env      ::= 'extends' [Early_Defs] Class_Parents
                         semi [Template_Body] 'end' ['class']
@@ -1228,14 +1229,31 @@ Aspect_Stat     ::= Advice_Stat
 \label{sec:enums}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= id ['extends' Class_Parents] 'is' ['bitfield'] 
-                   'enum' '(' Enum_Field {semi Enum_Field} ')'
-Enum_Field     ::= id [':=' scalar_literal]
+Const_Type_Def     ::= id Enum_Param_Clauses
+                       ['extends' Class_Parents] 
+                       'is' ['bitfield'] 
+                       'enum' '(' Enum_Field {semi Enum_Field} ')'
+                       [Enum_Body]
+Enum_Field         ::= id [':=' scalar_literal]
+                     | id {'(' [Exprs] ')'}
+Enum_Param_Clauses ::= {Annotation} {Enum_Param_Clause}
+Enum_Param_Clause  ::= '(' [Enum_Params] ')'
+Enum_Params        ::= Enum_Param {',' Enum_Param}
+Enum_Param         ::= {Annotation} ['in']
+                       [{Modifier} ('val' | 'var')]
+                       ['*' | '&' | '^']
+                       id [':' Param_Type] [':=' Expr]
+Enum_Body          ::= Template_Body
 \end{lstlisting}
 
-% TODO: when primary constructors are introduced, add them to enums as well
-
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
+
+An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in three forms: 
+\begin{itemize}
+  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear. 
+  \item Initialized with nothing, then each enum constant is by itself the ordering, no implicit literal value is added. The comparison operators are automatically added and their implementations reflect the order in which the enum constants appear. 
+  \item Initialized with custom expressions. Each argument expression has to have a corresponding constructor defined in the enum template body. It is highly recommended for every enum constant to be immutable, but it is not mandatory. 
+\end{itemize}
 
 
 
