@@ -85,17 +85,18 @@ interface     invoke        is            label         lazy
 let           loop          macro         match         memoize
 message       method        module        native        next
 nil           no            object        of            opaque
-operator      optional      out           override      pointcut
-pragma        prepend       private       property      protected
-protocol      public        raise         raising       range
-record        redo          refine        refinement    rescue
-retry         return        returning     requires      reverse
-sealed        self          set           skip          soft
-step          super         target        then          this
-throw         throwing      trait         transparent   type
-unless        unowned       until         union         unit-of-measure
-use           val           var           yes           weak
-when          while         with          yield
+operator      optional      origin        out           override
+pointcut      pragma        prepend       private       property
+protected     protocol      public        raise         raising
+range         record        redo          refine        refinement
+rescue        retry         return        returning     requires
+reverse       sealed        self          set           skip
+soft          step          super         target        then
+this          throw         throwing      trait         transparent
+type          unless        unowned       until         union
+unit-of-measure             use           val           var
+yes           weak          when          while         with
+yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
@@ -171,7 +172,7 @@ hexadecimal_numeral ::= '0x' | hex_digit {['_'] hex_digit}
 digit               ::= '0' | non_zero_digit
 non_zero_digit      ::= '1' | $\cdots$ | '9'
 hex_digit           ::= '1' | $\cdots$ | '9' | 'a' | $\cdots$ | 'f'
-octal_numeral       ::= '0' oct_digit {'_' oct_digit}
+octal_numeral       ::= '0o' oct_digit {'_' oct_digit}
 oct_digit           ::= '0' | $\cdots$ | '7'
 binary_numeral      ::= '0b' bin_digit {['_'] bin_digit}
 bin_digit           ::= '0' | '1'
@@ -360,7 +361,7 @@ List_Literal       ::= '%' Collection_Flags '[' Exprs ']'
 Dictionary_Literal ::= '%' Collection_Flags '{' Dict_Exprs '}'
 Bag_Literal        ::= '%' Collection_Flags '(' Exprs ')'
 Dict_Exprs         ::= Dict_Expr {',' Dict_Expr}
-Dict_Expr          ::= Expr '=>' Expr
+Dict_Expr          ::= Simple_Expr1 '=>' Expr
 	                 | id ':' Expr
 Collection_Flags   ::= printable_char {printable_char}
 \end{lstlisting}

@@ -132,9 +132,18 @@ Constr ::= Annot_Type {'(' [Exprs] ')'}
 
 Constructor invocations define the type, members and initial state of objects created by an instance creation expression, or of parts of an object's definition, which are inherited by a class or object definition. A constructor invocation is a function application ~\lstinline!$c$[$\targs$]($\args_1$)$\ldots$($\args_n$)!~, where $c$ is a path to the superclass or an alias for the superclass, $\targs$ is a type argument list, $\args_1 \commadots \args_n$ are argument lists, and there is a constructor of that class which is applicable to the given arguments. 
 
-A type argument list can be only given if the class $c$ takes type parameters. If no explicit arguments are given, an empty list ~\lstinline!()!~ is implicitly supplied, unless an explicit primary constructor definition is given, calling explicitly a super-constructor -- in that case, the constructor invocation only defines the superclass, and the invocation itself is deferred to the explicit primary constructor. 
+A type argument list can be only given if the class $c$ takes type parameters. If no explicit arguments are given, an empty list ~\lstinline!()!~ is implicitly supplied if a superclass has a designated parameterless constructor, unless an explicit primary constructor definition is given, calling explicitly a super-constructor -- in that case, the constructor invocation only defines the superclass, and the invocation itself is deferred to the explicit primary constructor. 
 
-The superclass constructor is implicitly invoked before any code that the primary constructor defines, but not before early definitions are evaluated. 
+A constructor invocation may choose any immediate superclass constructor, including designated and convenience constructors. In any case, such constructor must exist. The only exception to this rule is presented by the \code{Object} class, which does not have a superclass, and therefore no superclass constructor to invoke. 
+
+Primary constructor evaluation happens in the following order in respect to the constructor invocation: 
+\begin{enumerate}
+  \item Default values are evaluated. 
+  \item Early definitions are evaluated. Up to this point, this is true for any constructor. 
+  \item Instance variables defined by the primary constructor are evaluated. 
+  \item Superclass constructor is invoked. 
+  \item Explicit primary constructor body---if one exists---is evaluated. 
+\end{enumerate}
 
 
 
@@ -856,24 +865,52 @@ Dtor_Block3  ::= [[Block_Stat {semi Block_Stat} semi]
                | Sup_Invocation
 \end{lstlisting}
 
-\paragraph{\em Default constructor}
-A default constructor of a class is the explicit parameterless constructor. This differs from Java or C\#. The default root constructor of \code{Object} carries the modifier \code{public} (\sref{sec:modifiers}), and therefore to explicitly disallow direct object creating, custom constructors have to be explicitly more restrictive than \code{public}. 
-
 \paragraph{\em Implicit constructor}
-An implicit constructor is an automatically generated bridge constructor to the parameterless default constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions). 
+An implicit constructor is an automatically generated constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions), so that an explicit empty constructor would not have to be specified. Implicit constructor can only be generated if all members have a default value and the superclass has a parameterless designated constructor. 
+
+\paragraph{\em Designated constructor}
+A designated constructor is such a constructor that initializes all members of the class. The primary constructor always has to be also a designated constructor. A designated constructor can only call a constructor of the immediate superclass\footnote{This is a relaxation from Swift by Apple, which only allows to call a designated constructor of the immediate superclass.}. A single class may have multiple designated constructors, but either way all instance members have to be initialized and at least one designated constructor has to exist. Note that new instance members may be added dynamically in runtime -- but those are also initialized at the time they are added by the dynamic code. Also note that the constructor of the superclass may be dealing with an incomplete object\footnote{As the constructors may further edit the new object later.}, therefore a designated constructor must make sure that all instance members are initialized (either with their default values, or ones set up by the constructor), before it delegates up to the constructor of the superclass. 
 
 \paragraph{\em Convenience constructor}
-A convenience constructor is any other constructor than the parameterless default constructor, including the primary constructor, if it has parameters. 
+A convenience constructor is any other constructor than the designated constructors. It can only call a constructor of the same class (either convenience or designated). Convenience constructors can be annotated with \code{@[convenience_constructor]} annotation, but the status can be inferred from the usage of \code{self} to invoke another constructor. Any convenience constructor must ultimately call a designated constructor of the same class. 
+
+\paragraph{\em Inheritance of constructors}
+Constructors are not automatically inherited. Constructors whose signature matches signature of a superclass constructors have to be prefixed with the \code{override} modifier (\sref{sec:modifiers}). The following rules apply to inheritance of constructors:
+\begin{enumerate}
+  \item[Rule 1] The subclass must define default values for all new introduced instance variables for any constructor inheritance to take place. 
+  \item[Rule 2] If the subclass does not define any designated constructors (and does not define primary constructor parameters, including empty parentheses), it automatically inherits all of its superclass designated constructors. 
+  \item[Rule 3] If the subclass provides implementation of all of its superclass designated constructors---either by inheriting them as per rule 2, or by providing a custom implementation as a part of its own definition---then it automatically inherits all of the superclass convenience constructors. 
+\end{enumerate}
+
+\paragraph{Phases of object construction}
+The following lists present the order in which object construction occurs.
+
+{\bfseries Phase 1}
+\begin{enumerate}
+  \item Somebody calls the \code{new} instance method of \code{Class} with arguments for the desired constructor. 
+  \item A constructor is picked up with a 1:1 mapping to the arguments of \code{new}. 
+  \item A memory zone allocates memory for the new object. The memory is not yet initialized, and so is not the object. 
+  \item A designated constructor (any of the available for the class of the object) confirms that all instance variables introduced by that class have a value. This value can be from the defined default value, or explicitly set by the constructor. 
+  \item The designated constructor hands off to a superclass constructor to perform the same task for its own introduced instance variables. 
+  \item This repeats up the inheritance chain until the \code{Object}'s constructor is reached. 
+  \item After this point, the object is considered fully initialized, and the phase is complete. 
+\end{enumerate}
+
+{\bfseries Phase 2}
+\begin{enumerate}
+  \item As the control flows back down from the topmost superclass constructor, other constructors have now the ability to access the new object (as \code{self}). This includes both designated and convenience constructors, whichever gets control back earlier goes first. 
+  \item At this phase, instance methods may be also called, because the object is already constructed. Also, modifications of immutable instance variables is still allowed -- up to the point where the bottommost constructor finishes its evaluation. 
+\end{enumerate}
 
 \paragraph{\em Accessibility of constructors}
 Constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
 
-\example An example of a convenience constructor of class $C$.
+\example An example of a designated constructor of class $C$.
 \begin{lstlisting}
 class $C$
   constructor (param)
-    // super is invoked implicitly here
     val @resource := param
+    super()
   end constructor
 end class
 \end{lstlisting}
@@ -881,13 +918,17 @@ end class
 \example An example of a pair of constructors of class $C$. 
 \begin{lstlisting}
 class $C$
+  @[convenience_constructor]
   constructor := self(42)
   constructor (param)
-    // super is invoked implicitly here
     val @resource := param
+    super()
   end constructor
 end class
 \end{lstlisting}
+
+\paragraph{\em Constant instance variables}
+Any constructor may modify a constant instance variable during its evaluation, even multiple times. This behavior passes on to any methods that are invoked during the object's construction, but should be used with caution. 
 
 \paragraph{\em Explicit destructor}
 An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. 
@@ -924,7 +965,9 @@ CCtor_Fun_Def ::= [Param_Clauses]
 
 Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
 
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self} and \code{this} keywords, the new cloned object is available with the ~\lstinline!self[cloned]!~ construct. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, and ~\lstinline!self[cloned]!~ is the only allowed prefix to instance values and variables, allowing to define new instance values or variables in the clone. 
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self[origin]}, \code{this[origin]} and \code{super[origin]} constructs (the latter being only useful as prefix in function applications), the new cloned object is available with the \code{self[cloned]}, \code{this[cloned]} and \code{super[cloned]} constructs. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, but the original object still has to be accessed with the defined construct. 
+
+Clone constructors have the ability to modify immutable instance variables, but only of the new cloned object -- the original object is already constructed. 
 
 Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
 
@@ -1020,7 +1063,7 @@ clone [$\tps$]($\ps'_1$): $c$[$\tps$]
   self[cloned].@$xs_{1,n}$ := $xs_{1,n}$
 end clone
 \end{lstlisting}
-Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) parameter section. 
+Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) parameter section. All instance variables are shallow-copied into the new cloned object. 
 
 Every case class implicitly overrides some method definitions of class \code{Object}, unless a definition of the same method is already given in the case class itself or a concrete definition of the same method is given in some base class (including traits) of the case class, different from \code{Object}. Namely: 
 \begin{itemize}

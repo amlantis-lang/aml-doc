@@ -70,7 +70,7 @@ Types in Coral are represented by objects that are members of the \code{Type} ty
 path_id          ::= id [Type_Args]
 Path             ::= Stable_Id
                    | [path_id '.'] ('this' | 'self')
-                   | 'self' '[' 'cloned' ']'
+                   | 'self' '[' ('cloned' | 'origin') ']'
                    | Container_Path
 Stable_Id        ::= path_id
                    | Path '.' path_id
@@ -94,6 +94,9 @@ The empty path $\epsilon$ (which can not be written explicitly in user programs)
 
 \item
 \lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
+
+\item
+\lstinline@self[origin]@, which references the directly enclosing class of an original object (an instance being cloned, see \sref{sec:clone-def}). 
 
 \item 
 \lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$. Additionally, $p$ allows modules to appear instead of references to classes or traits, but no module reference can follow a class or a trait reference: \lstinline@{module_ref '.'} {(class_ref|trait_ref) '.'} $\ldots$@. 
@@ -125,9 +128,24 @@ Every value in Coral has a type which is of one of the following forms.
 Simple_Type ::= Path '.' 'type'
 \end{lstlisting}
 
-A singleton type is of the form \lstinline@$p$.type@, where $p$ is a path pointing to a value. The type denotes the set of values consisting of \code{nil} and the value denoted by $p$, in spite of nullability.
+A singleton type is of the form ~\lstinline@$p$.type@, where $p$ is a path pointing to a value. The type denotes the set of values consisting of \code{nil} (in spite of nullability) and the value denoted by $p$.
 
 A {\em stable type} is either a singleton type or a type which is declared to be a subtype of a trait \code{Singleton_Type}. 
+
+
+
+
+
+\subsection{Cloned Type}
+\label{sec:cloned-types}
+
+\syntax\begin{lstlisting}
+Simple_Type ::= Path '.' 'cloned' '.' 'type'
+\end{lstlisting}
+
+A cloned type is of the form ~\lstinline!$p$.cloned.type!, where $p$ is a path pointing to a value. The type denotes the set of values consisting of \code{nil} (in spite of nullability), the value denoted by $p$ and every value that is cloned from the value denoted by $p$. 
+
+A {\em stable type} is either a cloned type or a type which is declared to be a subtype of a trait \code{Cloned_Type}. Singleton in this view appears to be a special case (more concrete to be precise) of a cloned type, excluding the cloned values. 
 
 
 
@@ -144,7 +162,7 @@ A singleton type based on a literal is of the form \lstinline@$l$.type@, where $
 
 A {\em stable type} is either a literal-based singleton type or a type which is declared to be a subtype of a trait \code{Literal_Singleton_Type}. 
 
-In contexts where a type is expected, the ``\code{.type}'' part of the type can be omitted. 
+In contexts where a type is expected\footnote{Most notably type arguments or type annotations of variables or function result types.}, the ``\code{.type}'' part of the type can be omitted. 
 
 
 

@@ -144,16 +144,14 @@ The selection ~\lstinline!$e$.$x$!~ is evaluated by first evaluating the qualifi
 \label{sec:self-this-super}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= [Path '.'] 'self'
+Simple_Expr1 ::= [Path '.'] 'self' ['[' ('cloned' | 'origin') ']']
                  ['.' Selection]
-               | [Path '.'] 'this'
+               | [Path '.'] 'this' ['[' ('cloned' | 'origin') ']']
                  ['.' Selection]
-               | [Path '.'] 'super' 
+               | [Path '.'] 'super' ['[' ('cloned' | 'origin') ']']
                  [Class_Qualifier] 
                  ['.' Selection]
-               | [Path '.'] 'self' '[' 'cloned' ']'
-                 '.' (ivar_id | Selection)
-               | [Path '.'] (ivar_id | cvar_id)
+               | [Path '.'] Selection
 \end{lstlisting}
 
 The expression \code{self} stands always for the current instance in the context (and in function resolution searches in the actual class of the instance) in the innermost template containing the reference (thus excluding blocks and anonymous functions). 
@@ -178,7 +176,7 @@ The \code{super} prefix may be followed by a qualifier ~\lstinline![$T$]!, as in
 
 \syntax\begin{lstlisting}
 Use_Expr    ::= Use_Expr_As | Use_Aspect
-Use_Expr_As ::= 'use' Simple_Expr ('as' | 'as!')
+Use_Expr_As ::= 'use' Simple_Expr ('as' | 'as!' | 'as?')
                 [id ':'] Type [Block_Expr]
 Use_Aspect  ::= 'use' 'aspect' Path [Block_Expr]
 \end{lstlisting}
@@ -674,7 +672,7 @@ $\mbox{\rm\sl(all other special characters)}$
 
 That is, operators starting with ``\lstinline!|!'' have the lowest precedence, followed by operators starting with ``\lstinline!^!'', etc. 
 
-There's one exception to this rule, which concerns {\em assignment operators} (\sref{sec:assignment-operations}). The precedence of an assignment operator is the same as the one of simple assignment (\lstinline!=!). That is, it is lower than the precedence of any other operator. 
+There's one exception to this rule, which concerns {\em assignment operators} (\sref{sec:assignment-operations}). The precedence of an assignment operator is the same as the one of simple assignment (\lstinline!:=!). That is, it is lower than the precedence of any other operator. 
 
 The {\em associativity} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, and operators ending in a greater-than sign ``\lstinline!>!'' are right-associative, if they consist of more than one operator character. All other operators are left-associative. 
 
@@ -706,7 +704,7 @@ An assignment operator is an operator symbol that ends in an ``equals'' characte
 \item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'' or ``\lstinline@!=@''.
 \end{enumerate}
 
-Assignment operators are treated specially in that they can be expanded to assingments if no other interpretation is valid, as previously defined. Assignment operators can't be defined as members of any type. 
+Assignment operators are treated specially in that they can be expanded to assignments if no other interpretation is valid, as previously defined. Assignment operators can be defined as members of a type. 
 
 Let's consider an assignment operator, such as ``\lstinline!+=!'', in an infix operation ~\lstinline!$l$ += $r$!, where $l$ \& $r$ are expressions. This operation can be re-interpreted as an assignment
 \begin{lstlisting}
@@ -714,11 +712,14 @@ $l$ := $l$ + $r$
 \end{lstlisting}
 except that the operations's left-hand-side $l$ is evaluated only once. 
 
-The re-interpretation is correct always, since, unlike in Scala,
+The re-interpretation is occurs if the following conditions are fulfilled:
 \begin{enumerate}
-\item The left hand side can never have a member named ``\lstinline!+=!'', as specified in this section. 
-\item The assignment ~\lstinline!$l$ := $l$ + $r$! is only expected to be type-correct, not enforced. If it is not type correct, a runtime error will be raised. 
+  \item The left hand side $l$ does not have a member named ``\lstinline!+=!'', and also can not be converted by an implicit conversion (\sref{sec:implicit-conversions}) to a value with a member named ``\lstinline!+=!'', applicable to a value of type of $r$. 
+  \item The assignment ~\lstinline!$l$ := $l$ + $r$! is type-correct. In particular, this implies that $l$ refers to an object that is convertible to a value with a member named ``\lstinline!+!'' (or itself has such a member without conversion, in the ideal case, indeed). 
+  \item The variable $l$ is assignable, not immutable. This implies that it is defined as a ~\lstinline!var $l$!. 
 \end{enumerate}
+
+The re-interpretation is built into the compiled bytecode in such a way that first tries the assignment operator, and then the re-interpretation only in case where the assignment operator approach failed.\footnote{No appropriate implicit conversion was found, or if implicit conversions are disabled for the expression, the value referred to by $l$ does not have the appropriate member.} It is indeed an error if none of the two approaches succeeded. 
 
 
 
@@ -728,7 +729,7 @@ The re-interpretation is correct always, since, unlike in Scala,
 \label{sec:typed-expressions}
 
 \syntax\begin{lstlisting}
-Cast_Expr  ::= Infix_Expr ('as' | 'as!') (Type | Simple_Expr1)
+Cast_Expr  ::= Infix_Expr ('as' | 'as!' | 'as?') (Type | Simple_Expr1)
 Infix_Expr ::= Infix_Expr ('is' | 'is!') (Type | Simple_Expr1)
 \end{lstlisting}
 
@@ -750,6 +751,8 @@ The conformance check expression ~\lstinline!$e$ is $T$!~ has type \code{Boolean
 The conformance check expression as defined here is not used in resolution of function applications (\sref{sec:function-applications}).
 
 The typed expression ~\lstinline@$e$ as! $T$@~ works like ~\lstinline!$e$ as $T$!, but only uses the first form. Similarly, the conformance check expression ~\lstinline@$e$ is! $T$@~ works like ~\lstinline!$e$ is $T$!, but it uses only the first condition. The bang character ``\lstinline@!@'' signalizes that the operation is more dangerous, in means of that its easier for the expression $e$ to not successfully convert to the target type or conform to it. 
+
+The typed expression ~\lstinline!$e$ as? $T$!~ triggers $T$ to be nullable type (and it is an error if $T$ explicitly disallows overriding of nullability) and results in a \code{nil} value instead of an error, if no conversion is available to treat $e$ as $T$. 
 
 If an expression is typed to a dynamic path of a (syntactic) type, then the value referenced by such path is expected to be a type, and it is an error if it is not. 
 
