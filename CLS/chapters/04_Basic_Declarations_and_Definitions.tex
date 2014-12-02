@@ -443,8 +443,8 @@ The variance position of a type parameter in a type or template is defined as fo
 \item The variance position of a method parameter is the opposite of the variance position of the enclosing parameter clause. 
 \item The variance position of a type parameter is the opposite of the variance position of the enclosing type parameter clause. 
 \item The variance position of the lower bound of a type declaration or a type parameter is the opposite of the variance position of the type declaration or the type parameter. 
-\item The type of a mutable (instance) variable is always in invariant position (negative). 
-\item The right-hand side of a type alias is always in invariant position (negative). 
+\item The type of a mutable (instance) variable is always in invariant position (neutral). 
+\item The right-hand side of a type alias is always in invariant position (neutral). 
 \item The prefix $S$ of a type projection ~\lstinline!$S$#$T$!~ is always in invariant position (neutral). 
 \item For a type argument $T$ of a type ~\lstinline!$S$[$\ldots T \ldots$]!: If the corresponding type parameter is covariant, then the variance position stays unchanged. If the corresponding type parameter is invariant (no variance annotation), then $T$ is in invariant position (neutral). If the corresponding type parameter is contravariant, the variance position of $T$ is the opposite of the variance position of the enclosing type ~\lstinline!$S$[$\ldots T \ldots$]!. 
 \end{itemize}
@@ -503,7 +503,7 @@ abstract class Sequence [+A] {
 \example Here is a case where a contravariant type parameter is useful. 
 \begin{lstlisting}
 abstract class Output_Channel [-A] {
-  def write (x: A): Unit
+  def write (x: A): Unit end
 }
 \end{lstlisting}
 With that annotation, we have that \code{Output_Channel[Object]} conforms to \code{Output_Channel[String]}. That is, a channel on which one can write any object can substitute for a channel on which one can write only strings. 
