@@ -561,7 +561,7 @@ Since this \code{List} type is covariant in its type parameter, then e.g. ~\lsti
 \label{sec:nullable-types}
 
 \syntax\begin{lstlisting}
-Nullable_Type ::= Type [Nullable_Mod]
+Type ::= Type [Nullable_Mod]
 Nullable_Mod  ::= '?' | '!'
 \end{lstlisting}
 
@@ -582,12 +582,18 @@ Nullable types in this form can appear as types of variables, parameters and ret
 \syntax\begin{lstlisting}
 Const_Type_Def ::= id 'is' 'union' 'of'
                    '(' Type {semi Type} ')'
+Simple_Type    ::= '(' Type {'or' Type} ')'
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
 
 Unions are indeed virtually ``tagged'' with the actual type that they represent at the runtime moment, although when it comes to overloading resolution, the union type is used, as it is the expected type. 
 
+The first syntax shows a named union type, while the second shows an anonymous union type (which may still be given a name later). If any of the types that are a part of a union type is a union type itself, the two types are merged. The syntax used for the anonymous version is correlating with infix type syntax, but this syntax gives it the meaning of a union type, which is preferred to infix type syntax. In fact, it might be implemented with a native infix type that generates union types:
+
+\begin{lstlisting}
+operator or [A, B] (): Union[A, B] end
+\end{lstlisting}
 
 
 
@@ -773,6 +779,93 @@ With respect to overloading resolution (\sref{sec:value-conversions}), this type
 
 In runtime, this type is always dynamically replaced by the type of the actual referenced value -- e.g., if a variable is typed with \code{Any} type, assigned a value, and used in a function application, the type of that value is used, not \code{Any}, unless it would be typed with \code{Any} again (\sref{sec:typed-expressions}). Nonetheless, this does not imply that a value of another type can not be assigned to that same variable -- such variable is still bound to \code{Any}. 
 
+Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Any} is used as a class type (never a trait type).
+
+The \code{Any} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Predef} object, and therefore can be shadowed and aliased (e.g. to \code{Any_Object}). 
+
+The \code{Any} virtual type is the actual root of the type system of Coral, although explicit inheritance is not allowed from it. Other languages that integrate with Coral on the same VM may have \code{Any} as their root type as well, disobeying the rule that is set only for Coral. This way, Coral preserves its unified type system. 
+
+
+
+
+
+\section{Structural Inferred Auto Type}
+\label{sec:auto-type}
+
+\syntax\begin{lstlisting}
+Simple_Type ::= 'Auto'
+\end{lstlisting}
+
+This type does represent a single concrete value type: a compound type with usually just the refinement part. However, it does not explicitly state what the refinement is. Instead, the refinement is inferred from the context in which it is used. The inference algorithm is very different from local type inference (\sref{sec:local-type-inference}). 
+
+Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Auto} is used as a class type (never a trait type) and its parts of the inferred refinement are merged with any given refinement from the compound type. 
+
+The \code{Auto} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Predef} object, and therefore can be shadowed and aliased (e.g. to \code{Inferred}). 
+
+Elements that determines the inferred parts of the \code{Auto} type:
+
+% TBD: update this simple list with more concrete details as the inference is defined
+\begin{itemize}
+  \item Any methods that are invoked on the value that has this type assigned. These are parts of the refinement. 
+  \item Any classes or traits that are required of the value, except when there is a definitive \code{else}-style clause that allows the value to be of any other type as well. Those requirements are then presented in a union type, with the refinement being compound with each member of the union type. 
+  \item If the value is passed as an argument anywhere, where the expected type is determined to be not \code{Any} or locally type inferred, then the aforementioned handling applies as if the expected type was required of the value.
+  \item If a method is dynamically added to the value before being required, then it is not included in the refinement. 
+  \item The \code{Auto} type is also automatically generalized. If a method that uses it has already type parameters, then these are appended after them, in order of appearance, with method result type being the last one. 
+  \item If the value is passed as an argument, with an expected type to be locally type inferred, then it itself becomes typed with an unknown type and a type parameter is appended to the containing function.
+\end{itemize}
+
+There is one important limitation: the \code{Auto} type must not cause circular references between functions. In that case, the type has to be specified in another way. This inference happens only during compilation, unlike local type inference, which takes place in runtime. 
+
+This kind of type inference is useful when a method only cares about actually used capabilities of it's parameters. In that way, it is similar to protocols, but only includes those capabilities that are actually used. Note that in runtime, test of structural types (refinements) is somewhat slower than simple type test, depending on the amount of members present in the refinement of the resulting compound type. This is common to compound types, where the test needs to check all components and not just one. 
+
+\example An automatically generalized swap function.
+\begin{lstlisting}
+def swap (x: Auto, y: Auto): Auto
+  (y, x)
+end
+\end{lstlisting}
+This is inferred and generalized into the following polymorphic function:
+\begin{lstlisting}
+def swap [A, B] (x: A, y: B): (B, A)
+  (y, x)
+end
+\end{lstlisting}
+This inference and generalization is possible, because no other requirements are imposed on the values \code{x} and \code{y} and the result type is unaffected either. 
+
+\example An automatically inferred function.
+\begin{lstlisting}
+def print (x: Auto): Unit
+  IO.console.print x.to_string
+end
+\end{lstlisting}
+This is inferred into the following function:
+\begin{lstlisting}
+def print (x: { def to_string (): String end }): Unit
+  IO.console.print x.to_string
+end
+\end{lstlisting}
+This happens because the only requirement on \code{x} is that it has a method \code{to_string} that accepts no arguments (could be variadic either), which is a requirement from the function body, and that method returns a \code{String}, which is a known requirement of parameter type of the \code{IO.console.print} function. Note that the refinement type is equivalent to:
+\begin{lstlisting}
+Any with refinement { def to_string (): String end }
+\end{lstlisting}
+
+\example Another automatically inferred function.
+\begin{lstlisting}
+def print (x: Auto): Unit
+  IO.console.print x
+end
+\end{lstlisting}
+This is inferred into the following function:
+\begin{lstlisting}
+def print (x: String): Unit
+  IO.console.print x
+end
+\end{lstlisting}
+Here, the only requirement on the value \code{x} comes from a known requirement of parameter type of the \code{IO.console.print} function. In fact, if \code{IO.console.print} had several overloaded variants, then the type of \code{x} would be inferred to be a union type of all the overloaded variants' requirements on it. 
+
+By default, when a type annotation is missing in a function declaration, then it is either inherited (based on overriding), or inferred to be \code{Any}. A pragma (\sref{sec:pragmas}) exists to modify this process to use \code{Auto} instead of \code{Any}, as it renders more type-safe results for the price of giving up the dynamic \code{Any} type. 
+
+Note that \code{Auto} type inference does not track requirements of values from their usage within other methods.
 
 
 
@@ -822,6 +915,9 @@ Two existential types (\sref{sec:existential-types}) are equivalent, if they hav
 
 \item
 Two type constructors (\sref{sec:type-constructors}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
+
+\item 
+Two unions (\sref{sec:unions}) are equivalent, if they have the same number of member types and those types are pairwise equivalent. 
 
 \end{itemize}
 
@@ -923,6 +1019,8 @@ A function type ~\lstinline!($T_1 \commadots T_n$) -> $R$!~ (name it $f$) confor
 \item
 Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
  
+\item 
+A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. 
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 
