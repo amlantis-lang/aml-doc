@@ -67,9 +67,12 @@ What we call ``statement'', in context of Coral is in fact yet another kind of a
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Literal
+               | Collection_Literal Type_Args
 \end{lstlisting}
 
 Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate, including non-scalar literals (collection literals). 
+
+The second line of syntax merely emphasizes that it is legal to add type arguments to collection literals (although there is another equivalent syntax form, see \sref{sec:typed-expressions}). 
 
 
 
