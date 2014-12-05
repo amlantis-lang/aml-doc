@@ -304,7 +304,7 @@ simple_string_literal       ::= ''' {string_element} '''
 string_element              ::= printable_char | char_escape_seq
 interpolable_string_literal ::= '"' {int_string_element} '"'
 int_string_element          ::= string_element | interpolated_expr
-interpolated_expr           ::= '#{' expr '}'
+interpolated_expr           ::= '#{' Expr '}'
 \end{lstlisting}
 
 String literals are members of the type \lstinline@String@. Single quotes in simple string literals have to be escaped (\lstinline@\'@) and double quotes in interpolable string literals have to be escaped (\lstinline@\"@). Interpolated expression can be preceded only by an even number of escape characters (backslashes, \lstinline@\@), so that the \lstinline@#@ does't get escaped. This is a special \textit{requirement} for any Coral compiler. 
