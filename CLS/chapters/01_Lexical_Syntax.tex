@@ -397,7 +397,7 @@ The type of elements of a collection is inferred from combination of the expecte
 \begin{itemize}
   \item If an expected type is given, its type arguments take precedence over types of elements. Elements may be subject to implicit conversions (\sref{sec:implicit-conversions}). This inference works with an implicit conversion from a builder type to the target collection type -- there must exists such a builder type that has a build method returning the type that is the expected type or a type that is convertible to the expected type.\footnote{If a custom type is used, it has to statically conform to one of the protocols that the particular collection requires, so that the matching type argument can be retrieved and used for the collection builder.} 
   \item If a type argument is present, it takes precedence over both types of elements and the expected type of the literal, which is then used to implicitly convert the whole parameterized collection type. 
-  \item If the expected type is undefined and no type argument is given, then the elements type is inferred as the least upper bound of all expected types of each element. If no element is given, then \code{Any} is inferred. 
+  \item If the expected type is undefined and no type argument is given, then the elements type is inferred as the least upper bound of all expected types of each element. If no element is given, then \code{Any} is inferred.\footnote{\code{Any} is inferred so that the shortest type argument-less collection literal would be more useful than just allowing elements of type \code{Nothing}, for which just one instance exists.}
   \item If the collection literal is a dictionary, then the least upper bound is computed for key and value types independently.
 \end{itemize}
 
