@@ -12,7 +12,7 @@ Dcl         ::= 'val' Val_Dcl
               | 'type' Type_Dcl
 Pat_Var_Def ::= 'val' Pat_Def
               | 'var' Var_Def
-              | 'let' ['!'] id ':=' Expr
+              | 'let' ['!'] id [Param_Clauses] ':=' Expr
 Def         ::= Pat_Var_Def
               | 'def' Fun_Def
               | 'method' Fun_Def 'end' ['method']
@@ -51,13 +51,13 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 Dcl         ::= 'val' Val_Dcl
 Val_Dcl     ::= var_ids ':' Type
 Pat_Var_Def ::= 'val' Pat_Def
-              | 'let' ['!'] id ':=' Expr
+              | 'let' ['!'] id [Param_Clauses] ':=' Expr
 Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Expr
               | [[var_ids ','] 
                 '*' id] var_ids
                 ':=' [[Expr {',' Expr} ','] '*' Expr] 
                 Expr {',' Expr}
-var_ids     ::= id {',' id}
+var_ids     ::= id [Param_Clauses] {',' id [Param_Clauses]}
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -180,6 +180,9 @@ A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand 
 
 \item[]
 A value definition ~\lstinline@val $p_1 \commadots p_n: T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1: T$ := $e$; $\ldots$; val $p_n: T$ := $e$@.
+
+\item[]
+A value definition ~\lstinline!val $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ := $e$!~ is a shorthand for the sequence of value definitions ~\lstinline!val $p_1$: $\ps$ -> $T \commadots p_n$: $\ps$ -> $T$ := $e$!~, where $\ps$ are parameter sections (\sref{sec:function-decls-defs}).
 \end{itemize}
 
 
@@ -229,6 +232,9 @@ A variable definition ~\lstinline@var $x_1 \commadots x_n$ := $e$@~ is a shortha
 
 \item[]
 A variable definition ~\lstinline@var $x_1 \commadots x_n$: $T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$: $T$ := $e$; $\ldots$; var $x_n$: $T$ := $e$@.
+
+\item[]
+A variable definition ~\lstinline!var $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ := $e$!~ is a shorthand for the sequence of value definitions ~\lstinline!var $p_1$: $\ps$ -> $T \commadots p_n$: $\ps$ -> $T$ := $e$!~, where $\ps$ are parameter sections (\sref{sec:function-decls-defs}).
 \end{itemize}
 
 
