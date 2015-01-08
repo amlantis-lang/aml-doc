@@ -203,14 +203,16 @@ Simple_Expr1   ::= Simple_Expr1 Argument_Exprs
 Argument_Exprs ::= Parens_Args {Parens_Args} [Block_Expr] 
                  | Poetry_Args [Block_Expr2]
                  | Block_Expr
-                 
-Parens_Args ::= '(' Args_Expr ')'
+
+Parens_Args ::= '(' [Args_Expr] ')'
 Poetry_Args ::= Args_Expr
-Args_Expr   ::= [[Arg_Exprs ','] '*' Expr ','] Arg_Exprs [',' '**' Expr]
-              | [Arg_Exprs ','] '*' Expr [',' '**' Expr]
-              | '**' Expr
-Arg_Exprs   ::= Arg_Expr {',' Arg_Expr}
-Arg_Expr    ::= [['out'] [id ':'] | '&'] Expr
+Args_Expr   ::= (Pos_Args [',' Named_Args])
+              | Named_Args
+Pos_Args    ::= Pos_Arg {',' Pos_Arg}
+Pos_Arg     ::= ['out' | '*'] Expr
+Named_Args  ::= Named_Arg {',' Named_Arg} {',' '**' Expr}
+              | '**' Expr {',' '**' Expr}
+Named_Arg   ::= {['out'] id ':' Expr} 
 \end{lstlisting}
 
 A function application ~\lstinline!$f$($e_1 \commadots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \commadots e_n$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
@@ -1644,8 +1646,10 @@ Anon_Fun        ::= Anon_Params '->' '{' Block '}'
 Result_Expr     ::= Anon_Params '->' Block 
 Anon_Params     ::= Bindings {'->' Bindings}
                   | Param_Clause
+                  | id [':' Type]
                   | '(' ['implicit'] id ')'
-                  | '(' [Nameless_Param] ')'
+                  | '(' [Nameless_Params] ')'
+                  | Nameless_Param
 Bindings        ::= '(' Binding {',' Binding} ')'
 Binding         ::= (id | '_') [':' Type]
 Nameless_Params ::= Nameless_Param {',' Nameless_Param}
@@ -1693,6 +1697,40 @@ _ -> { 5 }
 \end{lstlisting}
 
 
+
+
+
+\subsection{Placeholder Syntax for Anonymous Functions}
+\label{sec:placeholder-functions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= '%' digit {digit}
+\end{lstlisting}
+
+An expression (\code{Expr}) may contain embedded percent symbols ``\lstinline!%!'' followed by a number at places where identifiers are legal. Such an expression represents an anonymous function, where each numbered percent symbol denotes the corresponding positional parameter, and the zero-numbered symbol denotes the anonymous function itself.\footnote{This is different from Scala where the parameters are referenced with an underscore and not numbered -- they are successive.}
+
+Define an {\em anonymous section} to be an expression of the form ~\lstinline!%$n$ as $T$!, where $T$ is a type, or else of the form ~\lstinline!%$n$!, provided that the percent symbol does not appear as the expression part of a typed expression. 
+
+An expression $e$ of syntactic category \code{Expr} {\em binds} an anonymous section $u$, if the following conditions hold:
+\begin{enumerate}
+  \item $e$ properly contains $u$
+  \item there is no other expression of syntactic category \code{Expr} which is properly contained in $e$ and which itself properly contains $u$
+\end{enumerate}
+
+If an expression $e$ binds anonymous sections $u_1 \commadots u_n$, in order specified by the numbering (and with blanks in between filled by a fresh $u_i$), it is equivalent to the anonymous ~\lstinline!($u'_1 \commadots u'_n$) -> { $e'$ }!, where each $u'_i$ results from $u_i$ by replacing the percent symbol with a fresh identifier and $e'$ results from $e$ by replacing each $u_i$ with $u'_i$. If $u_i$ was a part of a typed expression, the corresponding parameter is typed the same and the $u'_i$ in $e$ does not need to be typed anymore. 
+
+\example The anonymous functions in the left column use placeholder syntax. Each of these is equivalent to the anonymous function to its right. 
+\begin{lstlisting}
+%1 + 1                x -> { x + 1 }
+%1 * %2               (x, y) -> { x * y }
+(%1 as Integer) * 2   (x: Integer) -> { x * 2 }
+if %1 then x else y   z -> { if z then x else y }
+%1.map(f)             x -> { x.map(f) }
+%1.map(%1 + 1)        x -> { x.map(y -> { y + 1 }) }
+if %1 <= 1 then 1     x -> { if x <= 1 then 1 
+else %1 * %0(%1 - 1)         else x * Function.self(x - 1) }     
+\end{lstlisting}
+Note that \code{Function.self} in the last example refers to the anonymous function itself. 
 
 
 
