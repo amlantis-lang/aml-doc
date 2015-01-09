@@ -1065,10 +1065,10 @@ Analogously, other combinations of \code{reverse}, \code{skip} and labeled loops
 \subsection{While \& Until Loop Expressions}
 
 \syntax\begin{lstlisting}
-Loop_Expr     ::= [Label_Dcl] ('while' | 'until') Expr For_Loop
+Loop_Expr     ::= [Label_Dcl] ('while' | 'until') Condition For_Loop
                 | Loop_Mod_Expr
 Loop_Mod_Expr ::= Expr Loop_Modifier
-Loop_Modifier ::= ('while' | 'until') Expr
+Loop_Modifier ::= ('while' | 'until') Condition
 \end{lstlisting}
 
 The {\em while loop expression} ~\lstinline!while $e_1$ loop $e_2$ end!~ is typed as \code{Unit}, so there is no point in using its value. 
@@ -1079,12 +1079,14 @@ The while loop expression ~\lstinline!while $e_1$ loop $e_2$ end!~ is alone type
 \begin{lstlisting}
 def while_loop (condition: => Boolean)(body: => Unit): Unit := {
 <<repeat>>
-  if (condition) { body; goto repeat } else {}
+  if condition { body; goto repeat } else {}
 }
 \end{lstlisting}
 The real implementation has to handle loop control expressions (\sref{sec:loop-control-expressions}) around the evaluation of \code{body} and also handle a label, if one is given; so it is not this simple. 
 
 A while loop expression repeats evaluation of the expression $e_2$ as long as $e_1$ evaluates to \code{yes}, unless the loop controls alter this flow (\sref{sec:loop-control-expressions}).
+
+A while loop expression with variable definition works like a regular while loop expression, but the condition is treated as in conditional variable definition, and can be an immutable value definition, since it is local to each loop. 
 
 
 
