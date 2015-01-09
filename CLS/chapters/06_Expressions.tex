@@ -879,15 +879,16 @@ Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
 Cond_Block_Expr  ::= Cond_Block_Expr1 | Cond_Block_Expr2
 Cond_Block_Expr1 ::= 'if' Expr ('then' | semi) Cond_Block 
                      {[semi] 'elsif' Expr ('then' | semi) Cond_Block}
-                     [[semi] 'else' Cond_Block] 'end' ['if']
+                     [[semi] Else Cond_Block] 'end' ['if']
 Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Cond_Block 
                      {[semi] 'elsif' Expr ('then' | semi) Cond_Block}
-                     [[semi] 'else' Cond_Block] 'end' ['unless']
+                     [[semi] Else Cond_Block] 'end' ['unless']
 Cond_Mod_Expr    ::= Expr Cond_Modifier
 Cond_Modifier    ::= Cond_Modifier1
-                     ['else' Infix_Expr]
+                     [Else Infix_Expr]
 Cond_Modifier1   ::= ('if' | 'unless') Infix_Expr 
 Cond_Block       ::= Expr | Block
+Else             ::= 'else' | 'otherwise'
 \end{lstlisting}
 
 The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} object converts always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
@@ -919,6 +920,9 @@ The alternative conditional expression ~\lstinline!unless $e_1$ then $e_2$ else 
 The modifier-fashion conditional expression ~\lstinline!$e_1$ if $e_2$ else $e_3$!~ is interpreted as if it was ~\lstinline!if $e_2$ then $e_1$ else $e_3$!. Similarly with the \code{unless} version and the short form of the modifier conditional expression (without the explicit \code{else}-part). 
 
 Unlike in some languages, conditional expressions do not require to place parentheses around the conditions -- but it is possible to do so, the result is equivalent. That might be useful when the condition is inevitably long and needs to span multiple lines -- so that boolean operators may be situated at the beginning of each new line, instead of being at the end of the previous line. 
+
+\paragraph{Note}
+Coral provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
 
 
 
@@ -1314,13 +1318,13 @@ Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
-                   [['next'] 'else' Cond_Block]
+                   [['next'] Else Cond_Block]
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
 Case_Expr      ::= 'case' Simple_Expr1 Case_Body
 Case_Body      ::= semi Case_Clauses 'end' ['case']
                  | '{' Case_Clauses '}'
 Case_Clauses   ::= Case_Clause {['next'] semi Case_Clause}
-                   [['next'] 'else' Cond_Block]
+                   [['next'] Else Cond_Block]
 Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Cond_Block
 Case_Patterns  ::= Case_Pattern {',' Case_Pattern}
 Case_Pattern   ::= Stable_Id

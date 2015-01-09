@@ -328,7 +328,7 @@ Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
-                   [['next'] 'else' Block]
+                   [['next'] Else Block]
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Block
 \end{lstlisting}
 

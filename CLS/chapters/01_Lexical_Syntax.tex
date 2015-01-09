@@ -85,18 +85,18 @@ interface     invoke        is            label         lazy
 let           loop          macro         match         memoize
 message       method        module        native        next
 nil           no            object        of            opaque
-operator      optional      origin        out           override
-pointcut      pragma        prepend       private       property
-protected     protocol      public        raise         raising
-range         record        redo          refine        refinement
-rescue        retry         return        returning     requires
-reverse       sealed        self          set           skip
-soft          step          super         target        then
-this          throw         throwing      trait         transparent
-type          unless        unowned       until         union
-unit-of-measure             use           val           var
-yes           weak          when          while         with
-yield
+operator      optional      origin        otherwise     out
+override      pointcut      pragma        prepend       private
+property      protected     protocol      public        raise
+raising       range         record        redo          refine
+refinement    rescue        retry         return        returning
+requires      reverse       sealed        self          set
+skip          soft          step          super         target
+then          this          throw         throwing      trait
+transparent   type          unless        unowned       until
+union         unit-of-measure             use           val
+var           yes           weak          when          while
+with          yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
