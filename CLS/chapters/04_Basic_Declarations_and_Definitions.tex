@@ -1027,43 +1027,9 @@ sequence of function definitions
 \section{Overloaded Declarations \& Definitions}
 \label{sec:overloaded-definitions}
 
-% TBD! override keyword was added, review this section
+If two member or entity definitions bind to the same name, but do not override each other at the same time, the member or entity is said to be {\em overloaded}, each member or entity is said to be an {\em alternative}, and overloading resolution (\sref{sec:value-conversions}) needs to be applied to select a unique alternative. 
 
-An overloaded definition is a set of $n > 1$ function
-definitions in the same statement sequence that define the same name,
-binding it to types ~\lstinline@$T_1 \commadots T_n$@, respectively.
-The individual definitions are called {\em alternatives}. Overloaded
-definitions may only appear in the expression sequence of a class-level block.
-Alternatives always need not to specify the type of the defined entity
-completely.
-
-Overloaded function definitions have strong impact on method resolution. It is an error if a single set of arguments may be applied type-safely to multiple overloaded functions -- to resolve this, explicit argument types have to be applied (\sref{sec:function-applications}).
-
-Overloaded functions generate new functions that internally merge the overloaded functions into one, which then resolves the correct overloaded function based on the applied types.
-
-\example Assume the following overloaded declarations
-\begin{lstlisting}
-def double (arg: Number): Number
-def double (arg: Integer): Integer
-\end{lstlisting}
-Now, the following method application is invalid, because two functions resolve to the same arguments set: 
-\begin{lstlisting}
-// variable-less:
-double 42
-\end{lstlisting}
-Now, with explicitly applied argument types, the following method applications are correct:
-\begin{lstlisting}
-// variable-less:
-double 42 as Integer
-
-// with a variable:
-var number: Integer := 42
-double number
-
-var number := 42 // the type is inferred
-double number
-\end{lstlisting}
-
+Overloaded members do not need to appear in the same scope, an overloading member may appear e.g. in a subclass and never in the parent class. Overloaded entities however need to appear in the same scope (e.g. two local function definitions -- because the names are shadowed in enclosing scopes). 
 
 
 
