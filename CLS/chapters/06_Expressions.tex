@@ -877,25 +877,26 @@ a, b, *c, d := e, *f
 \syntax\begin{lstlisting}
 Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
 Cond_Block_Expr  ::= Cond_Block_Expr1 | Cond_Block_Expr2
-Cond_Block_Expr1 ::= 'if' Expr ('then' | semi) Cond_Block 
-                     {[semi] 'elsif' Expr ('then' | semi) Cond_Block}
+Cond_Block_Expr1 ::= 'if' Condition ('then' | semi) Cond_Block 
+                     {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
                      [[semi] Else Cond_Block] 'end' ['if']
-Cond_Block_Expr2 ::= 'unless' Expr ('then' | semi) Cond_Block 
-                     {[semi] 'elsif' Expr ('then' | semi) Cond_Block}
+Cond_Block_Expr2 ::= 'unless' Condition ('then' | semi) Cond_Block 
+                     {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
                      [[semi] Else Cond_Block] 'end' ['unless']
 Cond_Mod_Expr    ::= Expr Cond_Modifier
 Cond_Modifier    ::= Cond_Modifier1
                      [Else Infix_Expr]
-Cond_Modifier1   ::= ('if' | 'unless') Infix_Expr 
+Cond_Modifier1   ::= ('if' | 'unless') Condition 
 Cond_Block       ::= Expr | Block
 Else             ::= 'else' | 'otherwise'
+Condition        ::= Simple_Expr1 | Pat_Var_Def
 \end{lstlisting}
 
 The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} object converts always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
 
 The conditional expression is evaluated by evaluating first $e_1$. If this evaluates to \code{true}, the result of evaluating $e_2$ is returned, otherwise the result of evaluating $e_3$ is returned. 
 
-The evaluation of $e_1$ utilizes the so-called {\em short-circuit evaluation}. The expression $e_1$ is split by binary boolean operators. Then every first argument is evaluated, but the second argument is evaluated only if the evaluation of the first argument does not suffice to determine the value of the expression. When the first argument of ``\lstinline!&&!'' evaluates to \code{no}, the overall value must be \code{no} and the result of evaluating the second argument does not change that. When the first argument of ``\lstinline!||!'' evaluates to \code{yes}, the overall value must be \code{yes}. These boolean operators are in fact short-circuited source-code-wide, not only as part of conditional expressions. Word equivalents of these operators are not short-circuited (``\code{and}'' and ``\code{or}'' respectively). 
+The evaluation of $e_1$ utilizes the so-called {\em short-circuit evaluation}. The expression $e_1$ is split by binary boolean operators. Then every first argument is evaluated, but the second argument is evaluated only if the evaluation of the first argument does not suffice to determine the value of the expression. When the first argument of ``\lstinline!&&!'' evaluates to \code{no}, the overall value must be \code{no} and the result of evaluating the second argument does not change that. When the first argument of ``\lstinline!||!'' evaluates to \code{yes}, the overall value must be \code{yes}. These boolean operators are in fact short-circuited source-code-wide, not only as part of conditional expressions. Word equivalents of these operators are also short-circuited (``\code{and}'' and ``\code{or}'' respectively). To prevent short-circuited behavior, one has to use the operator identifier in a function application (\sref{sec:function-applications}).
 
 \example The following examples show how short-circuit evaluation behaves. Let's mark the short-circuited ``\lstinline!&&!'' as ``\lstinline!sand!'' and the short-circuited ``\lstinline!||!'' as ``\lstinline!sor!''. On the right side are the equivalent conditional expressions. 
 \begin{lstlisting}
@@ -923,6 +924,9 @@ Unlike in some languages, conditional expressions do not require to place parent
 
 \paragraph{Note}
 Coral provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
+
+\paragraph{Conditional Variable Definition}
+The conditional variable definition ~\lstinline!if $p$ := $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ := $e_1$!~ is a variable definition (see syntactic category \code{Pat_Var_Def}), works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no}, the condition is still met and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ := $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. 
 
 
 
