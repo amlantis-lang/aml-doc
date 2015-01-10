@@ -563,7 +563,7 @@ Param_Extra   ::= ['lazy'] [Param_Io] [Param_Rw]
                   ['*' | '&' | '^']
 Param_Io      ::= 'in' ['out'] | 'out'
 Param_Rw      ::= 'val' | 'var'
-Param_Type    ::= ['=>' | '=>>'] (Type | tp_id | '_')
+Param_Type    ::= ['=>' | '=>>'] (Type | id | '_')
 \end{lstlisting}
 
 % TBD: update Fun_Def to include the optional rescue ... rescue ... ensure
@@ -664,7 +664,7 @@ This is a rather experimental feature of Coral, depending on whether the Coral V
 \syntax\begin{lstlisting}
 Param_Extra ::= ['lazy'] ['in'] ['val']
                 ['*' | '^']
-Param_Type  ::= '=>' (Type | tp_id | '_')
+Param_Type  ::= '=>' (Type | id | '_')
 \end{lstlisting}
 
 The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function.
@@ -705,7 +705,7 @@ By-need parameters with default value expressions evaluate the default value exp
 \syntax\begin{lstlisting}
 Param_Extra ::= ['lazy'] ['in'] ['val']
                 ['*' | '^']
-Param_Type  ::= '=>>' (Type | tp_id | '_')
+Param_Type  ::= '=>>' (Type | id | '_')
 \end{lstlisting}
 
 By-future uses a concurrent evaluation strategy: the value of a future expression is computed concurrently with the flow of the rest of the program (on a new thread/worker). When the value of the future is needed, the invoking thread blocks until the future finishes computing, if it has not already completed by then. 
@@ -1052,7 +1052,7 @@ Import_Expr     ::= Single_Import
                   | '{' Import_Exprs '}'
                   | '_'
 Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
-Single_Import   ::= importable_id ['as' [id | '_']]
+Single_Import   ::= id ['as' [id | '_']]
 Container_Path  ::= Module_Path ['.' Constant_Path]
                   | [Root] Constant_Path
 Module_Path     ::= [Root] Module_Selector {'.' Module_Selector}
