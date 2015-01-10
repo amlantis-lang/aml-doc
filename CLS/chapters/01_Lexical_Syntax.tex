@@ -355,10 +355,10 @@ Collection_Literal ::= Tuple_Literal
 	                 | List_literal
 	                 | Dictionary_Literal
 	                 | Bag_Literal
-Tuple_Literal      ::= '(' Exprs ')'
-List_Literal       ::= '%' Collection_Flags '[' Exprs ']'
-Dictionary_Literal ::= '%' Collection_Flags '{' Dict_Exprs '}'
-Bag_Literal        ::= '%' Collection_Flags '(' Exprs ')'
+Tuple_Literal      ::= '(' [Exprs] ')'
+List_Literal       ::= '%' Collection_Flags '[' [Exprs] ']'
+Dictionary_Literal ::= '%' Collection_Flags '{' [Dict_Exprs] '}'
+Bag_Literal        ::= '%' Collection_Flags '(' [Exprs] ')'
 Dict_Exprs         ::= Dict_Expr {',' Dict_Expr}
 Dict_Expr          ::= Simple_Expr1 '=>' Expr
 	                 | id ':' Expr

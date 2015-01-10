@@ -36,6 +36,7 @@ Simple_Expr ::= Block_Expr
               | '&' '(' Simple_Expr1 ')'
 Result_Expr ::= Anon_Params '->' Block 
               | ['memoize'] Expr
+Exprs       ::= Expr {',' Expr}
 \end{lstlisting}
 
 Expressions are composed of various keywords, operators and operands. Expression forms are discussed subsequently. 
@@ -827,10 +828,10 @@ f(i, j) := (e_1, e_2)        f.update(i, j)((e_1, e_2))
 
 \syntax\begin{lstlisting}
 Mul_Assign_Expr ::= Mul_Vars ':=' Mul_Exprs
-Mul_Vars        ::= [(id | '_') {',' (id | '_')} ',']
-                    ['*'] (id | '_') {',' (id | '_')}
-Mul_Exprs       ::= [Expr {',' Expr} ',']
-                    ['*'] Expr {',' Expr}
+Mul_Vars        ::= [val_ids ','] ['*' id [':' Type] ','] val_ids
+                  | [val_ids ','] '*' id [':' Type]
+Mul_Exprs       ::= Mul_Expr {',' Mul_Expr}
+Mul_Expr        ::= ['*'] Expr
 \end{lstlisting}
 
 Multiple assignment is a way to assign multiple variables at once. On the left-hand side of the assignment are variables separated by commas, where at most one of which may be prefixed with an asterisk ``\lstinline!*!''. On the right-hand side of the assignment are expressions separated by commas, where one or more expressions may be prefixed with an asterisk ``\lstinline!*!'' as a sequence-splat operator. 
@@ -1269,27 +1270,27 @@ for { i <- 1 .. n
 \end{lstlisting}
 The comprehension is translated to:
 \begin{lstlisting}
-(1..n).flat_map {
-  when i then (1 .. i).
-    with_filter { (j) -> { is_prime? i + j } }.
-    map { when j then (i, j) }
+(1 .. n).flat_map {
+  when i then (1 .. i)
+    .with_filter { (j) -> { is_prime? i + j } }
+    .map { when j then (i, j) }
 }
 \end{lstlisting}
 
 \example Generator expressions can be used to express vector and matrix algorithms concisely.
-\begin{lstlisting}[mathescape=false]
-def transpose[$A](xss: List[List[$A]]): List[List[$A]] :=
+\begin{lstlisting}
+def transpose[A](xss: List[List[A]]): List[List[A]] :=
   for {i <- 0 .. xss(0).length} yield {
     for (xs <- xss) yield xs(i)
   }
 \end{lstlisting} 
 The comprehension is translated to: 
-\begin{lstlisting}[mathescape=false]
-def transpose[$A](xss: List[List[$A]]): List[List[$A]] := 
-  (0 .. xss(0).length).
-    map { 
-      when i then xss.
-        map { when xs then xs(i) }
+\begin{lstlisting}
+def transpose[A](xss: List[List[A]]): List[List[A]] := 
+  (0 .. xss(0).length)
+    .map { 
+      when i 
+        xss.map { when xs then xs(i) }
     }
 \end{lstlisting}
 

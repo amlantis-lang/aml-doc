@@ -49,15 +49,17 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 
 \syntax\begin{lstlisting}
 Dcl         ::= 'val' Val_Dcl
-Val_Dcl     ::= var_ids ':' Type
+Val_Dcl     ::= val_ids ':' Type
 Pat_Var_Def ::= 'val' Pat_Def
-              | 'let' ['!'] id [Param_Clauses] ':=' Expr
-Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Expr
-              | [[var_ids ','] 
-                '*' id] var_ids
-                ':=' [[Expr {',' Expr} ','] '*' Expr] 
-                Expr {',' Expr}
-var_ids     ::= id [Param_Clauses] {',' id [Param_Clauses]}
+              | 'let' ['!'] var_id ':=' Expr
+Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Exprs
+              | [var_ids ','] ['*' id [':' Type] ','] var_ids 
+                ':=' Mul_Exprs
+              | [var_ids ','] '*' id [':' Type] 
+                ':=' Mul_Exprs
+var_ids     ::= var_id {',' var_id}
+var_id      ::= id [Param_Clauses] [':' Type]
+val_ids     ::= id {',' id}
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -537,10 +539,10 @@ Def           ::= 'def' Fun_Def 'end' ['def']
                 | 'function' Fun_Alt_Def
                 | 'operator' Op_Def 'end' ['operator']
                 | 'operator' Op_Alt_Def 'end' ['operator']
-Fun_Def       ::= Fun_Sig [':' Return_Type] [Fun_Dec] [semi Fun_Stats]
-Fun_Alt_Def   ::= Fun_Sig [':' Return_Type] ':=' Expr
-Op_Def        ::= Op_Sig [':' Return_Type] [Fun_Dec] [semi Fun_Stats]
-Op_Alt_Def    ::= Op_Sig [':' Return_Type] ':=' Expr
+Fun_Def       ::= Fun_Sig [':' Type] [Fun_Dec] [semi Fun_Stats]
+Fun_Alt_Def   ::= Fun_Sig [':' Type] ':=' Expr
+Op_Def        ::= Op_Sig [':' Type] [Fun_Dec] [semi Fun_Stats]
+Op_Alt_Def    ::= Op_Sig [':' Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Fun_Dec_Exprs [semi] 'begin'
 Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
 Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
