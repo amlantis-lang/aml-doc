@@ -545,9 +545,8 @@ Op_Def        ::= Op_Sig [':' Type] [Fun_Dec] [semi Fun_Stats]
 Op_Alt_Def    ::= Op_Sig [':' Type] ':=' Expr
 Fun_Dec       ::= [semi] 'declare' Fun_Dec_Exprs [semi] 'begin'
 Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
-Fun_Sig       ::= Function_Path [Fun_Tpc] Param_Clauses
-Op_Sig        ::= Op_Path [Fun_Tpc] Param_Clauses
-Fun_Tpc       ::= '[' Type_Param {',' Type_Param} ']'
+Fun_Sig       ::= Function_Path [Type_Param_Clause] Param_Clauses
+Op_Sig        ::= Op_Path [Type_Param_Clause] Param_Clauses
 Function_Path ::= id
                 | 'self' '.' id
                 | id '.' id
@@ -573,13 +572,19 @@ A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $
 
 A function definition \lstinline@def $f$ $\psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$\tps$]@, followed by zero or more value parameter clauses \lstinline@($\ps_1$)$\ldots$($\ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
 
-Multiple parameter clauses render curried functions. 
-
 The type of the function body is expected to conform (\sref{sec:conformance}) to the function's declared result type, if one is given. 
 
 If the function's result type is given as one of ``\lstinline!()!'' or \code{Unit}, the function's implicit return value is stripped and it is an error if a return statement occurs in the function body with a value to be returned, unless the return value is specified again as ``\lstinline!()!''.
 
 An optional type parameter clause $\tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
+
+\subsection{Curried Function Definitions}
+
+Multiple parameter clauses render curried functions. 
+
+Type parameters of the whole function are linked to each value parameter clause. If local type inference selects a type argument that does not appear in a previous value parameter clause, it is still used in the following value parameter clauses where it does appear. 
+
+\subsection{Function Parameters}
 
 A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an invisible function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
 

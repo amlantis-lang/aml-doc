@@ -1272,7 +1272,7 @@ The comprehension is translated to:
 \begin{lstlisting}
 (1 .. n).flat_map {
   when i then (1 .. i)
-    .with_filter { (j) -> { is_prime? i + j } }
+    .with_filter { j -> { is_prime? i + j } }
     .map { when j then (i, j) }
 }
 \end{lstlisting}
@@ -1931,7 +1931,7 @@ If an identifier or selection $e$ references several members of a class, the con
 Assume first that $e$ appears as a function in an application, as in ~\lstinline!$e$($e_1 \commadots e_m$)!.
 
 \paragraph{Shape-based overloading resolution}
-One first determines the set of functions that is potentially applicable based on the {\em shape} of the arguments. 
+One first determines the set of functions that are potentially applicable based on the {\em shape} of the arguments. 
 
 The shape of an argument expression $e$, written ~\lstinline!$\shape$($e$)!, is a type that is defined as follows:
 \begin{itemize}
@@ -1953,7 +1953,7 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
 
 \[\begin{array}{l l}
 \weight(A, B) &= \sum_{i=1}^{m} \pweight(A_i, B_i) \\
-\pweight(t, u) &= \cweight(t, u) + \rweight(t)
+\pweight(t, u) &= \cweight(t, u) + \rweight(t) + \tpweight
 \end{array}
 \]
 
@@ -1973,10 +1973,22 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
 
 An alternative $A$ is {\em more specific than} an alternative $B$, if the relative weight of $A$ over $B$ is greater than the relative weight of $B$ over $A$. 
 
-If there are more alternatives in $\mathcal{C}$ that are equally most specific, one chooses one of them as in overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{C}$ here, and the expected type is the expected type of the function application. 
+If there are more alternatives in $\mathcal{C}$ that are equally most specific, then let $\mathcal{D}$ be those equally most specific alternatives. One chooses the most specific alternative from $\mathcal{D}$ based on the following redefinition of being ``more specific than''. 
+
+\begin{definition}
+The {\em generic relative weight} of an alternative $A$ over an alternative $B$ is a number between $0$ and $1$, defined as follows:
+\begin{itemize}
+  \item $1$, if $A$ is not polymorphic and $B$ is polymorphic. 
+  \item $0$, in any other case. 
+\end{itemize}
+\end{definition}
+
+An alternative $A$ is {\em more specific than} an alternative $B$, if the generic relative weight of $A$ over $B$ is greater than the generic relative weight of $B$ over $A$. 
+
+If there are more alternatives in $\mathcal{D}$ that are equally most specific, one chooses one of them as in overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{D}$ here, and the expected type is the expected type of the function application. 
 
 \paragraph{Note}
-As overloading on return type is possible, note that overloading based on arguments takes precedence over overloading on return type, even if overloading on return type would make different alternative to be chosen. 
+Nested overloading resolutions happen in depth-first order. If an alternative is polymorphic, it needs to be type-reified with local type inference to first determine what the types are. If an argument expression is itself overloaded, overloading resolution needs to be applied on it first and alone, and the expected type of the argument expression defined by the local type inference algorithm. Notice that this is safe in regard to local type inference of the enclosing alternative, since the type of the argument expression is just a part of type bounds for the enclosing alternative. Indeed, ambiguities may need to be resolved explicitly. 
 
 \example Assume the following overloaded function definitions:
 \begin{lstlisting}
@@ -1993,9 +2005,9 @@ In the application \code{f(1, 2, 3)}, there is only one applicable alternative (
 
 \subsubsection{Function in a type application}
 
-Assume next that $e$ appears as a function in a type application, as in ~\lstinline!$e$[$\targs$]!. Then let $\mathcal{B}$ be the set of all alternatives in $\mathcal{A}$ which take the same number of type parameters as there are type arguments in $\targs$ are chosen. It is an error if no such alternative exists -- the type application is unapplied. If there is one such alternative, that one is chosen. 
+Assume next that $e$ appears as a function in an explicit type application (not inferred), as in ~\lstinline!$e$[$\targs$]!. Then let $\mathcal{B}$ be the set of all alternatives in $\mathcal{A}$ which take the same number of type parameters as there are type arguments in $\targs$ are chosen. It is an error if no such alternative exists -- the type application is unapplied. If there is one such alternative, that one is chosen. 
 
-Otherwise, let $\mathcal{C}$ be the set of those alternatives in $\mathcal{B}$ that are applicable to the type arguments, so that the bounds defined by the alternative's type parameters are satisfied. It is an error if no such alternative exists, and it is also an error if there are several such alternatives, as there is (for now) no way to select a unique member. If there is one such alternative, that one is chosen. 
+Otherwise, let $\mathcal{C}$ be the set of those alternatives in $\mathcal{B}$ that are applicable to the type arguments, so that the bounds defined by the alternative's type parameters are satisfied. It is an error if no such alternative exists. If there are several such alternatives, overloading resolution (different than this case: so either in a function application or not in a function application) is applied to the whole expression ~\lstinline!$e$[$\targs$]!. 
 
 \subsubsection{Expression not in any application}
 \label{sec:overloading-resolution-no-app}
@@ -2014,9 +2026,6 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
 An alternative $A$ is {\em more specific than} an alternative $B$, if the relative weight of $A$ over $B$ is greater than the relative weight of $B$ over $A$. 
 
 It is an error if there is no alternative in $\mathcal{B}$ which is more specific than all other alternatives in $\mathcal{B}$ -- the method is unapplied.\footnote{This can be fixed e.g. by using typed expressions (\sref{sec:typed-expressions}).}
-
-\paragraph{Note}
-This resolution is not applied in case of nested function applications, even though the containing application could possibly provide an expected type for the nested application to successfully select a unique member, based on overloading on result type. This prevents creation of possibly very large matrices of all possible combinations of argument types, which would not only be the product of the simple types of each argument, but also of all supertypes (including traits separate!), which is {\em not feasible}. But argument types have to be know prior to overloading resolution, as if they were to be applied before the containing application, which they probably will be. One way to overcome this limitation is to use dynamic types and type the expression (\sref{sec:typed-expressions}) with a dynamically selected expected type, which has to be {\em specific enough} to make overloading of the nested application possible. After argument types are known, value conversions may be applied to them in order to turn the types from {\em compatible} to {\em conforming}. Therefore, a single function application may still dynamically overload into different unique member being selected with each application. 
 
 \paragraph{Note}
 An important note is that when an identifier $e$ references several members of a class, it also references only those members that are visible (\sref{sec:modifiers}) from the scope where $e$ appears. 
@@ -2049,10 +2058,10 @@ If the expression $e$ appears as a value without being applied to some value arg
 \item The expression's type conforms to the expected type, i.e. $\sigma T \conforms \sigma \exptype$. 
 \end{itemize}
 
-It is an error if no such substitution exists. If several substitutions exist, local type inference will choose for each type variable $a_i$ a minimal or a maximal type $T_i$ of the solution space (where a maximal type is closer to \code{Object} and minimal is closer to \code{Nothing}). A {\em maximal} type $T_i$ will be chosen if the type parameter $a_i$ appears contravariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression. A {\em minimal} type $T_i$ will be chosen in all other situations, i.e. if the type variable appears covariantly, non-variantly or not at all\footnote{In fact, this particular case with the type not appearing at all might be changed in future versions of Coral to defer inference for it.} in the type $T$. We call such a substitution $\sigma$ an {\em optimal solution} of the given constraint system for the type $T$. 
+It is an error if no such substitution exists. If several substitutions exist, local type inference will choose for each type variable $a_i$ a minimal or a maximal type $T_i$ of the solution space (where a maximal type is closer to \code{Object} and minimal is closer to \code{Nothing}). A {\em maximal} type $T_i$ will be chosen if the type parameter $a_i$ appears contravariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression. A {\em minimal} type $T_i$ will be chosen in all other situations, i.e. if the type variable appears covariantly, non-variantly or not at all in the type $T$. We call such a substitution $\sigma$ an {\em optimal solution} of the given constraint system for the type $T$. 
 
 \paragraph{Case 3: Methods}
-This case applies if the expression $e$ appears in an application \code{$e$($d_1 \commadots d_m$)}. In that case $T$ is a method type ~\lstinline!($p_1$: $R_1 \commadots p_n$: $R_n$) $\mapsto\ T'$!. Without loss of generality we can assume that the result type $T'$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home, yet again). Once computes first the types $S_j$ of the argument expressions $d_j$, using two alternative schemes. Each argument expression $d_j$ is typed first with the expected type $R_j$, in which the type parameters $a_1 \commadots a_n$ are taken as type constants. If this fails the argument $d_j$ is typed instead with an expected type $R'_j$, which results from $R_j$ by replacing every type parameter in $a_1 \commadots a_n$ with $\udef$. 
+This case applies if the expression $e$ appears in an application \code{$e$($d_1 \commadots d_m$)}. In that case $T$ is a method type ~\lstinline!($p_1$: $R_1 \commadots p_n$: $R_n$) $\mapsto\ T'$!. Without loss of generality we can assume that the result type $T'$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home, yet again). One computes first the types $S_j$ of the argument expressions $d_j$, using two alternative schemes. Each argument expression $d_j$ is typed first with the expected type $R_j$, in which the type parameters $a_1 \commadots a_n$ are taken as type constants. If this fails the argument $d_j$ is typed instead with an expected type $R'_j$, which results from $R_j$ by replacing every type parameter in $a_1 \commadots a_n$ with $\udef$. 
 
 In a second step, type arguments are inferred by solving a constraint system, which relates the method's type with the expected type $\exptype$ and the argument types $S_1 \commadots S_m$. Solving the constraint system means finding a substitution $\sigma$ of types $T_i$ for the type parameters $a_i$, such that all of the following conditions hold:
 \begin{itemize}
@@ -2061,8 +2070,6 @@ In a second step, type arguments are inferred by solving a constraint system, wh
 \item The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' \conforms \sigma \exptype$. 
 \item Each argument type weakly conforms (\sref{sec:conformance}) to the corresponding formal parameter type (\sref{sec:corresponding-parameters}), i.e. $\sigma S_j \conforms _w \sigma R_j$ for $j = 1 \commadots m$. 
 \end{itemize}
-
-If a type argument does not appear in the expected type and neither in the argument types, it stays defined with an inaccessible value $\udef$, and is possibly inferred in a future inference run, in case of curried functions. The type arguments that are inferred to be $\udef$ are deferred and preserve their order in a virtual implicit type parameter list of the following parameter lists.\footnote{This is different from Scala, where Scala will infer all type arguments of the first parameter list, even if it would infer not very helpful types.}
 
 It is an error if no such substitution exists. If several solutions exists, an optimal one for the type $T'$ is chosen. 
 
@@ -2139,29 +2146,6 @@ The optimal solution of this constraint system is
 A := Object  ,
 \end{lstlisting}
 so \code{Object} is the type inferred for \code{A}. 
-
-\example Consider now an unrelated definition
-\begin{lstlisting}
-def test_fun [A, B] (a: A)(b: A, c: B)(d: B) := $\ldots$
-\end{lstlisting}
-
-In the function application
-\begin{lstlisting}
-test_fun(1)(2, "hello")("world")  ,
-\end{lstlisting}
-the type argument $A$ is inferred to be \code{Integer} and $B$ is inferred to be \code{String} in the following type inference. Note that if the type inference for $B$ was not deferred, it would be inferred to \code{Object}, which would not be really helpful. 
-
-With the same definition, in the following function application
-\begin{lstlisting}
-val fun := &test_fun(1)  ,
-\end{lstlisting}
-the value of \code{fun} is of a type \code{[B]((Integer, B) -> B -> Object)}.
-
-Still with the same definition, in the following function application
-\begin{lstlisting}
-val fun := &test_fun(1)(2, "hello")  ,
-\end{lstlisting}
-the value of \code{fun} is of a type \code{String -> Object}.
 
 
 
