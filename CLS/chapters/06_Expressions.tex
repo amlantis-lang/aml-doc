@@ -2198,7 +2198,7 @@ foo.array(10) := 11     foo.select_dynamic(:array).update(10)(11)
 \section{Workflows}
 \label{sec:workflows}
 
-Workflows are basically a syntax sugar for a block expression that is passed as an argument to a workflow builder (an object that conforms to \code{Workflow_Builder}). In the following translation table, the left column presents the constructs, and the right column its de-sugared form, where $b$ is the workflow builder. Note that it has to be statically known at compile time that an object is an instance of \code{Workflow_Builder} for this language feature to work properly.
+Workflows are basically a syntax sugar for a block expression that is passed as an argument to a workflow builder (an object that conforms to \code{Workflow_Builder}). In the following translation table, the left column presents the constructs, and the right column its de-sugared form, where $b$ is the workflow builder. Note that while it does not have to be statically known at compile time that an object is an instance of \code{Workflow_Builder}, it's much more convenient for type inference -- as it is with any other function application. 
 
 \begin{lstlisting}
 b do cexpr end              b.delay(() -> { cexpr })
