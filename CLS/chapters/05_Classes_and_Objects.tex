@@ -1422,25 +1422,8 @@ type Variant_Record (option: Traffic_Light) is record
   end case
 end type
 
-let vr := Variant_Record(Traffic_Light.Red).
-  new(a: A.new, b: B.new, c: C.new)
-\end{lstlisting}
-
-\section{Nullability}
-\label{sec:nullability}
-
-Every type in Coral conforms to \code{Object}. In turn, \code{Nothing} conforms to any type, in spite of nullability of the particular type. But, the only instance of \code{Nothing}, which is a singleton accessed with the keyword \code{nil}, can not be assigned to every typed variable. If a type is declared as nullable, then it can. If a type is declared as not-nullable, which is the implicit preference for every type, then it can not.\footnote{An original idea was to make every type not-nullable and force users to use the \code{Option} type for every no-object scenario. But then, what would \code{nil} be good for?}
-
-The implicit preference may be changed in two levels. These levels are {\em preferred nullability} and {\em explicit nullability} (\sref{sec:nullable-types}). 
-
-Preferred nullability is switched by annotations on each class: \code{Nullable}. The annotation has one positional parameter of type \code{Boolean} defining what the nullability will be (\code{yes} for nullable types, \code{no} for not-nullable types), and a named parameter \lstinline[deletekeywords={override}]!:override! of type \code{Boolean}, defining whether subclasses may override this preference, and implicitly set to \code{yes}, meaning that subclasses may override this preference by default. 
-
-\example Here are all four versions of the nullability annotation. 
-\begin{lstlisting}[deletekeywords={override}]
-@[Nullable yes, override: yes]
-@[Nullable yes, override: no]
-@[Nullable no, override: yes]
-@[Nullable no, override: no]
+let vr := Variant_Record(.Red)
+  .new(a: A.new, b: B.new, c: C.new)
 \end{lstlisting}
 
 

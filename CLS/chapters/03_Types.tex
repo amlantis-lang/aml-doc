@@ -509,48 +509,57 @@ $p$.$c$[$\targs$, $t$, $\targs'$] for-some { type $t$ >: $L$ <: $U$ }
 where $t$ is a fresh type variable. Wildcard types may also appear as parts of compound types (\sref{sec:compound-types}), function types (\sref{sec:function-types}) or tuple types (\sref{sec:tuple-types}). Their expansion is then the expansion in the equivalent parameterized type. 
 
 \example Assume the class definitions
-\begin{lstlisting}[mathescape=false]
-class Ref[$T] {}
+\begin{lstlisting}
+class Ref[T] {}
 abstract class Outer { type T }
 \end{lstlisting}
+
 Here are some examples of existential types:
-\begin{lstlisting}[mathescape=false]
-Ref[$T] for-some { type $T <: Number }
+\begin{lstlisting}
+Ref[T] for-some { type T <: Number }
 Ref[x.T] for-some { val x: Outer }
 Ref[x_type#T] for-some { type x_type <: Outer with Singleton_Type }
 \end{lstlisting}
+
 The last two types in this list are equivalent. An alternative formulation of the first type above using wildcard syntax is:
 \begin{lstlisting}
 Ref[_ <: Number]
 \end{lstlisting}
+
 which is equivalent to Java's
 \begin{lstlisting}[language=Java]
 Ref<? super Number>
 \end{lstlisting}
+
 \lstinline!Ref[_ <: Number]!~ then represents any type constructed by the type\code{Ref} parameterized with a type that is \code{Number} or any type that conforms to \code{Number}. 
+
 \lstinline!Ref[_ >: Number]!~ would then represents any type constructed by the type \code{Ref} parameterized with a type that is \code{Number} or any type that \code{Number} conforms to. 
 
 \example The type ~\lstinline!List[List[_]]!~ is equivalent to the existential type
-\begin{lstlisting}[mathescape=false]
-List[List[$T] for-some { type $T }]  .
+\begin{lstlisting}
+List[List[T] for-some { type T }]  .
 \end{lstlisting}
 
 \example Assume a covariant type
-\begin{lstlisting}[mathescape=false]
-class List[+$T] {}
+\begin{lstlisting}
+class List[+T] {}
 \end{lstlisting}
+
 The type 
-\begin{lstlisting}[mathescape=false]
-List[$T] for-some { type $T <: Number }
+\begin{lstlisting}
+List[T] for-some { type T <: Number }
 \end{lstlisting}
-is equivalent (by simplification rule 4 above\footnote{As ~\lstinline[mathescape=false]!$T!~ appears in covariant position in \code{List}, its upper bound can replace the type variable in \code{List}.}) to
-\begin{lstlisting}[mathescape=false]
-List[Number] for-some { type $T <: Number }
+
+is equivalent (by simplification rule 4 above\footnote{As ~\lstinline!T!~ appears in covariant position in \code{List}, its upper bound can replace the type variable in \code{List}.}) to
+\begin{lstlisting}
+List[Number] for-some { type T <: Number }
 \end{lstlisting}
-which is in turn equivalent (by simplification rules 2 and 3 above\footnote{The type variable ~\lstinline[mathescape=false]!$T!~ is unused, and after dropping it, the quantification is empty.}) to
-\begin{lstlisting}[mathescape=false]
+
+which is in turn equivalent (by simplification rules 2 and 3 above\footnote{The type variable ~\lstinline!T!~ is unused, and after dropping it, the quantification is empty.}) to
+\begin{lstlisting}
 List[Number]  .
 \end{lstlisting}
+
 Since this \code{List} type is covariant in its type parameter, then e.g. ~\lstinline!List[Integer]!~ is still a subtype of ~\lstinline!List[Number]!. 
 
 
@@ -562,14 +571,22 @@ Since this \code{List} type is covariant in its type parameter, then e.g. ~\lsti
 
 \syntax\begin{lstlisting}
 Type ::= Type [Nullable_Mod]
-Nullable_Mod  ::= '?' | '!'
+Nullable_Mod  ::= '?'
 \end{lstlisting}
 
-A nullable type has the form \lstinline!$T$?! or \lstinline@$T$!@, where ``\code{?}'' denotes explicitly a nullable type, and ``\code{!}'' denotes explicitly not-nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Coral types are implicitly not-nullable, meaning it's not possible to pass \code{nil} where an instance of $T$ is expected, unless $T$ is of course \code{Nothing}. Nullability (\sref{sec:nullability}) is one of the intrinsic properties of every class type. 
+A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Coral types are implicitly not-nullable, meaning it's not possible to pass \code{nil} where an instance of $T$ is expected, unless $T$ is indeed \code{Nothing}. 
 
-Explicitly nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly nullable, overriding the preference of $T$. Explicitly not-nullable types are handled by an intrinsic anonymous subtype of $T$, which is explicitly not-nullable, overriding the preference of $T$. Explicit nullability of already nullable types is redundant, as is explicit non-nullability of already not-nullable types. Explicit nullability of the \code{Option} type is also redundant and is in fact ignored. 
+If an implicit conversion from \code{nil} to $T$ is available, then nullability is ignored. 
 
-Nullable types in this form can appear as types of variables, parameters and return types. 
+Nullable types in this form can appear everywhere where a type is expected. 
+
+A nullable type may be seen as a syntax sugar for the following union type ~\code{Nullable[$T$]} (\sref{sec:unions}):
+\begin{lstlisting}
+type Nullable [T] is union of (
+  T
+  Nothing
+) end type
+\end{lstlisting}
 
 
 
@@ -580,7 +597,7 @@ Nullable types in this form can appear as types of variables, parameters and ret
 \label{sec:unions}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= id 'is' 'union' 'of'
+Const_Type_Def ::= id [Type_Param_Clause] 'is' 'union' 'of'
                    '(' Type {semi Type} ')'
 Simple_Type    ::= '(' Type {'or' Type} ')'
 \end{lstlisting}
