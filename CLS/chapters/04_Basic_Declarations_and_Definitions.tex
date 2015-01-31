@@ -1058,7 +1058,7 @@ Container_Path  ::= Module_Path ['.' Constant_Path]
 Module_Path     ::= [Root] Module_Selector {'.' Module_Selector}
 Constant_Path   ::= Const_Selector {('.' | '#') Const_Selector}
 Module_Selector ::= id [Vendor_Arg]
-Const_Selector  ::= id [Type_Args]
+Const_Selector  ::= id
 Root            ::= 'Root' '~'
 Vendor_Arg      ::= '~[' vendor_domain ']'
 vendor_domain   ::= vendor_char {vendor_char}
@@ -1098,7 +1098,7 @@ is equivalent to the block
 
 A dynamic use clause has the form ~\lstinline!use lazy $p$.$I$!, where $p$ is a path to the containing type of the imported entity, and $I$ is an import expression. The difference from regular use clauses is that a dynamic use clause can import anything, including dynamically created members. In case of multiple dynamic imports providing the same name, the last one to be provided is preferred, and has to be type-compatible with any possibly previously provided name, i.e., it has to override the previously provided name as if it were a regular member. Dynamic use clause can also import a name that does not exist yet in compile time (by not using wildcard import). 
 
-Note that when importing names via use clauses (or dynamic use clauses), the prefix $p$ of it is always a selection (possibly combined with a type application), but never a function application. If a name in selection denotes several possible members, there is no way to use overloading resolution on it, other than that provided by type application. 
+Note that when importing names via use clauses (or dynamic use clauses), the prefix $p$ of it is always a selection, but never an application. If a name in selection denotes several possible members, there is no way to use overloading resolution on it, other than that provided by type application. 
 
 
 
