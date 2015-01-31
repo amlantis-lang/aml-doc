@@ -1046,7 +1046,7 @@ Overloaded members do not need to appear in the same scope, an overloading membe
 \label{sec:use-clauses}
 
 \syntax\begin{lstlisting}
-Use             ::= 'use' Use_Expr
+Use             ::= 'use' ['lazy'] Use_Expr
 Use_Expr        ::= (Container_Path | Stable_Id) '.' Import_Expr
 Import_Expr     ::= Single_Import
                   | '{' Import_Exprs '}'
@@ -1056,16 +1056,16 @@ Single_Import   ::= id ['as' [id | '_']]
 Container_Path  ::= Module_Path ['.' Constant_Path]
                   | [Root] Constant_Path
 Module_Path     ::= [Root] Module_Selector {'.' Module_Selector}
-Constant_Path   ::= Const_Selector {'.' Const_Selector}
+Constant_Path   ::= Const_Selector {('.' | '#') Const_Selector}
 Module_Selector ::= id [Vendor_Arg]
-Const_Selector  ::= id
+Const_Selector  ::= id [Type_Args]
 Root            ::= 'Root' '~'
 Vendor_Arg      ::= '~[' vendor_domain ']'
 vendor_domain   ::= vendor_char {vendor_char}
 vendor_char     ::= lower | '.' | '-' | '_'
 \end{lstlisting}
 
-A use clause has the form \lstinline!use $p$.$I$!, where $p$ is a path to the containing type of the imported entity (either a module or another class), and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}
+A use clause has the form ~\lstinline!use $p$.$I$!, where $p$ is a path to the containing type of the imported entity, and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}
 \begin{lstlisting}
 { $x_1$ as $y_1$ $\commadots$ $x_n$ as $y_n$, _ }
 \end{lstlisting}
@@ -1095,6 +1095,10 @@ is equivalent to the block
 \begin{lstlisting}
 { M.add (M.z, M.one) } .
 \end{lstlisting}
+
+A dynamic use clause has the form ~\lstinline!use lazy $p$.$I$!, where $p$ is a path to the containing type of the imported entity, and $I$ is an import expression. The difference from regular use clauses is that a dynamic use clause can import anything, including dynamically created members. In case of multiple dynamic imports providing the same name, the last one to be provided is preferred, and has to be type-compatible with any possibly previously provided name, i.e., it has to override the previously provided name as if it were a regular member. Dynamic use clause can also import a name that does not exist yet in compile time (by not using wildcard import). 
+
+Note that when importing names via use clauses (or dynamic use clauses), the prefix $p$ of it is always a selection (possibly combined with a type application), but never a function application. If a name in selection denotes several possible members, there is no way to use overloading resolution on it, other than that provided by type application. 
 
 
 
