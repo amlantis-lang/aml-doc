@@ -29,6 +29,7 @@ Expr        ::= Cond_Expr
               | Metaclass_Access
               | Workflow_Expr
               | Quasiquote_Expr
+              | '(' Expr ')'
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [op_id Infix_Expr]
 Simple_Expr ::= Block_Expr

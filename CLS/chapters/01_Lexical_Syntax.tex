@@ -99,7 +99,7 @@ use           val           var           yes           weak
 when          while         with          yield
 \end{lstlisting}
 
-Not every reserved word is a keyword in every context, this behavior will be further explained. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. Every reserved word may be used as a function identifier, with a little work-around when used with an implicit receiver.
+Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
 
 
 
@@ -112,10 +112,11 @@ Not every reserved word is a keyword in every context, this behavior will be fur
 semi ::= nl {nl} | ';'
 \end{lstlisting}
 
-Coral is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Coral source file is treated as the special separator token \lstinline@nl@ if the following criterion is satisfied:
+Coral is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Coral source file is treated as the special separator token \lstinline@nl@ if the following criteria are satisfied:
 
 \begin{enumerate}
 \item The token immediately preceding the newline can terminate an expression.
+\item The first non-whitespace token immediately following the newline can continue the expression on the previous line. 
 \end{enumerate}
 
 Since Coral may be interpreted in a REPL\footnote{Read-Eval-Print Loop} fashion, there are no other suitable criteria. Such a token that can terminate an expression is, for instance, not a binary operator or a message sending operator, which both require further tokens to create an expression. Keywords that expect any following tokens also can not terminate expressions. Coral interpreters and compilers do not look-ahead beyond newlines.
@@ -123,6 +124,23 @@ Since Coral may be interpreted in a REPL\footnote{Read-Eval-Print Loop} fashion,
 If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Coral still sees that as only a one significant newline, to prevent any confusion.
 
 Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end@, \lstinline@opaque@, \lstinline@native@, \lstinline@next@, \lstinline@nil@, \lstinline@no@, \lstinline@redo@, \lstinline@retry@, \lstinline@return@, \lstinline@self@, \lstinline@skip@, \lstinline@super@, \lstinline@this@, \lstinline@transparent@, \lstinline@yes@, \lstinline@yield@.
+
+Since REPL can not foresee what the following line will hold, the second criterion can not be checked earlier than when the following line is entered. However, if the following line continues the previous expression, it is treated as such. The only exception is when the previous expression is of an assignment kind, in that case, there is a simple solution that need to be applied: enclose the right-hand side of the assignment in parentheses. That way the right-hand side expression is not ended sooner than before the closing parenthesis. Too keep syntax rules consistent across both REPL and pre-compiled programs, these rules apply to both. 
+
+\example Different treating of assignment expression in presence of newline tokens. 
+\begin{lstlisting}
+// the expression:
+val a := b
+    .c
+// is treated as:
+(val a := b).c
+
+// but the expression:
+val a := (b
+    .c)
+// is treated as:
+val a := b.c 
+\end{lstlisting}
 
 
 
