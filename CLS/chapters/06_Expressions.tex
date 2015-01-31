@@ -1846,7 +1846,9 @@ A function that is declared with \code{transparent} in its \code{declare} block,
 
 A function that is declared with \code{native} in its \code{declare} block, has its body defined outside of Coral source files, possibly in other languages, native to the platform of the Coral VM. For now, some CSL functions are declared this way and a possibility to let users define their own native functions is upcoming in future versions of Coral. Note that the native implementation of the function would have to match the expected platform of the Coral VM, or maybe the expression would map platforms to the native implementations of the function. 
 
-An alias to a function name creates a duplicate record in method table of a class or a duplicate variable pointing to the aliased function name. From that scope on, the functions are bound by name, and aliased function names are also inherited. It is an error if a subtype tries to override an aliased function name. 
+An alias to a function name creates a duplicate record in method table of a class or a duplicate variable pointing to the aliased function name. From that scope on, the functions are bound by name, and aliased function names are also inherited. If a subtype attempts to override an aliased method, then all methods with that alias are overridden as well. 
+
+The \code{Capture_Usage} syntax construct (of the forms ~\lstinline{use $\id_1 \commadots \id_n$ as weak}, ~\lstinline{use $\id_1 \commadots \id_n$ as unowned} and ~\lstinline{use $\id_1 \commadots \id_n$ as soft}) provide a way to define ownership of captured variables in blocks and anonymous functions. Every captured variable is stored as a property within the function object, and therefore it takes an ownership of the pointed object. By using this construct, the default strong reference can be replaced with a \code{Weak_Reference[T]}, an \code{Unowned_Reference[T]} or a \code{Soft_Reference[T]}, with automatic unwrapping and wrapping of read and written values. It is an error if $\id_i$ is not a variable name in an enclosing scope. 
 
 
 
