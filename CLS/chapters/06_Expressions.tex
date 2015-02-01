@@ -1798,40 +1798,48 @@ Optionally, the anonymous class may define its own primary constructor parameter
 \label{sec:statements}
 
 \syntax\begin{lstlisting}
-Block_Stat    ::= Use
-                | {Annotation} ['implicit'] Def
-                | {Annotation} {Local_Modifier} Tmpl_Def
-                | Expr
-                | Alias_Expr
-                | Capture_Usage
-                | ()
-Template_Stat ::= Use
-                | {Annotation} {Modifier} Def
-                | {Annotation} [Opt_Req] {Modifier} Dcl
-                | Prop_Dcl
-                | Prop_Def
-                | 'include' Container_Path [Cond_Modifier]
-                | 'prepend' Container_Path [Cond_Modifier]
-                | Expr
-                | Alias_Expr
-                | ()
-                | Opt_Req [val_ids | symbol_ids]
-                | Access_Modifier [val_ids | symbol_ids]
-Fun_Stats     ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
-                | Block
-                  {'rescue' [Pattern [Guard]] semi Block }
-                  ['ensure' semi Block_Stat {semi Block_Stat}]
-Fun_Stat      ::= Block_Stat
-Fun_Dec_Expr  ::= {Annotation} Dcl
-                | {Annotation} ['implicit'] Def
-                | 'transparent'
-                | 'opaque'
-                | 'native' [Expr]
-                | ()
-Alias_Expr    ::= 'alias' symbol_literal 'is' symbol_literal
-Capture_Usage ::= 'use' id {',' id} 'as' ('weak' | 'unowned' | 'soft')
-Opt_Req       ::= 'optional' | 'requires'
-symbol_ids    ::= symbol_literal {',' symbol_literal}
+Block_Stat     ::= Use
+                 | {Annotation} ['implicit'] Def
+                 | {Annotation} {Local_Modifier} Tmpl_Def
+                 | Expr
+                 | Alias_Expr
+                 | Capture_Usage
+                 | ()
+                 | 'assert' Expr
+Template_Stat  ::= Use
+                 | {Annotation} {Modifier} Def
+                 | {Annotation} [Opt_Req] {Modifier} Dcl
+                 | Prop_Dcl
+                 | Prop_Def
+                 | 'include' Container_Path [Cond_Modifier]
+                 | 'prepend' Container_Path [Cond_Modifier]
+                 | Expr
+                 | Alias_Expr
+                 | ()
+                 | Opt_Req [val_ids | symbol_ids]
+                 | Access_Modifier [val_ids | symbol_ids]
+                 | {Annotation} {Modifier} Constraint_Def
+                 | 'invariant' Invariant_Def
+Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
+                 | Block
+                   {'rescue' [Pattern [Guard]] semi Block }
+                   ['ensure' semi Block_Stat {semi Block_Stat}]
+Fun_Stat       ::= Block_Stat
+Fun_Dec_Expr   ::= {Annotation} Dcl
+                 | {Annotation} ['implicit'] Def
+                 | 'transparent'
+                 | 'opaque'
+                 | 'native' [Expr]
+                 | ()
+Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
+                 | 'alias' id 'is' id
+Capture_Usage  ::= 'use' id {',' id} 'as' ('weak' | 'unowned' | 'soft')
+Constraint_Def ::= 'include' 'constraint' 
+                   (id ['as' Type] [':='] Constraint_Block 
+                   | Alias_Expr)
+Invariant_Def  ::= '{' Block '}' | 'do' Block 'end'
+Opt_Req        ::= 'optional' | 'requires'
+symbol_ids     ::= symbol_literal {',' symbol_literal}
 \end{lstlisting}
 
 Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{nil}, or the empty statement/expression, whose value is again \code{nil}. 
@@ -1857,6 +1865,10 @@ The \code{Capture_Usage} syntax construct (of the forms ~\lstinline{use $\id_1 \
 When \code{optional} or \code{requires} appear in a template, the following message declarations are either optional or required. When a message declaration is optional, then its result type is always nullable. No restriction is put on required messages. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
 
 When \code{public}, \code{protected} or \code{private} appear in a template, the following member declarations have their accessibility affected. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
+
+Constraint definitions, of the form ~\lstinline!include constraint $\id$ as $T$ := $b$!, define argument-less methods ($\id$), whose names are then available as local variables inside of constraint blocks ($b$). A type $T$ can be used to specify explicitly the result type of such methods. The instance variables of the owning object that are read by such methods are observed for changes, so that constrained types can be consistent. Constraints may be aliased. If at runtime the object changes in a way that breaks the constraint condition, then \code{Broken_Constraint} is raised upon next read of a variable typed with a constrained type. 
+
+% TBD: describe invariant and assert
 
 
 
