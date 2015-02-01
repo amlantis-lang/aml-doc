@@ -1167,7 +1167,7 @@ Pro_Tmpl_Env ::= 'extends' Trait_Parents
                | ['begin' [Template_Body]] 'end' ['trait']
 \end{lstlisting}
 
-Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}''. 
+Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}'' or as a part of the type's signature. 
 
 Protocols are basically traits (\sref{sec:traits}) that are stripped of some features, namely: 
 \begin{itemize}
@@ -1179,6 +1179,9 @@ Protocols can't declare anything for the class or metaclass of the class that im
 
 \item
 Protocols don't have early definitions (\sref{sec:early-defs}). If this is needed, again, use a trait instead. 
+
+\item 
+Protocols can make use of the \code{optional} and \code{requires} keywords as modifiers in their template (\sref{sec:statements}), as any other traits, but their usage is preferred within protocols. 
 \end{itemize}
 
 Protocol references are preferred to traits to be used by library designers to declare contracts for the code that uses them. 

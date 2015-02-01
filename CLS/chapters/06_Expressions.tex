@@ -1807,7 +1807,7 @@ Block_Stat    ::= Use
                 | ()
 Template_Stat ::= Use
                 | {Annotation} {Modifier} Def
-                | {Annotation} {Modifier} Dcl
+                | {Annotation} [Opt_Req] {Modifier} Dcl
                 | Prop_Dcl
                 | Prop_Def
                 | 'include' Container_Path [Cond_Modifier]
@@ -1815,6 +1815,8 @@ Template_Stat ::= Use
                 | Expr
                 | Alias_Expr
                 | ()
+                | Opt_Req [val_ids | symbol_ids]
+                | Access_Modifier [val_ids | symbol_ids]
 Fun_Stats     ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                 | Block
                   {'rescue' [Pattern [Guard]] semi Block }
@@ -1828,6 +1830,8 @@ Fun_Dec_Expr  ::= {Annotation} Dcl
                 | ()
 Alias_Expr    ::= 'alias' symbol_literal 'is' symbol_literal
 Capture_Usage ::= 'use' id {',' id} 'as' ('weak' | 'unowned' | 'soft')
+Opt_Req       ::= 'optional' | 'requires'
+symbol_ids    ::= symbol_literal {',' symbol_literal}
 \end{lstlisting}
 
 Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{nil}, or the empty statement/expression, whose value is again \code{nil}. 
@@ -1850,6 +1854,9 @@ An alias to a function name creates a duplicate record in method table of a clas
 
 The \code{Capture_Usage} syntax construct (of the forms ~\lstinline{use $\id_1 \commadots \id_n$ as weak}, ~\lstinline{use $\id_1 \commadots \id_n$ as unowned} and ~\lstinline{use $\id_1 \commadots \id_n$ as soft}) provide a way to define ownership of captured variables in blocks and anonymous functions. Every captured variable is stored as a property within the function object, and therefore it takes an ownership of the pointed object. By using this construct, the default strong reference can be replaced with a \code{Weak_Reference[T]}, an \code{Unowned_Reference[T]} or a \code{Soft_Reference[T]}, with automatic unwrapping and wrapping of read and written values. It is an error if $\id_i$ is not a variable name in an enclosing scope. 
 
+When \code{optional} or \code{requires} appear in a template, the following message declarations are either optional or required. When a message declaration is optional, then its result type is always nullable. No restriction is put on required messages. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
+
+When \code{public}, \code{protected} or \code{private} appear in a template, the following member declarations have their accessibility affected. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
 
 
 
