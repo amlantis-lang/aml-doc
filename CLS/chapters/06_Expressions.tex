@@ -307,6 +307,8 @@ If $f$ is a polymorphic method, it is applicable if local type inference (\sref{
 
 If a function application appears to be an argument to another function application (let's call it a nested function application), the expected type of the nested function application is used to determine, whether the outer function is applicable, but the nested function application is not evaluated until time specified by argument evaluation strategy (\sref{sec:arg-eval-strategies}) corresponding to the argument. Local type inference may indeed occur for the nested function application, if it involves a polymorphic method, but again, only using the available expected types. 
 
+If a corresponding parameter $p_j$ to an argument expression $e_i$ is of a constrained type (\sref{sec:constrained-types}), the argument expression is early evaluated, so that it can be determined whether the argument's type conforms to the constrained type, but only if the expected type of $e_i$ does conform to the type of $p_j$ (otherwise, it is clear that it won't conform, thus there is no need to evaluate the expression). 
+
 If an argument expression is prefixed with ``\lstinline!*!'' (let's call it a {\em sequence argument expression}, or {\em sequence-splat}, or just {\em splat}), it is expanded into multiple argument expressions, as its expected type is ~\lstinline!Sequence[$S$]! and $S$ is the expected (and usually actual) type of the arguments resulting from the expansion. The expansion uses methods of the \code{Sequence} type to determine the length of the sequence and its type, which are then inserted instead of the sequence argument (and the contents of the sequence have their evaluation deferred). The sequence should have a reasonable length, and must not be infinite. Such sequence arguments can appear in the function application multiple times (unlike the repeated parameter), but only in the section of positional arguments. 
 
 If an argument expression is prefixed with ``\lstinline!**!'' (let's call it a {\em map argument expression}, or {\em map-splat}), it is expanded into multiple argument expressions, as its expected type is ~\lstinline!Map[Symbol, $S$]! and $S$ is the expected (and usually actual) type of the arguments resulting from the expansion. The expansion uses methods of the \code{Map} type to determine the length of the map and its type, which are then inserted instead of the map argument (and the contents of the map have their evaluation deferred). The map should have a reasonable length, and must not be infinite. Such map arguments can appear in the function application multiple times (unlike the repeated parameter), but only in the section of named arguments. 
@@ -1818,8 +1820,9 @@ Template_Stat  ::= Use
                  | ()
                  | Opt_Req [val_ids | symbol_ids]
                  | Access_Modifier [val_ids | symbol_ids]
+                 | {Annotation} {Modifier} Constraint_Dcl
                  | {Annotation} {Modifier} Constraint_Def
-                 | 'invariant' Invariant_Def
+                 | {Annotation} 'invariant' Invariant_Def
 Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                  | Block
                    {'rescue' [Pattern [Guard]] semi Block }
@@ -1834,10 +1837,11 @@ Fun_Dec_Expr   ::= {Annotation} Dcl
 Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
                  | 'alias' id 'is' id
 Capture_Usage  ::= 'use' id {',' id} 'as' ('weak' | 'unowned' | 'soft')
-Constraint_Def ::= 'include' 'constraint' 
+Constraint_Dcl ::= 'constraint' id ['as' Type] 'end' ['constraint']
+Constraint_Def ::= 'constraint' 
                    (id ['as' Type] [':='] Constraint_Block 
                    | Alias_Expr)
-Invariant_Def  ::= '{' Block '}' | 'do' Block 'end'
+Invariant_Def  ::= '{' Block '}' | 'do' Block 'end' ['invariant']
 Opt_Req        ::= 'optional' | 'requires'
 symbol_ids     ::= symbol_literal {',' symbol_literal}
 \end{lstlisting}
@@ -1866,7 +1870,9 @@ When \code{optional} or \code{requires} appear in a template, the following mess
 
 When \code{public}, \code{protected} or \code{private} appear in a template, the following member declarations have their accessibility affected. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
 
-Constraint definitions, of the form ~\lstinline!include constraint $\id$ as $T$ := $b$!, define argument-less methods ($\id$), whose names are then available as local variables inside of constraint blocks ($b$). A type $T$ can be used to specify explicitly the result type of such methods. The instance variables of the owning object that are read by such methods are observed for changes, so that constrained types can be consistent. Constraints may be aliased. If at runtime the object changes in a way that breaks the constraint condition, then \code{Broken_Constraint} is raised upon next read of a variable typed with a constrained type. 
+Constraint definitions, of the form ~\lstinline!constraint $\id$ as $T$ := $b$!, define argument-less methods ($\id$), whose names are then available as local variables inside of constraint blocks ($b$). A type $T$ can be used to specify explicitly the result type of such methods. The instance variables of the owning object that are read by such methods are observed for changes, so that constrained types can be consistent. Constraints may be aliased. If at runtime the object changes in a way that breaks the constraint condition, then \code{Broken_Constraint} is raised upon next read of a variable typed with a constrained type. 
+
+If a parameter-less method of the same name as a constraint already exists, it is sufficient to just declare the constraint and let the pre-existing method implement it. Otherwise, a constraint declaration behaves exactly like a method declaration. On the contrary, neither method declaration, nor method definition alone create a constraint. 
 
 % TBD: describe invariant and assert
 
@@ -1970,6 +1976,8 @@ Otherwise, let $S_1 \commadots S_m$ be the vector of types obtained by typing ea
 
 \paragraph{Applicability based overloading resolution}
 Otherwise, let $\mathcal{C}$ be the set of applicable alternatives in the application to $e_1 \commadots e_m$. It is again an error if $\mathcal{C}$ is empty. Otherwise, one chooses the {\em most specific} alternative among the alternatives in $\mathcal{C}$, according to the following definition of being  ``more specific than''.
+
+Note that if any of parameter types of any alternative in $\mathcal{C}$ is a constrained type (\sref{sec:constrained-types}), an early argument evaluation may be triggered, exactly once per each corresponding argument, to detect whether the alternative is applicable. 
 
 \begin{definition}
 The {\em relative weight} of an alternative $A$ over an alternative $B$ is defined as the sum of relative weights of each argument $e_i$ in the application to $e_1 \commadots e_m$. In the following equation, $A_i$ is the type of the parameter corresponding to $e_i$ in the alternative $A$, and $B_i$ is the type of the parameter corresponding to $e_i$ in the alternative $B$. 

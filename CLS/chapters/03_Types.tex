@@ -20,7 +20,9 @@ Existential_Dcl     ::= 'type' Type_Dcl
 Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type} 
                         ['with' ['refinement'] Refine_Stats]
                       | ['refinement'] Refine_Stats
-Infix_Type          ::= Compound_Type {op_id [nl] Compound_Type}
+Postfix_Type        ::= Compound_Type 
+                        ['with' 'constraint' Constraint_Block]
+Infix_Type          ::= Postfix_Type {op_id [nl] Postfix_Type}
 Annot_Type          ::= {Annotation} Simple_Type
 Simple_Type         ::= Simple_Type [Type_Args]
                       | Simple_Type '#' id
@@ -348,6 +350,7 @@ Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type}
 Refine_Stats  ::= '{' [Refine_Stat {semi Refine_Stat}] '}'
 Refine_Stat   ::= Dcl
                 | 'type' Type_Def
+                | Constraint_Dcl
 \end{lstlisting} % TBD: define Refine_Stat syntax
 
 A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refinement {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
@@ -373,7 +376,7 @@ The \code{refinement} keyword may also be omitted from a compound type that cons
 \label{sec:infix-types}
 
 \syntax\begin{lstlisting}
-Infix_Type ::= Compound_Type {op_id [nl] Compound_Type}
+Infix_Type ::= Postfix_Type {op_id [nl] Postfix_Type}
 \end{lstlisting}
 
 An infix type $T_1\ \op\ T_2$ consists of an infix operator $\op$, which gets applied to two type operands $T_1$ and $T_2$. The type is equivalent to the type application ~\lstinline!$\op$[$T_1$, $T_2$]!. The infix operator $\op$ may be an arbitrary identifier, and is expected to represent a type constructor. 
@@ -620,7 +623,7 @@ operator or [A, B] (): Union[A, B] end
 \label{sec:constrained-types}
 
 \syntax\begin{lstlisting}
-Simple_Type      ::= Compound_Type 'with' 'constraint' Constraint_Block
+Postfix_Type     ::= Compound_Type 'with' 'constraint' Constraint_Block
 Constraint_Block ::= '{' Block '}'
 \end{lstlisting}
 
@@ -937,6 +940,9 @@ If a path $p$ has a singleton type ~\lstinline@$q$.type@, then \lstinline@$p$.ty
 Two compound types (\sref{sec:compound-types}) are equivalent, if the sequences of their components are pairwise equivalent, occur in the same order and their refinements are equivalent.
 
 \item
+Two constrained types (\sref{sec:constrained-types}) are equivalent, if their base types are equivalent and their constraint blocks read the same. 
+
+\item
 Two refinements (\sref{sec:compound-types} \& \sref{sec:refinements}) are equivalent, if they bind the same names and the modifiers, types and bounds of every declared entity are equivalent in both refinements. 
 
 \item
@@ -997,12 +1003,12 @@ A unit of measure type $t$ conforms to another unit of measure type $u$ if and o
 
 \item 
 A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
-\begin{itemize}
-\item If the $i^{\superth}$ type parameter of $T$ is declared covariant, then $T_i \conforms U_i$.
-\item If the $i^{\superth}$ type parameter of $T$ is declared contravariant, then $U_i \conforms T_i$.
-\item If the $i^{\superth}$ type parameter of $T$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
-\item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
-\end{itemize}
+  \begin{itemize}
+  \item If the $i^{\superth}$ type parameter of $T$ is declared covariant, then $T_i \conforms U_i$.
+  \item If the $i^{\superth}$ type parameter of $T$ is declared contravariant, then $U_i \conforms T_i$.
+  \item If the $i^{\superth}$ type parameter of $T$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
+  \item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
+  \end{itemize}
 
 \item
 A unit of type $N$ conforms to unit of type $U$ if $N$ extends $U$ or if $N \equiv U$. 
@@ -1015,6 +1021,9 @@ A parameterized type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lst
 
 \item 
 A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
+
+\item
+A constrained type ~\lstinline!$T$ with constraint $b$!~ conforms to $T$. A type ~\lstinline!$T$ with constraint $b_1$!~ conforms to ~\lstinline!$T$ with constraint $b_2$!, if any value $e$ that conforms ~\lstinline!$T$ with constraint $b_1$!~ by being a member of $T$ and passing the test presented by $b_1$, also conforms to ~\lstinline!$T$ with constraint $b_2$!~ by passing the test presented by $b_2$.\footnote{This conformance is only tested based on actual values being tested, not the types themselves.}
 
 \item 
 If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ with { $R$ }!. 
@@ -1041,12 +1050,12 @@ if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ f
 
 \item
 Polymorphic types or type constructors $T$ and $T'$ must also fulfil the following. We characterize $T$ and $T'$ by their type parameter clauses ~\lstinline![$a_1 \commadots a_n$]!~ and ~\lstinline![$a'_1 \commadots a'_n$]!, where an $a_i$ or $a'_i$ may include a variance annotation, annotations, a higher-order type parameter clauses, and bounds. Then, $T$ conforms to $T'$ if any list ~\lstinline![$t_1 \commadots t_n$]!~ -- with declared variances, annotations, bounds and higher-order type parameter clauses -- of valid type arguments for $T'$ is also a valid list of type arguments for $T$ and ~\lstinline!$T$[$t_1 \commadots t_n$] <: $T'$[$t_1 \commadots t_n$]!. Note that this entails that:
-\begin{itemize}
-\item The bounds on $a_i$ must be the same or weaker than the corresponding bounds declared for $a'_i$. 
-\item The variance of $a_i$ must match the variance of $a'_i$, where covariance matches covariance, contravariance matches contravariance and any variance matches invariance. 
-\item If annotation of $a'_i$ restricts conformance (\sref{sec:annotations}), then the corresponding annotation of $a_i$ must conform to it. 
-\item Recursively, these restrictions apply to the corresponding higher-order type parameter clauses of $a_i$ and $a'_i$. 
-\end{itemize}
+  \begin{itemize}
+  \item The bounds on $a_i$ must be the same or weaker than the corresponding bounds declared for $a'_i$. 
+  \item The variance of $a_i$ must match the variance of $a'_i$, where covariance matches covariance, contravariance matches contravariance and any variance matches invariance. 
+  \item If annotation of $a'_i$ restricts conformance (\sref{sec:annotations}), then the corresponding annotation of $a_i$ must conform to it. 
+  \item Recursively, these restrictions apply to the corresponding higher-order type parameter clauses of $a_i$ and $a'_i$. 
+  \end{itemize}
 
 \item 
 A function type ~\lstinline!($T_1 \commadots T_n$) -> $R$!~ (name it $f$) conforms to a function type ~\lstinline!($T'_1 \commadots T'_m$) -> $R'$!~ (name it $f'$), if types of arguments that are applicable to $f'$ are also applicable to $f$ (\sref{sec:function-applications}), and if $R$ conforms to $R'$. This includes reordering of named arguments/parameters and handling of repeated/optional parameters, and also variances -- since although $f$ might be applied to whatever $f'$ might be applied to, $f'$ might not be applied to whatever $f$ might be applied to (and vice versa).
@@ -1059,13 +1068,13 @@ A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type t
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 
-\begin{itemize}
-\item A value declaration or definition that defines a name $x$ with type $T$ subsumes a value or method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
-\item A method declaration or definition that defines a name $x$ with type $T$ subsumes a method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
-\item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T'$!~ if $T \equiv T'$. 
-\item A type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!~ subsumes a type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L'$ <: $U'$!, if $L' \conforms L$ and $U \conforms U'$. 
-\item A type or class definition that binds a type name $t$ subsumes an abstract type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!, if $L \conforms t \conforms U$. 
-\end{itemize}
+  \begin{itemize}
+  \item A value declaration or definition that defines a name $x$ with type $T$ subsumes a value or method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
+  \item A method declaration or definition that defines a name $x$ with type $T$ subsumes a method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
+  \item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T'$!~ if $T \equiv T'$. 
+  \item A type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!~ subsumes a type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L'$ <: $U'$!, if $L' \conforms L$ and $U \conforms U'$. 
+  \item A type or class definition that binds a type name $t$ subsumes an abstract type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!, if $L \conforms t \conforms U$. 
+  \end{itemize}
 
 The ($\conforms$) relation forms partial order between types, i.e. it is transitive, antisymmetric and reflexive. The terms {\em least upper bound} and {\em greatest lower bound} of a set of types are understood to be relative to that order. 
 
