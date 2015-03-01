@@ -200,9 +200,9 @@ Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified as
 \section{Function Applications}
 \label{sec:function-applications}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[mathescape=false]
 Simple_Expr1   ::= Simple_Expr1 Argument_Exprs 
-Argument_Exprs ::= Parens_Args {Parens_Args} [Block_Expr] 
+Argument_Exprs ::= ['.'] Parens_Args {Parens_Args} [Block_Expr] 
                  | Poetry_Args [Block_Expr2]
                  | Block_Expr
 
@@ -211,10 +211,12 @@ Poetry_Args ::= Args_Expr
 Args_Expr   ::= (Pos_Args [',' Named_Args])
               | Named_Args
 Pos_Args    ::= Pos_Arg {',' Pos_Arg}
-Pos_Arg     ::= ['out' | '*'] Expr
+Pos_Arg     ::= 'out' id | ['*'] Expr | '$'
 Named_Args  ::= Named_Arg {',' Named_Arg} {',' '**' Expr}
               | '**' Expr {',' '**' Expr}
-Named_Arg   ::= {['out'] id ':' Expr} 
+Named_Arg   ::= 'out' id ':' id
+              | id ':' Expr
+              | id ':' '$'
 \end{lstlisting}
 
 A function application ~\lstinline!$f$($e_1 \commadots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \commadots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
@@ -461,19 +463,19 @@ These operators for unary functions can be defined as follows, e.g.:
 trait Function_1 [-T, +R]
 begin
 
-  // right-associative
+  // right-binding
   operator |>> [T1] (g: T1 -> T): T1 -> R := 
     (a: T1) -> { self(g(a)) }
 
-  // left-associative
+  // left-binding
   operator <<| [T1] (g: T1 -> T): T1 -> R :=
     (a: T1) -> { self(g(a)) }
 
-  // right-associative
+  // right-binding
   operator |> (a: T): R :=
     self(a)
 
-  // left-associative
+  // left-binding
   operator <| (a: T): R := 
     self(a)
     
@@ -496,6 +498,41 @@ A memoized function's body is not evaluated, if it was once called with the same
 Memoization is better with small parameter numbers, so that searching the result values cache would not actually take longer than evaluation of the function's body. Functions that are defined with the \code{function} keyword (\sref{sec:function-decls-defs}) may opt-in to implicit memoization\footnote{E.g., based on the computed complexity of the function. If the function is decided to be simple, then memoization could actually worsen performance.}, as well as functions declared as \code{transparent} (\sref{sec:statements}). Functions declared as \code{opaque} (\sref{sec:statements}) should not be memoized. 
 
 Parameters of memoization\footnote{Parameters include things like: cache policy, ttl, cache size and so on.} may be controlled, even on per-function basis, with use of specialized annotations and pragmas. 
+
+
+
+
+\subsection{Application Shortcut}
+\label{sec:function-application-shortcut}
+
+A function application ~\lstinline!$f$.($e_1 \commadots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($f$())($e_1 \commadots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$f$().apply($e_1 \commadots e_m$) $b$!, as appropriate.\footnote{E.g. curried functions do not need any explicit \code{.apply()} applications, as these are implied, but would work anyway, therefore the second expanded form is equivalent to the first expanded form.}
+
+This is especially useful for situations where a prefix appears to the function application and $f$ denotes a member that evaluates to a function, or maybe to a collection, but does not itself accept any arguments. 
+
+A function application ~\lstinline!$p$.$f$.($e_1 \commadots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($p$.$f$)($e_1 \commadots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$p$.$f$().apply($e_1 \commadots e_m$) $b$!, where $p$ is some prefix expression. 
+
+
+
+
+
+\subsection{Receiver Size Shortcut}
+\label{sec:receiver-size-shortcut}
+
+A function application ~\lstinline!$r$.$f$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!~ or contains it as a sub-expression, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline!$r$.size!. 
+
+A function application ~\lstinline!$r$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline!$r$.size!~ and $r$ is a variable reference. 
+
+In case of nested function applications, this shortcut is applied absolutely only to the outermost application, to prevent any confusion. It can be combined with application shortcut.
+
+\example Combining receiver size shortcut with application shortcut.
+\begin{lstlisting}[mathescape=false]
+// the expression
+prefix.receiver.($)
+// is equivalent to the expression
+prefix.receiver.(prefix.receiver.size)
+// which is in turn equivalent to
+prefix.receiver().apply(prefix.receiver().size)
+\end{lstlisting}
 
 
 
@@ -664,7 +701,7 @@ Apart from standard function applications (\sref{sec:function-applications}) tha
 \subsection{Infix Operations}
 \label{sec:infix-operations}
 
-An infix operator can be an arbitrary operator identifier. Infix operators have static precedence and associativity borrowed from Scala, and defined as follows:
+An infix operator can be an arbitrary operator identifier. Infix operators have static {\em precedence}, {\em associativity} and {\em binding direction} defined as follows:
 
 The {\em precedence} of an infix operator is determined by the operator's first character. Characters are listed below in increasing order of precedence, with characters on the same line having the same precedence.
 
@@ -684,20 +721,20 @@ That is, operators starting with ``\lstinline!|!'' have the lowest precedence, f
 
 There's one exception to this rule, which concerns {\em assignment operators} (\sref{sec:assignment-operations}). The precedence of an assignment operator is the same as the one of simple assignment (\lstinline!:=!). That is, it is lower than the precedence of any other operator. 
 
-The {\em associativity} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, and operators ending in a greater-than sign ``\lstinline!>!'' are right-associative, if they consist of more than one operator character. All other operators are left-associative. 
+The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
 
-Precedence and associativity of operators determine the grouping of parts of an expression as follows.
+Precedence, associativity and binding direction of operators determine the grouping of parts of an expression as follows.
 
 \begin{itemize}
 \item If there are several infix operations in an expression, then operators with higher precedence bind more closely than operators with lower precedence. 
 
 \item If there are consecutive infix operations $e_0\ \op_1\ e_1\ \op_2 \ldots \op_n\ e_n$ with operators $\op_1 \ldots \op_n$ of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). If all operators are left-associative, then the sequence is interpreted as ~\lstinline!(($e_0\ \op_1\ e_1$) $\op_2 \ldots$) $\op_n\ e_n$!. Otherwise, if all operators are right-associative, the sequence is interpreted as ~\lstinline!$e_0\ \op_1$ ($e_1\ \op_2$ ($\ldots \op_n\ e_n$))!.
 
-\item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
+\item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative or right-binding, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
 
 \item The right-hand operand of a left-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!$e\ \op$ ($e_1 \commadots e_n$)!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
 
-\item The left-hand operand of a right-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!($e_1 \commadots e_n$) $\op\ e$!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
+\item The left-hand operand of a right-associative or right-binding operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!($e_1 \commadots e_n$) $\op\ e$!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
 \end{itemize}
 
 
@@ -731,6 +768,20 @@ The re-interpretation is occurs if the following conditions are fulfilled:
 
 The re-interpretation is built into the compiled bytecode in such a way that first tries the assignment operator, and then the re-interpretation only in case where the assignment operator approach failed.\footnote{No appropriate implicit conversion was found, or if implicit conversions are disabled for the expression, the value referred to by $l$ does not have the appropriate member.} It is indeed an error if none of the two approaches succeeded. 
 
+Assignment operations are right-associative, despite any rules defined for other operators. The value of an assignment expression is the left-hand side argument after the assignment operation was evaluated. 
+
+\example Right-associativity of assignment operations, using mutable variables as left-hand sides. 
+\begin{lstlisting}
+// the assignment
+a := b := c
+// is equivalent to
+a := (b := c)
+
+// the assignment
+(a := b) := c
+// is equivalent to 
+a := b; a := c
+\end{lstlisting}
 
 
 
