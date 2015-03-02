@@ -31,7 +31,7 @@ Expr        ::= Cond_Expr
               | Quasiquote_Expr
               | '(' Expr ')'
 Infix_Expr  ::= Prefix_Expr
-              | Infix_Expr [op_id Infix_Expr]
+              | Infix_Expr [(id | op_id) Infix_Expr]
 Simple_Expr ::= Block_Expr
               | ['&'] Simple_Expr1
               | '&' '(' Simple_Expr1 ')'
@@ -684,7 +684,9 @@ Expressions can be constructed from operands and operators.
 
 \subsection{Prefix Operations}
 
-A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, unlike in Scala, but must not be followed by any whitespace, only identifiers or parentheses. The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!. 
+A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, unlike in Scala, but must not be followed by any whitespace, only identifiers or parentheses. The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). 
+
+There is also a keyword prefix operator: \code{not}, which must be followed by a whitespace and is always prefix. 
 
 
 
@@ -701,11 +703,12 @@ Apart from standard function applications (\sref{sec:function-applications}) tha
 \subsection{Infix Operations}
 \label{sec:infix-operations}
 
-An infix operator can be an arbitrary operator identifier. Infix operators have static {\em precedence}, {\em associativity} and {\em binding direction} defined as follows:
+An infix operator can be an arbitrary identifier, usually an operator identifier. Infix operators have static {\em precedence}, {\em associativity} and {\em binding direction} defined as follows:
 
 The {\em precedence} of an infix operator is determined by the operator's first character. Characters are listed below in increasing order of precedence, with characters on the same line having the same precedence.
 
 \begin{lstlisting}
+$\mbox{\rm\sl(all alphanumeric characters)}$
 |
 ^
 &
@@ -720,6 +723,17 @@ $\mbox{\rm\sl(all other special characters)}$
 That is, operators starting with ``\lstinline!|!'' have the lowest precedence, followed by operators starting with ``\lstinline!^!'', etc. 
 
 There's one exception to this rule, which concerns {\em assignment operators} (\sref{sec:assignment-operations}). The precedence of an assignment operator is the same as the one of simple assignment (\lstinline!:=!). That is, it is lower than the precedence of any other operator. 
+
+A number of left-associative alphanumeric operators with different precedence exist:
+\begin{itemize}
+  \item \code{and}, with precedence of ~\lstinline!&!. 
+  \item \code{or}, with precedence of ~\lstinline!|!.  
+  \item \code{xor}, with precedence of ~\lstinline!^!.  
+  \item \code{rem}, with precedence of ~\lstinline!%!. 
+  \item \code{mod}, with precedence of ~\lstinline!%!. 
+  \item \code{div}, with precedence of ~\lstinline!/!. 
+  \item \code{quot}, with precedence of ~\lstinline!/!.   
+\end{itemize}
 
 The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
 
@@ -741,6 +755,96 @@ Precedence, associativity and binding direction of operators determine the group
 
 
 
+\subsection{Alphanumeric Infix Operators vs. Function Application}
+
+Infix operations take precedence over function applications (\sref{sec:function-applications}) that use ``poetry''-style arguments passing.
+
+\example Distinction between infix operations and function applications with ``poetry''-style arguments passing. 
+\begin{lstlisting}
+// function application
+file.open "hello_world.txt"
+// is equivalent to function application
+file.open("hello_world.txt")
+
+// whereas expression
+a shift-left b
+// is an infix expression equivalent to
+a.shift-left(b)
+// and not to the less obvious
+a(shift-left(b))
+\end{lstlisting}
+
+Infix operations can be grouped together. If there is an even number of expressions separated by whitespace (i.e., no right-hand side of an infix operation), the last one is an argument in ``poetry''-style function application, but such code is considered suspicious and a warning is issued during compilation. 
+
+
+
+
+\subsubsection{Standard Operators}
+
+Standard arithmetic operators:
+\begin{lstlisting}
+a + b     // addition
+a - b     // subtraction
+a * b     // multiplication
+a / b     // floating point division
+a div b   // integral division
+a mod b   // modulo
+a quot b  // quotient
+a rem b   // remainder
+a ^ b     // power
+a conj b  // complex conjugate
+\end{lstlisting}
+
+Standard comparison operators:
+\begin{lstlisting}
+a = b    // equality
+a /= b   // non-equality
+a < b    // less than
+a <= b   // less than or equal
+a > b    // greater than
+a >= b   // greater than or equal
+\end{lstlisting}
+
+Extended comparison operators (arguments are a tuple on the right hand side of the operator):
+\begin{lstlisting}
+a = ($\ldots$)   // `a` equal to all arguments
+a /= ($\ldots$)  // `a` not equal to all arguments
+           // but arguments may be equal to each other
+a < ($\ldots$)   // `a` less than all arguments
+a <= ($\ldots$)  // `a` less than or equal all arguments
+a > ($\ldots$)   // `a` greater than all arguments
+a >= ($\ldots$)  // `a` greater than or equal all arguments
+\end{lstlisting}
+
+Standard bitwise operators: 
+\begin{lstlisting}
+a << b   // arithmetic (& logical) shift left
+a <<< b  // shift left, preserving the least significant bit
+a >> b   // arithmetic shift right
+a >>> b  // logical shift right
+a <<@ b  // rotate left
+a >>@ b  // rotate right
+a & b    // bitwise and
+a | b    // bitwise or
+a xor b  // bitwise xor (when applied to numbers)
+\end{lstlisting}
+
+Standard boolean (logical) operators:
+\begin{lstlisting}
+a && b   // boolean and
+a and b  // boolean and
+a || b   // boolean or
+a or b   // boolean or
+a xor b  // boolean xor
+\end{lstlisting}
+
+% Standard fuzzy logic operators:
+% \begin{lstlisting}
+% \end{lstlisting}
+
+
+
+
 
 \subsection{Assignment Operations}
 \label{sec:assignment-operations}
@@ -748,7 +852,7 @@ Precedence, associativity and binding direction of operators determine the group
 An assignment operator is an operator symbol that ends in an ``equals'' character ``\lstinline!=!'', with the exception of operators for which one of the following conditions holds: 
 \begin{enumerate}
 \item the operator also starts with an equals character and has more than one character, or
-\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'' or ``\lstinline@!=@''.
+\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'' or ``\lstinline!/=!''.
 \end{enumerate}
 
 Assignment operators are treated specially in that they can be expanded to assignments if no other interpretation is valid, as previously defined. Assignment operators can be defined as members of a type. 
