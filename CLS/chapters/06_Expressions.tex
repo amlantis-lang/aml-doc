@@ -672,7 +672,7 @@ The \code{yield} keyword is also used in collection comprehensions (\sref{sec:co
 
 \syntax\begin{lstlisting}
 Infix_Expr  ::= Prefix_Expr
-              | Infix_Expr [op_id Infix_expr]
+              | Infix_Expr [(id | op_id) Infix_expr]
 Prefix_Expr ::= [op_id] Simple_Expr
 \end{lstlisting}
 
