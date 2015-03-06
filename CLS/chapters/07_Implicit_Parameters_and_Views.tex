@@ -100,15 +100,20 @@ Views are applied in the following situations.
 \begin{enumerate}
 \item If an expression $e$ is of a type $T$, and $T$ does not conform to the expression's expected type $\exptype$. In this case an implicit $v$ is searched, which is applicable to $e$ and whose result type conforms to $\exptype$, and this process makes $T$ compatible with $\exptype$. The search proceeds as in the case of implicit parameters, where the implicit scopes are the scope of $T$ followed by the scope of $\exptype$, searched in this order. If such a view is found, the expression $e$ is converted to \code{$v$($e$)}. 
 
-\item In a selection \code{$e$.$m$} with $e$ of a type $T$, if the selector $m$ does not denote an accessible member of $T$, including restrictions imposed by access modifiers, i.e. the member $m$ may actually exist in $T$. In this case, a view $v$ is searched which is applicable to $e$ and whose result contains an accessible member named $m$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If such a view is found, the selection \code{$e$.$m$} is converted to \code{$v$($e$).$m$}. 
+\item In a selection \code{$e$.$m$} with $e$ of a type $T$, if the selector $m$ does not denote an accessible member of $T$, including restrictions imposed by access modifiers, i.e. the member $m$ may actually exist in $T$. In this case, a view $v$ is searched which is applicable to $e$ and whose result contains an accessible member named $m$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If there are several eligible views, the most specific one is chosen according to overloading resolution with an expected type inherited from the original selection. If such a view is found, the selection \code{$e$.$m$} is converted to \code{$v$($e$).$m$}. 
 
-\item In a selection \code{$e$.$m$($\args$)} with $e$ of a type $T$, if the selector $m$ denotes some members of $T$, but none of these members is applicable to the arguments $\args$. In this case a view $v$ is searched, which is applicable to $e$ and whose result contains a member $m$, which is applicable to $\args$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If such a view is found, the selection \code{$e$.$m$($\args$)} is converted to \code{$v$($e$).$m$($\args$)}. 
+\item In a selection \code{$e$.$m$($\args$)} with $e$ of a type $T$, if the selector $m$ denotes some members of $T$, but none of these members is applicable to the arguments $\args$. In this case a view $v$ is searched, which is applicable to $e$ and whose result contains a member $m$, which is applicable to $\args$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If there are several eligible views, the most specific one is chosen according to overloading resolution with an expected type inherited from the original selection. If such a view is found, the selection \code{$e$.$m$($\args$)} is converted to \code{$v$($e$).$m$($\args$)}. 
 \end{enumerate}
 
 The implicit view, if it is found, can accept its argument $e$ as a a call-by-value based or call-by-name based parameter, and no precedence is imposed on the views. It is an error if there are multiple equally specific views that differ only in the parameter evaluation strategy. 
 
 As for implicit parameters, overloading resolution (\sref{sec:overloading-resolution}) is applied if there are several possible candidates.\footnote{The overloading resolution here is for the case of function applications, and the shape takes into account just one argument and corresponding parameter pair.}
 
+If there are multiple implicit scopes searched in order, we mean that the following implicit scope is searched if:
+\begin{itemize}
+  \item The previous scope did not contain any eligible implicit value.
+  \item The previous scope did contain multiple eligible implicit values, but overloading resolution could not select a unique most specific one. 
+\end{itemize}
 
 
 

@@ -30,8 +30,6 @@ Expr        ::= Cond_Expr
               | Workflow_Expr
               | Quasiquote_Expr
               | '(' Expr ')'
-Infix_Expr  ::= Prefix_Expr
-              | Infix_Expr [(id | op_id) Infix_Expr]
 Simple_Expr ::= Block_Expr
               | ['&'] Simple_Expr1
               | '&' '(' Simple_Expr1 ')'
@@ -671,8 +669,10 @@ The \code{yield} keyword is also used in collection comprehensions (\sref{sec:co
 \label{sec:prefix-infix-ops}
 
 \syntax\begin{lstlisting}
+nary_op_id  ::= '?' {opchar}
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [(id | op_id) Infix_expr]
+              | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
 Prefix_Expr ::= [op_id] Simple_Expr
 \end{lstlisting}
 
@@ -735,7 +735,7 @@ A number of left-associative alphanumeric operators with different precedence ex
   \item \code{quot}, with precedence of ~\lstinline!/!.   
 \end{itemize}
 
-The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
+The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, unless they are $n$-ary (\sref{sec:nary-infix-expressions}); and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
 
 Precedence, associativity and binding direction of operators determine the grouping of parts of an expression as follows.
 
@@ -755,7 +755,7 @@ Precedence, associativity and binding direction of operators determine the group
 
 
 
-\subsection{Alphanumeric Infix Operators vs. Function Application}
+\subsubsection{Alphanumeric Infix Operators vs. Function Application}
 
 Infix operations take precedence over function applications (\sref{sec:function-applications}) that use ``poetry''-style arguments passing.
 
@@ -827,6 +827,7 @@ a >>@ b  // rotate right
 a & b    // bitwise and
 a | b    // bitwise or
 a xor b  // bitwise xor (when applied to numbers)
+not a    // bitwise not (prefix, unary)
 \end{lstlisting}
 
 Standard boolean (logical) operators:
@@ -886,6 +887,70 @@ a := (b := c)
 // is equivalent to 
 a := b; a := c
 \end{lstlisting}
+
+
+
+
+\subsection{$N$-ary Infix Expressions}
+\label{sec:nary-infix-expressions}
+
+\syntax\begin{lstlisting}
+nary_op_id  ::= '?' {opchar}
+Infix_Expr  ::= Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
+\end{lstlisting}
+
+Operators that begin with a question mark ``\code{?}'' (and may as well consist only of that one character) have the special ability to create an $n$-ary infix expression. Those are recognized by the ``\code{:}'' symbol, which is otherwise not allowed as an operator. Here, it serves as a separator of arguments to the $n$-ary infix operation. The expression is viewed as if it were a regular infix expression, where the infix expressions following the $n$-ary operator are all right-hand side arguments to the operation. 
+
+The following two infix expressions and the third function application are equivalent.
+\begin{lstlisting}
+a ? b : c : d
+a ? (b, c, d)
+a.`?`(b, c, d)
+\end{lstlisting}
+
+\example The most widely used $n$-ary operator is the ternary conditional operator ``\code{?}'', which could be defined on the \code{Boolean} type as follows:
+
+\begin{lstlisting}
+class Boolean extends Object
+  operator ? [A, B <: A, C <: A] (if_true: => B, if_false: => C): A
+    if self
+      if_true
+    else
+      if_false
+    end
+  end
+end
+\end{lstlisting}
+
+Such definition of the conditional operator includes lazy evaluation of the arguments. A shorthand version could use a wrapper object and an implicit conversion:
+
+\begin{lstlisting}
+class Boolean_Wrapper [W] extends Object
+  constructor (wrapped: W)
+    val @wrapped := wrapped
+  end
+  operator ?: [A, B <: A] (if_false: => B): A
+    if @wrapped.to_boolean
+      @wrapped
+    else
+      if_false
+    end
+  end
+end
+
+implicit def to_boolean_wrapper [W] (obj: W): Boolean_Wrapper[W]
+  Boolean_Wrapper.new(obj)
+end
+\end{lstlisting}
+
+Then, one may use these operators as follows: 
+
+\begin{lstlisting}
+val a := b ? c : d
+val e := b ?: d // which is equal to `b ? b : d`
+\end{lstlisting}
+
+
 
 
 
