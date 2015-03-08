@@ -42,6 +42,20 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 
 
 
+\section{Value \& Variable Names}
+\label{sec:val-var-names}
+
+Syntax rules defined in the following sections do not restrict users from choosing whatever value or variable name they want. However, there are a few conventions that are recommended to follow, because otherwise, an inconsistency in naming could arise in face of pattern matching (\sref{sec:pattern-matching}):
+
+\begin{itemize}
+  \item If a value or variable is to contain a type (such as a class), use upper-case first letter in its name (unless it makes more sense to have a lower-case first letter due to the name itself). 
+  \item In other cases, where a value or variable is to contain a non-type value, use lower-case first letter in its name, without exceptions. 
+\end{itemize}
+
+This is to keep up consistency with pattern matching, where the type will usually be presented with a name that starts with an upper-case letter (but does not need to if necessary), but all bound variables have to start with a lower-case letter, without exceptions. So basically, these conventions follow the restrictions imposed by pattern matching. 
+
+
+
 
 
 \section{Value Declarations \& Definitions}
@@ -51,14 +65,14 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 Dcl         ::= 'val' Val_Dcl
 Val_Dcl     ::= val_ids ':' Type
 Pat_Var_Def ::= 'val' Pat_Def
-              | 'let' ['!'] var_id ':=' Expr
+              | 'let' ['!'] var_dcl ':=' Expr
 Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Exprs
               | [var_ids ','] ['*' id [':' Type] ','] var_ids 
                 ':=' Mul_Exprs
               | [var_ids ','] '*' id [':' Type] 
                 ':=' Mul_Exprs
-var_ids     ::= var_id {',' var_id}
-var_id      ::= id [Param_Clauses] [':' Type]
+var_ids     ::= var_dcl {',' var_dcl}
+var_dcl     ::= id [Param_Clauses] [':' Type]
 val_ids     ::= id {',' id}
 \end{lstlisting}
 

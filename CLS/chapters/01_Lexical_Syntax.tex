@@ -45,10 +45,11 @@ Operator characters. These consist of all printable ASCII characters \UnicodeRan
 op_id    ::= opchar {opchar}
 var_id   ::= lower id_rest
 plain_id ::= upper id_rest
-           | ['@' | '@@'] var_id
-id       ::= plain_id
-           | '`' simple_string_literal '`'
-id_rest  ::= {letter | digit | opchar}
+           | var_id
+id       ::= ['@' | '@@'] (plain_id
+             | '`' [(id_elem - '(') {id_elem}] '`')
+id_rest  ::= {letter | digit | '+' | '-' | '/' | '_'}
+id_elem  ::= id_rest | printable_char
 \end{lstlisting}
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
