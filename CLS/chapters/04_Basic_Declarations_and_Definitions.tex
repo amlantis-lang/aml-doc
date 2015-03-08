@@ -1009,6 +1009,7 @@ If a captured named parameter is flagged with \code{val}, the parameter itself i
 
 If a capturing named parameter is supposed to capture arguments of multiple types, one can use union types (\sref{sec:unions}). This does not ensure any particular relation between the argument's key and value's type other than that provided by the union though.
 
+If a purely named parameter has a nullable type $T$ (either by being a nullable type, or allowing otherwise \code{Nothing} with a union type), it is taken as having default value of \code{nil} implicitly. 
 
 
 
