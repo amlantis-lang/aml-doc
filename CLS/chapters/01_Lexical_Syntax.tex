@@ -202,9 +202,9 @@ Literal ::= integer_literal
 \syntax\begin{lstlisting}
 integer_literal ::= sign (
                     decimal_numeral
-	              | hex_numeral
-	              | octal_numeral
-	              | binary_numeral)
+                  | hex_numeral
+                  | octal_numeral
+                  | binary_numeral)
 decimal_numeral ::= digit {['_'] digit}
 hex_numeral     ::= hex_prefix | hex_digit {['_'] hex_digit}
 digit           ::= '0' | $\cdots$ | '9'
@@ -272,24 +272,24 @@ For use with range types, \lstinline@Number.Integer@ and \lstinline@Number.Integ
 
 \syntax\begin{lstlisting}
 float_literal   ::= sign decimal_numeral '.' decimal_numeral
-		            [exponent_part_e] [float_type]
-	              | sign decimal_numeral exponent_part_e [float_type]
+                    [exponent_part_e] [float_type]
+                  | sign decimal_numeral exponent_part_e [float_type]
                   | sign decimal_numeral float_type
-	              | sign hex_prefix hex_numeral '.' hex_numeral 
-		            [exponent_part_p [float_type] | hex_exp float_type]
-		          | sign hex_prefix hex_numeral exponent_part_p 
-		            [float_type]
-		          | sign hex_prefix hex_numeral hex_exp float_type
-	              | sign oct_prefix octal_numeral '.' octal_numeral 
-	                [exponent_part_e] [float_type]
-	              | sign oct_prefix octal_numeral exponent_part_e 
-	                [float_type]
-	              | sign oct_prefix octal_numeral float_type
-	              | sign bin_prefix binary_numeral '.' binary_numeral 
-	                [exponent_part_e] [float_type]
-	              | sign bin_prefix binary_numeral exponent_part_e 
-	                [float_type]
-	              | sign bin_prefix binary_numeral float_type
+                  | sign hex_prefix hex_numeral '.' hex_numeral 
+                    [exponent_part_p [float_type] | hex_exp float_type]
+                  | sign hex_prefix hex_numeral exponent_part_p 
+                    [float_type]
+                  | sign hex_prefix hex_numeral hex_exp float_type
+                  | sign oct_prefix octal_numeral '.' octal_numeral 
+                    [exponent_part_e] [float_type]
+                  | sign oct_prefix octal_numeral exponent_part_e 
+                    [float_type]
+                  | sign oct_prefix octal_numeral float_type
+                  | sign bin_prefix binary_numeral '.' binary_numeral 
+                    [exponent_part_e] [float_type]
+                  | sign bin_prefix binary_numeral exponent_part_e 
+                    [float_type]
+                  | sign bin_prefix binary_numeral float_type
 exponent_part_e ::= int_exp sign decimal_numeral
 exponent_part_p ::= hex_exp sign decimal_numeral
 int_exp         ::= 'e'
