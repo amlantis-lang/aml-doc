@@ -1272,30 +1272,27 @@ Aspect_Stat     ::= Advice_Stat
 \label{sec:enums}
 
 \syntax\begin{lstlisting}
-Const_Type_Def     ::= id Enum_Param_Clauses
+Const_Type_Def     ::= id [Type_Param_Clause] [Class_Param_Clauses]
                        ['extends' Class_Parents] 
-                       'is' ['bitfield'] 
+                       'is' ['bitfield' | 'case'] 
                        'enum' '(' Enum_Field {semi Enum_Field} ')'
                        [Enum_Body]
 Enum_Field         ::= id [':=' scalar_literal]
                      | id {'(' [Exprs] ')'}
-Enum_Param_Clauses ::= {Annotation} {Enum_Param_Clause}
-Enum_Param_Clause  ::= '(' [Enum_Params] ')'
-Enum_Params        ::= Enum_Param {',' Enum_Param}
-Enum_Param         ::= {Annotation} ['in']
-                       [{Modifier} ('val' | 'var')]
-                       ['*' | '&' | '~']
-                       id [id] [':' Param_Type] [':=' Expr]
+                     | id Class_Param_Clauses [Case_Enum_Body]
 Enum_Body          ::= Template_Body
+Case_Enum_Body     ::= '{' [Template_Body] '}'
+                     | 'begin' Template_Body 'end'
 \end{lstlisting}
 
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
 
-An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in three forms: 
+An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in four forms: 
 \begin{itemize}
-  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear. 
+  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear. The signature of the enum must extend a scalar type, and is the only one that allows for the \code{bitfield} keyword to be used with it.
   \item Initialized with nothing, then each enum constant is by itself the ordering, no implicit literal value is added. The comparison operators are automatically added and their implementations reflect the order in which the enum constants appear. 
-  \item Initialized with custom expressions. Each argument expression has to have a corresponding constructor defined in the enum template body. It is highly recommended for every enum constant to be immutable, but it is not mandatory. 
+  \item Initialized with custom expressions. Each argument expression has to have a corresponding constructor defined in the enum template body or use the primary constructor. It is highly recommended for every enum constant to be immutable, but it is not mandatory. This form can't extend any parent class and has the same implicit ordering as the previous form. 
+  \item Initialized like a case class. Each enum item defines its own parameters and those then behave like case classes. The \code{case} keyword may or may not be used to enforce this definition form: if it is present, then this form is required for each item, meaning that the enum can not extend a scalar type. If primary constructor is defined, then each item has to use it. If a parent class is defined, then the constructors must make sure that the parent's designated constructor is invoked. The generated \code{apply} method is memoized and referentially transparent, thus lowering the possible number of instances of each case class. 
 \end{itemize}
 
 
@@ -1314,7 +1311,7 @@ Unit_Conv      ::= '(' Unit_Conv ')'
                  | Unit_Elem [Unit_Op Unit_Elem]
                  | Unit_Conv Unit_Op Unit_Conv
 Unit_Elem      ::= number_literal | id |
-Unit_Op        ::= '*' | '/' | '**'
+Unit_Op        ::= '*' | '/' | '^'
 \end{lstlisting}
 
 Numbers in Coral can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
@@ -1325,10 +1322,10 @@ type cm is unit-of-measure
 end type
 \end{lstlisting}
 
-\example The following defines the measure \code{ml} (milliliter) as a cubic centimeter (\lstinline!cm ** 3!).
+\example The following defines the measure \code{ml} (milliliter) as a cubic centimeter (\lstinline!cm ^ 3!).
 \begin{lstlisting}
 type ml is unit-of-measure
-  ml := cm ** 3
+  ml := cm ^ 3
 end type
 \end{lstlisting}
 
