@@ -722,10 +722,7 @@ Class_Param_Clauses ::= {Annotation} [Access_Modifier]
                         ['(' 'implicit' Class_Params ')']
 Class_Param_Clause  ::= '(' [Class_Params] ')'
 Class_Params        ::= Class_Param {',' Class_Param}
-Class_Param         ::= {Annotation} ['lazy'] ['in'] 
-                        [{Modifier} ('val' | 'var')]
-                        ['*' | '&' | '^']
-                        id [':' Param_Type] [':=' Expr]
+Class_Param         ::= Param
 Class_Tmpl_Env      ::= 'extends' [Early_Defs] Class_Parents
                         semi [Template_Body] 'end' ['class']
                       | ['extends' [Early_Defs]] 
@@ -1287,8 +1284,8 @@ Enum_Param_Clause  ::= '(' [Enum_Params] ')'
 Enum_Params        ::= Enum_Param {',' Enum_Param}
 Enum_Param         ::= {Annotation} ['in']
                        [{Modifier} ('val' | 'var')]
-                       ['*' | '&' | '^']
-                       id [':' Param_Type] [':=' Expr]
+                       ['*' | '&' | '~']
+                       id [id] [':' Param_Type] [':=' Expr]
 Enum_Body          ::= Template_Body
 \end{lstlisting}
 
@@ -1381,10 +1378,10 @@ There is a huge difference between the way F\# handles units of measure and Cora
 Const_Type_Def    ::= Record_Name 'is' ['abstract'] 'record'
                       [semi] Record_Components
 Record_Name       ::= id [Type_Param_Clause] [Param_Clause]
-Record_Components ::= Record_Component {semi Record_Component}
                       ['extends' Class_Parents]
-Record_Component  ::= 'val' Val_Dcl
-                    | 'var' Var_Dcl
+Record_Components ::= Record_Component {semi Record_Component}
+Record_Component  ::= 'val' (Val_Dcl | Pat_Def)
+                    | 'var' (Var_Dcl | Var_Def)
                     | 'case' id semi 
                       {'when' id 
                       ('then' | nl) 
@@ -1402,7 +1399,17 @@ Basic records have no discriminating parameters, and can have only type paramete
 Discriminated records are similar to variant records, they can have discriminating parameters and a discriminated record may also be a variant record. 
 
 \paragraph{\em Variant Records}
-Variant records are similar to discriminated records, they can have discriminating parameters and a discriminated record may also be a discriminated record. Variant parameters are enums (\sref{sec:enums}). Variant records render new subtypes of the original record type, similar to a concrete type constructor.
+Variant records are similar to discriminated records, they can have discriminating parameters and a discriminated record may also be a discriminated record. Variant parameters are enums (\sref{sec:enums}). Variant records render new (anonymous) subtypes of the original record type, similar to a concrete type constructor. The new subtypes are a cartesian product of all the enumerated variant parameter values, therefore there is a fixed and well defined number of the subtypes. If the enumerated variant parameters contain values, those values in no way affect the variant record subtypes. Since variant records can possibly have different components per each variant, they also have different instance sizes. 
+
+Both discriminated and variant records generate a second constructor parameter list, which consists purely of named parameters (never positional parameters), whose names correspond to the components of the particular record subtype (in case of variant records), or of the whole record type in the other case. If the components define a default value, those become the default values of the generated parameters as well. 
+
+The generated structure of every record type is as follows:
+\begin{itemize}
+  \item Component $c$ renders two methods: \code{$c$()}, where the result type is defined by the type of the component $c$; and if $c$ is mutable, then also \code{$c$_=($p$)}, where $p$ is an (immutable) by-value parameter with type defined by the type of the component $c$. 
+  \item Discriminating parameter $p$ renders only one method: \code{$p$()}, where the result type is defined by the type of the discriminating parameter $p$, therefore, it is immutable. 
+\end{itemize}
+
+If a record type inherits from an abstract record type, then the components introduced in it must not conflict with components of the parent record type, and all parameters of the parent's second constructor parameter list are merged into the generated second parameter lists of the record type, passing inherited parameters to the parent constructor automatically. 
 
 \example The following example defines a variant record. 
 \begin{lstlisting}
@@ -1414,7 +1421,7 @@ end type
 
 type Variant_Record (option: Traffic_Light) is record
   val a: A
-  var b: B
+  var b: B? := nil
   case option
   when Red
     val c: C
@@ -1425,10 +1432,33 @@ type Variant_Record (option: Traffic_Light) is record
   end case
 end type
 
-let vr := Variant_Record(.Red)
-  .new(a: A.new, b: B.new, c: C.new)
+let vr := Variant_Record.new(.Red)(a: A.new, b: B.new, c: C.new)
 \end{lstlisting}
 
+The generated constructors then behave like this:
+\begin{lstlisting}
+constructor (Traffic_Light.Red) (
+    val ~a: A, val ~b: B? := nil, val ~c: C)
+  @option: Traffic_Light := .Red
+  @a: A := a
+  @b: B? := b
+  @c: C := c
+end constructor
+constructor (Traffic_Light.Yellow) (
+    val ~a: A, val ~b: B? := nil, val ~d: D)
+  @option: Traffic_Light := .Yellow
+  @a: A := a
+  @b: B? := b
+  @d: D := d
+end constructor
+constructor (Traffic_Light.Green) (
+    val ~a: A, val ~b: B? := nil, val ~e: E)
+  @option: Traffic_Light := .Green
+  @a: A := a
+  @b: B? := b
+  @e: E := e
+end constructor
+\end{lstlisting}
 
 
 

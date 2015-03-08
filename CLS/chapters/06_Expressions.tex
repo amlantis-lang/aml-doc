@@ -33,6 +33,7 @@ Expr        ::= Cond_Expr
 Simple_Expr ::= Block_Expr
               | ['&'] Simple_Expr1
               | '&' '(' Simple_Expr1 ')'
+              | TT_Expr
 Result_Expr ::= Anon_Params '->' Block 
               | ['memoize'] Expr
 Exprs       ::= Expr {',' Expr}
@@ -200,26 +201,32 @@ Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified as
 
 \syntax\begin{lstlisting}[mathescape=false]
 Simple_Expr1   ::= Simple_Expr1 Argument_Exprs 
-Argument_Exprs ::= ['.'] Parens_Args {Parens_Args} [Block_Expr] 
+Argument_Exprs ::= ['.'] Parens_Args {Parens_Args} [Block_Arg] 
                  | Poetry_Args [Block_Expr2]
-                 | Block_Expr
+                 | Block_Arg
 
 Parens_Args ::= '(' [Args_Expr] ')'
 Poetry_Args ::= Args_Expr
 Args_Expr   ::= (Pos_Args [',' Named_Args])
               | Named_Args
 Pos_Args    ::= Pos_Arg {',' Pos_Arg}
-Pos_Arg     ::= 'out' id | ['*'] Expr | '$'
+Pos_Arg     ::= 'out' id | ['*'] Expr | '$' | TT_Expr
 Named_Args  ::= Named_Arg {',' Named_Arg} {',' '**' Expr}
               | '**' Expr {',' '**' Expr}
 Named_Arg   ::= 'out' id ':' id
-              | id ':' Expr
+              | id ':' (Expr | TT_Expr)
               | id ':' '$'
+Block_Arg   ::= Block_Expr 
+              | '&' Simple_Expr1 
+              | '&' '(' Simple_Expr1 ')'
 \end{lstlisting}
+
+% TODO: describe last block arg
+% TODO: describe arg prefixed with a dot (e.g. .Red)
 
 A function application ~\lstinline!$f$($e_1 \commadots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \commadots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
 
-If none of $e_i$ is a named argument, and $f$ accepts a single parameter of \code{Any}, \code{Object} or \code{Tuple_$n$} type (where $n = m$), then the function application is taken as ~\lstinline!$f$(($e_1 \commadots e_m$))!. With respect to overloading resolution (\sref{sec:overloading-resolution}), a member that requires argument expressions to tuple conversion is always less specific than a member that does not require such conversion. 
+If none of $e_i$ is purely a named argument, and $f$ accepts a single parameter of \code{Any}, \code{Object} or \code{Tuple_$n$} type (where $n = m$), then the function application is taken as ~\lstinline!$f$(($e_1 \commadots e_m$))!. With respect to overloading resolution (\sref{sec:overloading-resolution}), a member that requires argument expressions to tuple conversion is always less specific than a member that does not require such conversion. 
 
 
 
@@ -853,7 +860,7 @@ a xor b  // boolean xor
 An assignment operator is an operator symbol that ends in an ``equals'' character ``\lstinline!=!'', with the exception of operators for which one of the following conditions holds: 
 \begin{enumerate}
 \item the operator also starts with an equals character and has more than one character, or
-\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'' or ``\lstinline!/=!''.
+\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'', ``\lstinline!/<=!'', ``\lstinline!/>=!'' or ``\lstinline!/=!''.
 \end{enumerate}
 
 Assignment operators are treated specially in that they can be expanded to assignments if no other interpretation is valid, as previously defined. Assignment operators can be defined as members of a type. 
@@ -953,6 +960,21 @@ val e := b ?: d // which is equal to `b ? b : d`
 
 
 
+\section{Target Type Expressions}
+\label{sec:target-type-expressions}
+
+\syntax\begin{lstlisting}
+TT_Expr ::= '.' Simple_Expr1
+\end{lstlisting}
+
+Target type expression $e$ with expected type $\exptype$ is a shorthand for the selection and/or application (either function, type or both) ~\lstinline!$\exptype$.$e$!. 
+
+Target type expressions appear throughout the syntax in a few places. Each such place imposes a condition on what is a legal target type expression for it. Every target type expressions requires an expected type to be defined. Based on the expected type, the target type expression is a selection from the expected type. If a target type expression is used as an argument, its type is a refinement that contains the selected member (or members if chained), and optionally a requirement of type parameters and/or application parameters. The refinement is then as usual checked relative to the expected type, and not recursively on any nested members. Implicit conversions may not be applied on the resulting expression, because there would be no way to evaluate an original value, which depends on the expected type. 
+
+\paragraph{Note}
+Target type expressions are limited to a simple selection, or a chain of selections, optionally followed by a type application and/or a function application with arbitrary number of argument lists. 
+
+
 
 
 \section{Typed Expressions}
@@ -960,31 +982,42 @@ val e := b ?: d // which is equal to `b ? b : d`
 
 \syntax\begin{lstlisting}
 Cast_Expr  ::= Infix_Expr ('as' | 'as!' | 'as?') (Type | Simple_Expr1)
-Infix_Expr ::= Infix_Expr ('is' | 'is!') (Type | Simple_Expr1)
+Infix_Expr ::= Infix_Expr ('is' ['not'] | 'is!' | 'is' 'not!') 
+               (Type | Simple_Expr1)
 \end{lstlisting}
 
 The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. The conversion can take these forms, preferred in the following order:
 \begin{enumerate}
-\item No conversion, if $e$ conforms to $T$ directly. 
-\item If an implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope, then the conversion is of the form ~\lstinline!$c$($e$)!. 
-\item Otherwise, the conversion is of the form ~\lstinline!$e$.as_instance_of[$T$]()!. 
+  \item No conversion, if $e$ conforms to $T$ directly. 
+  \item If an implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope, then the conversion is of the form ~\lstinline!$c$($e$)!. 
+  \item Otherwise, the conversion is of the form ~\lstinline!$e$.as_instance_of[$T$]()!.\footnote{Note that this conversion method is not included in implicit conversions, and has to be used either directly, or via a typed expression.}
 \end{enumerate}
+
+If a type implements the ~\lstinline!as_instance_of[$T$]()!~ method, it must meet one of the following conditions:
+\begin{itemize}
+  \item Have at most one empty parameter list.
+  \item Have exactly one implicit parameter list.\footnote{And no other parameter list.}
+\end{itemize}
 
 The conformance check expression ~\lstinline!$e$ is $T$!~ has type \code{Boolean} and tests whether $e$ conforms to $T$, basically by asking a question ``Can $e$ be of type $T$?'', answering either ``It can be'' or ``It can't be''. The expression $e$ conforms to type $T$ if at least one of the following conditions hold:
 \begin{enumerate}
-\item Type of $e$ is a subtype of $T$. 
-\item An implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope. 
-\item As a last resort, type of $e$ overrides the method ~\lstinline!is_instance_of[$T$]()!~ and evaluating it results in \code{yes} value. 
+  \item Type of $e$ is a subtype of $T$. 
+  \item An implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope. 
+  \item As a last resort, type of $e$ overrides the method ~\lstinline!is_instance_of[$T$]()!~ and evaluating it results in \code{yes} value.\footnote{This method basically tells whether the instance implements ~\lstinline!as_instance_of[$T$]()!, thus being able to convert itself into another type without other implicit conversions.}
 \end{enumerate}
 
 \paragraph{Note} 
 The conformance check expression as defined here is not used in resolution of function applications (\sref{sec:function-applications}).
 
-The typed expression ~\lstinline@$e$ as! $T$@~ works like ~\lstinline!$e$ as $T$!, but only uses the first form. Similarly, the conformance check expression ~\lstinline@$e$ is! $T$@~ works like ~\lstinline!$e$ is $T$!, but it uses only the first condition. The bang character ``\lstinline@!@'' signalizes that the operation is more dangerous, in means of that its easier for the expression $e$ to not successfully convert to the target type or conform to it. 
+The conformance check expression ~\lstinline!$e$ is not $T$!~ has type \code{Boolean} and tests whether $e$ does not conform to $T$, basically by asking a question ``Can $e$ not be of type $T$?'', answering either ``It can't be'' or ``It can be''.
 
-The typed expression ~\lstinline!$e$ as? $T$!~ triggers $T$ to be nullable type (and it is an error if $T$ explicitly disallows overriding of nullability) and results in a \code{nil} value instead of an error, if no conversion is available to treat $e$ as $T$. 
+The typed expression ~\lstinline@$e$ as! $T$@~ works like ~\lstinline!$e$ as $T$!, but only uses the first form. Similarly, the conformance check expression ~\lstinline@$e$ is! $T$@~ works like ~\lstinline!$e$ is $T$!, but it uses only the first condition, and the conformance check expression ~\lstinline@$e$ is not! $T$@~ works like ~\lstinline!$e$ is not $T$!, but also uses only the first condition. The bang character ``\lstinline@!@'' signalizes that the operation is more dangerous, in means of that its easier for the expression $e$ to not successfully convert to the target type or conform to it. 
+
+The typed expression ~\lstinline!$e$ as? $T$!~ has a result of type ~\lstinline!$T$?!, resulting in a \code{nil} value instead of an error if no conversion is available to treat $e$ as $T$. 
 
 If an expression is typed to a dynamic path of a (syntactic) type, then the value referenced by such path is expected to be a type, and it is an error if it is not. 
+
+Typed expressions do not allow checks against target type expressions (\sref{sec:target-type-expressions}) and conversions to them, as such checks and conversions would make no sense at all. 
 
 
 
@@ -1008,9 +1041,10 @@ An annotated expression $a_1\ \ldots\ a_n\ e$ attaches annotations $a_1\ \ldots\
 \section{Assignments}
 
 \syntax\begin{lstlisting}
-Assign_Expr ::= [Simple_Expr '.'] id ':=' Expr
+Assign_Expr ::= [Simple_Expr '.'] id ':=' Rvalue_Expr
               | Mul_Assign_Expr
-Update_Expr ::= Simple_Expr1 Argument_Exprs ':=' Expr
+Update_Expr ::= Simple_Expr1 Argument_Exprs ':=' Rvalue_Expr
+Rvalue_Expr ::= Expr | TT_Expr
 \end{lstlisting}
 
 The interpretation of an assignment to a simple variable ~\lstinline!$x$ := $e$!~ depends on the definitions of $x$. If $x$ denotes a mutable variable, then the assignment changes the current value of $x$ to the result of evaluating the expression $e$. The type of $e$ is expected to conform to the type of $x$. 
@@ -1022,6 +1056,8 @@ Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the in
 An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?$x$_=($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
 
 An assignment ~\lstinline!$f$($\args$) := $e$!~ with a function application to the left of the ``\lstinline!:=!'' operator is interpreted as ~\lstinline!$f$.update($\args$)($e$)!, i.e. the invocation of an \code{update} function defined by $f$. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}. The ``\lstinline!.?!'' navigation is not available with this expression. 
+
+The interpretation of an assignment ~\lstinline!$x$ := .$e$!, where $x$ may be any of the left-hand sides described so far in assignments, depends on the type of $x$: if $e$ is a selection or a name, then the member of $x$ with the name selected by $e$ is used as the assigned value, and if arguments are also applied to $e$, then they are applied to the selected member as well. It is an error if the type of $x$ does not contain the selected member. 
 
 \example Here are some assignment expressions and their equivalent interpretations. 
 \begin{lstlisting}
@@ -1055,7 +1091,7 @@ Mul_Assign_Expr ::= Mul_Vars ':=' Mul_Exprs
 Mul_Vars        ::= [val_ids ','] ['*' id [':' Type] ','] val_ids
                   | [val_ids ','] '*' id [':' Type]
 Mul_Exprs       ::= Mul_Expr {',' Mul_Expr}
-Mul_Expr        ::= ['*'] Expr
+Mul_Expr        ::= ['*'] Expr | TT_Expr
 \end{lstlisting}
 
 Multiple assignment is a way to assign multiple variables at once. On the left-hand side of the assignment are variables separated by commas, where at most one of which may be prefixed with an asterisk ``\lstinline!*!''. On the right-hand side of the assignment are expressions separated by commas, where one or more expressions may be prefixed with an asterisk ``\lstinline!*!'' as a sequence-splat operator. 

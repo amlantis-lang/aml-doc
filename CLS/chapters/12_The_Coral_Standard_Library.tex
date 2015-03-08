@@ -23,11 +23,6 @@ class Object
     extends ()
   method equals (that: Any): Boolean := $\ldots$
   alias :'=' is :equals
-  
-  method to_string: String := $\ldots$
-  method hash_code: Integer := $\ldots$
-  
-  method tap: self.type := { yield self; self }
 end
 
 sealed abstract class Nothing extends () {}
@@ -40,6 +35,11 @@ sealed abstract class Nothing extends () {}
 
 \section{Scalar Value Classes}
 \label{sec:scalar-value-classes}
+
+
+
+
+
 
 \subsection{Numeric Scalars}
 
@@ -79,6 +79,38 @@ Partial order and ranking is defined on the numeric types as follows, using defi
 \code{Integer_8}, alias \code{Byte}, and \code{Integer_8_Unsigned}, alias \code{Byte_Unsigned}, are the lowest-ranked types in this order, whereas \code{Complex} is the highest-ranked. Ranking does not imply conformance (\sref{sec:conformance}), e.g. \code{Integer_32} is not a subtype of \code{Integer_64}. However, the object \code{Predef} (\sref{sec:predef}) defines views (\sref{sec:views}) from every numeric value to all higher-ranked numeric value types. 
 
 The \code{Integer} type has also a shorter alias of \code{Int}. 
+
+
+
+
+
+\subsubsection{Standard Number Operators}
+
+\paragraph{Comparison operators}
+The following table shows a matrix of comparison operators on \code{Number}. ``Unordered'' means that either or both of the operands is a \code{Number.Not_a_Number}. The results described are relative to the number the operator is applied to (defined by binding direction of the operator). ``Raises'' means that if either or both of the operands is a \code{Number.Not_a_Number}, then an error is raised. 
+
+\begin{table}[!h]
+  \caption{Number comparison operators}
+  \begin{tabular}{ l l l l l l l }
+    Operator & If greater & If less & If equal & Unordered & Raises & Relation \\ \hline \hline
+    \code{=} & \code{no} & \code{no} & \code{yes} & \code{no} & \code{no} & equal \\
+    \code{/=} & \code{yes} & \code{yes} & \code{no} & \code{yes} & \code{no} & unordered, less, or greater \\
+    \code{>} & \code{yes} & \code{no} & \code{no} & \code{no} & \code{yes} & greater \\
+    \code{>=} & \code{yes} & \code{no} & \code{yes} & \code{no} & \code{yes} & greater, or equal \\
+    \code{<} & \code{no} & \code{yes} & \code{no} & \code{no} & \code{yes} & less \\
+    \code{<=} & \code{no} & \code{yes} & \code{yes} & \code{no} & \code{yes} & less, or equal \\
+    \code{<>} & \code{yes} & \code{yes} & \code{no} & \code{no} & \code{yes} & less, or greater \\
+    \code{<=>} & \code{yes} & \code{yes} & \code{yes} & \code{no} & \code{yes} & less, equal, or greater \\
+    \code{/<=>} & \code{no} & \code{no} & \code{no} & \code{yes} & \code{no} & unordered \\
+    \code{/<>} & \code{no} & \code{no} & \code{yes} & \code{yes} & \code{no} & unordered, or equal \\
+    \code{/<=} & \code{yes} & \code{no} & \code{no} & \code{yes} & \code{no} & unordered, or greater \\
+    \code{/<} & \code{yes} & \code{no} & \code{yes} & \code{yes} & \code{no} & unordered, equal, or greater \\
+    \code{/>=} & \code{no} & \code{yes} & \code{no} & \code{yes} & \code{no} & unordered, or less \\
+    \code{/>} & \code{no} & \code{yes} & \code{yes} & \code{yes} & \code{no} & unordered, less, or equal \\ \hline
+  \end{tabular}
+  \label{table:number-comparison-operators}
+\end{table}
+\FloatBarrier
 
 
 
@@ -180,6 +212,8 @@ end
 The \code{Predef} object defines some usual standard functions and type aliases for Coral programs. It is always implicitly imported, so that all its defined members are available without qualification. The \code{Predef} object may not be implicitly imported in a scope where ~\lstinline!pragma no-predef! is applied. 
 
 Some of its members are defined as follows:
+
+\begin{minipage}{\linewidth}
 \begin{lstlisting}
 module Lang~[coral]
 object Predef extends Object
@@ -219,9 +253,9 @@ object Predef extends Object
       extends Object
     operator => [B] (that: B): Tuple_2[A, B] := Tuple_2(myself, that)
   end class
-\end{lstlisting}\begin{lstlisting}
 end
 \end{lstlisting}
+\end{minipage}
 
 
 

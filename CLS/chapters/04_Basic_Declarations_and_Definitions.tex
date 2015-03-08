@@ -395,7 +395,7 @@ Type_Param_Clause  ::= '[' Variant_Type_Param
                        {',' Variant_Type_Param} ']'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
                      | '<' (id | '_') ['<:' id] '>'
-Type_Param         ::= (id | '_') [Type_Param_Clause]
+Type_Param         ::= (['*'] id | '_') [Type_Param_Clause]
                        ['>:' Type] ['<:' Type]
                        {'<%' Type} {':' Type}
 \end{lstlisting}
@@ -424,6 +424,7 @@ A type parameter name may optionally be surrounded with angle brackets, ~\lstinl
 [M[X <: Bound[X]], Bound[_]]
 [M[+X] <: Iterable[X]]
 [E, <Length_Unit <: length>]
+[+T, *A]
 \end{lstlisting}
 The following type parameter clauses are illegal:
 \begin{lstlisting}
@@ -433,6 +434,13 @@ The following type parameter clauses are illegal:
                           // does not conform to upper bound 'B'
 \end{lstlisting}
 
+A type parameter name may optionally be prefixed with an asterisk ``\code{*}''. Such type parameter is a {\em repeated type parameter}, and may only appear as the last type parameter in a sequence of type parameters, and its resulting value is a tuple of all passed type arguments that were passed after the preceding type parameters. If such type parameter is used as the type of a function parameter, that parameter's type is a tuple type, as defined by the repeated type parameter, unless the function parameter is a repeated parameter, then the number of captured argument and their types are bound with the repeated type parameter (influencing local type inference (\sref{sec:local-type-inference})). 
+
+\paragraph{Note}
+If variance annotation is present with a repeated type parameter, place a space between the two:
+\begin{lstlisting}
+[+T, - *A]
+\end{lstlisting}
 
 
 
@@ -552,15 +560,16 @@ Function_Path ::= id
                 | id '.' id
 Op_Path       ::= op_id
                 | 'self' '.' op_id
-                | id '.' op_id
+                | Container_Path
 Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
 Param_Clause  ::= '(' [Params] ')'
 Params        ::= Param {',' Param}
-Param         ::= {Annotation} [Param_Extra] id 
+Param         ::= {Annotation} [Param_Extra] id [id]
                   [':' Param_Type] [':=' Expr]
                 | Literal
+                | id {'.'}
 Param_Extra   ::= ['lazy'] [Param_Io] [Param_Rw] 
-                  ['*' | '&' | '^']
+                  ['*' | '&' | '~']
 Param_Io      ::= 'in' ['out'] | 'out'
 Param_Rw      ::= 'val' | 'var'
 Param_Type    ::= ['=>' | '=>>'] (Type | id | '_')
@@ -598,7 +607,7 @@ The order in which different kinds of value parameters may appear is as follows:
 
 \item $n$ post mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
 
-\item $n$ named parameters (\sref{sec:named-parameters}): ~\lstinline@^$x$: $T$ := $e$@, where $n \ge 0$. 
+\item $n$ named parameters (\sref{sec:named-parameters}): ~\lstinline@~$x$: $T$ := $e$@, where $n \ge 0$. 
 
 \item $n$ capturing named parameter (\sref{sec:capturing-named-parameter}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
 
@@ -661,7 +670,7 @@ This is a rather experimental feature of Coral, depending on whether the Coral V
 
 \syntax\begin{lstlisting}
 Param_Extra ::= ['lazy'] ['in'] ['val']
-                ['*' | '^']
+                ['*' | '~']
 Param_Type  ::= '=>' (Type | id | '_')
 \end{lstlisting}
 
@@ -683,7 +692,7 @@ By-name parameters with default value expressions evaluate the default value exp
 
 \syntax\begin{lstlisting}
 Param_Extra ::= 'lazy' ['in'] [Param_Rw]
-                ['*' | '^']
+                ['*' | '~']
 \end{lstlisting}
 
 The parameter definition may be preceded by \code{lazy} keyword. This indicates that the corresponding argument is not evaluated before function application, but instead is evaluated the first time used within the function. 
@@ -702,7 +711,7 @@ By-need parameters with default value expressions evaluate the default value exp
 
 \syntax\begin{lstlisting}
 Param_Extra ::= ['in'] ['val']
-                ['*' | '^']
+                ['*' | '~']
 Param_Type  ::= '=>>' (Type | id | '_')
 \end{lstlisting}
 
@@ -724,7 +733,7 @@ By-future parameter prefix is omitted from examples of valid parameter definitio
 \label{sec:explicit-parameters}
 
 \syntax\begin{lstlisting}
-Param ::= Literal
+Param ::= Literal | Container_Path
 \end{lstlisting}
 
 The parameter may be specified by its literal value. Such parameters may only appear where positional parameters may appear. The type of the parameter is the inferred type of the literal value. Methods with explicit parameters are preferred during method resolution to methods with the same parameter types (\sref{sec:function-applications}), but it is an error if more than one method with explicit parameters match the function application. 
@@ -742,6 +751,8 @@ def factorial (x) := x * factorial(x - 1)
 \end{lstlisting}
 
 Since the parameter has no name to bind to, it is not accessible inside the method body. 
+
+The parameter may also be specified by an enum value (\sref{sec:enums}). 
 
 
 
@@ -878,30 +889,30 @@ sum *xs
 
 Named parameters are of the forms:
 \begin{lstlisting}
-^$x$: $T$
-var ^$x$: $T$
-val ^$x$: $T$
-in ^$x$: $T$
-in var ^$x$: $T$
-in val ^$x$: $T$
-out ^$x$: $T$
-out var ^$x$: $T$
-in out ^$x$: $T$
-in out var ^$x$: $T$
-^$x$: $T$ := $e$
-var ^$x$: $T$ := $e$
-val ^$x$: $T$ := $e$
-in ^$x$: $T$ := $e$
-in var ^$x$: $T$ := $e$
-in val ^$x$: $T$ := $e$
-^$x$: => $T$
-val ^$x$: => $T$
-in ^$x$: => $T$
-in val ^$x$: => $T$
-^$x$: => $T$ := $e$
-val ^$x$: => $T$ := $e$
-in ^$x$: => $T$ := $e$
-in val ^$x$: => $T$ := $e$
+~$x$: $T$
+var ~$x$: $T$
+val ~$x$: $T$
+in ~$x$: $T$
+in var ~$x$: $T$
+in val ~$x$: $T$
+out ~$x$: $T$
+out var ~$x$: $T$
+in out ~$x$: $T$
+in out var ~$x$: $T$
+~$x$: $T$ := $e$
+var ~$x$: $T$ := $e$
+val ~$x$: $T$ := $e$
+in ~$x$: $T$ := $e$
+in var ~$x$: $T$ := $e$
+in val ~$x$: $T$ := $e$
+~$x$: => $T$
+val ~$x$: => $T$
+in ~$x$: => $T$
+in val ~$x$: => $T$
+~$x$: => $T$ := $e$
+val ~$x$: => $T$ := $e$
+in ~$x$: => $T$ := $e$
+in val ~$x$: => $T$ := $e$
 \end{lstlisting}
 
 Capturing named parameter are of the form: 

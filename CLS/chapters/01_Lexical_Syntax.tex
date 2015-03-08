@@ -106,7 +106,8 @@ Not every reserved word is a keyword in every context, this behavior will be fur
 
 
 
-\section{Newline Characters}\label{sec:newlinecharacters}
+\section{Newline Characters}
+\label{sec:newlinecharacters}
 
 \syntax\begin{lstlisting}
 semi ::= nl {nl} | ';'
@@ -140,6 +141,24 @@ val a := (b
     .c)
 // is treated as:
 val a := b.c 
+\end{lstlisting}
+
+\example Different treating of $n$-ary expression in presence of newline tokens.
+\begin{lstlisting}
+// the expression:
+val a := b
+    ? c
+    : d
+// is treated as:
+(val a := b).`?`(c) // and continues with an error,
+                    // because `:` is not a legal operator
+
+// but the expression:
+val a := (b
+    ? c
+    : d)
+// is treated as:
+val a := b.`?`(c, d) 
 \end{lstlisting}
 
 
@@ -181,23 +200,28 @@ Literal ::= integer_literal
 \subsection{Integer Literals}\label{sec:integerliterals}
 
 \syntax\begin{lstlisting}
-integer_literal     ::= ['+' | '-'] (decimal_numeral
-	                  | hexadecimal_numeral
-	                  | octal_numeral
-	                  | binary_numeral)
-decimal_numeral     ::= '0' | non_zero_digit {['_'] digit}
-hexadecimal_numeral ::= '0x' | hex_digit {['_'] hex_digit}
-digit               ::= '0' | non_zero_digit
-non_zero_digit      ::= '1' | $\cdots$ | '9'
-hex_digit           ::= '0' | $\cdots$ | '9' | 'a' | $\cdots$ | 'f'
-octal_numeral       ::= '0o' oct_digit {'_' oct_digit}
-oct_digit           ::= '0' | $\cdots$ | '7'
-binary_numeral      ::= '0b' bin_digit {['_'] bin_digit}
-bin_digit           ::= '0' | '1'
+integer_literal ::= sign (
+                    decimal_numeral
+	              | hex_numeral
+	              | octal_numeral
+	              | binary_numeral)
+decimal_numeral ::= digit {['_'] digit}
+hex_numeral     ::= hex_prefix | hex_digit {['_'] hex_digit}
+digit           ::= '0' | $\cdots$ | '9'
+hex_digit       ::= '0' | $\cdots$ | '9' | 'a' | $\cdots$ | 'f'
+octal_numeral   ::= oct_prefix oct_digit {'_' oct_digit}
+oct_digit       ::= '0' | $\cdots$ | '7'
+binary_numeral  ::= bin_prefix bin_digit {['_'] bin_digit}
+bin_digit       ::= '0' | '1'
+hex_prefix      ::= '0x'
+bin_prefix      ::= '0b'
+oct_prefix      ::= '0o'
+sign            ::= ['+' | '-'] | ()
 \end{lstlisting}
+
 Integers are usually of type \lstinline@Number@, which is a class cluster of all classes that can represent numbers. Unlike Java, Coral supports both signed and unsigned integers directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@. Math operations on numbers are handled internally in such a way that the user does't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type. 
 
-Underscores used in integer literals have no special meaning, other than to improve readability of larger literals, i.e., to separate thousands.
+Underscores ``\code{_}'' are allowed between digits for readability, but are otherwise ignored. Decimal integer literals can begin with leading zeros ``\code{0}'', but those zeros are likewise ignored. 
 
 Integral members of the \lstinline@Number@ class cluster include the following container types. 
 
@@ -219,9 +243,9 @@ Integral members of the \lstinline@Number@ class cluster include the following c
 
 \item \lstinline@Integer_64_Unsigned@ ($0$ to $2^{64}$), alias \lstinline@Long_Unsigned@
 
-\item \lstinline@Integer_128@ ($-2^{127}$ to $2^{127}-1$), alias \lstinline@Double_Long@
+\item \lstinline@Integer_128@ ($-2^{127}$ to $2^{127}-1$), alias \lstinline@Cent@
 
-\item \lstinline@Integer_128_Unsigned@ ($0$ to $2^{128}$), alias \lstinline@Double_Long_Unsigned@
+\item \lstinline@Integer_128_Unsigned@ ($0$ to $2^{128}$), alias \lstinline@Cent_Unsigned@
 
 \item \lstinline@Decimal@ ($-\infty$ to $\infty$)
 
@@ -237,27 +261,43 @@ Weak conformance applies to the inner members of \lstinline@Number@ class.
 
 For use with range types, \lstinline@Number.Integer@ and \lstinline@Number.Integer_Unsigned@ exist, to allow constraining of the range types to integral numbers.
 
-\subsection{Floating Point Literals}\label{sec:floatliterals}
+
+
+
+
+
+\subsection{Floating \& Fixed Point Literals}
+\label{sec:floatliterals}
+\label{sec:fixedpointliterals}
 
 \syntax\begin{lstlisting}
-float_literal ::= ['+' | '-'] non_zero_digit 
-		          {['_'] digit} '.' digit {['_'] digit}
-		          [exponent_part] [float_type]
-	            | ['+' | '-'] digit {['_'] digit} exponent_part 
-	              [float_type]
-	            | ['+' | '-'] digit {['_'] digit} [exponent_part] 
-	              float_type
-	            | ['+' | '-'] '0x' hex_digit
-		          {['_'] hex_digit} '.' hex_digit 
-		          {['_'] hex_digit} [float_type]
-	            | ['+' | '-'] '0b' bin_digit
-		          {['_'] bin_digit} '.' bin_digit 
-		          {['_'] bin_digit} [float_type]
-exponent_part ::= 'e' ['+' | '-'] digit {['_'] digit}
-float_type    ::= 'f' | 'd' | 'q' | 'df'
+float_literal   ::= sign decimal_numeral '.' decimal_numeral
+		            [exponent_part_e] [float_type]
+	              | sign decimal_numeral exponent_part_e [float_type]
+                  | sign decimal_numeral float_type
+	              | sign hex_prefix hex_numeral '.' hex_numeral 
+		            [exponent_part_p [float_type] | hex_exp float_type]
+		          | sign hex_prefix hex_numeral exponent_part_p 
+		            [float_type]
+		          | sign hex_prefix hex_numeral hex_exp float_type
+	              | sign oct_prefix octal_numeral '.' octal_numeral 
+	                [exponent_part_e] [float_type]
+	              | sign oct_prefix octal_numeral exponent_part_e 
+	                [float_type]
+	              | sign oct_prefix octal_numeral float_type
+	              | sign bin_prefix binary_numeral '.' binary_numeral 
+	                [exponent_part_e] [float_type]
+	              | sign bin_prefix binary_numeral exponent_part_e 
+	                [float_type]
+	              | sign bin_prefix binary_numeral float_type
+exponent_part_e ::= int_exp sign decimal_numeral
+exponent_part_p ::= hex_exp sign decimal_numeral
+int_exp         ::= 'e'
+hex_exp         ::= 'p'
+float_type      ::= 'f' | 'd' | 'q' | 'df'
 \end{lstlisting}
 
-Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Floating point literals that have \lstinline@float_type@ of ``\code{dp}'' are decimal fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly fixed point literals. From user's perspective, this is only an implementation detail. 
+Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Floating point literals that have \lstinline@float_type@ of ``\code{df}'' are decimal fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly fixed point literals, unless specifically converted to a floating point type. From \code{Number}'s user perspective, this is only an implementation detail. 
 
 \begin{enumerate}
 
@@ -273,9 +313,24 @@ Floating point literals are of type \lstinline@Number@ as well as integral liter
 
 \end{enumerate}
 
-Letters in the exponent type and float type literals have to be lower-case in Coral sources, but functions that parse floating point numbers do support them being upper-case for compatibility. 
+Letters in the exponent type, hexadecimal numbers and float type literals have to be lower-case in Coral sources, but functions that parse floating point numbers do support them being upper-case for compatibility. 
 
-\subsection{Imaginary Number Literals}\label{sec:imaginaryliterals}
+
+
+
+
+\subsection{Not A Number}
+\label{sec:nan}
+
+A member named \code{Not_a_Number} exists in the class cluster \code{Number}, with an alias of \code{NaN}, to denote results of operations on numbers that are not numbers, e.g., result of division by zero. There is no literal for this special value in Coral. 
+
+
+
+
+
+
+\subsection{Imaginary Number Literals}
+\label{sec:imaginaryliterals}
 
 \syntax\begin{lstlisting}
 imaginary_literal   ::= real_number_literal 'i'
@@ -289,6 +344,12 @@ number_literal      ::= real_number_literal
 	                  | complex_literal
 \end{lstlisting}
 
+Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Complex_Number}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{+}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}). 
+
+
+
+
+
 \subsection{Units of Measure}
 \label{sec:unitsofmeasuresyntax}
 
@@ -299,13 +360,57 @@ annotated_number ::= number_literal '[<' uom_expr '>]'
 uom_expr         ::= Unit_Conv {',' Unit_Conv}
 \end{lstlisting}
 
-\subsection{Character Literals}\label{sec:characterliterals}
+
+
+
+
+
+\subsection{Character Literals}
+\label{sec:characterliterals}
 
 \syntax\begin{lstlisting}
-character_literal ::= '%'' (character | unicode_escape) '''
+printable_char    ::= ? all visible and printable UTF-8 characters ? 
+character_literal ::= '%'' (printable_char | char_escape_seq) '''
 \end{lstlisting}
 
-\subsection{Boolean Literals}\label{sec:booleanliterals}
+Character literals are of type \code{Character}, and are internally similar to strings (\sref{sec:stringliterals}) of length of 1 character. 
+
+Character escape sequences are used in strings as well, and are defined as follows: 
+
+\syntax\begin{lstlisting}[language=]
+char_escape_seq ::= '\'' (* Literal single-quote: ' *)
+                  | '\"' (* Literal double-quote: " *)
+                  | '\?' (* Literal question mark: ? *)
+                  | '\\' (* Literal backslash: \ *)
+                  | '\#' (* Literal hash: # *)
+                  | '\{' (* Literal left curly brace: { *)
+                  | '\}' (* Literal right curly brace: } *)
+                  | '\0' (* Binary zero (NUL, U+0000) *)
+                  | '\a' (* BEL (alarm) character (U+0007) *)
+                  | '\b' (* Backspace (U+0008) *)
+                  | '\f' (* Form feed (FF, U+000C) *)
+                  | '\n' (* End-of-line (U+000A) *)
+                  | '\r' (* Carriage return (U+000D) *)
+                  | '\t' (* Horizontal tab (U+0007) *)
+                  | '\v' (* Vertical tab (U+000B) *)
+                  | '\x$nn$' (* Byte value in hexadecimal *)
+                  | '\$n$' (* Byte value in octal *)
+                  | '\$nn$' (* Byte value in octal *)
+                  | '\$nnn$' (* Byte value in octal *)
+                  | '\u$nnnn$' (* Unicode character U+$nnnn$ *)
+                  | '\u$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$ *)
+                  | '\' named_char ';' (* Named character entity *)
+\end{lstlisting}
+
+The named character reference (\code{named_char}) is defined by HTML5 (\url{http://www.w3.org/TR/html5/syntax.html#named-character-references});
+
+
+
+
+
+
+\subsection{Boolean Literals}
+\label{sec:booleanliterals}
 
 \syntax\begin{lstlisting}
 boolean_literal ::= 'yes' | 'no'
@@ -313,7 +418,12 @@ boolean_literal ::= 'yes' | 'no'
 
 Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different, and \code{no} does not match in pattern matching (\sref{sec:pattern-matching}) as \code{nil} and vice versa. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
 
-\subsection{String Literals}\label{sec:stringliterals}
+
+
+
+
+\subsection{String Literals}
+\label{sec:stringliterals}
 
 \syntax\begin{lstlisting}
 string_literal              ::= simple_string_literal 
@@ -327,7 +437,13 @@ interpolated_expr           ::= '#{' Expr '}'
 
 String literals are members of the type \lstinline@String@. Single quotes in simple string literals have to be escaped (\lstinline@\'@) and double quotes in interpolable string literals have to be escaped (\lstinline@\"@). Interpolated expression can be preceded only by an even number of escape characters (backslashes, \lstinline@\@), so that the \lstinline@#@ does't get escaped. This is a special \textit{requirement} for any Coral compiler. 
 
-\subsection{Symbol Literals}\label{sec:symbolliterals}
+
+
+
+
+
+\subsection{Symbol Literals}
+\label{sec:symbolliterals}
 
 \syntax\begin{lstlisting}
 symbol_literal       ::= simple_symbol | quoted_symbol
