@@ -245,45 +245,32 @@ Coral defers evaluation of arguments up to the point of function application, an
 \subsection{Corresponding Parameters}
 \label{sec:corresponding-parameters}
 
-The argument expressions $a_1 \commadots a_n$ can be split up to 3 virtual sections: 
-\begin{itemize}
+The argument expressions $a_1 \commadots a_n$ are said to be corresponding to parameters $p_1 \commadots p_n$ based on the following mapping definition. 
 
-\item[] {\em Positional parameters}. Let's refer to them as $p_{1,i,j}$. These are defined by any number of mandatory parameters (where $i = 1$), followed by any number of optional parameters (where $i = 2$), followed by at most one repeated parameter (where $i = 3$ and $j = 1$), ended by any number of post mandatory parameters (where $i = 4$). 
-
-\item[] {\em Named parameters}. Let's refer to them as $p_{2,i}$, where $i$ is the position of the named parameter among the section of named parameters. 
-
-\item[] {\em Block capturing parameter}. Let's refer to it as $p_{3,1}$
-
-\end{itemize}
-To pair argument expressions with corresponding parameters, the following steps are to be taken:
 \begin{enumerate}
-
-\item Say that a {\em positional argument} is of the form $a_i$. 
-
-\item Say that a {\em named argument} is of the form ~\lstinline!$x_i$: $a'_i$!, where $x_i$ is one of the named parameter names from the named parameters section. 
-
-\item Say that $n_1$ is the count of positional arguments. If the last argument is prefixed with ``\lstinline!&!'':
-\begin{itemize} 
-\item If the captured block parameter is defined and a block $b$ is given, count the last argument also as a positional argument. It is an error if there are named arguments before it. 
-\item If the captured block parameter is defined and a block $b$ is not given, do not count the last argument as a positional argument. 
-\item If the captured block parameter is not defined and a block $b$ is given, count the last argument also as a positional argument. It is an error if there are named arguments before it. 
-\item If the captured block parameter is not defined and a block $b$ is not given, count the last argument also as a positional argument. It is an error if there are named arguments before it. 
-\end{itemize}
-
-\item Say that $m_1$ is the count of mandatory parameters. Pair each $a_i$ for $1 \leq i \leq m_1$ with $p_{1,1,i}$. 
-
-\item Say that $m_2$ is the count of post mandatory parameters. Pair each $a_i$ for $(n_1 - m_2) \leq i \leq m_2$ with $p_{1,4,i}$.
-
-\item Say that $m_3$ is the count of optional parameters. Pair each $a_i$ for $m_1 < i < m_2$ with $p_{1,2,i}$, if $p_{1,2,i}$ is an optional parameter. If $p_{1,2,i}$ is not an optional parameter, collect the arguments that don't have a corresponding optional parameter into a sequence and pair it as a single argument with $p_{1,3,1}$. This finishes the positional arguments section. 
-
-\item Let $\sigma i$ be a substitution from the named argument name's position in the function application's named arguments section to its position in the named parameters section of the function parameters definition. If the named argument has a name that is not defined in the function parameters definition, then the position of the capturing named parameter is returned, if it exists. It is an error if the substitution does not return any position, in the sense that the function is not applicable to the given arguments, defined also as follows. 
-
-\item Say that $n_2$ is the count of named arguments. Pair each $a_{\sigma i}$ for $1 \leq i \leq n_2$ with $p_{2,i}$. 
-
-\item Say that $n_3$ is the count of arguments given after the section of named arguments. If $n_3 = 0$, then pair the given block $b$ with $p_{3,1}$, or pair \code{nil} with $p_{3,1}$, if no block $b$ is given. If $n_3 = 1$, then pair the last unpaired argument with $p_{3,1}$. If $n_3 > 1$, it is an error, in the sense that the function is not applicable to the given arguments, defined also as follows. 
+  \item Argument unpacking is applied. 
+    \begin{enumerate}
+      \item {\em Sequence arguments} are prefixed with an asterisk ``\code{*}'', and are evaluated to a \code{Sequence[_]}-compatible type. The values are unpacked and injected in place of the sequence argument in order defined by the sequence. This triggers early evaluation of the argument, which is only done once in face of overloading resolution and/or the following function application. Sequence arguments may only appear among positional arguments. 
+      \item {\em Mapping arguments} are prefixed with a double asterisk ``\code{**}'', and are evaluated to a \code{Sequence[(Symbol, _)]}-compatible type; \code{Map[Symbol, _]} is one such an acceptable type which does not require further conversion to a sequence. The key and value pairs (tuples) are unpacked from the sequence and appended to the sequence of other named arguments. 
+    \end{enumerate}
+    
+  \item Condition check: if there are named arguments, each argument name must be unique per argument list. It is an error if there are duplicate argument names, either before or after argument unpacking.
+    
+  \item Positional arguments are mapped to their corresponding parameters, as defined by positional parameters (\sref{sec:positional-parameters}). Positional parameters will never map to purely named parameters. 
+  
+  \item Condition check: after the previous step, if there are any other unassigned arguments, the remaining arguments must be named, and optionally followed by a block argument. 
+  
+  \item The remaining named arguments are mapped based on their name to parameters of the same external name (\sref{sec:external-internal-parameter-names}). If the corresponding parameter is a variadic parameter, then rules for the parameter apply (\sref{sec:variadic-parameters}).
+  
+  \item If there are any extra named arguments, and a capturing named parameter is present, those extra named arguments are mapped to it. 
+  
+  \item If there is a {\em block argument} passed as positional and appearing last in the argument list, it is mapped to the captured block parameter, if that is present, and if not, then the argument is available for use with the \code{yield} keyword (\sref{sec:yield-expressions}). It not an error if the function member does not use \code{yield}, but that should be avoided. A block argument is either a block expression, or an argument prefixed with an ampersand ``\lstinline!&!''. In a consecutive function application, there may be only one block argument per each argument list as allowed by syntax, unlike with captured block parameter. 
+  
+  \item If there are any parameters without an assigned argument, those parameters must have a default value, which is evaluated prior to the function application (provided that the function was selected as unique in overloading resolution, if any). It is an error if there are any parameters left without a corresponding argument or default value. It is not an error if a variadic parameter is left with an empty sequence, as it is not an error if a capturing named parameter contains an empty mapping. 
+  
 \end{enumerate}
 
-The type of each argument expression $a_i$ is typed with the corresponding parameter type $T_i$ as expected type. 
+The type of each argument expression $a_i$ is typed with the corresponding parameter type $T_j$ as expected type, where the mapping from $i$ to $j$ is defined by corresponding parameters and is correct. 
 
 
 
@@ -297,17 +284,20 @@ The function $f$ must be applicable to its arguments $a_1 \commadots a_n$ of typ
 If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, the function $f$ is applicable if all of the following conditions hold:
 \begin{itemize}
 
-\item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a capturing named parameter and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the capturing named parameter.
+  \item A mapping defined by corresponding parameters exists and is correct. 
 
-\item For every positional argument $a_i$, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with its corresponding $T_i$. 
+  \item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a capturing named parameter and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the capturing named parameter.
 
-\item The given block or the last argument prefixed with ``\lstinline!&!'' is of a type compatible (\sref{sec:implicit-conversions}) with the type of the captured block parameter, if such parameter is defined. 
+  \item For every positional argument $a_i$, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with its corresponding $T_i$. 
 
-\item If the expected type of the function application is defined, the result type $R$ is compatible (\sref{sec:implicit-conversions}) to it. 
+  \item The given block or the last argument prefixed with ``\lstinline!&!'' is of a type compatible (\sref{sec:implicit-conversions}) with the type of the captured block parameter, if such parameter is defined. 
 
-\item For every argument $a_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. See (\sref{sec:io-arguments}) for details. 
+  \item If the expected type of the function application is defined, the result type $R$ is compatible (\sref{sec:implicit-conversions}) to it. 
 
-\item Every formal parameter $p_j$: $T_j$ which is not specified by either a positional or a named argument has a default value (\sref{sec:optional-parameters} \& \sref{sec:named-parameters}). 
+  \item For every argument $a_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. See (\sref{sec:io-arguments}) for details. 
+
+  \item Every formal parameter $p_j$: $T_j$ which is not specified by either a positional or a named argument has a default value (\sref{sec:optional-parameters} \& \sref{sec:named-parameters}). 
+  
 \end{itemize}
 
 If $f$ is a polymorphic method, it is applicable if local type inference (\sref{sec:local-type-inference}) can determine type arguments, so that the instantiated method is applicable. If $f$ is of a value type, it is applicable if it has a method member named \code{apply}, which is applicable. Note that if explicit type parameters are given to the polymorphic method, type application (\sref{sec:type-applications}) happens prior to function application. 
@@ -315,10 +305,6 @@ If $f$ is a polymorphic method, it is applicable if local type inference (\sref{
 If a function application appears to be an argument to another function application (let's call it a nested function application), the expected type of the nested function application is used to determine, whether the outer function is applicable, but the nested function application is not evaluated until time specified by argument evaluation strategy (\sref{sec:arg-eval-strategies}) corresponding to the argument. Local type inference may indeed occur for the nested function application, if it involves a polymorphic method, but again, only using the available expected types. 
 
 If a corresponding parameter $p_j$ to an argument expression $e_i$ is of a constrained type (\sref{sec:constrained-types}), the argument expression is early evaluated, so that it can be determined whether the argument's type conforms to the constrained type, but only if the expected type of $e_i$ does conform to the type of $p_j$ (otherwise, it is clear that it won't conform, thus there is no need to evaluate the expression). 
-
-If an argument expression is prefixed with ``\lstinline!*!'' (let's call it a {\em sequence argument expression}, or {\em sequence-splat}, or just {\em splat}), it is expanded into multiple argument expressions, as its expected type is ~\lstinline!Sequence[$S$]! and $S$ is the expected (and usually actual) type of the arguments resulting from the expansion. The expansion uses methods of the \code{Sequence} type to determine the length of the sequence and its type, which are then inserted instead of the sequence argument (and the contents of the sequence have their evaluation deferred). The sequence should have a reasonable length, and must not be infinite. Such sequence arguments can appear in the function application multiple times (unlike the repeated parameter), but only in the section of positional arguments. 
-
-If an argument expression is prefixed with ``\lstinline!**!'' (let's call it a {\em map argument expression}, or {\em map-splat}), it is expanded into multiple argument expressions, as its expected type is ~\lstinline!Map[Symbol, $S$]! and $S$ is the expected (and usually actual) type of the arguments resulting from the expansion. The expansion uses methods of the \code{Map} type to determine the length of the map and its type, which are then inserted instead of the map argument (and the contents of the map have their evaluation deferred). The map should have a reasonable length, and must not be infinite. Such map arguments can appear in the function application multiple times (unlike the repeated parameter), but only in the section of named arguments. 
 
 \example Assume the following function, which computes the sum of variable number of arguments:
 \begin{lstlisting}
@@ -376,9 +362,9 @@ If an application uses named arguments ~\lstinline!$p_i$: $e_i$!~ or default arg
 \begin{itemize}
 \item No named argument appears left of a positional argument in the argument list. 
 \item No positional argument appears right of a named argument. A bit of an exception is the captured block argument, which appears to be positional, but is treated specially. 
-\item The names $p_i$ of all named arguments are pairwise distinct. There is no way for named arguments to specify positional arguments -- this is also ensured by a similar requirement for the parameters lists. 
+\item The names $p_i$ of all named arguments are pairwise distinct per argument list.
 \item Every formal parameter ~\lstinline!$p_j$: $T_j$!, which is not specified by a positional argument, has a default argument. 
-\item Every formal parameter ~\lstinline!^$p_j$: $T_j$!, which is not specified by a named argument, has a default argument. 
+\item Every formal parameter ~\lstinline!~$p_j$: $T_j$!, which is not specified by a named argument, has a default argument. 
 \item If there are more named arguments than named parameters (excluding the capturing named parameter), a capturing named parameter is defined. (If it is not, the function is not applicable.)
 \end{itemize}
 
@@ -659,6 +645,7 @@ A block expression may opt-in to {\em shadow variables} that it would otherwise 
 
 
 \section{Yield Expressions}
+\label{sec:yield-expressions}
 
 \syntax\begin{lstlisting}
 Yield_Expr ::= 'yield' (Parens_Args | Poetry_Args | ())
