@@ -890,6 +890,8 @@ Optional parameters may not have any modifiers, except for input/output modifier
 
 Optional parameters add the annotation (\sref{sec:annotations}) \code{@[optional_param]} to the corresponding parameter type of the function trait. 
 
+If a parameter has a nullable type $T$ (either by being a nullable type, or allowing otherwise \code{Nothing} with a union type), and appears where an optional parameter may appear, it is taken as an optional parameter with default value of \code{nil} implicitly. 
+
 
 
 
