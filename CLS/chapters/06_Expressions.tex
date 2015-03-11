@@ -2208,7 +2208,7 @@ One first determines the set of functions that are potentially applicable based 
 The shape of an argument expression $e$, written ~\lstinline!$\shape$($e$)!, is a type that is defined as follows:
 \begin{itemize}
 \item For a function expression ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) -> $b$!, the shape is ~\lstinline!(Any$\commadots\,$Any) -> $\shape$($b$)!, where \code{Any} occurs $n$ times in the argument type. 
-\item For a named argument ~\lstinline!$n$: $e$!, the shape is ~\lstinline!@[named_arg :$n$] $\shape$($e$)!, which is an annotated type.\footnote{This is different from e.g. Scala, since Coral supports captured named arguments, which make the definition of applicable functions different.} % TBD: fix the name of the annotation as it will be chosen over time. 
+\item For a named argument ~\lstinline!$n$: $e$!, the shape is ~\lstinline!@[named_arg :$n$] $\shape$($e$)!, which is an annotated type.\footnote{This is different from e.g. Scala, since Coral supports capturing named arguments, which make the definition of applicable functions different.} % TBD: fix the name of the annotation as it will be chosen over time. 
 \item For all other expressions, the shape is \code{Nothing}. 
 \end{itemize}
 
@@ -2220,7 +2220,8 @@ Otherwise, let $S_1 \commadots S_m$ be the vector of types obtained by typing ea
 \paragraph{Applicability based overloading resolution}
 Otherwise, let $\mathcal{C}$ be the set of applicable alternatives in the application to $e_1 \commadots e_m$. It is again an error if $\mathcal{C}$ is empty. Otherwise, one chooses the {\em most specific} alternative among the alternatives in $\mathcal{C}$, according to the following definition of being  ``more specific than''.
 
-Note that if any of parameter types of any alternative in $\mathcal{C}$ is a constrained type (\sref{sec:constrained-types}), an early argument evaluation may be triggered, exactly once per each corresponding argument, to detect whether the alternative is applicable. 
+\paragraph{Triggered early evaluation}
+If any of the corresponding parameter types of any alternative in $\mathcal{C}$ is a constrained type (\sref{sec:constrained-types}), an early argument evaluation is triggered, exactly once per each corresponding argument, to detect whether the alternative is applicable to the constrained type. 
 
 \begin{definition}
 The {\em relative weight} of an alternative $A$ over an alternative $B$ is defined as the sum of relative weights of each argument $e_i$ in the application to $e_1 \commadots e_m$. In the following equation, $A_i$ is the type of the parameter corresponding to $e_i$ in the alternative $A$, and $B_i$ is the type of the parameter corresponding to $e_i$ in the alternative $B$. 
@@ -2239,7 +2240,7 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
   \end{array} \right. \\
 \rweight(t) &= \left\{ 
   \begin{array}{l l}
-    1 & \textrm{unless $t$ is a repeated or a capturing parameter}\\
+    1 & \textrm{unless $t$ is a variadic or a capturing namd parameter}\\
     0 & \textrm{otherwise}
   \end{array} \right.
 \end{array}\]
