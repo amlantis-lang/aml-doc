@@ -20,8 +20,8 @@ Pattern1       ::= ['implicit'] var_id ':' Type_Pat
 Pattern2       ::= ['implicit'] var_id ['@' Pattern3]
                  | Pattern3
 Pattern3       ::= Simple_Pattern {id Simple_Pattern}
-Simple_Pattern ::= '_'
-                 | var_id
+Simple_Pattern ::= ['~' | var_id ':'] '_'
+                 | ['~' | var_id ':'] var_id
                  | Literal
                  | Stable_Id
                  | Stable_Id '(' [Patterns] ')' 
@@ -30,7 +30,7 @@ Simple_Pattern ::= '_'
                    [',' Patterns] ')'
                  | '(' [Patterns] ')'
                  | Pattern '&' Pattern
-Patterns       ::= Pattern {',' Pattern}
+Patterns       ::= [var_id ':'] Pattern {',' [var_id ':'] Pattern}
 \end{lstlisting}
 
 
@@ -141,9 +141,11 @@ Now, the pattern matches the \code{y} parameter of the enclosing function \code{
 Simple_Pattern ::= Stable_Id '(' [Patterns] ')'
 \end{lstlisting}
 
-A constructor pattern is of the form ~\lstinline!$c$($p_1 \commadots p_n$)!, for $n \geq 0$. It consists of a stable identifier $c$, followed by element patterns $p_1 \commadots p_n$. The constructor $c$ is a simple or qualified name which denotes a case class (\sref{sec:case-classes}). If the case class is monomorphic, then it must conform to the expected type of the pattern, and the formal parameter types of $c$'s primary constructor (\sref{sec:constructor-destructor-def}) are taken as the expected types of the element patterns $p_1 \commadots p_n$. If the case class is polymorphic, then its type parameters are instantiated so that the instantiation of $c$ conforms to the expected type of the pattern, unless the type arguments are already given. These types of the formal parameter types of $c$'s primary constructor are then taken as the expected types of the component patterns $p_1 \commadots p_n$. The pattern matches all objects created from constructor invocations ~\lstinline!$c$($p_1 \commadots p_n$)!, where each element pattern $p_i$ matches the corresponding value $v_i$. Any extra parameter sections of $c$'s primary constructor do not affect this behavior. 
+A constructor pattern is of the form ~\lstinline!$c$($p_1 \commadots p_n$)!, for $n \geq 0$. It consists of a stable identifier $c$, followed by element patterns $p_1 \commadots p_n$. The constructor $c$ is a simple or qualified name which denotes a case class (\sref{sec:case-classes}). If the case class is monomorphic, then it must conform to the expected type of the pattern, and the formal parameter types of $c$'s primary constructor (\sref{sec:constructor-destructor-def}) are taken as the expected types of the element patterns $p_1 \commadots p_n$. If the case class is polymorphic, then its type parameters are instantiated so that the instantiation of $c$ conforms to the expected type of the pattern, unless the type arguments are already given. These types of the formal parameter types of $c$'s primary constructor are then taken as the expected types of the component patterns $p_1 \commadots p_n$. The pattern matches all objects created from constructor invocations ~\lstinline!$c$($p_1 \commadots p_n$)!, where each element pattern $p_i$ matches the corresponding value $v_i$. Any extra parameter sections of $c$'s primary constructor do not affect this behavior. The pattern matching is done using the same approach as the extractor pattern (\sref{sec:extractor-patterns}), since case classes have the same \code{unapply} methods as used in it. 
 
-A special case arises when $c$'s formal parameter types contain a variadic parameter. This is further discussed in (\sref{sec:pattern-sequences}).
+A special case arises when $c$'s formal parameter types contain a variadic parameter, or when $c$'s formal parameter types contain a purely named parameter. This is further discussed in (\sref{sec:extractor-patterns}) for the corresponding \code{unapply}-family of methods, and (\sref{sec:pattern-sequences}) for the pattern matching behaviour. 
+
+If the primary constructor of a case class has any optional parameters (\sref{sec:optional-parameters}), then those may be skipped using a wildcard pattern ``\code{_}''. The same ``trick'' can be used in extractor patterns for any unwanted extracted values. 
 
 
 
@@ -173,22 +175,36 @@ Simple_Pattern ::= Stable_Id '(' [Patterns] ')'
 An extractor pattern ~\lstinline!$x$($p_1 \commadots p_n$)!, where $n \geq 0$, is of the same syntactic form as a constructor pattern. However, instead of a case class, the stable identifier $x$ denotes an object which has a member method named \code{unapply} or \code{unapply_sequence} that matches the pattern. 
 
 An \code{unapply} method in an object $x$ {\em matches} the pattern ~\lstinline!$x$($p_1 \commadots p_n$)!~ if it takes exactly one argument and one of the following applies: 
+
 \begin{itemize}
-\item[]
-$n = 0$ and \code{unapply}'s result type is \code{Boolean}. In this case the extractor pattern matches all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns \code{yes}. 
-\item[]
-$n = 1$ and \code{unapply}'s result type is ~\lstinline!Option[$T$]!, for some type $T$. In this case, the only argument pattern $p_1$ is typed in turn with expected type $T$. The extractor pattern matches then all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns a value of form ~\lstinline!Some($v_1$)!, and $p_1$ matches $v_1$. 
-\item[]
-$n > 1$ and \code{unapply}'s result type is ~\lstinline!Option[($T_1 \commadots T_n$)]!, for some types $T_1 \commadots T_n$. In this case, the argument patterns $p_1 \commadots p_n$ are typed in turn with expected types $T_1 \commadots T_n$. The extractor pattern matches then all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns a value of form ~\lstinline!Some(($v_1 \commadots v_n$))!, and each pattern $p_i$ matches the corresponding value $v_i$.
+  \item[] $n = 0$ and \code{unapply}'s result type is \code{Boolean}. In this case the extractor pattern matches all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns \code{yes}. 
+  
+  \item[] $n = 1$ and \code{unapply}'s result type is ~\lstinline!Option[$T$]!, for some type $T$. In this case, the only argument pattern $p_1$ is typed in turn with expected type $T$. The extractor pattern matches then all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns a value of form ~\lstinline!Some($v_1$)!, and $p_1$ matches $v_1$. 
+
+  \item[] $n > 1$ and \code{unapply}'s result type is ~\lstinline!Option[($T_1 \commadots T_n$)]!, for some types $T_1 \commadots T_n$. In this case, the argument patterns $p_1 \commadots p_n$ are typed in turn with expected types $T_1 \commadots T_n$. The extractor pattern matches then all values $v$ for which ~\lstinline!$x$.unapply($v$)!~ returns a value of form ~\lstinline!Some(($v_1 \commadots v_n$))!, and each pattern $p_i$ matches the corresponding value $v_i$.
+  
 \end{itemize}
 
-An \code{unapply_sequence} method in an object $x$ matches the pattern ~\lstinline!$x$($p_1 \commadots p_n$)!, if it takes exactly one argument and its result type is of the form ~\lstinline!Option[$S$]!, where $S$ is a subtype of ~\lstinline!Sequence[$T$]!~ for some element type $T$. This case is further discussed in (\sref{sec:pattern-sequences}).
+An \code{unapply_sequence} method in an object $x$ matches the pattern 
+\begin{lstlisting}
+$x$($q_1 \commadots q_a$, $p_1 \commadots p_n$, $r_1 \commadots r_b$)  ,
+\end{lstlisting}
+if it takes exactly one argument and its result type is of the form 
+\begin{lstlisting}
+Option[($T_1 \commadots T_a$, @[sequence] Sequence[$S$], $T_{n+1} \commadots T_b$)]
+\end{lstlisting}
+(if $a = 0$ and $b = 0$, the type ~\lstinline!Option[@[sequence] Sequence[$S$]]!~ is also accepted). This case is further discussed in (\sref{sec:pattern-sequences}).
+
+An \code{unapply_mapping} method in an object $x$ matches patterns as defined in (\sref{sec:pattern-sequences}).
+
+An \code{unapply_sequence+mapping} method in an object $x$ matches patterns as defined in (\sref{sec:pattern-sequences}).
 
 
 
 
 
-\subsection{Pattern Sequences}
+
+\subsection{Pattern Sequences \& Mappings}
 \label{sec:pattern-sequences}
 
 \syntax\begin{lstlisting}
@@ -197,9 +213,20 @@ Simple_Pattern ::= Stable_Id '(' [Patterns ',']
                    [',' Patterns] ')'
 \end{lstlisting}
 
-A pattern sequence $p_1 \commadots p_n$ appears in two contexts. First, in a constructor pattern ~\lstinline!$c$($q_1 \commadots q_a, p_1 \commadots p_n, r_1 \commadots r_b$)!, where $c$ is a case class, which has $a+1+b$ primary constructor parameters, with a variadic parameter (\sref{sec:variadic-parameters}) of type ~\lstinline!*$S$! in the middle. Second, in an extractor pattern ~\lstinline!$x$($p_1 \commadots p_n$)!, if the extractor object $x$ has an \code{unapply_sequence} method with a result type conforming to ~\lstinline!Option[Sequence[$S$]]!, but does not have an \code{unapply} method that matches $p_1 \commadots p_n$. The expected type for the pattern sequence is in each case the type $S$, which is defined by either the constructor pattern, or the extractor pattern. 
+A {\em pattern sequence} $p_1 \commadots p_n$ appears in two contexts. 
 
-The middle pattern in a pattern sequence may be a {\em sequence wildcard}, which is either of the form ~\lstinline!*var_id!, or ~\lstinline!*_!. Each element pattern $p_i$ is type-checked with $S$ as expected type, unless it is a sequence wildcard. If a sequence wildcard is present, the pattern matches all values $v$ that either are ~\lstinline!Sequence[$S$]!, or they return from \code{unapply_sequence} a non-empty optional value of type that is a subtype of ~\lstinline!Sequence[$S$]!, where the sequence starts with elements matching patterns $p_1 \commadots p_{d-1})$ and ends with elements matching patterns $p_{d+1} \commadots p_n$, where $d$ is the index of the sequence wildcard inside the pattern sequence, and the sequence is of length at least $n-1$\footnote{The sub-sequence captured by the sequence wildcard may indeed be empty.}. If no sequence wildcard is present\footnote{Which case is not covered by syntax of pattern sequences, but solely by syntax of constructor patterns and extractor patterns, which both refer here.}, the pattern matches all values $v$ that either are ~\lstinline!Sequence[$S$]!, or return from \code{unapply_sequence} a non-empty optional value of type that is a subtype of ~\lstinline!Sequence[$S$]!, where the sequence is of length $n$ and consists of elements matching patterns $p_1 \commadots p_n$. 
+\paragraph{Pattern sequences in constructor patterns}
+First, in a constructor pattern ~\lstinline!$c$($q_1 \commadots q_a, p_1 \commadots p_n, r_1 \commadots r_b$)!, where $c$ is a case class, which has $a+1+b$ primary constructor parameters, with a variadic parameter (\sref{sec:variadic-parameters}) of type ~\lstinline!*$S$! in the middle, so that it has generated an \code{unapply_sequence} method instead of \code{unapply}, and therefore the behaviour of extractor pattern may be applied, as defined below. 
+
+\paragraph{Pattern sequences in extractor patterns}
+Second, in an extractor pattern ~\lstinline!$x$($q_1 \commadots q_a, p_1 \commadots p_n, r_1 \commadots r_b$)!, if the extractor object $x$ has an \code{unapply_sequence} method with a result type conforming to
+\begin{lstlisting}
+Option[($T_1 \commadots T_a$, @[sequence] Sequence[$S$], $T_{n+1} \commadots T_b$)]  ,
+\end{lstlisting}
+but does not have an \code{unapply} method. The expected type for the pattern sequence is in each case the type $S$. 
+
+\paragraph{Presence of a sequence wildcard}
+The middle pattern in a pattern sequence $p_1 \commadots p_n$ may be a {\em sequence wildcard}, which is either of the form ~\lstinline!*var_id!, or ~\lstinline!*_!. Each element pattern $p_i$ is type-checked with $S$ as expected type, unless it is a sequence wildcard. If a sequence wildcard is present, the pattern matches all values $v$ that are ~\lstinline!Sequence[$S$]!, where the sequence starts with elements matching patterns $p_1 \commadots p_{d-1})$ and ends with elements matching patterns $p_{d+1} \commadots p_n$, where $d$ is the index of the sequence wildcard inside the pattern sequence, and the sequence is of length at least $n-1$\footnote{The sub-sequence captured by the sequence wildcard may indeed be empty.}. If no sequence wildcard is present\footnote{Which case is not covered by syntax of pattern sequences, but solely by syntax of constructor patterns and extractor patterns, which both refer here.}, the pattern matches all values $v$ that are ~\lstinline!Sequence[$S$]!, where the sequence is of length $n$ and consists of elements matching patterns $p_1 \commadots p_n$. 
 
 \example How to match a sequence with tail, using a pattern sequence.
 \begin{lstlisting}
@@ -220,6 +247,32 @@ def test_sequence (s: Sequence[Number])
 end def
 \end{lstlisting}
 This pattern matches sequences of numbers of length at least 2 and does something with the extracted elements. Type of \code{tail} is \code{Sequence[Number]} and is of lengths from 0 to whatever size the operating system allows (it would not be very realistic to say ``infinity'' here, but theoretically, it would be ok). 
+
+\paragraph{Pattern names}
+Each pattern, which appears inside of a constructor pattern or an extractor pattern, may be given a name, so that the named parameter from a case class constructor, or a simple mapping from the extractor's \code{unapply} method may be used to define which patterns correspond to which parameter or key. The name for a pattern may be given in two forms. First, if the named pattern is a variable name $p$ (maybe followed by a type binding), then the form is ~\lstinline!~$p$!, and the name is the same as the variable name. Second, if a different name is intended for the pattern $p$, or the pattern is not a variable name, then the form is ~\lstinline!$a$: $p$!, where $a$ is the name of the pattern. Named patterns may never appear before any non-named patterns. 
+
+\paragraph{Pattern mappings}
+Whenever a named pattern appears, \code{unapply} and \code{unapply_sequence} can not be used. If a sequence wildcard appears before any named pattern, then \code{unapply_sequence+mapping} is used for the pattern matching; otherwise, \code{unapply_mapping} is used. It is important that the mapping returned is ordered, so that every pattern without a name may still be correctly corresponding to a mapped value (the order is then of no importance for purely named parameters that generate the mapping). 
+
+\paragraph{Pattern mappings without sequence wildcard}
+An \code{unapply_mapping} method in an object $x$ matches the pattern ~\lstinline!$x$($q_1 \commadots q_m$, $p_{m+1} \commadots p_n$)!, if it takes exactly one argument and its result type is of the form ~\lstinline!Option[($T_1 \commadots T_m$, Ordered_Map[Symbol, $S$])]! (if $m=0$, then the type ~\lstinline!Option[Ordered_Map[Symbol, $S$]]!~ is also accepted). 
+
+If any of $p_{m+1} \commadots p_n$ is not named, it is mapped to the first values of the returned mapping, then the named patterns are mapped to the remaining values from the mapping. It is an error if a named pattern has no corresponding mapping, but it is not an error if there is any extra mapping available. 
+
+\paragraph{Pattern mappings with sequence wildcard}
+An \code{unapply_sequence+mapping} method in an object $x$ matches the pattern 
+\begin{lstlisting}
+$x$($q_1 \commadots q_a$, $p_{a+1} \commadots p_n$, $r_{n+1} \commadots r_b$, $s_{b+1} \commadots s_c$)  ,
+\end{lstlisting}
+if it takes exactly one argument and its result type is of the form 
+\begin{lstlisting}
+Option[($T_1 \commadots T_a$, @[sequence] Sequence[$S$], $T_{n+1} \commadots T_b$, 
+       Ordered_Map[Symbol, $M$])]  .
+\end{lstlisting} 
+
+Here, patterns $q_1 \commadots q_a$ are mapped to the first elements of the tuple, with types of $T_1 \commadots T_m$. Then, the same behaviour as with sequence wildcard is applied to $p_{a+1} \commadots p_n$. Patterns $r_{n+1} \commadots r_b$ are mapped to values with types of $T_{n+1} \commadots T_b$. The first patterns among $s_{b+1} \commadots s_c$ that are not named are mapped to the first values of the returned mapping, then the named patterns are mapped to the remaining values from the mapping. It is an error if a named pattern has no corresponding mapping, but it is not an error if there is any extra mapping available. Note that no named patterns may appear among $q_1 \commadots q_m$, and neither among $p_1 \commadots p_n$. 
+
+
 
 
 
