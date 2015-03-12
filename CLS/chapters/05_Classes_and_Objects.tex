@@ -1017,7 +1017,7 @@ A case class definition of \lstinline!$c$[$\tps$]($\ps_1$)$\ldots$($\ps_n$)! wit
 object $c$ {
   def apply[$\tps$]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
       $c$[$\Ts$].new($xs_1$)$\ldots$($xs_n$)
-  def unapply[$\tps$]($x$: $c$[$\tps$]): Option[$e$] :=
+  def unapply[$\tps$]($x$: $c$[$\tps$]?): Option[$e$] :=
       unless x = nil
         Some($x$.$xs_{11} \commadots x$.$xs_{1k}$)
       else
@@ -1030,7 +1030,7 @@ Here, $\Ts$ stands for the vector of types defined in the type parameter section
 
 If the case class definition contains an empty value parameter list, the \code{unapply} returns a \code{Boolean} instead of an \code{Option} type and is defined as follows:
 \begin{lstlisting}
-def unapply[$\tps$]($x$: $c$[$\tps$]): Boolean := x != nil
+def unapply[$\tps$]($x$: $c$[$\tps$]?): Boolean := x /= nil
 \end{lstlisting}
 
 For each case of a value parameter list of $n$ parameters, the \code{unapply} returns these types: 
@@ -1084,7 +1084,7 @@ Method ~\lstinline!to_string: () $\mapsto$ String!~ returns a string representat
 
 \syntax\begin{lstlisting}
 Tmpl_Def       ::= 'trait' Trait_Def
-Trait_Def      ::= id [Type_Param_Clause] [UoM_Params] 
+Trait_Def      ::= id [Type_Param_Clause] 
                    Trait_Tmpl_Env
 Trait_Tmpl_Env ::= 'extends' [Early_Defs] Trait_Parents
                    semi [Template_Body] 'end' ['trait']
