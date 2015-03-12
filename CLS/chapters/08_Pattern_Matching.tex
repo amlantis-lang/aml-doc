@@ -195,11 +195,6 @@ Option[($T_1 \commadots T_a$, @[sequence] Sequence[$S$], $T_{n+1} \commadots T_b
 \end{lstlisting}
 (if $a = 0$ and $b = 0$, the type ~\lstinline!Option[@[sequence] Sequence[$S$]]!~ is also accepted). This case is further discussed in (\sref{sec:pattern-sequences}).
 
-An \code{unapply_mapping} method in an object $x$ matches patterns as defined in (\sref{sec:pattern-sequences}).
-
-An \code{unapply_sequence+mapping} method in an object $x$ matches patterns as defined in (\sref{sec:pattern-sequences}).
-
-
 
 
 
@@ -250,28 +245,6 @@ This pattern matches sequences of numbers of length at least 2 and does somethin
 
 \paragraph{Pattern names}
 Each pattern, which appears inside of a constructor pattern or an extractor pattern, may be given a name, so that the named parameter from a case class constructor, or a simple mapping from the extractor's \code{unapply} method may be used to define which patterns correspond to which parameter or key. The name for a pattern may be given in two forms. First, if the named pattern is a variable name $p$ (maybe followed by a type binding), then the form is ~\lstinline!~$p$!, and the name is the same as the variable name. Second, if a different name is intended for the pattern $p$, or the pattern is not a variable name, then the form is ~\lstinline!$a$: $p$!, where $a$ is the name of the pattern. Named patterns may never appear before any non-named patterns. 
-
-\paragraph{Pattern mappings}
-Whenever a named pattern appears, \code{unapply} and \code{unapply_sequence} can not be used. If a sequence wildcard appears before any named pattern, then \code{unapply_sequence+mapping} is used for the pattern matching; otherwise, \code{unapply_mapping} is used. It is important that the mapping returned is ordered, so that every pattern without a name may still be correctly corresponding to a mapped value (the order is then of no importance for purely named parameters that generate the mapping). 
-
-\paragraph{Pattern mappings without sequence wildcard}
-An \code{unapply_mapping} method in an object $x$ matches the pattern ~\lstinline!$x$($q_1 \commadots q_m$, $p_{m+1} \commadots p_n$)!, if it takes exactly one argument and its result type is of the form ~\lstinline!Option[($T_1 \commadots T_m$, Ordered_Map[Symbol, $S$])]! (if $m=0$, then the type ~\lstinline!Option[Ordered_Map[Symbol, $S$]]!~ is also accepted). 
-
-If any of $p_{m+1} \commadots p_n$ is not named, it is mapped to the first values of the returned mapping, then the named patterns are mapped to the remaining values from the mapping. It is an error if a named pattern has no corresponding mapping, but it is not an error if there is any extra mapping available. 
-
-\paragraph{Pattern mappings with sequence wildcard}
-An \code{unapply_sequence+mapping} method in an object $x$ matches the pattern 
-\begin{lstlisting}
-$x$($q_1 \commadots q_a$, $p_{a+1} \commadots p_n$, $r_{n+1} \commadots r_b$, $s_{b+1} \commadots s_c$)  ,
-\end{lstlisting}
-if it takes exactly one argument and its result type is of the form 
-\begin{lstlisting}
-Option[($T_1 \commadots T_a$, @[sequence] Sequence[$S$], $T_{n+1} \commadots T_b$, 
-       Ordered_Map[Symbol, $M$])]  .
-\end{lstlisting} 
-
-Here, patterns $q_1 \commadots q_a$ are mapped to the first elements of the tuple, with types of $T_1 \commadots T_m$. Then, the same behaviour as with sequence wildcard is applied to $p_{a+1} \commadots p_n$. Patterns $r_{n+1} \commadots r_b$ are mapped to values with types of $T_{n+1} \commadots T_b$. The first patterns among $s_{b+1} \commadots s_c$ that are not named are mapped to the first values of the returned mapping, then the named patterns are mapped to the remaining values from the mapping. It is an error if a named pattern has no corresponding mapping, but it is not an error if there is any extra mapping available. Note that no named patterns may appear among $q_1 \commadots q_m$, and neither among $p_1 \commadots p_n$. 
-
 
 
 
