@@ -87,7 +87,7 @@ The second line of syntax merely emphasizes that it is legal to add type argumen
 Simple_Expr1 ::= 'nil'
 \end{lstlisting}
 
-The \code{nil} value is of type \code{Nothing}, and is thus compatible with every type that is nullable (\sref{sec:nullability}), either preferably or explicitly.
+The \code{nil} value is of type \code{Nothing}, and is thus compatible with every type that is nullable (\sref{sec:nullable-types}).
 
 The \code{nil} represents a ``no object'', and is itself represented by an object. This object overrides methods in \code{Object} or defines them as follows: 
 \begin{itemize}
@@ -551,10 +551,14 @@ Type applications can be omitted if local type inference (\sref{sec:local-type-i
 \label{sec:tuples}
 
 \syntax\begin{lstlisting}
-Simple_Expr ::= '(' [Exprs] ')'
+Simple_Expr ::= '(' [Named_Exprs] ')'
+Named_Exprs ::= Named_Expr {',' Named_Expr}
+Named_Expr  ::= [id ':'] Expr
 \end{lstlisting}
 
-A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple. 
+A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple. Also ~\lstinline!Tuple_1!~ is a special type (pretty much like \code{Any} or \code{Auto}), which helps to make this possible even in dynamic use cases. 
+
+Sub-expressions in a tuple expression that are prepended with an id (in form of ~\lstinline!$x_i$: $e_i$!) are named $x$ -- this adds annotation ~\lstinline!@[named :$x$]!~ to the type of the sub-expression. If the annotation is explicitly added, the behaviour is the same. Named sub-expressions, either in the syntax sugar or explicit form, can only appear at the end of the sequence of sub-expressions, thus no unnamed sub-expressions can appear after a named sub-expression. 
 
 
 
