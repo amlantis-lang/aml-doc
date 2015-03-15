@@ -785,7 +785,7 @@ Standard arithmetic operators:
 a + b     // addition
 a - b     // subtraction
 a * b     // multiplication
-a / b     // floating point division
+a / b     // floating/fixed point division
 a div b   // integral division
 a mod b   // modulo
 a quot b  // quotient
@@ -826,7 +826,7 @@ a >>@ b  // rotate right
 a & b    // bitwise and
 a | b    // bitwise or
 a xor b  // bitwise xor (when applied to numbers)
-not a    // bitwise not (prefix, unary)
+not a    // bitwise not (prefix, unary; when applied to numbers)
 \end{lstlisting}
 
 Standard boolean (logical) operators:
@@ -836,6 +836,7 @@ a and b  // boolean and
 a || b   // boolean or
 a or b   // boolean or
 a xor b  // boolean xor
+not a    // boolean not (prefix, unary; when applied to booleans)
 \end{lstlisting}
 
 % Standard fuzzy logic operators:
@@ -852,7 +853,7 @@ a xor b  // boolean xor
 An assignment operator is an operator symbol that ends in an ``equals'' character ``\lstinline!=!'', with the exception of operators for which one of the following conditions holds: 
 \begin{enumerate}
 \item the operator also starts with an equals character and has more than one character, or
-\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'', ``\lstinline!/<=!'', ``\lstinline!/>=!'' or ``\lstinline!/=!''.
+\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'', ``\lstinline!/<=!'', ``\lstinline!/>=!'' or ``\lstinline!/=!''\footnote{This one effectively disqualifies ``\lstinline!$l$ /= $r$!'' from being treated as ``\lstinline!$l$ := $l$ / $r$!'', very intentionally: to prevent floating/fixed point division from being privileged to integral division, ``\code{div}''.}.
 \end{enumerate}
 
 Assignment operators are treated specially in that they can be expanded to assignments if no other interpretation is valid, as previously defined. Assignment operators can be defined as members of a type. 
@@ -867,7 +868,7 @@ The re-interpretation is occurs if the following conditions are fulfilled:
 \begin{enumerate}
   \item The left hand side $l$ does not have a member named ``\lstinline!+=!'', and also can not be converted by an implicit conversion (\sref{sec:implicit-conversions}) to a value with a member named ``\lstinline!+=!'', applicable to a value of type of $r$. 
   \item The assignment ~\lstinline!$l$ := $l$ + $r$! is type-correct. In particular, this implies that $l$ refers to an object that is convertible to a value with a member named ``\lstinline!+!'' (or itself has such a member without conversion, in the ideal case, indeed). 
-  \item The variable $l$ is assignable, not immutable. This implies that it is defined as a ~\lstinline!var $l$!. 
+  \item The variable $l$ is assignable, defined, not immutable. This implies that it is defined as a ~\lstinline!var $l$!. 
 \end{enumerate}
 
 The re-interpretation is built into the compiled bytecode in such a way that first tries the assignment operator, and then the re-interpretation only in case where the assignment operator approach failed.\footnote{No appropriate implicit conversion was found, or if implicit conversions are disabled for the expression, the value referred to by $l$ does not have the appropriate member.} It is indeed an error if none of the two approaches succeeded. 
