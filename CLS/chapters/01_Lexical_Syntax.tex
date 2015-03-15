@@ -228,29 +228,29 @@ Integral members of the \lstinline@Number@ class cluster include the following c
 
 \begin{enumerate}
 
-\item \lstinline@Integer_8@ ($-2^{7}$ to $2^{7}-1$), alias \lstinline@Byte@
+  \item \lstinline@Integer_8@ ($-2^{7}$ to $2^{7}-1$), alias \lstinline@Byte@
 
-\item \lstinline@Integer_8_Unsigned@ ($0$ to $2^{8}$), alias \lstinline@Byte_Unsigned@
+  \item \lstinline@Integer_8_Unsigned@ ($0$ to $2^{8}$), alias \lstinline@Byte_Unsigned@
 
-\item \lstinline@Integer_16@ ($-2^{15}$ to $2^{15}-1$), alias \lstinline@Short@
+  \item \lstinline@Integer_16@ ($-2^{15}$ to $2^{15}-1$), alias \lstinline@Short@
 
-\item \lstinline@Integer_16_Unsigned@ ($0$ to $2^{16}$), alias \lstinline@Short_Unsigned@
+  \item \lstinline@Integer_16_Unsigned@ ($0$ to $2^{16}$), alias \lstinline@Short_Unsigned@
 
-\item \lstinline@Integer_32@ ($-2^{31}$ to $2^{31}-1$)
+  \item \lstinline@Integer_32@ ($-2^{31}$ to $2^{31}-1$)
 
-\item \lstinline@Integer_32_Unsigned@ ($0$ to $2^{32}$)
+  \item \lstinline@Integer_32_Unsigned@ ($0$ to $2^{32}$)
 
-\item \lstinline@Integer_64@ ($-2^{63}$ to $2^{63}-1$), alias \lstinline@Long@
+  \item \lstinline@Integer_64@ ($-2^{63}$ to $2^{63}-1$), alias \lstinline@Long@
 
-\item \lstinline@Integer_64_Unsigned@ ($0$ to $2^{64}$), alias \lstinline@Long_Unsigned@
+  \item \lstinline@Integer_64_Unsigned@ ($0$ to $2^{64}$), alias \lstinline@Long_Unsigned@
 
-\item \lstinline@Integer_128@ ($-2^{127}$ to $2^{127}-1$), alias \lstinline@Cent@
+  \item \lstinline@Integer_128@ ($-2^{127}$ to $2^{127}-1$), alias \lstinline@Cent@
 
-\item \lstinline@Integer_128_Unsigned@ ($0$ to $2^{128}$), alias \lstinline@Cent_Unsigned@
+  \item \lstinline@Integer_128_Unsigned@ ($0$ to $2^{128}$), alias \lstinline@Cent_Unsigned@
 
-\item \lstinline@Decimal@ ($-\infty$ to $\infty$)
+  \item \lstinline@Decimal@ ($-\infty$ to $\infty$)
 
-\item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$)
+  \item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$)
 
 \end{enumerate}
 
@@ -277,7 +277,8 @@ float_literal   ::= sign decimal_numeral '.' decimal_numeral
                   | sign decimal_numeral exponent_part_e [float_type]
                   | sign decimal_numeral float_type
                   | sign hex_prefix hex_numeral '.' hex_numeral 
-                    [exponent_part_p [float_type] | hex_exp float_type]
+                    [exponent_part_p [float_type] 
+                     | hex_exp float_type]
                   | sign hex_prefix hex_numeral exponent_part_p 
                     [float_type]
                   | sign hex_prefix hex_numeral hex_exp float_type
@@ -302,15 +303,15 @@ Floating point literals are of type \lstinline@Number@ as well as integral liter
 
 \begin{enumerate}
 
-\item \lstinline@Float_32@ (IEEE 754 32-bit precision), alias \lstinline@Float@. 
+  \item \lstinline@Float_32@ (IEEE 754 32-bit precision), alias \lstinline@Float@. 
 
-\item \lstinline@Float_64@ (IEEE 754 64-bit precision), alias \lstinline@Double@.
+  \item \lstinline@Float_64@ (IEEE 754 64-bit precision), alias \lstinline@Double@.
 
-\item \lstinline@Float_128@ (IEEE 754 128-bit precision).
+  \item \lstinline@Float_128@ (IEEE 754 128-bit precision).
 
-\item \lstinline@Decimal@ ($-\infty$ to $\infty$).
+  \item \lstinline@Decimal@ ($-\infty$ to $\infty$).
 
-\item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$).
+  \item \lstinline@Decimal_Unsigned@ ($0$ to $\infty$).
 
 \end{enumerate}
 
@@ -379,28 +380,29 @@ Character literals are of type \code{Character}, and are internally similar to s
 Character escape sequences are used in strings as well, and are defined as follows: 
 
 \syntax\begin{lstlisting}[language=]
-char_escape_seq ::= '\'' (* Literal single-quote: ' *)
-                  | '\"' (* Literal double-quote: " *)
-                  | '\?' (* Literal question mark: ? *)
-                  | '\\' (* Literal backslash: \ *)
-                  | '\#' (* Literal hash: # *)
-                  | '\{' (* Literal left curly brace: { *)
-                  | '\}' (* Literal right curly brace: } *)
-                  | '\0' (* Binary zero (NUL, U+0000) *)
-                  | '\a' (* BEL (alarm) character (U+0007) *)
-                  | '\b' (* Backspace (U+0008) *)
-                  | '\f' (* Form feed (FF, U+000C) *)
-                  | '\n' (* End-of-line (U+000A) *)
-                  | '\r' (* Carriage return (U+000D) *)
-                  | '\t' (* Horizontal tab (U+0007) *)
-                  | '\v' (* Vertical tab (U+000B) *)
-                  | '\x$nn$' (* Byte value in hexadecimal *)
-                  | '\$n$' (* Byte value in octal *)
-                  | '\$nn$' (* Byte value in octal *)
-                  | '\$nnn$' (* Byte value in octal *)
-                  | '\u$nnnn$' (* Unicode character U+$nnnn$ *)
-                  | '\u$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$ *)
-                  | '\' named_char ';' (* Named character entity *)
+char_escape_seq ::= 
+      '\'' (* Literal single-quote: ' *)
+    | '\"' (* Literal double-quote: " *)
+    | '\?' (* Literal question mark: ? *)
+    | '\\' (* Literal backslash: \ *)
+    | '\#' (* Literal hash: # *)
+    | '\{' (* Literal left curly brace: { *)
+    | '\}' (* Literal right curly brace: } *)
+    | '\0' (* Binary zero (NUL, U+0000) *)
+    | '\a' (* BEL (alarm) character (U+0007) *)
+    | '\b' (* Backspace (U+0008) *)
+    | '\f' (* Form feed (FF, U+000C) *)
+    | '\n' (* End-of-line (U+000A) *)
+    | '\r' (* Carriage return (U+000D) *)
+    | '\t' (* Horizontal tab (U+0007) *)
+    | '\v' (* Vertical tab (U+000B) *)
+    | '\x$nn$' (* Byte value in hexadecimal *) 
+    | '\$n$' (* Byte value in octal *)
+    | '\$nn$' (* Byte value in octal *)
+    | '\$nnn$' (* Byte value in octal *)
+    | '\u$nnnn$' (* Unicode character U+$nnnn$ *)
+    | '\u$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$ *)
+    | '\' named_char ';' (* Named character entity *)
 \end{lstlisting}
 
 The named character reference (\code{named_char}) is defined by HTML5 (\url{http://www.w3.org/TR/html5/syntax.html#named-character-references});
@@ -427,11 +429,8 @@ Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ litera
 \label{sec:stringliterals}
 
 \syntax\begin{lstlisting}
-string_literal              ::= simple_string_literal 
-                              | interpolable_string_literal
-simple_string_literal       ::= ''' {string_element} '''
+string_literal              ::= '"' {int_string_element} '"'
 string_element              ::= printable_char | char_escape_seq
-interpolable_string_literal ::= '"' {int_string_element} '"'
 int_string_element          ::= string_element | interpolated_expr
 interpolated_expr           ::= '#{' Expr '}'
 \end{lstlisting}
@@ -449,12 +448,13 @@ String literals are members of the type \lstinline@String@. Single quotes in sim
 \syntax\begin{lstlisting}
 symbol_literal       ::= simple_symbol | quoted_symbol
 simple_symbol        ::= ':' plain_id
-quoted_symbol        ::= simple_quoted_symbol | interpolable_symbol
-simple_quoted_symbol ::= ':'' {string_element} '''
-interpolable_symbol  ::= ':"' {int_string_element} '"'
+quoted_symbol        ::= ':"' {int_string_element} '"'
 \end{lstlisting}
 
 Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Coral does not require their ids to be constant in time. 
+
+
+
 
 
 
@@ -538,17 +538,17 @@ The type of elements of a collection is inferred from combination of the expecte
 
 \example The following lines show how type inference works with collection literals. 
 \begin{lstlisting}
-val a: Array[String] := %[]  // inferred to be Array[String]
-val b := %[][String]         // inferred to be Array[String]
-val c := %["hello", "world"] // inferred to be Array[String]
+val a: Array[String] := %[]  // Array[String]
+val b := %[][String]         // Array[String]
+val c := %["hello", "world"] // Array[String]
 
-val d: Map[String, String] := %{} // inferred to be Map[String, String]
-val e := %{}[String, String]      // inferred to be Map[String, String]
-val f := %{"hello" => "world"}    // inferred to be Map[String, String]
+val d: Map[String, String] := %{} // Map[String, String]
+val e := %{}[String, String]      // Map[String, String]
+val f := %{"hello" => "world"}    // Map[String, String]
 
-val g: Bag[String] := %()    // inferred to be Bag[String]
-val h := %()[String]         // inferred to be Bag[String]
-val i := %("hello", "world") // inferred to be Bag[String]
+val g: Bag[String] := %()    // Bag[String]
+val h := %()[String]         // Bag[String]
+val i := %("hello", "world") // Bag[String]
 \end{lstlisting}
 
 

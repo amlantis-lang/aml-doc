@@ -19,7 +19,6 @@ Expr        ::= Cond_Expr
               | Infix_Expr
               | Simple_Expr
               | Match_Expr
-              | Binding
               | Annot_Expr
               | Cast_Expr
               | Use_Expr
@@ -27,8 +26,10 @@ Expr        ::= Cond_Expr
               | Anon_Fun
               | Anon_Class
               | Metaclass_Access
+              | Quote_Expr
               | Workflow_Expr
               | Quasiquote_Expr
+              | Splice_Expr
               | '(' Expr ')'
 Simple_Expr ::= Block_Expr
               | ['&'] Simple_Expr1
@@ -88,13 +89,13 @@ Simple_Expr1 ::= 'nil'
 
 The \code{nil} value is of type \code{Nothing}, and is thus compatible with every type that is nullable (\sref{sec:nullability}), either preferably or explicitly.
 
-The \code{nil} represents a ``no object'', and is itself represented by an object. This object overrides methods in \code{Object} as follows: 
+The \code{nil} represents a ``no object'', and is itself represented by an object. This object overrides methods in \code{Object} or defines them as follows: 
 \begin{itemize}
 \item 
 \lstinline!equals($x$)! and \lstinline!=($x$)! return \code{yes} if the argument $x$ is also the \code{nil} object. 
 
 \item 
-\lstinline@!=($x$)@ return \code{yes} if the argument $x$ is not the \code{nil} object.
+\lstinline!/=($x$)! return \code{yes} if the argument $x$ is not the \code{nil} object.
 
 \item
 \lstinline[mathescape=false]!as_instance_of[$T]()! returns always \code{nil}. 
@@ -130,7 +131,7 @@ For other expressions $e$, ~\lstinline!$e$.$x$!~ is typed as if it was ~\lstinli
 
 The selection ~\lstinline!$e$.?$x$!~ is typed as if it was 
 \begin{lstlisting}
-{ val $y$ := $e$; if $y$ != nil then $y$.$x$ else nil }
+{ val $y$ := $e$; if $y$ /= nil then $y$.$x$ else nil }
 \end{lstlisting}
 for some fresh name $y$; also called {\em safe navigation} or {\em safe selection}. 
 
@@ -1126,10 +1127,12 @@ a, b, *c, d := e, *f
 Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
 Cond_Block_Expr  ::= Cond_Block_Expr1 | Cond_Block_Expr2
 Cond_Block_Expr1 ::= 'if' Condition ('then' | semi) Cond_Block 
-                     {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
+                     {[semi] 'elsif' Condition 
+                      ('then' | semi) Cond_Block}
                      [[semi] Else Cond_Block] 'end' ['if']
 Cond_Block_Expr2 ::= 'unless' Condition ('then' | semi) Cond_Block 
-                     {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
+                     {[semi] 'elsif' Condition 
+                      ('then' | semi) Cond_Block}
                      [[semi] Else Cond_Block] 'end' ['unless']
 Cond_Mod_Expr    ::= Expr Cond_Modifier
 Cond_Modifier    ::= Cond_Modifier1
@@ -1495,7 +1498,7 @@ where $x_1 \commadots x_n$ are the free variables of the pattern $p$.
 
 \item A generator ~\lstinline!$p$ <- $e$!~ followed by a guard ~\lstinline!unless $g$!~ is translated to a single generator
 \begin{lstlisting}
-$p$ <- $e$.with_filter(($x_1 \commadots x_n$) -> { !($g$) })
+$p$ <- $e$.with_filter(($x_1 \commadots x_n$) -> { not $g$ })
 \end{lstlisting}
 where $x_1 \commadots x_n$ are the free variables of the pattern $p$. 
 
@@ -1550,9 +1553,10 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 \label{sec:collection-comprehensions}
 
 \syntax\begin{lstlisting}
-List_Literal       ::= '%' Collection_Flags '[' 'for' Generator_Expr ']'
-Dictionary_Literal ::= '%' Collection_Flags '{' 'for' Generator_Expr '}'
-Bag_Literal        ::= '%' Collection_Flags '(' 'for' Generator_Expr ')'
+CF                 ::= Collection_Flags
+List_Literal       ::= '%' CF '[' 'for' Generator_Expr ']'
+Dictionary_Literal ::= '%' CF '{' 'for' Generator_Expr '}'
+Bag_Literal        ::= '%' CF '(' 'for' Generator_Expr ')'
 \end{lstlisting}
 
 Collection comprehensions extend the syntax of collection ``literals''\footnote{Pure literals are terminal symbols in the language, but collection literals are wrappers around virtually any expression.}, so that collections may be defined by not their explicit values, but by a function that generates them -- and that function is a generator. Only tuple literals don't have collection comprehension, due to their special nature within the language. 
@@ -1582,7 +1586,6 @@ Case_Clauses   ::= Case_Clause {['next'] semi Case_Clause}
 Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Cond_Block
 Case_Patterns  ::= Case_Pattern {',' Case_Pattern}
 Case_Pattern   ::= Stable_Id
-                 | literal [('..' | '...') literal]
                  | id
                  | Infix_Expr
 \end{lstlisting}
@@ -1596,7 +1599,6 @@ case $e$ { when $c_1$ then $b_1\ \ldots$ when $c_n$ then $b_n$ else $b_{n+1}$ }
 are simplified pattern matching expressions, though they do not use pattern matching at all, but {\em case equality} instead, defined with the method ``\lstinline!===!''. Thus, case expressions do not aim at matching the selector expression $e$, thus decomposing the selector $e$, but rather tests if it falls into a particular set of values, defined using the case equality method, by:
 \begin{itemize}
 \item a type of values ~\lstinline!$c$.`===`($e$)!,
-\item a range of values ~\lstinline!($e_1$ .. $e_2$).`===`($e$)!, 
 \item a set of values defined by another value ~\lstinline!$e_1$.`===`($e$)!.
 \end{itemize}
 
@@ -1754,7 +1756,8 @@ class Shift [+A, -B, +C] (val cont: Continuation[A, B] -> C) {
   }
 }
 def reset [A, C] (ctx: => @[CPS_Param[A, C]] A): C end
-def shift [A, B, C] (cont: Continuation[A, B] -> C): @[CPS_Param[B, C] A
+def shift [A, B, C] (cont: Continuation[A, B] -> C): 
+    @[CPS_Param[B, C] A end
 annotation CPS_Param [-B, +C] {$\ldots$}
 type CPS_Type [A] := CPS_Param[A, A]
 type Suspendable := CPS_Param[Unit, Unit]
@@ -2006,11 +2009,11 @@ The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well
 
 \example The method values in the left column are each equivalent to the anonymous functions (\sref{sec:anonymous-functions}) on their right. 
 \begin{lstlisting}[deletekeywords={range}]
-&(Math.sin)                (x)      -> { Math.sin(x) }
-&(Array.range)             (x1, x2) -> { Array.range(x1, x2) }
-&(List.map_2)              (x1, x2) -> (x3) -> { List.map_2(x1, x2)(x3) }
-&(List.map_2(xs, ys))      (x)      -> { List.map_2(xs, xy)(x) }
-&(42.`*`)                  (x)      -> { 42 * x }
+&(Math.sin)              x      -> { Math.sin(x) }
+&(Array.range)           (x1, x2) -> { Array.range(x1, x2) }
+&(List.map_2)            (x1, x2) -> x3 -> { List.map_2(x1, x2)(x3) }
+&(List.map_2(xs, ys))    x      -> { List.map_2(xs, xy)(x) }
+&(42.`*`)                x      -> { 42 * x }
 \end{lstlisting}
 
 Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
@@ -2079,7 +2082,8 @@ Fun_Dec_Expr   ::= {Annotation} Dcl
                  | ()
 Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
                  | 'alias' id 'is' id
-Capture_Usage  ::= 'use' id {',' id} 'as' ('weak' | 'unowned' | 'soft')
+Capture_Usage  ::= 'use' id {',' id} 
+                   'as' ('weak' | 'unowned' | 'soft')
 Constraint_Dcl ::= 'constraint' id ['as' Type] 'end' ['constraint']
 Constraint_Def ::= 'constraint' 
                    (id ['as' Type] [':='] Constraint_Block 
@@ -2477,29 +2481,122 @@ foo.array(10) := 11     foo.select_dynamic(:array).update(10)(11)
 
 Workflows are basically a syntax sugar for a block expression that is passed as an argument to a workflow builder (an object that conforms to \code{Workflow_Builder}). In the following translation table, the left column presents the constructs, and the right column its de-sugared form, where $b$ is the workflow builder. Note that while it does not have to be statically known at compile time that an object is an instance of \code{Workflow_Builder}, it's much more convenient for type inference -- as it is with any other function application. 
 
+The syntactic category \code{Workflow_Expr} is defined as a follows:
+
+\syntax\begin{lstlisting}[language=]
+Workflow_Expr ::= Simple_Expr1 Workflow_Block_Expr
+\end{lstlisting}
+
+\ldots where \code{Workflow_Block_Expr} is based on \code{Block_Expr} with the following properties:
+\begin{itemize}
+  \item The keyword \code{let} may be followed by \code{!}. 
+  \item The keyword \code{return} may be followed by \code{!}. 
+  \item The keyword \code{yield} may be followed by \code{!}. 
+\end{itemize}
+
+
+
+
+
+
+\subsection{Custom Workflows}
+
+It is possible to define the characteristics of a custom workflow, by creating a builder class and defining certain special methods in it. 
+
+
+\begin{table}[!h]
+  \caption{Methods of a {\em Workflow Builder Class}}
+  \begin{tabular}{ l l }
+    Name & Typical signatures \\ 
+    \hline \hline
+    \code{bind} & \lstinline!(M[T], T -> M[U]) -> M[U]! \\ 
+    \hline
+    \code{delay} & \lstinline!(() -> M[T]) -> M[T]! \\ 
+    \hline
+    \lstinline[deletekeywords={return}]!`return`! & \lstinline!T -> M[T]! \\ 
+    \hline
+    \code{return_from} & \lstinline!M[T] -> M[T]! \\ 
+    \hline
+    \code{run} & \lstinline!M[T] -> M[T]! \\
+    & \lstinline!M[T] -> T! \\ 
+    \hline
+    \code{combine} & \lstinline!(M[T], M[T]) -> M[T]! \\
+    & \lstinline!(M[Unit], M[T]) -> M[T]! \\
+    \hline
+    \lstinline[deletekeywords={for}]!`for`! & \lstinline!(Iterable_Like[T], T -> M[U]) -> M[U]! \\
+    & \lstinline!(Iterable_Like[T], T -> M[U]) -> Iterable_Like[M[U]]! \\
+    \hline
+    \lstinline[deletekeywords={catch}]!`catch`! & \lstinline!(M[T], Raiseable -> M[T]) -> M[T]! \\
+    \hline
+    \lstinline[deletekeywords={ensure}]!`ensure`! & \lstinline!(M[T], () -> Unit) -> M[T]! \\
+    \hline
+    \lstinline[deletekeywords={while}]!`while`! & \lstinline!(() -> Boolean, M[T]) -> M[T]! \\
+    \hline
+    \lstinline[deletekeywords={yield}]!`yield`! & \lstinline!T -> M[T]! \\
+    \hline
+    \code{yield_from} & \lstinline!M[T] -> M[T]! \\
+    \hline
+    \code{zero} & \lstinline!() -> M[T]! \\
+    \hline
+  \end{tabular}
+  \label{table:number-comparison-operators}
+\end{table}
+\FloatBarrier
+
+Many of the methods in a builder class use and return an ~\lstinline!M[T]!~ construct, which is typically a separately defined type that characterizes the kind of workflows being combined, e.g. ~\lstinline!Async[T]!~ for asynchronous workflows. The signatures of these methods enable them to be combined and nested with each other, so that the workflow object returned from one construct can be safely passed to the next. Runtime and compile time handling of the workflow converts the expression into a series of nested function calls by using methods from the preceding table and the code in the workflow. 
+
+The nested expression is of the following form: 
 \begin{lstlisting}
-b do cexpr end              b.delay(() -> { cexpr })
-let pat := expr; cexpr      let pat := expr; cexpr
-let! pat := expr; cexpr     b.bind(expr, (pat) -> { cexpr })
+builder.run(builder.delay(() -> { wexpr }))
+\end{lstlisting}
+
+Further notes for some of the \code{Workflow_Builder}'s methods: 
+\begin{description}
+  \item[delay] The whole workflow expression is wrapped in a function. 
+  \item[run] The outermost workflow expression is wrapped in it. 
+  \item[for] Applied to simple \code{for} loops. 
+  \item[zero] Used for empty \code{else} branches. 
+\end{description}
+
+\paragraph{Note}
+Notice that it is safe to not have the knowledge of a workflow builder instance being a workflow builder instance if the translations result in the same type as the expected type of the whole workflow expression. This may be solved with properly used typed expression (\sref{sec:typed-expressions}) wrapping the workflow expression, or by assigning its result to a properly typed value or variable, which both sets up the expected type, even in case of an unknown type of the builder instance. It is an error if the translations are deferred to runtime and their types do not check.
+
+In the above code, the calls to \code{run} and/or \code{delay} are omitted, if the builder class does not define them. The body of the workflow, here denoted as \code{wexpr}, is translated into calls involving the methods of the builder class by the translations described in the following table. The workflow expression \code{wexpr} is defined recursively, according to these translations, where \code{expr} is a Coral expression, \code{pat} is a Coral pattern, \code{other_expr} is another expression that is not listed, and \code{wexpr}-beginning names are workflow expressions, that are then recursively translated. 
+
+\begin{lstlisting}[emph={expr,wexpr,wexpr1,wexpr2,b,pat},emphstyle=\color{RubineRed}]
+// expression               // translation
+b do wexpr end              b.run(b.delay(() -> { wexpr }))
+                            // delay not defined:
+                            b.run(() -> { wexpr })
+                            // run not defined:
+                            b.delay(() -> { wexpr })
+                            // both not defined:
+                            () -> { wexpr }
+let pat := expr; wexpr      let pat := expr; wexpr
+let! pat := expr; wexpr     b.bind(expr, (pat) -> { wexpr })
 return expr                 b.return(expr)
 return! expr                b.return_from(expr)
 yield expr                  b.yield(expr)
 yield! expr                 b.yield_from(expr)
-for pat in expr             b.for(expr, (pat) -> { cexpr })
-  loop cexpr end 
-while expr loop cexpr end   b.while(
+for pat in expr             b.for(expr, (pat) -> { wexpr })
+  loop wexpr end 
+while expr loop wexpr end   b.while(
                                 () -> { expr }, 
-                                b.delay(() -> { cexpr }))
-if expr then cexpr1         if expr then cexpr1 else cexpr2 end
-  else cexpr2 end
-if expr then cexpr          if expr then cexpr else b.zero
-cexpr1; cexpr2              b.combine(cexpr1, b.delay(() -> { cexpr2 }))
-begin cexpr1                b.catch(expr, (v) -> { match v { cexpr2 } })
-  catch cexpr2 end
-begin cexpr1                b.ensure(cexpr1, () -> { cexpr2 })
-  ensure cexpr2 end
+                                b.delay(() -> { wexpr }))
+if expr then wexpr1         if expr then wexpr1 else wexpr2 end
+  else wexpr2 end
+if expr then wexpr          if expr then wexpr else b.zero()
+wexpr1; wexpr2              b.combine(
+                                wexpr1, 
+                                b.delay(() -> { wexpr2 }))
+begin wexpr1                b.catch(
+  catch wexpr2 end              wexpr1, 
+                                v -> { match v { wexpr2 } })
+begin wexpr1                b.ensure(wexpr1, () -> { wexpr2 })
+  ensure wexpr2 end
+other_expr; wexpr           expr; wexpr
+other_expr                  expr; b.zero()
 \end{lstlisting}
-
 
 
 
@@ -2519,22 +2616,23 @@ Any_Expr        ::= Expr
                   | Alias_Expr
                   | Compilation_Unit
                   | Top_Stat_Seq
-Expr            ::= '#{' Expr '}'
+Splice_Expr     ::= '#{' Expr '}'
 \end{lstlisting}
 
-Quasi-quote expression ~\lstinline!`( $e$ )!~ is basically a well-formed piece of Coral source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasiquote]}.
+Quasi-quote expression ~\lstinline!`( $e$ )!~ is basically a well-formed piece of Coral source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
 
 Quasi-quote expressions may optionally be interpolated, so that values or other nodes may be injected into the represented AST. There are the following ways to interpolate the AST:
 \begin{itemize}
-\item Interpolating expression ~\lstinline!#{ $e$ }!, where $e$'s value is expanded into the AST as is. If the expression would require parentheses around it in the source, then parentheses have to be around the interpolating expression.\footnote{Note that the same delimiters are used to interpolate string literals.}
-\item The \code{@[unquote]} annotation, which puts parentheses around the annotated expression. 
-\item The \code{@[splice]} annotation, where the annotated expression is expanded into the AST as is. 
+  \item Interpolating expression ~\lstinline!#{ $e$ }!, where $e$'s value is expanded into the AST as is. If the expression would require parentheses around it in the source, then parentheses have to be around the interpolating expression.\footnote{Note that the same delimiters are used to interpolate string literals.}
+  \item The \code{@[unquote]} annotation, which puts parentheses around the annotated expression.
+  \item The \code{@[splice]} annotation, where the annotated expression is expanded into the AST as it is. Otherwise equivalent to ~\lstinline!#{ $e$ }!.
 \end{itemize}
 
 A quasi-quote without any interpolation is equivalent to a quote (\sref{sec:quotation}). 
 
 Quasi-quotes are useful in combination with macros (\sref{sec:macros}). 
 
+An interpolating (splice or unquote) expression (like ~\lstinline!#{ $e$ }!) appearing outside of a quasi-quote expression produces a compile-time warning and is replaced with $e$ directly. 
 
 
 
@@ -2543,7 +2641,31 @@ Quasi-quotes are useful in combination with macros (\sref{sec:macros}).
 \subsection{Quotation}
 \label{sec:quotation}
 
-A quote expression is basically a quasi-quote, but without any interpolation. The annotation that marks an expression for quotation is \code{@[quote]}. 
+\syntax\begin{lstlisting}
+Quote_Expr      ::= ''(' Any_Expr ')' | ''' Quotable_Expr
+\end{lstlisting}
+
+A quote expression ~\lstinline!'( $e$ )!~ is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. Quotation does not require parentheses around the expression that it quotes, in the following cases:
+
+\syntax\begin{lstlisting}[language=]
+Quotable_Expr ::= 
+      Cond_Expr 
+    | Loop_Expr - Loop_Mod_Expr
+    | Rescue_Expr
+    | Raise_Expr
+    | Throw_Expr
+    | Catch_Expr
+    | Return_Expr
+    | Yield_Expr
+    | Simple_Expr
+    | Match_Expr
+    | Use_Expr
+    | Jump_Expr
+    | Anon_Class
+    | Metaclass_Access
+\end{lstlisting}
+
+
 
 
 

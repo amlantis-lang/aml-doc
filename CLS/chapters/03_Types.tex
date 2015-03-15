@@ -10,7 +10,7 @@ Function_Type       ::= Function_Args {'->' Function_Args}
                         '->' Type
 Function_Args       ::= Infix_Type
                       | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['^'] id ':'] 
+Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['~'] id ':'] 
                         Param_Type
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
@@ -252,12 +252,15 @@ class A_Class {
 Simple_Type ::= Simple_Type [Type_Args]
 Type_Args   ::= '[' Types ']'
 Types       ::= Type_Arg {',' Type_Arg}
-Type_Arg    ::= Type | '<' uom_expr '>'
+Type_Arg    ::= [['~'] id ':'] Type 
+              | '<' uom_expr '>'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
 
-Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline[mathescape=false]!$A <: Comparable[$A]!~ is substituted into ~\lstinline!$C$ <: Comparable[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfil the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
+Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline!$A$ <: Comparable[$A$]!~ is substituted into ~\lstinline!$C$ <: Comparable[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfill the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
+
+Each type parameter may be given a name $n$, which is done by prepending it with an id immediately followed by a colon, which itself may be prepended with a tilde ``\lstinline!~!''. The first case is a shorthand for adding an annotation ~\lstinline!@[named :$n$]!, the second is a shorthand for adding the previous annotation and also ~\lstinline!@[purely_named]!. 
 
 \example
 \label{example:parameterized-types}
@@ -266,11 +269,13 @@ Given the generic type definitions:
 \begin{lstlisting}
 class Tree_Map[A <: Comparable[A], B] $\ldots$ end
 class List[A] $\ldots$ end
-class I; implements Comparable[I]; $\ldots$ end
+class I extends Comparable[I]; $\ldots$ end
 
 class F[M[_], X] $\ldots$ end
 class S[K <: String] $\ldots$ end
 class G[M[Z <: I], I] $\ldots$ end
+
+trait Function_1[T, R]; end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
@@ -282,6 +287,8 @@ List[List[Boolean]]
 
 F[List, Number]
 G[S, String]
+
+Function_1[named: List[String], String]
 \end{lstlisting}
 
 \example
@@ -316,11 +323,11 @@ Simple_Type ::= '(' Types ')'
 
 A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
 
-Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods \lstinline@[1]$ \commadots $[$n$]@ (using an ``offset'' that is outside of the tuple's size results in a method-not-found error, not offset-out-of-bounds -- tuple classes do not implement the operator \lstinline@[i]@ for arbitrary $i$). 
+Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods ~\lstinline!_1$ \commadots $_n!~ (using an ``offset'' that is outside of the tuple's size results in a method-not-found error, not offset-out-of-bounds). 
 
 Tuple classes are generated lazily by the runtime as needed, so that the language does not constrain users to tuples of only limited sizes, but allows any size. 
 
-An effort will be made to introduce a simple enough syntax for variable parameterized types, if possible, until then, \lstinline@Tuple_$i$@ are the only such types. 
+If any of the tuple's type parameters $T_i$ is annotated to be named $n$ (see \sref{sec:parameterized-types}, then an additional method named $n$ is added, returning the same value as ~\lstinline!_$i$!, of the type $T_i$. If that type parameter is furthermore annotated with ~\lstinline!@[purely_named]!, then the ~\lstinline!_$i$!~ is removed. 
 
 
 
@@ -396,7 +403,7 @@ Type          ::= Function_Args {'->' Function_Args}
                   '->' Type
 Function_Args ::= Infix_Type
                 | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['^'] id ':']
+Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['~'] id ':']
                   Param_Type
 \end{lstlisting}
 
@@ -404,12 +411,13 @@ The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of functio
 
 Function argument types may be annotated with some extra properties. In that case, these map to annotations of their types, defined as follows:
 \begin{itemize}
-\item ``\code{out}'' maps to \code{@[out_param]}. 
+\item ``\code{out}'' maps to \lstinline[deletekeywords={out}]!@[out]!. 
 \item ``\code{in}'' maps to no annotation, as it is implied, and if the parameter is \code{out}-only, the function is still applicable. 
-\item ``\code{*}'' maps to \code{@[repeated_param]}. 
-\item ``\code{**}'' maps to \code{@[capturing_named_param]}. 
-\item ``\code{&}'' maps to \code{@[captured_block_param]}. 
-\item ``\code{^$\id$}'' maps to \code{@[named_param :$\id$]}. For now, the leading ``\code{^}'' may be omitted, as it could be implied, but it's generally better to not omit it. 
+\item ``\code{*}'' maps to \code{@[variadic]}. 
+\item ``\code{**}'' maps to \code{@[capturing_named]}. 
+\item ``\code{&}'' maps to \code{@[captured_block]}. 
+\item ``\code{$\id$}'' maps to \code{@[named :$\id$]}. 
+\item ``\lstinline!~$\id$!'' maps to ~\lstinline!@[named :$\id$] @[purely_named]!. 
 \end{itemize}
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
@@ -436,13 +444,16 @@ Parameter prefixed with \code{Param_Io} defines whether the parameter is require
 Parameter prefixed with ``\lstinline!*!'' is a requirement of a repeated parameter. 
 
 \item 
-Parameter prefixed with ``\lstinline!^!'' is a requirement of a parameter named $x$.
+Parameter prefixed with ``\lstinline!$\id$!'' is a requirement of a parameter named $\id$.
+
+\item 
+Parameter prefixed with ``\lstinline!~$\id$!'' is a requirement of a parameter purely named $\id$.
 
 \item 
 Parameter prefixed with ``\lstinline!**!'' is a requirement of a captured named parameters. 
 
 \item
-Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullability}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}).
+Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}).
 \end{itemize}
 
 \paragraph{Note}
@@ -623,7 +634,8 @@ operator or [A, B] (): Union[A, B] end
 \label{sec:constrained-types}
 
 \syntax\begin{lstlisting}
-Postfix_Type     ::= Compound_Type 'with' 'constraint' Constraint_Block
+Postfix_Type     ::= Compound_Type 
+                     'with' 'constraint' Constraint_Block
 Constraint_Block ::= '{' Block '}'
 \end{lstlisting}
 
@@ -661,15 +673,15 @@ Another special case are types of methods without any return type. They are writ
 
 Method types do not exist as types of values. If a method name is used as a value, its type is implicitly converted to a corresponding function type (\sref{sec:function-types}). 
 
-Extra properties of parameters are as follows: a \lstinline@*@ for variable arguments, \lstinline@**@ for any named arguments and \lstinline@&@ for a captured block argument, or nothing for regular parameters. 
+Extra properties of parameters are as follows: a \lstinline@*@ for variadic parameters, \lstinline@**@ for any named parameters and \lstinline@&@ for a captured block parameter, or nothing for regular parameters. 
 
 \example The declarations
 \begin{lstlisting}
 def a: -> Integer // or def a () -> Integer
-def b (x : Integer): Boolean
-def c (x : Integer): (y : String, z : String) -> String
-def d (^x : Integer): Integer
-def e (*x : Integer): Integer
+def b (x: Integer): Boolean
+def c (x: Integer): (y : String, z : String) -> String
+def d (~x: Integer): Integer
+def e (*x: Integer): Integer
 def f (x: Integer): Unit
 def g (x: Integer)(y: Integer): Integer
 def h (x: Integer): (y: Integer) -> Integer
@@ -677,13 +689,13 @@ def h (x: Integer): (y: Integer) -> Integer
 produce the typings
 \begin{lstlisting}
 a : () $\mapsto$ Integer
-b : (Integer) $\mapsto$ Boolean
-c : (Integer) $\mapsto$ (y: String, z: String) $\mapsto$ String
-d : (@[named_param :x] Integer) $\mapsto$ Integer
-e : (@[repeated_param :x] Integer) $\mapsto$ Integer
-f : (Integer) $\mapsto$ Unit
-g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
-g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
+b : (@[named :x] Integer) $\mapsto$ Boolean
+c : (@[named :x] Integer) $\mapsto$ (y: String, z: String) $\mapsto$ String
+d : (@[named :x] @[purely_named] Integer) $\mapsto$ Integer
+e : (@[named :x] @[variadic] Integer) $\mapsto$ Integer
+f : (@[named :x] Integer) $\mapsto$ Unit
+g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
+g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
 \end{lstlisting}
 
 The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of return types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
@@ -706,7 +718,7 @@ def union[A <: Comparable[A]] (x : Set[A],
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-empty : [A >: Nothing <: Object] () $\mapsto$ List[A]
+empty : [A >: Nothing <: Any] () $\mapsto$ List[A]
 union : [A >: Nothing <: Comparable[A]] (Set[A], 
         Set[A]) $\mapsto$ Set[A]
 \end{lstlisting}
@@ -807,7 +819,7 @@ The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding 
 \section{Any-Value Type}
 \label{sec:any-value-type}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[morekeywords={Any}]
 Simple_Type ::= 'Any'
 \end{lstlisting}
 
@@ -830,7 +842,7 @@ The \code{Any} virtual type is the actual root of the type system of Coral, alth
 \section{Structural Inferred Auto Type}
 \label{sec:auto-type}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[morekeywords={Auto}]
 Simple_Type ::= 'Auto'
 \end{lstlisting}
 

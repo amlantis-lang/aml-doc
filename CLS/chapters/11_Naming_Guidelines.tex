@@ -280,21 +280,21 @@ private method self.very_long_method_name (an_arg: Integer,
 // don't use this indentation
 if ((condition_1 && condition_2)
   || (condition_3 && condition_4)
-  || !(condition_5 && condition_6))
+  || not (condition_5 && condition_6))
   do_something_about_it // this line is easy to miss
 end
 
 // use this indentation instead (notice the extra spaces)
-if (    (condition_1 && condition_2)
-    ||  (condition_3 && condition_4)
-    || !(condition_5 && condition_6))
+if (       (condition_1 && condition_2)
+    ||     (condition_3 && condition_4)
+    || not (condition_5 && condition_6))
   do_something_about_it
 end
 
 // or use this
-if (  (condition_1 && condition_2)
-  ||  (condition_3 && condition_4)
-  || !(condition_5 && condition_6))
+if (     (condition_1 && condition_2)
+  ||     (condition_3 && condition_4)
+  || not (condition_5 && condition_6))
 then
   do_something_about_it // this line is now harder to miss
 end
@@ -356,19 +356,19 @@ Multiple declaration expressions on the same line using a semicolon to separate 
 \example The following shows preferred variable declarations and declarations to be avoided:
 \begin{lstlisting}
 // preferred
-level: Integer
-size: Integer
+val level: Integer
+val size: Integer
 
 // avoid
-level, size: Integer
-level: Integer; size: Integer
+val level, size: Integer
+val level: Integer; size: Integer
 \end{lstlisting}
 
 \example Another acceptable alternative is to align the type names with spaces: 
 \begin{lstlisting}
-level:         Integer
-size:          Integer
-current_entry: Object
+val level:         Integer
+val size:          Integer
+val current_entry: Object
 \end{lstlisting}
 
 

@@ -9,6 +9,7 @@
 \usepackage{fontspec,xltxtra,xunicode,titling,ifpdf}
 \RequirePackage{color}
 \RequirePackage{colortbl}
+\usepackage[usenames,dvipsnames]{xcolor}
 
 \RequirePackage{a4}
 \setlength{\textheight}{22.5cm}
@@ -97,7 +98,7 @@
 \setmainfont[Scale=0.9,Mapping=tex-text]{Iowan Old Style}
 \setromanfont[Scale=0.9,Mapping=tex-text,ItalicFont=Iowan Old Style Italic]{Iowan Old Style}
 \setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Helvetica Neue Condensed Bold}
-\setmonofont[Scale=MatchLowercase,Mapping=]{Menlo}
+\setmonofont[Scale=MatchLowercase,Mapping=]{Fantasque Sans Mono}
 \newfontfamily\headingfont[]{Helvetica Neue Condensed Bold}
 \newfontfamily\chapterfont[]{Helvetica Neue Thin}
 \renewcommand{\maketitlehooka}{\headingfont}
@@ -124,7 +125,7 @@
 % activate the language and predefine settings
 \lstset{
     language=Coral,%
-    xleftmargin=4mm,%
+    xleftmargin=2mm,%
     aboveskip=3mm,%
     belowskip=3mm,%
     fontadjust=true,%
@@ -133,7 +134,7 @@
     basewidth={0.58em, 0.53em},%
     tabsize=4,%
     basicstyle=\renewcommand{\baselinestretch}{0.95}\ttfamily,%
-    commentstyle=\itshape,%
+    commentstyle=\itshape\color{gray},%
     keywordstyle=\bfseries,%
     mathescape=true,%
     captionpos=b,%

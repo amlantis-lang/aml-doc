@@ -134,9 +134,9 @@ If the pattern $p$ has bound variables $x_1 \commadots x_n$ for some $n > 1$:
 val $x$@\$@ := match $e$
   when $p$ then ($x_1 \commadots x_n$)
 end match
-val $x_1$ := $x$@\$@(1)
+val $x_1$ := $x$@\$@._1()
 $\ldots$
-val $x_n$ := $x$@\$@($n$)
+val $x_n$ := $x$@\$@._$n$()
 \end{lstlisting}
 
 \item
@@ -180,8 +180,8 @@ val y := x@\$@
 val x@\$@ := match my_list
   when x ~> xs then (x, xs)
 end match
-val x := x@\$@(1)
-val xs := x@\$@(2)
+val x := x@\$@._1()
+val xs := x@\$@._2()
 \end{lstlisting}
 
 The name of any declared or defined value must not end with ``\lstinline@_=@''. 
