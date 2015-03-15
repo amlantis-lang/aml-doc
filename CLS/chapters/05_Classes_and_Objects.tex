@@ -1436,24 +1436,24 @@ The generated constructors then behave like this:
 \begin{lstlisting}
 constructor (Traffic_Light.Red) (
     val ~a: A, val ~b: B? := nil, val ~c: C)
-  @option: Traffic_Light := .Red
-  @a: A := a
-  @b: B? := b
-  @c: C := c
+  val @option: Traffic_Light := .Red
+  val @a: A := a
+  val @b: B? := b
+  val @c: C := c
 end constructor
 constructor (Traffic_Light.Yellow) (
     val ~a: A, val ~b: B? := nil, val ~d: D)
-  @option: Traffic_Light := .Yellow
-  @a: A := a
-  @b: B? := b
-  @d: D := d
+  val @option: Traffic_Light := .Yellow
+  val @a: A := a
+  val @b: B? := b
+  val @d: D := d
 end constructor
 constructor (Traffic_Light.Green) (
     val ~a: A, val ~b: B? := nil, val ~e: E)
-  @option: Traffic_Light := .Green
-  @a: A := a
-  @b: B? := b
-  @e: E := e
+  val @option: Traffic_Light := .Green
+  val @a: A := a
+  val @b: B? := b
+  val @e: E := e
 end constructor
 \end{lstlisting}
 
