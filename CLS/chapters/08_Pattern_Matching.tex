@@ -20,8 +20,8 @@ Pattern1       ::= ['implicit'] var_id ':' Type_Pat
 Pattern2       ::= ['implicit'] var_id ['@' Pattern3]
                  | Pattern3
 Pattern3       ::= Simple_Pattern {id Simple_Pattern}
-Simple_Pattern ::= ['~' | var_id ':'] '_'
-                 | ['~' | var_id ':'] var_id
+Simple_Pattern ::= ['~' | '**' | var_id ':'] '_'
+                 | ['~' | '**' | var_id ':'] var_id
                  | Literal
                  | Stable_Id
                  | Stable_Id '(' [Patterns] ')' 
@@ -159,7 +159,7 @@ If the primary constructor of a case class has any optional parameters (\sref{se
 Simple_Pattern ::= '(' [Patterns] ')'
 \end{lstlisting}
 
-A tuple pattern ~\lstinline!($p_1 \commadots p_n$)!~ is an alias for the constructor pattern ~\lstinline!Tuple_$n$($p_1 \commadots p_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. 
+A tuple pattern ~\lstinline!($p_1 \commadots p_n$)!~ is an alias for the constructor pattern ~\lstinline!Tuple_$n$($p_1 \commadots p_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. Sub-patterns $p_1 \commadots p_n$ may be named, in which case mapping rules from (\sref{sec:pattern-sequences}) apply. 
 
 
 
@@ -241,10 +241,20 @@ def test_sequence (s: Sequence[Number])
   end match
 end def
 \end{lstlisting}
-This pattern matches sequences of numbers of length at least 2 and does something with the extracted elements. Type of \code{tail} is \code{Sequence[Number]} and is of lengths from 0 to whatever size the operating system allows (it would not be very realistic to say ``infinity'' here, but theoretically, it would be ok). 
+This pattern matches sequences of numbers of length at least 2 and does something with the extracted elements. 
 
 \paragraph{Pattern names}
-Each pattern, which appears inside of a constructor pattern or an extractor pattern, may be given a name, so that the named parameter from a case class constructor, or a simple mapping from the extractor's \code{unapply} method may be used to define which patterns correspond to which parameter or key. The name for a pattern may be given in two forms. First, if the named pattern is a variable name $p$ (maybe followed by a type binding), then the form is ~\lstinline!~$p$!, and the name is the same as the variable name. Second, if a different name is intended for the pattern $p$, or the pattern is not a variable name, then the form is ~\lstinline!$a$: $p$!, where $a$ is the name of the pattern. Named patterns may never appear before any non-named patterns. 
+Each pattern, which appears inside of a constructor pattern or an extractor pattern, may be given a name, so that the named parameter from a case class constructor, or a simple mapping from the extractor's \code{unapply} method may be used to define which patterns correspond to which parameter or key. The name for a pattern may be given in two forms. First, if the named pattern is a variable name $p$ (maybe followed by a type binding), then the form is ~\lstinline!~$p$!, and the name is the same as the variable name. Second, if a different name is intended for the pattern $p$, or the pattern is not a variable name, then the form is ~\lstinline!$a$: $p$!, where $a$ is the name of the pattern. Named patterns may never appear before any non-named patterns, including a sequence wildcard pattern. 
+
+\paragraph{Pattern mappings}
+Patterns are corresponding to elements of a tuple returned from \code{unapply} or \code{unapply_sequence} very much like arguments are corresponding to parameters:
+\begin{enumerate}
+  \item Patterns without a name $p_i$ are mapped in their order of appearance to elements of the tuple, \code{_$i$}. 
+  \item Remaining patterns with a name are mapped to named elements of the tuple. 
+  \item If there are more named elements of the tuple left and there is a pattern prefixed with ``\code{**}'' (i.e. ``\lstinline!**$p_i$!''), then the remaining named elements are mapped to it, with a type of ~\lstinline!Map[Symbol, $S$]!, where $S$ is the union of types of all the remaining named elements. Such pattern is considered to be a named pattern, but does not include a pattern name in its syntax, and should appear as the last in a sequence of named patterns.
+  \item It is an error if a pattern has no element in the tuple left to map to, or if the next remaining tuple element is not named. If the tuple has still more elements to map to, it simply does not match the enclosing extractor or constructor pattern, therefore, the patterns have to be exhausting. It is also an error if a pattern without a name maps to an element of the tuple that is purely named. 
+\end{enumerate}
+If any named elements of the tuple are intended to be ignored, simply use the pattern ``\lstinline!$a$: _!'', or, to ignore all remaining named elements of the tuple, use the pattern ``\lstinline!**_!''. 
 
 
 

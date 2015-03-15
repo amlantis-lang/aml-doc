@@ -261,7 +261,7 @@ The argument expressions $a_1 \commadots a_n$ are said to be corresponding to pa
   
   \item Condition check: after the previous step, if there are any other unassigned arguments, the remaining arguments must be named, and optionally followed by a block argument. 
   
-  \item The remaining named arguments are mapped based on their name to parameters of the same external name (\sref{sec:external-internal-parameter-names}). If the corresponding parameter is a variadic parameter, then rules for the parameter apply (\sref{sec:variadic-parameters}).
+  \item The remaining named arguments are mapped based on their name to parameters of the same external name (\sref{sec:external-internal-parameter-names}). If the corresponding parameter is a variadic parameter, then rules for the parameter apply (\sref{sec:variadic-parameters}). Named arguments are never corresponding to positional parameters without an external name (\sref{sec:external-internal-parameter-names}). 
   
   \item If there are any extra named arguments, and a capturing named parameter is present, those extra named arguments are mapped to it. 
   
