@@ -1172,7 +1172,7 @@ if $e_1$ then $e_2$ else if $e_3$ then $e_4$ $\ldots$ else if $e_n$ then $e_{n+1
 \end{lstlisting}
 Basically, \code{elsif} is a simple syntax sugar for the little longer \code{else if} keyword tokens sequence. 
 
-The alternative conditional expression ~\lstinline!unless $e_1$ then $e_2$ else $e_3$!~ is evaluated as if it was ~\lstinline@if !$e_1$ then $e_2$ else $e_3$@. Unlike in Ruby, the \code{elsif}-part is allowed to appear with this conditional expression. However, there is no syntax sugar for the \code{else unless} keyword tokens sequence. 
+The alternative conditional expression ~\lstinline!unless $e_1$ then $e_2$ else $e_3$!~ is evaluated as if it was ~\lstinline@if not $e_1$ then $e_2$ else $e_3$@. Unlike in Ruby, the \code{elsif}-part is allowed to appear with this conditional expression. However, there is no syntax sugar for the \code{else unless} keyword tokens sequence. 
 
 The modifier-fashion conditional expression ~\lstinline!$e_1$ if $e_2$ else $e_3$!~ is interpreted as if it was ~\lstinline!if $e_2$ then $e_1$ else $e_3$!. Similarly with the \code{unless} version and the short form of the modifier conditional expression (without the explicit \code{else}-part). 
 
@@ -1576,23 +1576,32 @@ Note that the generator expression for dictionary literal comprehension has to g
 \section{Pattern Matching \& Case Expressions}
 
 \syntax\begin{lstlisting}
-Match_Expr     ::= Pat_Match_Expr | Case_Expr
+Match_Expr     ::= Pat_Match_Expr | Case_Expr | Switch_Expr
 Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
-                   [['next'] Else Cond_Block]
+                   [['next'] semi Else Cond_Block]
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
 Case_Expr      ::= 'case' Simple_Expr1 Case_Body
+Switch_Expr    ::= 'switch' Simple_Expr1 Switch_Body
 Case_Body      ::= semi Case_Clauses 'end' ['case']
                  | '{' Case_Clauses '}'
+Switch_Body    ::= semi Switch_Clauses 'end' ['switch']
+                 | '{' Switch_Clauses '}'
 Case_Clauses   ::= Case_Clause {['next'] semi Case_Clause}
-                   [['next'] Else Cond_Block]
+                   [['next'] semi Else Cond_Block]
+Switch_Clauses ::= Switch_Clause {['next'] semi Switch_Clause}
+                   [['next'] semi Else Cond_Block]
 Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Cond_Block
+Switch_Clause  ::= 'when' Switches ('then' | semi) Cond_Block
 Case_Patterns  ::= Case_Pattern {',' Case_Pattern}
+Switches       ::= Switch {',' Switch}
 Case_Pattern   ::= Stable_Id
                  | id
                  | Infix_Expr
+Switch_Scalar  ::= (Literal - Collection_Literal)
+Switch         ::= Switch_Scalar [('..' | '...')  Switch_Scalar]
 \end{lstlisting}
 
 Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given. 
@@ -1601,10 +1610,10 @@ Case expressions
 \begin{lstlisting}
 case $e$ { when $c_1$ then $b_1\ \ldots$ when $c_n$ then $b_n$ else $b_{n+1}$ }
 \end{lstlisting}
-are simplified pattern matching expressions, though they do not use pattern matching at all, but {\em case equality} instead, defined with the method ``\lstinline!===!''. Thus, case expressions do not aim at matching the selector expression $e$, thus decomposing the selector $e$, but rather tests if it falls into a particular set of values, defined using the case equality method, by:
+are simplified pattern matching expressions, though they do not use patterns from pattern matching expressions, but {\em case equality} instead, defined with the method ``\lstinline!===!''. Thus, case expressions do not aim at matching the selector expression $e$, thus decomposing the selector $e$, but rather tests if it falls into a particular set of values, defined using the case equality method, by:
 \begin{itemize}
-\item a type of values ~\lstinline!$c$.`===`($e$)!,
-\item a set of values defined by another value ~\lstinline!$e_1$.`===`($e$)!.
+  \item a type of values ~\lstinline!$c$.`===`($e$)!,
+  \item a set of values defined by another value ~\lstinline!$e_1$.`===`($e$)!.
 \end{itemize}
 
 Let $T$ be the type of the selector expression $e$. The parameter $p_i$ of each invocation of the method ``\lstinline!===!'' is typed with $T$ as its expected type and \code{Boolean} as the return type. It is an error if $T$ does not conform to the actual type of the parameter, as the invocation would not be applicable (\sref{sec:function-applications}). The method ``\lstinline!===!'' may be overloaded for multiple parameter types, then overloading resolution (\sref{sec:overloading-resolution}) applies as usual. 
@@ -1620,6 +1629,34 @@ where $x$ is the parameter name and $T$ is the expected type of the parameter, a
 The expected type of every block $b_i$ is the expected type of the whole pattern matching expression. The type of the pattern matching expression is then the weak least upper bound (\sref{sec:conformance}) of the types of all blocks $b_i$.
 
 Multiple values can define a case pattern, for convenience. Note that no variables are bound from the case pattern to the corresponding block.
+
+A case clause or a switch clause that is not the first appearing may be prefixed with \code{next} on the preceding line, in which case control falls through to its code from the previous case clause or switch clause. 
+
+Switch expressions 
+\begin{lstlisting}
+switch $e$ { when $c_1$ then $b_1\ \ldots$ when $c_n$ then $b_n$ else $b_{n+1}$ }
+\end{lstlisting}
+are extremely simplified pattern matching expressions, though they do not use patterns from pattern matching expressions, but {\em equality} and/or {\em range membership} instead. Therefore, switch expressions do not aim at matching the selector expression $e$, thus decomposing the selector $e$, but rather tests if it falls into a particular set of values, defined using the equality or range membership:
+\begin{itemize}
+  \item number types are matched based on their value,
+  \item string types are matched based on their hash code,
+  \item boolean types are considered \code{1} for \code{yes} and \code{0} for \code{no}.
+\end{itemize}
+
+Compiler adds extra code to determine the value to switch on if the switched expression is of an unknown type, or not of one of the mentioned types. Generally, there are two internal kinds of switch instructions:
+\begin{enumerate}
+  \item Single entry switch table, for switch expressions without ranges,
+  \item Triplet entry switch table, for switch expressions with ranges, where the triplet consists of the two marginal values and an indicator whether the range is inclusive or exclusive of the upper limit. 
+\end{enumerate}
+
+Switch expressions therefore do not involve any other implicit conversions or user code evaluation, other than that required to get the value to switch on. If a switch branch uses a guard, that guard becomes a part of the conditional expression that follows. 
+
+\paragraph{Difference from Java etc}
+Java (and countless other languages) does not allow switching on other values than integral numbers (and strings since Java 1.7), where Coral allows all scalar literals, including floating point numbers. It is quite unreliable to switch on floating point numbers, due to rounding errors, whereas switching on fixed point numbers is sort of more reliable. Both switching on floating point numbers and fixed point numbers should only be involved in switch expressions with ranges. 
+
+\paragraph{NaN in a switch}
+The {\em not a number} (\code{Number.NaN}) value is treated specially in switch expressions -- it simply never matches anything else but the \code{else} branch. The comparisons of values involved are safe from errors that could be raised from regular unsuspecting comparison with a \code{NaN} value. 
+
 
 
 

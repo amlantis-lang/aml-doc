@@ -371,7 +371,7 @@ Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
-                   [['next'] Else Block]
+                   [['next'] semi Else Block]
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Block
 \end{lstlisting}
 
@@ -385,15 +385,17 @@ Let $T$ be the type of the selector expression $e$. Every pattern $e \in \{ p_1 
 
 The expected type of every block $b_i$ is the expected type of the whole pattern matching expression. The type of the pattern matching expression is then the weak least upper bound (\sref{sec:weak-conformance}) of the types of all blocks $b_i$. 
 
-When applying a pattern matching expression to a selector value, patterns are tried in given order, until one is found that matches the selector value. Say this \code{when} clause is ~\lstinline!when $p_i$ then $b_i$!. The result of the whole expression is then the result of evaluating $b_i$, where all pattern variables of $p_i$ are bound to the corresponding parts of the selector value. If no matching pattern is found, a \code{No_Match_Error} is raised. 
+When applying a pattern matching expression to a selector value, patterns are tried in given order, until one is found that matches the selector value. Say this \code{when} clause is ~\lstinline!when $p_i$ then $b_i$!. The result of the whole expression is then the result of evaluating $b_i$, where all pattern variables of $p_i$ are bound to the corresponding parts of the selector value. If no matching pattern is found, a \code{No_Match} is raised. 
 
 The pattern in a \code{when} clause may also be followed by a guard suffix ~\lstinline!if $e$! with a boolean expression $e$. The guard expression is evaluated if the preceding pattern in the case matches. If the guard expression evaluates to \code{yes}, the pattern match succeeds as normal. If the guard expression evaluates to \code{yes}, the pattern in the case is considered not to match and the search for a matching pattern continues. 
 
-The pattern in a case may also be followed by a guard suffix ~\lstinline!unless $e$! with a boolean expression $e$. The guard expression is evaluated as if it was ~\lstinline@if !$e$@. 
+The pattern in a case may also be followed by a guard suffix ~\lstinline!unless $e$! with a boolean expression $e$. The guard expression is evaluated as if it was ~\lstinline@if not $e$@. 
 
 In the interest of efficiency the evaluation of a pattern matching expression may try patterns in some other order than the textual sequence, even parallelized (indeed, compiler would not decide this on its own -- it has to be specified with an annotation or a pragma (\sref{sec:annotations}) applied to the pattern matching expression). This might affect evaluation through side effects in guards. However, it is guaranteed that a guard expression is evaluated only if the pattern it guards matches.
 
-If the selector of a pattern match is an instance of a \code{sealed} class (\sref{sec:modifiers}), the compilation of the pattern matching expression can emit warnings, which diagnose that a given set of patterns is not exhaustive, i.e. there is a possibility of a \code{No_Match_Error} being raised at runtime. 
+If the selector of a pattern match is an instance of a \code{sealed} class (\sref{sec:modifiers}), the compilation of the pattern matching expression can emit warnings, which diagnose that a given set of patterns is not exhaustive, i.e. there is a possibility of a \code{No_Match} being raised at runtime. 
+
+A when clause that is not the first appearing may be prefixed with \code{next} on the preceding line, in which case control falls through to its code from the previous when clause, but only if the prefixed when clause does not bind any variables that are not present in the preceding when clause. A bound variable is present in the preceding when clause if its inferred or bound type is equivalent to the inferred or bound type of a bound variable in the prefixed clause with the same name. The variables in the prefixed when clause are persisted from the preceding when clause. 
 
 
 

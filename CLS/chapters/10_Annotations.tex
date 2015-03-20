@@ -80,7 +80,7 @@ object Asserts {
       (c: Context)
       (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit :=
     `(
-      if !#{cond}
+      unless #{cond}
         raise #{msg}
       else
         ()
