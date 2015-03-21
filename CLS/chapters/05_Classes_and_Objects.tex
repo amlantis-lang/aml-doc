@@ -1305,7 +1305,7 @@ An enum constant can be enhanced with custom parameters, which are then passed t
 \syntax\begin{lstlisting}
 Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'unit-of-measure' 
                    [semi Unit_Convs {semi Unit_Convs}]
-Unit_Name      ::= id ['extends' id]
+Unit_Name      ::= id - Unit_Op ['extends' id - Unit_Op]
 Unit_Convs     ::= Unit_Name ':=' Unit_Conv
 Unit_Conv      ::= '(' Unit_Conv ')'
                  | Unit_Elem [Unit_Op Unit_Elem]
@@ -1315,6 +1315,9 @@ Unit_Op        ::= '*' | '/' | '^'
 \end{lstlisting}
 
 Numbers in Coral can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
+
+\paragraph{Syntax exception}
+Unlike most identifiers, names of units of measures are forbidden from using \code{Unit_Op} characters in their names, and with respect to that, these characters do not need to be separated by spaces from their operands, where units of measure name are expected, comprising of (\sref{sec:unitsofmeasuresyntax}) and (\sref{sec:parameterized-types}).
 
 \example The following defines the measure \code{cm} (centimeter).
 \begin{lstlisting}

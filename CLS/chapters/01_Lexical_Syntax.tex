@@ -74,30 +74,31 @@ The following names are the reserved words.
 \begin{lstlisting}
 abstract      advice        advice-execution            after
 alias         annotation    arguments     around        as
-aspect        assert        begin         before        bitfield
-break         broken        case          catch         class
-clone         cloned        constant      constraint    constructor
-declare       def           delta         destructor    digits
-do            else          elsif         end           ensure
-enum          execution     exhausted     extends       final
-for           for-some      function      get           goto
-handler       if            implements    implicit      in
-include       interface     invariant     invoke        is
-label         lazy          let           loop          macro
-match         memoize       message       method        module
-native        next          nil           no      not   object
-of            opaque        operator      optional      origin
-otherwise     out           override      pointcut      pragma
-prepend       private       property      protected     protocol
-public        raise         raising       range         record
-redo          refine        refinement    rescue        retry
-return        returning     requires      reverse       sealed
-self          set           skip          soft          step
-super         switch        target        then          this
-throw         throwing      trait         transparent   type
-unless        unowned       until         union         unit-of-measure
-use           val           var           yes           weak
-when          while         with          yield
+aspect        assert        atomic        begin         before
+bitfield      break         broken        case          catch
+class         clone         cloned        constant      constraint
+constructor   declare       def           delta         destructor
+digits        do            else          elsif         end
+ensure        enum          execution     exhausted     extends
+final         for           for-some      function      get
+goto          handler       if            implements    implicit
+in            include       interface     invariant     invoke
+is            label         lazy          let           loop
+macro         match         memoize       message       method
+module        native        next          nil           no
+not           object        of            opaque        operator
+optional      origin        otherwise     out           override
+pointcut      pragma        prepend       private       property
+protected     protocol      public        raise         raising
+range         record        redo          refine        refinement
+rescue        retry         return        returning     requires
+reverse       sealed        self          set           skip
+soft          step          super         switch        target
+then          this          throw         throwing      trait
+transparent   type          undefined     unless        unowned
+until         union         unit-of-measure             use
+val           var           yes           weak          when
+while         with          yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
@@ -191,6 +192,7 @@ Literal ::= integer_literal
 	      | regular_expression_literal
 	      | Collection_Literal
 	      | 'nil'
+	      | 'undefined'
 \end{lstlisting}
 
 
@@ -299,7 +301,7 @@ hex_exp         ::= 'p'
 float_type      ::= 'f' | 'd' | 'q' | 'df'
 \end{lstlisting}
 
-Floating point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Floating point literals that have \lstinline@float_type@ of ``\code{df}'' are decimal fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly fixed point literals, unless specifically converted to a floating point type. From \code{Number}'s user perspective, this is only an implementation detail. 
+Floating point and fixed point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Literals that have \lstinline@float_type@ of ``\code{df}'' are ({\em d}ecimal) {\em f}ixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly inferred to be fixed point literals, unless specifically converted to a floating point type or using a \code{float_type} of either \code{f} or \code{d}. From \code{Number}'s user perspective, this is only an implementation detail. 
 
 \begin{enumerate}
 
@@ -341,12 +343,35 @@ complex_literal     ::= [real_number_literal ('+' | '-') ]
 	                  | imaginary_literal ('+' | '-') 
 	                    real_number_literal
 real_number_literal ::= integer_literal | float_literal
+\end{lstlisting}
+
+Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{+}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
+
+
+
+
+
+\subsection{Rational Number Literals}
+\label{sec:rationalliterals}
+
+\syntax\begin{lstlisting}
+rat_suffix_literal  ::= real_number_literal 'r'
+rational_literal    ::= real_number_literal '/' 
+                        rat_suffix_literal
 number_literal      ::= real_number_literal
 	                  | imaginary_literal
 	                  | complex_literal
+	                  | rational_literal
 \end{lstlisting}
 
-Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Complex_Number}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{+}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}). 
+Rational number literals are of type \code{Number}, and have a container type \code{Number.Rational}, which has further methods of creating instances of itself. There are also methods in \code{Number}, such as \code{/-}, which results in a rational number. Rational numbers have sort of increased accuracy of operations, especially when component types are integral types. 
+
+\example Some literal notations and methods that result in rational numbers. 
+\begin{lstlisting}
+val a := 1 / 3r
+val b := 1 /- 3
+val c := Rational(1, 3)
+\end{lstlisting}
 
 
 
@@ -360,6 +385,15 @@ Coral has an addition to number handling, called {\em units of measure} (\sref{s
 \syntax\begin{lstlisting}
 annotated_number ::= number_literal '[<' uom_expr '>]'
 uom_expr         ::= Unit_Conv {',' Unit_Conv}
+\end{lstlisting}
+
+\example Some number literals annotated with units of measure:
+\begin{lstlisting}
+var min_motorway_speed := 90 [<km/hour>]
+// in the end, same as:
+var distance := 90 [<km>]
+var time := 1 [<hour>]
+min_motorway_speed := distance /- time
 \end{lstlisting}
 
 
@@ -429,14 +463,28 @@ Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ litera
 \label{sec:stringliterals}
 
 \syntax\begin{lstlisting}
-string_literal              ::= '"' {int_string_element} '"'
-string_element              ::= printable_char | char_escape_seq
-int_string_element          ::= string_element | interpolated_expr
-interpolated_expr           ::= '#{' Expr '}'
+string_literal      ::= int_string_literal
+                      | raw_string_literal
+int_string_literal  ::= '"' {int_string_element} '"'
+                      | '%'  [str_flags] '"' {int_string_element} '"'
+raw_string_literal  ::= '%r' [str_flags] '"' {string_element} '"'
+string_element      ::= printable_char | char_escape_seq
+int_string_element  ::= string_element | interpolated_expr
+interpolated_expr   ::= '#{' Expr '}'
+str_flags           ::= 'm' | 'i'
 \end{lstlisting}
 
-String literals are members of the type \lstinline@String@. Single quotes in simple string literals have to be escaped (\lstinline@\'@) and double quotes in interpolable string literals have to be escaped (\lstinline@\"@). Interpolated expression can be preceded only by an even number of escape characters (backslashes, \lstinline@\@), so that the \lstinline@#@ does't get escaped. This is a special \textit{requirement} for any Coral compiler. 
+String literals are members of the type ~\lstinline@String@. Double quotes in interpolable string literals have to be escaped (\lstinline@\"@).
 
+String literals appear in multiple forms:
+\begin{itemize}
+  \item {\em Raw strings} are of the form ~\lstinline!%r$f$"$s$"!. There are no interpolated expressions. If a sequence of string elements appears to be an interpolated expression, it is not, and is instead treated as a part of the raw string as it is. 
+  \item {\em Interpolable strings} are of the forms ~\lstinline!"$s$"!~ and ~\lstinline!%$f$"$s$"!. Interpolated expressions can appear there, if its introducing character is not escaped by an odd number of backslashes. Interpolated expressions are evaluated, converted to \code{String_Like} and their result inserted at each place in the string where they appear, safely. 
+  \item {\em Immutable strings} are all strings that do not carry the flag \code{m} (\textbf{m}utable). The flag \code{i} (\textbf{i}mmutable) is redundant in this manner, and is only provided for completeness. 
+  \item {\em Mutable strings} are only those strings that carry the flag \code{m}. Immutable strings may be converted to mutable strings and vice versa by use of appropriate methods. 
+\end{itemize}
+
+In each form, $s$ is the string content, and $f$ are string flags, as defined. 
 
 
 
@@ -562,7 +610,7 @@ Tokens may be separated by whitespace characters and/or comments. Comments come 
 
 A single-line comment is a sequence of characters that starts with \lstinline@//@ and extends to the end of the line. 
 
-A multi-line comment is a sequence of characters between \lstinline@/*@ and \lstinline@*/@. Multi-line comments may be nested. 
+A multi-line comment is a sequence of characters between \lstinline@/* and */@. Multi-line comments may be nested. 
 
 Documentation comments are multi-line comments that start with \lstinline@/*!@. 
 

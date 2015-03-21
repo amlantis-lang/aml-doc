@@ -81,31 +81,43 @@ The second line of syntax merely emphasizes that it is legal to add type argumen
 
 
 
-\subsection{The Nil Value}
+\subsection{The Nil and Undefined Values}
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= 'nil'
+               | 'undefined'
 \end{lstlisting}
 
 The \code{nil} value is of type \code{Nothing}, and is thus compatible with every type that is nullable (\sref{sec:nullable-types}).
 
+The \code{undefined} value is of type \code{Undefined}, a subtype of \code{Nothing}, and is thus also compatible with every type that is nullable (\sref{sec:nullable-types}). 
+
 The \code{nil} represents a ``no object'', and is itself represented by an object. This object overrides methods in \code{Object} or defines them as follows: 
 \begin{itemize}
-\item 
-\lstinline!equals($x$)! and \lstinline!=($x$)! return \code{yes} if the argument $x$ is also the \code{nil} object. 
+  \item \lstinline!equals($x$)! and \lstinline!=($x$)! return \code{yes} if the argument $x$ is also the \code{nil} object. 
 
-\item 
-\lstinline!/=($x$)! return \code{yes} if the argument $x$ is not the \code{nil} object.
+  \item \lstinline!/=($x$)! return \code{yes} if the argument $x$ is not the \code{nil} object.
 
-\item
-\lstinline[mathescape=false]!as_instance_of[$T]()! returns always \code{nil}. 
+  \item \lstinline[mathescape=false]!as_instance_of[$T]()! returns always \code{nil}. 
 
-\item
-\lstinline!hash_code()! returns \code{0}. 
+  \item \lstinline!hash_code()! returns \code{0}. 
 \end{itemize}
 
-A reference to any other member of the \code{nil} object causes \code{Method_Not_Found_Error} or \code{Member_Not_Found_Error} to be raised, unless the member in fact exists.\footnote{It is even possible to use a refinement to actually implement some methods of \code{nil} locally (preferred approach), or globally implement those methods (discouraged, causes warnings).} 
+A reference to any other member of the \code{nil} object causes \code{Member_Not_Found} to be raised, unless the member in fact exists. The \code{nil} object is not frozen by default, but the CSL guarantees to never edit it. 
 
+The \code{undefined} represents also ``no object'', being itself represented by an object, but also represents ``undefined value'', which could be any of the following:
+\begin{itemize}
+  \item Undefined dynamically accessed instance variable or class object variable. This is a common case. 
+  \item Undefined values for keys in implementations of \code{Map}. This is also a common case, if the \code{nil} object is to be considered a legit value. 
+  \item Undefined type argument.
+  \item Rarely, undefined value or variable. Could happen if there is an extreme error in a macro, or basically a bug in the language. 
+\end{itemize}
+
+The \code{undefined} object is frozen by default; it is not equal to \code{nil}, but \code{Nothing === undefined} results in \code{yes} and \code{Undefined === nil} results in \code{no}. The recommended approach for testing whether an expression results in \code{undefined} is using typed expression: \code{maybe_value is not Undefined} or \code{maybe_value is Undefined}. Explicit literal use of the \code{undefined} object should be avoided when possible, and definitely not used in place where \code{nil} is sufficient. 
+
+Implicit conversions to the \code{Undefined} type are forbidden. The \code{Undefined} type is also forbidden to appear in type bindings (except for typed expressions, obviously). 
+
+Defined values and variables may not be undefined by assigning them with the \code{undefined} object directly by user code, but it is important to note that this may happen on special occasions indirectly, most notably during hot code loading, e.g. if the definition of an instance variable goes missing from the new code version. 
 
 
 
@@ -131,9 +143,9 @@ For other expressions $e$, ~\lstinline!$e$.$x$!~ is typed as if it was ~\lstinli
 
 The selection ~\lstinline!$e$.?$x$!~ is typed as if it was 
 \begin{lstlisting}
-{ val $y$ := $e$; if $y$ /= nil then $y$.$x$ else nil }
+{ val $y$ := $e$; if Nothing !=== $y$ then $y$.$x$ else nil }
 \end{lstlisting}
-for some fresh name $y$; also called {\em safe navigation} or {\em safe selection}. 
+for some fresh name $y$; also called {\em safe navigation} or {\em safe selection}; \code{!===} is the negated result of \code{===} used in (\sref{sec:case-exprs}).
 
 The expected type of a designator's prefix is undefined. The type of a designator is the type $T$ of the entity it refers to. 
 
@@ -786,6 +798,7 @@ a + b     // addition
 a - b     // subtraction
 a * b     // multiplication
 a / b     // floating/fixed point division
+a /- b    // rational division
 a div b   // integral division
 a mod b   // modulo
 a quot b  // quotient
@@ -1148,7 +1161,7 @@ Else             ::= 'else' | 'otherwise'
 Condition        ::= Simple_Expr1 | Pat_Var_Def
 \end{lstlisting}
 
-The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} object converts always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
+The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} and \code{undefined} objects convert always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
 
 The conditional expression is evaluated by evaluating first $e_1$. If this evaluates to \code{true}, the result of evaluating $e_2$ is returned, otherwise the result of evaluating $e_3$ is returned. 
 
@@ -1574,6 +1587,7 @@ Note that the generator expression for dictionary literal comprehension has to g
 
 
 \section{Pattern Matching \& Case Expressions}
+\label{sec:case-exprs}
 
 \syntax\begin{lstlisting}
 Match_Expr     ::= Pat_Match_Expr | Case_Expr | Switch_Expr

@@ -54,9 +54,9 @@ Let's talk about Java. Java uses static typing -- but, in a very limited and unf
 
 Let's talk about Ruby. Ruby uses dynamic typing -- but, using types blindly can possibly lead to some confusion. Ruby is amazing though, because you can write programs with it really fast and enjoy the process at the same time. But when it comes to type safety, you need to be careful. 
 
-And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing in most cases. But, it allows to opt-in for some dynamic typing. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and return types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. In face of static typing in Coral, \textit{no type} specified or inferred is saying that the value is of the special type \code{Any}, which represents any type. 
+And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Any}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and return types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. 
 
-While Coral is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a {\em cached binding} would change, it is ok -- as long as the new binding would conform to the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Coral interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state with dynamic typing), or if the cached version does not match the actual version of the bound type. This mechanism is also used for caching methods, not only types.
+While Coral is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a {\em cached binding} would change, it is ok -- as long as the new binding would be compatible with the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Coral interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state with dynamic typing), or if the cached version does not match the current version of the bound type. This mechanism is also used for caching methods, not only types.
 
 Types in Coral are represented by objects that are members of the \code{Type} type. Instances of value types are represented by objects that are members of the \code{Class} type. 
 
@@ -588,9 +588,11 @@ Type          ::= Type Nullable_Mod
 Nullable_Mod  ::= '?'
 \end{lstlisting}
 
-A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Coral types are implicitly not-nullable, meaning it's not possible to pass \code{nil} where an instance of $T$ is expected, unless $T$ is indeed \code{Nothing}. 
+A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Coral types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
 
-If an implicit conversion from \code{nil} to $T$ is available, then nullability is ignored. 
+A block of code (or whole files or modules) may opt-in to behaviour that raises errors in runtime, instead of issuing warnings, using \code{pragma Error_on_Nil} inside the code block, file or module. 
+
+If an implicit conversion from \code{Nothing} to $T$ is available, then nullability is not a problem. 
 
 Nullable types in this form can appear everywhere where a type is expected. 
 
@@ -602,6 +604,7 @@ type Nullable [T] is union of (
 ) end type
 \end{lstlisting}
 
+When a method is applied on a variable containing \code{nil}, the standard \code{Member_Not_Found} may occur, if the method is really not found in the class \code{Nothing} or in any of implicit conversions from \code{Nothing} (e.g., \code{Nothing} has an implicit conversion to the option type \code{None}). 
 
 
 
