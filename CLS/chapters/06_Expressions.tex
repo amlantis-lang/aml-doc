@@ -103,7 +103,7 @@ The \code{nil} represents a ``no object'', and is itself represented by an objec
   \item \lstinline!hash_code()! returns \code{0}. 
 \end{itemize}
 
-A reference to any other member of the \code{nil} object causes \code{Member_Not_Found} to be raised, unless the member in fact exists. The \code{nil} object is not frozen by default, but the CSL guarantees to never edit it. 
+A reference to any other member of the \code{nil} object causes \code{Member_Not_Found} to be raised, unless the member in fact exists. The \code{nil} object is also frozen by default. 
 
 The \code{undefined} represents also ``no object'', being itself represented by an object, but also represents ``undefined value'', which could be any of the following:
 \begin{itemize}
@@ -112,10 +112,6 @@ The \code{undefined} represents also ``no object'', being itself represented by 
   \item Undefined type argument.
   \item Rarely, undefined value or variable. Could happen if there is an extreme error in a macro, or basically a bug in the language. 
 \end{itemize}
-
-The \code{undefined} object is frozen by default; it is not equal to \code{nil}, but \code{Nothing === undefined} results in \code{yes} and \code{Undefined === nil} results in \code{no}. The recommended approach for testing whether an expression results in \code{undefined} is using typed expression: \code{maybe_value is not Undefined} or \code{maybe_value is Undefined}. Explicit literal use of the \code{undefined} object should be avoided when possible, and definitely not used in place where \code{nil} is sufficient. 
-
-Implicit conversions to the \code{Undefined} type are forbidden. The \code{Undefined} type is also forbidden to appear in type bindings (except for typed expressions, obviously). 
 
 Defined values and variables may not be undefined by assigning them with the \code{undefined} object directly by user code, but it is important to note that this may happen on special occasions indirectly, most notably during hot code loading, e.g. if the definition of an instance variable goes missing from the new code version. 
 
@@ -248,7 +244,7 @@ If none of $e_i$ is purely a named argument, and $f$ accepts a single parameter 
 \subsection{Argument Evaluation Strategies}
 \label{sec:arg-eval-strategies}
 
-Coral defers evaluation of arguments up to the point of function application, and happens then as specified in parameter evaluation strategies (\sref{sec:param-eval-strategies}). The type that each argument is type-checked against the corresponding parameter type (defined as follows) is the expected type of the argument expression, i.e. not its actual concrete type, which is known only after its evaluation. If the expected type is undefined, then \code{Object} is assumed. Typed expressions (\sref{sec:typed-expressions}) may be used to give the argument expression a concrete expected type. When the argument expression is evaluated, it is evaluated as if it were in the scope of the function application (which it is), so that visibility rules from that scope apply. 
+Coral defers evaluation of arguments up to the point of function application, and happens then as specified in parameter evaluation strategies (\sref{sec:param-eval-strategies}). The type that each argument is type-checked against the corresponding parameter type (defined as follows) is the expected type of the argument expression, i.e. not its actual concrete type, which is known only after its evaluation. If the expected type is undefined, then \code{Any} is assumed. Typed expressions (\sref{sec:typed-expressions}) may be used to give the argument expression a concrete expected type. When the argument expression is evaluated, it is evaluated as if it were in the scope of the function application (which it is), so that visibility rules from that scope apply. 
 
 
 
@@ -684,7 +680,7 @@ nary_op_id  ::= '?' {opchar}
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [(id | op_id) Infix_expr]
               | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
-Prefix_Expr ::= [op_id] Simple_Expr
+Prefix_Expr ::= [op_id | 'not'] Simple_Expr
 \end{lstlisting}
 
 Expressions can be constructed from operands and operators. 
@@ -697,7 +693,9 @@ Expressions can be constructed from operands and operators.
 
 A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, unlike in Scala, but must not be followed by any whitespace, only identifiers or parentheses. The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). 
 
-There is also a keyword prefix operator: \code{not}, which must be followed by a whitespace and is always prefix. 
+There is also a keyword prefix operator: \code{not}, which must be followed by a whitespace and is always prefix.
+
+The precedence of prefix operators is higher than that of infix operators (\sref{sec:infix-operations}). For example, the source input sequence \code{-sin(x)} is read as \code{-(sin(x))}, which is in turn read as \code{sin.apply(x).`-`()}, whereas the function application \code{negate sin(x)} would be parsed as \code{negate(sin(x))}, using poetry-style arguments\footnote{Yes, this is different from Scala, and, although arguably, even better.}. To further emphasize the precedence of prefix operators, \code{-a + b} is read as \code{-(a) + b}, and \code{-(a + b)} as just that. 
 
 
 
@@ -791,6 +789,13 @@ Infix operations can be grouped together. If there is an even number of expressi
 
 
 \subsubsection{Standard Operators}
+
+Language-reserved operators:
+\begin{lstlisting}
+a == b       // value identity
+a /== b      // not identical
+not (a == b) // quite the same as not identical
+\end{lstlisting}
 
 Standard arithmetic operators:
 \begin{lstlisting}

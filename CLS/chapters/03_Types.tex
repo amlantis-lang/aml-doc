@@ -1130,6 +1130,82 @@ Reified types have some major effects on programs in Coral:
 
 
 
+\section{Types Representing Emptiness}
+\label{sec:emptiness}
+
+In Coral, there are a few types and their values that represent emptiness of some sort. The following lists specifies their semantical purposes. 
+
+\begin{enumerate}
+  \item The \code{Nothing} type. It represents a missing object in places where an object is expected. 
+  
+  The type has just one inhabitant, and that is the frozen \code{nil} value. 
+  
+  \item The \code{Undefined} type. It represents a missing object in places where an object is expected, but its source is not defined. This applies to non-defined instance variables, undefined variables, or undefined mappings in, e.g., \code{Map} implementations. 
+  
+  The type has just one inhabitant, and that is the frozen \code{undefined} value, which is equal to, but not identical to \code{nil}. 
+  
+  The semantical difference between a \code{nil} and \code{undefined} in context of, e.g., \code{Map} implementations is that \code{nil} is returned if the map contains the given key, but has \code{nil} assigned to it on purpose, whereas \code{undefined} means there was no mapping defined. 
+  
+  Coral forbids access to undefined local variables during compilation, unlike e.g. JavaScript. 
+  
+  \item The \code{None} case object. It is a subtype of \code{Option[$T$]} and represents the exact same thing as \code{Nothing}, but has the extra semantical meaning of ``being ready to handle missing values'', which non-nullable types do not represent -- those expect a value to be present and cause errors when it is not present. 
+  
+  The \code{None} case object is primarily designed to be used with pattern matching, and also plays an important internal part in Coral's implementation of pattern matching. 
+  
+  Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Predef} (\sref{sec:predef}), and results in \code{None}. 
+  
+  \item The \code{Unit} type. It is basically a \code{Tuple_0} type. 
+  
+  It's semantical meaning is that no value is even expected. It is used for functions that should never return any value, and that are technically procedures, whose purpose lies in side-effects. 
+  
+  The type has just one inhabitant, the ``\code{()}'' value, also known as an empty tuple. 
+  
+  There are no implicit conversions from \code{Unit} to any other type defined by Coral. 
+\end{enumerate}
+
+The following lines show some common relations between empty values. 
+\begin{lstlisting}
+nil = undefined  // yes
+nil == undefined // no
+nil = None       // no
+undefined = None // no
+() = undefined   // no
+() = nil         // no
+
+Nothing === nil         // yes
+Nothing === undefined   // yes
+Nothing === ()          // no
+Undefined === nil       // no
+Undefined === undefined // yes
+Undefined === ()        // no
+Unit === nil            // no
+Unit === undefined      // no
+Unit === ()             // yes
+
+val nothing := nil
+match nothing {
+  when Some(x) then () // does not match
+  when None then ()    // matches
+}
+
+val nothing := get_undefined // a function that returns `undefined'
+match nothing {
+  when Some(x) then () // does not match
+  when None then ()    // matches
+}
+
+val unit = ()
+match unit {
+  when Some(x) then () // does not match, 
+                       // also compilation warning, because Unit 
+                       // is not compatible to Option[T]
+  when None then ()    // does not match, also not compatible
+  when Unit then ()    // matches
+}
+\end{lstlisting}
+
+
+
 
 
 
