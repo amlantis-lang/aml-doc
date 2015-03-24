@@ -419,7 +419,7 @@ An assignment to an output parameter that was released is a no-op, and issues a 
 A curried function can appear in two distinct forms:
 \begin{itemize}
   \item[] {\em Implicitly curried form}, which is defined by using multiple parameters lists. 
-  \item[] {\em Explicitly curried form}, which is defined by using function types as return types of functions, or simply by returning a function from within a function. Those have no special treatment, e.g. in regard of overloading resolution. 
+  \item[] {\em Explicitly curried form}, which is defined by using function types as result types of functions, or simply by returning a function from within a function. Those have no special treatment, e.g. in regard of overloading resolution. 
 \end{itemize}
 
 Each form has some implications on function applications. 
@@ -1639,7 +1639,7 @@ are simplified pattern matching expressions, though they do not use patterns fro
   \item a set of values defined by another value ~\lstinline!$e_1$.`===`($e$)!.
 \end{itemize}
 
-Let $T$ be the type of the selector expression $e$. The parameter $p_i$ of each invocation of the method ``\lstinline!===!'' is typed with $T$ as its expected type and \code{Boolean} as the return type. It is an error if $T$ does not conform to the actual type of the parameter, as the invocation would not be applicable (\sref{sec:function-applications}). The method ``\lstinline!===!'' may be overloaded for multiple parameter types, then overloading resolution (\sref{sec:overloading-resolution}) applies as usual. 
+Let $T$ be the type of the selector expression $e$. The parameter $p_i$ of each invocation of the method ``\lstinline!===!'' is typed with $T$ as its expected type and \code{Boolean} as the result type. It is an error if $T$ does not conform to the actual type of the parameter, as the invocation would not be applicable (\sref{sec:function-applications}). The method ``\lstinline!===!'' may be overloaded for multiple parameter types, then overloading resolution (\sref{sec:overloading-resolution}) applies as usual. 
 
 The method ``\lstinline!===!'' is defined basically as follows:
 \begin{lstlisting}
@@ -1788,7 +1788,7 @@ In this example, each line captures the current continuation, with unlimited sco
 
 Since invoking the continuation changes history and the return value of \code{call/cc}, the values passed as arguments to its invocation are limited to the expected type of the original application of \code{call/cc}. It is an error if a continuation is invoked with a value of an incompatible type. A similar restriction applies to delimited continuations as well. 
 
-There is no requirement for functions that use unlimited continuations to define their return type with any special annotations regarding continuation passing style -- there would not be any result type available, since the whole remaining program is the result. 
+There is no requirement for functions that use unlimited continuations to define their result type with any special annotations regarding continuation passing style -- there would not be any result type available, since the whole remaining program is the result. 
 
 The initial application of \code{call/cc} returns whatever the given block returns, and such value has to be compatible with the expected type of the \code{call/cc} application. If the block itself invokes the continuation, then its return value is discarded and replaced with the arguments of the continuation invocation. 
 

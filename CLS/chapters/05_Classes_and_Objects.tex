@@ -569,7 +569,7 @@ Access modifiers may appear in two forms:
 Such a modifier appears in a template (\sref{sec:templates}) or a module definition (\sref{sec:modules}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Only access modifiers can be used this way. 
 
 \paragraph{\em Directly applied modifier}
-Such a modifier appears on a line preceding a member to which the modifier is solely applied, or a list of arguments with symbols that the modifier will be applied to. A directly applied modifier expression has a return type of \code{Symbol}, so that it may be used as a regular function and chained. 
+Such a modifier appears on a line preceding a member to which the modifier is solely applied, or a list of arguments with symbols that the modifier will be applied to. A directly applied modifier expression has a result type of \code{Symbol}, so that it may be used as a regular function and chained. 
 
 \example An example of an accessibility flag modifier:
 \begin{lstlisting}
@@ -1039,13 +1039,13 @@ def unapply[$\tps$]($x$: $c$[$\tps$]?): Boolean := x /= nil
 For each case of a value parameter list of $n$ parameters, the \code{unapply} returns these types: 
 \begin{itemize}
 \item
-For $n = 0$, ~\lstinline!Boolean!~ is the return type. 
+For $n = 0$, ~\lstinline!Boolean!~ is the result type. 
 
 \item
-For $n = 1$, ~\lstinline!Option[$\Tp_1$]!~ is the return type, where $\Tp_1$ is the type of the only parameter in the first parameter section. 
+For $n = 1$, ~\lstinline!Option[$\Tp_1$]!~ is the result type, where $\Tp_1$ is the type of the only parameter in the first parameter section. 
 
 \item
-For $n \geq 1$, ~\lstinline!Option[($\Tp_1 \commadots \Tp_n$)]!~ is the return type, where $\Tp_i$ is the type of the $i^{\superth}$ parameter of the first parameter section. Notice that the \code{Option} is parameterized with a tuple type (\sref{sec:tuple-types}). This allows for the \code{apply} method of \code{Some} to accept a tuple of arguments while accepting a single argument only. 
+For $n \geq 1$, ~\lstinline!Option[($\Tp_1 \commadots \Tp_n$)]!~ is the result type, where $\Tp_i$ is the type of the $i^{\superth}$ parameter of the first parameter section. Notice that the \code{Option} is parameterized with a tuple type (\sref{sec:tuple-types}). This allows for the \code{apply} method of \code{Some} to accept a tuple of arguments while accepting a single argument only. 
 \end{itemize}
 
 A method named \code{copy} is implicitly added to every case class, unless the case class already has a matching one, or the class has a repeated parameter. The method is defined as follows:

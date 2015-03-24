@@ -54,7 +54,7 @@ Let's talk about Java. Java uses static typing -- but, in a very limited and unf
 
 Let's talk about Ruby. Ruby uses dynamic typing -- but, using types blindly can possibly lead to some confusion. Ruby is amazing though, because you can write programs with it really fast and enjoy the process at the same time. But when it comes to type safety, you need to be careful. 
 
-And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Any}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and return types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. 
+And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Any}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and result types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. 
 
 While Coral is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a {\em cached binding} would change, it is ok -- as long as the new binding would be compatible with the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Coral interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state with dynamic typing), or if the cached version does not match the current version of the bound type. This mechanism is also used for caching methods, not only types.
 
@@ -372,7 +372,7 @@ The keyword \code{refinement} instructs that the following tokens will be a part
 
 The \code{refinement} keyword can be omitted from a compound type that consists of more elements than just the refinement. Constructs ~\lstinline!Object with {$R$}!~ and ~\lstinline!refinement {$R$}!~ are then equal. 
 
-The \code{refinement} keyword may also be omitted from a compound type that consists of just the refinement, but only in contexts in which a type is expected, i.e.: parameter type declaration, value or variable type declaration, return type declaration, type argument application or type parameter declaration; but never stand-alone. If used as such, the constructs ~\lstinline!refinement {$R$}!~ and ~\lstinline!{$R$}!~ are then equal. 
+The \code{refinement} keyword may also be omitted from a compound type that consists of just the refinement, but only in contexts in which a type is expected, i.e.: parameter type declaration, value or variable type declaration, result type declaration, type argument application or type parameter declaration; but never stand-alone. If used as such, the constructs ~\lstinline!refinement {$R$}!~ and ~\lstinline!{$R$}!~ are then equal. 
 
 
 
@@ -453,7 +453,7 @@ Parameter prefixed with ``\lstinline!~$\id$!'' is a requirement of a parameter p
 Parameter prefixed with ``\lstinline!**!'' is a requirement of a captured named parameters. 
 
 \item
-Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discared), but the return type of the passed block must conform (\sref{sec:conformance}).
+Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discared), but the result type of the passed block must conform (\sref{sec:conformance}).
 \end{itemize}
 
 \paragraph{Note}
@@ -672,7 +672,7 @@ $(Ps_1) \mapsto (Ps_2) \mapsto R$ is treated as $(Ps_1) \mapsto ((Ps_2) \mapsto 
 
 A special case are types of methods without any parameters. They are written here as $() \mapsto R$. 
 
-Another special case are types of methods without any return type. They are written here as $(Ps) \mapsto ()$. Methods that have this return type do not have an implicit return expressions and an attempt to return a value from it results in a compile-time error.\footnote{A compile-time error like this may happen during a runtime evaluation as well.}
+Another special case are types of methods without any result type. They are written here as $(Ps) \mapsto ()$. Methods that have this result type do not have an implicit return expressions and an attempt to return a value from it results in a compile-time error.\footnote{A compile-time error like this may happen during a runtime evaluation as well.}
 
 Method types do not exist as types of values. If a method name is used as a value, its type is implicitly converted to a corresponding function type (\sref{sec:function-types}). 
 
@@ -701,7 +701,7 @@ g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
 g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
 \end{lstlisting}
 
-The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of return types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
+The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of result types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
 
 
 
@@ -964,13 +964,13 @@ Two refinements (\sref{sec:compound-types} \& \sref{sec:refinements}) are equiva
 Two method types (\sref{sec:method-types}) are equivalent, if they are {\em override-equivalent} (\sref{sec:method-signature}).
 
 \item
-Two polymorphic method types (\sref{sec:polymorphic-method-types}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
+Two polymorphic method types (\sref{sec:polymorphic-method-types}) are equivalent, if they have the same number of type parameters, the result types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
 
 \item
 Two existential types (\sref{sec:existential-types}) are equivalent, if they have the same number of quantifiers and the quantified types as well as lower and upper bounds of corresponding quantifiers are equivalent. 
 
 \item
-Two type constructors (\sref{sec:type-constructors}) are equivalent, if they have the same number of type parameters, the return types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
+Two type constructors (\sref{sec:type-constructors}) are equivalent, if they have the same number of type parameters, the result types are equivalent as well as variances, lower and upper bounds of corresponding type parameters. 
 
 \item 
 Two unions (\sref{sec:unions}) are equivalent, if they have the same number of member types and those types are pairwise equivalent. 

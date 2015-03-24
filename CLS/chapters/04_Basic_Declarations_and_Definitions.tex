@@ -589,9 +589,9 @@ Param_Rw      ::= 'val' | 'var'
 Param_Type    ::= ['=>' | '=>>'] (Type | id | '_')
 \end{lstlisting}
 
-A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's name, $\psig$ is its parameter signature and $T$ is its return type. 
+A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's name, $\psig$ is its parameter signature and $T$ is its result type. 
 
-A function definition \lstinline@def $f$ $\psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$\tps$]@, followed by zero or more value parameter clauses \lstinline@($\ps_1$)$\ldots$($\ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and return types are as given. 
+A function definition \lstinline@def $f$ $\psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$\tps$]@, followed by zero or more value parameter clauses \lstinline@($\ps_1$)$\ldots$($\ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and result types are as given. 
 
 The type of the function body is expected to conform (\sref{sec:conformance}) to the function's declared result type, if one is given. 
 
@@ -662,7 +662,7 @@ default`\$`$n$
 \end{lstlisting}
 is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@[$\tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
 
-The scope of a formal value parameter name $x$ comprises all subsequent parameter clauses, as well as the method return type and the function body, if they are given.
+The scope of a formal value parameter name $x$ comprises all subsequent parameter clauses, as well as the method result type and the function body, if they are given.
 
 \example In the method
 \begin{lstlisting}
@@ -1048,7 +1048,7 @@ in val &$x$: $T$
 
 Captured block parameter is a way to capture an applied block that is otherwise passed in implicitly as a function into \code{yield} expressions. The forms of captured block parameters explicitly denote the case without the block's function type, since block parameters receive any arguments and those missing are implicitly set to \code{nil}. The function type of the block may be used to further constrain the applied block argument, but is not used during method resolution (\sref{sec:function-applications}). The captured block parameter may be used also to capture function arguments, e.g. anonymous functions (\sref{sec:anonymous-functions}), then the type is used during method resolution. 
 
-It is an error if a block parameter type $T$ is provided and it is not a function type (\sref{sec:function-types}). It is also an error if the applied block argument does not accept the arguments declared by the type $T$, or if the block would not return a value conforming to the return type required by the type $T$. The applied block argument may accept more arguments than required by $T$, however, these will be set implicitly to \code{nil}. Also, the applied block argument may itself require less constrained parameter types, in which case the arguments applied to it must (and will) always conform (\sref{sec:conformance}) to the block's parameter requirements. Whether the function type $T$ has a return type or not is irrelevant. 
+It is an error if a block parameter type $T$ is provided and it is not a function type (\sref{sec:function-types}). It is also an error if the applied block argument does not accept the arguments declared by the type $T$, or if the block would not return a value conforming to the result type required by the type $T$. The applied block argument may accept more arguments than required by $T$, however, these will be set implicitly to \code{nil}. Also, the applied block argument may itself require less constrained parameter types, in which case the arguments applied to it must (and will) always conform (\sref{sec:conformance}) to the block's parameter requirements. Whether the function type $T$ has a result type or not is irrelevant. 
 
 If a block parameter type $T$ is given, then the applied block argument must accept parameters, such that the parameter constrains declared by the function type $T$ conform to the parameter constrains declared by the applied block: the parameters of the applied block must be the same or less restrictive than those declared by $T$ -- they must be pairwise contravariant or invariant, never covariant (\sref{sec:variance-of-type-parameters}). 
 
@@ -1061,12 +1061,12 @@ If a function has multiple parameter lists, the captured block parameter may onl
 \subsection{Method Signature}
 \label{sec:method-signature}
 
-Two methods $M$ and $N$ have the same signature, if they have the same name, the same type parameters (if any), the same parameters with equivalent types, and equivalent return type. 
+Two methods $M$ and $N$ have the same signature, if they have the same name, the same type parameters (if any), the same parameters with equivalent types, and equivalent result type. 
 
 The signature of a method $m_1$ is a {\em subsignature} of the signature of a method $m_2$ if either:
 \begin{itemize}
 \item $m_2$ has the same signature as $m_1$, or
-\item the signature of $m_1$ has the same name, the same type parameters (if any), the same parameters with equivalent types, and a return type that conforms to return type of $m_2$. 
+\item the signature of $m_1$ has the same name, the same type parameters (if any), the same parameters with equivalent types, and a result type that conforms to result type of $m_2$. 
 \end{itemize}
 
 A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsignature of $m_2$. Two method signatures $m_1$ and $m_2$ are {\em override-equivalent}, iff $m_1$ is the same as $m_2$. 
@@ -1092,29 +1092,28 @@ class C
   def f(x)(y) := x + y
 end
 \end{lstlisting}
-Here, the parameter and return types of \lstinline@f@ in \lstinline@C@ are
-inferred from the corresponding types of \lstinline@f@ in \lstinline@I@. The 
-signature of \lstinline@f@ in \lstinline@C@ is thus inferred to be
+Here, the parameter and result types of \lstinline@f@ in \lstinline@C@ are inferred from the corresponding types of \lstinline@f@ in \lstinline@I@. The signature of \lstinline@f@ in \lstinline@C@ is thus inferred to be
 \begin{lstlisting}
   def f(x: Integer)(y: Integer): Integer
 \end{lstlisting}
 
-\paragraph{\em Return Type Inference}
-A class member definition $m$ that overrides some other function $m'$ in a base class of $C$ may leave out the return type, even if it is recursive. In this case, the return type $R'$ of the overridden function $m'$---seen as a member of $C$---is taken as the return type of $m$ for each recursive invocation of $m$. That way, a type $R$ for the right-hand side of $m$ can be determined, which is then taken as the return type of $m$. Note that $R$ may be different from $R'$, as long as $R$ conforms to $R'$. If $m$ does not override any $m'$, then its return type is inferred to be of type \code{Object}. 
+\paragraph{\em Result Type Inference}
+A class member definition $m$ that overrides some other function $m'$ in a base class of $C$ may leave out the result type, even if it is recursive. In this case, the result type $R'$ of the overridden function $m'$---seen as a member of $C$---is taken as the result type of $m$ for each recursive invocation of $m$. That way, a type $R$ for the right-hand side of $m$ can be determined, which is then taken as the result type of $m$. Note that $R$ may be different from $R'$, as long as $R$ conforms to $R'$. If $m$ does not override any $m'$, then its result type is inferred to be of type \code{Object}. 
 
 \example Assume the following definitions:
 \begin{lstlisting}
 protocol I
+begin
   def factorial(x: Integer): Integer
 end
 class C 
+begin
   implements I
-  def factorial(x: Integer) := {
+  def factorial(x: Integer) :=
     if x = 0 then 1 else x * factorial(x - 1) end
-  }
 end
 \end{lstlisting}
-Here, it is ok to leave out the return type of \lstinline@factorial@
+Here, it is ok to leave out the result type of \lstinline@factorial@
 in \lstinline@C@, even though the method is recursive. 
 
 For any index $i$ let $fsig_i$ be a function signature consisting of a function
