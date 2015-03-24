@@ -418,17 +418,19 @@ An assignment to an output parameter that was released is a no-op, and issues a 
 
 A curried function can appear in two distinct forms:
 \begin{itemize}
-\item[] {\em Implicitly curried form}, which is defined by using multiple parameters lists. 
-\item[] {\em Explicitly curried form}, which is defined by using function types as return types of functions, or simply by returning a function from within a function. 
+  \item[] {\em Implicitly curried form}, which is defined by using multiple parameters lists. 
+  \item[] {\em Explicitly curried form}, which is defined by using function types as return types of functions, or simply by returning a function from within a function. Those have no special treatment, e.g. in regard of overloading resolution. 
 \end{itemize}
 
 Each form has some implications on function applications. 
 
 Let's define {\em consecutive function applications}. Such function applications are a continuous sequence of function applications, where each following function application is directly applied to the result of the previous function application, without storing the intermediate values anyhow. 
 
-\example The following is an example of consecutive function applications:
+\example The following are examples of consecutive function applications:
 \begin{lstlisting}
 f(a, b)(c, d)
+f(a, b).apply(c, d)
+f(a, b).(c, d) // short form of the previous
 \end{lstlisting}
 The following are not consecutive function applications:
 \begin{lstlisting}
@@ -691,7 +693,7 @@ Expressions can be constructed from operands and operators.
 
 \subsection{Prefix Operations}
 
-A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, unlike in Scala, but must not be followed by any whitespace, only identifiers or parentheses. The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). 
+A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, unlike in Scala, but must not be followed by any whitespace, only identifiers or parentheses (except for the special operator \code{not}, which has to be separated by a space from the expression that it prefixes). The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). 
 
 There is also a keyword prefix operator: \code{not}, which must be followed by a whitespace and is always prefix.
 
@@ -713,6 +715,8 @@ Apart from standard function applications (\sref{sec:function-applications}) tha
 \label{sec:infix-operations}
 
 An infix operator can be an arbitrary identifier, usually an operator identifier. Infix operators have static {\em precedence}, {\em associativity} and {\em binding direction} defined as follows:
+
+Infix operators have to be separated from both sides by whitespace from the expressions that they connect. If the following whitespace is a newline character, then precedence rules can not be followed (due to line-by-line parsing and evaluation) and usual behaviour described in (\sref{sec:newlinecharacters}) is followed. 
 
 The {\em precedence} of an infix operator is determined by the operator's first character. Characters are listed below in increasing order of precedence, with characters on the same line having the same precedence.
 
@@ -2043,6 +2047,7 @@ If an expression $e$ binds anonymous sections $u_1 \commadots u_n$, in order spe
 
 \example The anonymous functions in the left column use placeholder syntax. Each of these is equivalent to the anonymous function to its right. 
 \begin{lstlisting}
+%1                    x -> { x }
 %1 + 1                x -> { x + 1 }
 %1 * %2               (x, y) -> { x * y }
 (%1 as Integer) * 2   (x: Integer) -> { x * 2 }
@@ -2070,11 +2075,19 @@ The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well
 
 \example The method values in the left column are each equivalent to the anonymous functions (\sref{sec:anonymous-functions}) on their right. 
 \begin{lstlisting}[deletekeywords={range}]
-&(Math.sin)              x      -> { Math.sin(x) }
-&(Array.range)           (x1, x2) -> { Array.range(x1, x2) }
-&(List.map_2)            (x1, x2) -> x3 -> { List.map_2(x1, x2)(x3) }
-&(List.map_2(xs, ys))    x      -> { List.map_2(xs, xy)(x) }
-&(42.`*`)                x      -> { 42 * x }
+&(Math.sin)             x -> { Math.sin(x) }
+&(Array.range)          (x1, x2) -> { Array.range(x1, x2) }
+&(List.map_2)           (x1, x2) -> x3 -> { List.map_2(x1, x2)(x3) }
+&(List.map_2(xs, ys))   x -> { List.map_2(xs, xy)(x) }
+&(42.`*`)               x -> { 42 * x }
+val vs := 1 .. 9; &(vs.fold)
+                        x1 -> x2 -> { vs.fold(x1)(x2) }
+&((1 .. 9).fold(z))     { val eta1 := z 
+                          val eta2 := (1 .. 9)
+                          x -> eta2.fold(eta1)(x) }
+&(Some(1).fold(`???`))  { val eta1 := () -> { `???` }
+                          val eta2 := Some(1)
+                          x -> { eta2.fold(eta1())(x) } }
 \end{lstlisting}
 
 Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
@@ -2261,7 +2274,7 @@ Otherwise, if $e$ is of a method type ~\lstinline!() $\mapsto\ T$!, it is implic
 \subsection{Overloading Resolution}
 \label{sec:overloading-resolution}
 
-If an identifier or selection $e$ references several members of a class, the context of the reference is used to identify a unique member, if possible. The way this is done depends on whether or not $e$ is used as a function. Note that even if overloaded resolution picks up a unique member, that member still may not be applied in regard of the actual expected types of the function application. Let $\mathcal{A}$ be the set of members referenced by $e$. 
+If an identifier or selection $e$ references several members of a class, the context of the reference is used to identify a unique member, if possible. The way this is done depends on whether or not $e$ is used as a function. Note that even if overloaded resolution picks up a unique member, that member still may not be applied in regard of the actual expected types of the function application. Let $\mathcal{A}$ be the set of members referenced by $e$. Overloading resolution of $e$ is applied after local type inference, although local type inference may play part in overloading resolution of nested argument expressions, which are applied separately. 
 
 \subsubsection{Function in an application}
 
@@ -2305,7 +2318,7 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
   \end{array} \right. \\
 \rweight(t) &= \left\{ 
   \begin{array}{l l}
-    1 & \textrm{unless $t$ is a variadic or a capturing namd parameter}\\
+    1 & \textrm{unless $t$ is a variadic or a capturing named parameter}\\
     0 & \textrm{otherwise}
   \end{array} \right.
 \end{array}\]
@@ -2327,7 +2340,15 @@ The {\em generic relative weight} of an alternative $A$ over an alternative $B$ 
 
 An alternative $A$ is {\em more specific than} an alternative $B$, if the generic relative weight of $A$ over $B$ is greater than the generic relative weight of $B$ over $A$. 
 
-If there are more alternatives in $\mathcal{D}$ that are equally most specific, one chooses one of them as in overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{D}$ here, and the expected type is the expected type of the function application. 
+If there are more alternatives in $\mathcal{D}$ that are equally most specific, one chooses one of them as in overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{D}$ here, and the expected type is the expected type of the function application, if there are no consecutive function applications. 
+
+If there are any consecutive function applications (\sref{sec:curried-functions}) involved, then let $\mathcal{E}$ be those alternatives from $\mathcal{D}$ that have no following parameter lists, and let $\mathcal{F}$ be those alternatives from $\mathcal{D}$, for which one of the following conditions is true:
+\begin{itemize}
+  \item There are $a$ following consecutive function applications and the alternative has $a$ more parameter lists. The last parameter list may or may not be marked \code{implicit}, it does not matter. 
+  \item There are $a$ following consecutive function applications and the alternative has $a + 1$ more parameter lists, and the last one is marked \code{implicit}. Note that $a$ might be 0, so that methods with an extra implicit parameter list are preferred. 
+  \item There are $a$ following consecutive function applications and the alternative has more than $a$ more parameter lists, and the whole expression containing the consecutive function applications is enclosed in a method value, for partial application. 
+\end{itemize}
+Then, if $\mathcal{F}$ is not empty, apply overloading resolution on $\mathcal{F}$ recursively, omitting the already processed parameter list and argument list in each turn. If overloading resolution on $\mathcal{F}$ selects a unique member, that one is chosen. If no unique alternative from $\mathcal{F}$ could be selected (either because none was applicable, or there were multiple applicable alternatives at the end of recursion), continue with overloading resolution on alternatives from $\mathcal{E}$ without any application (\sref{sec:overloading-resolution-no-app}). If $\mathcal{E}$ is empty, it is an error. 
 
 \paragraph{Note}
 Nested overloading resolutions happen in depth-first order. If an alternative is polymorphic, it needs to be type-reified with local type inference to first determine what the types are. If an argument expression is itself overloaded, overloading resolution needs to be applied on it first and alone, and the expected type of the argument expression defined by the local type inference algorithm. Notice that this is safe in regard to local type inference of the enclosing alternative, since the type of the argument expression is just a part of type bounds for the enclosing alternative. Indeed, ambiguities may need to be resolved explicitly. 
@@ -2345,11 +2366,21 @@ In the application \code{f(1, 2)}, there are again two applicable alternatives -
 
 In the application \code{f(1, 2, 3)}, there is only one applicable alternative (the first), which can be detected (as soon as) based on the shape of its argument expressions. 
 
+
+
+
+
+
 \subsubsection{Function in a type application}
 
 Assume next that $e$ appears as a function in an explicit type application (not inferred), as in ~\lstinline!$e$[$\targs$]!. Then let $\mathcal{B}$ be the set of all alternatives in $\mathcal{A}$ which take the same number of type parameters as there are type arguments in $\targs$ are chosen. It is an error if no such alternative exists -- the type application is unapplied. If there is one such alternative, that one is chosen. 
 
 Otherwise, let $\mathcal{C}$ be the set of those alternatives in $\mathcal{B}$ that are applicable to the type arguments, so that the bounds defined by the alternative's type parameters are satisfied. It is an error if no such alternative exists. If there are several such alternatives, overloading resolution (different than this case: so either in a function application or not in a function application) is applied to the whole expression ~\lstinline!$e$[$\targs$]!. 
+
+
+
+
+
 
 \subsubsection{Expression not in any application}
 \label{sec:overloading-resolution-no-app}
@@ -2359,9 +2390,10 @@ Assume finally that $e$ does not appear as a function in either an application o
 Otherwise, one chooses the {\em most specific} alternative among the alternatives in $\mathcal{B}$, according to the following definition of being ``more specific than'':
 
 \begin{definition}
-The {\em relative weight} of an alternative $A$ over an alternative $B$ is defined as a number from $0$ to $1$, defined as:
+The {\em relative weight} of an alternative $A$ over an alternative $B$ is defined as a number from $0$ to $2$, defined as the sum of:
 \begin{itemize}
-\item $1$ if $A \conforms B$, $0$ otherwise.
+  \item $1$ if $A \conforms B$, $0$ otherwise, and
+  \item $1$ if $A$ is not polymorphic and $B$ is polymorphic, $0$ otherwise.
 \end{itemize}
 \end{definition}
 
@@ -2387,38 +2419,41 @@ Local type inference infers type arguments to be passed to expressions of polymo
 
 Local type inference converts this expression to a type application ~\lstinline!$e$[$T_1 \commadots T_n$]!. The choice of the type arguments $T_1 \commadots T_n$ depends on the context in which the expression appears and on the expected type $\exptype$. 
 
-Local type inference is not always able to infer all type arguments, and sometimes may even infer useless ones -- in that cases, explicit type arguments are to be used to solve the problems. 
+Local type inference is not always able to infer all type arguments, and sometimes may even infer useless ones -- in that cases, explicit type arguments are to be used to solve the problems, if even possible. 
 
 \paragraph{Case 1: Selections}
-If the expression appears as a prefix of a selection (or is a function application with empty arguments list) with a name $x$, then type inference is {\em deferred} to the whole expression \code{$e$.$x$}. That is, if \code{$e$.$x$} has type $S$, it is now treated as having type ~\lstinline![$a_1$ >: $L_1$ <: $U_1 \commadots a_n$ >: $L_n$ <: $U_n$] $\mapsto\ S$!, and local type inference is applied in turn to infer type arguments for $a_1 \commadots a_n$, using the context in which \code{$e$.$x$} appears. 
+If the expression appears as a prefix of a selection (or is a function application with empty arguments list; or is any of that as a prefix of multiple such selection) with a name $x$, then type inference is {\em deferred} to the whole expression \code{$e$.$x$}. That is, if \code{$e$.$x$} has type $S$, it is now treated as having type ~\lstinline![$a_1$ >: $L_1$ <: $U_1 \commadots a_n$ >: $L_n$ <: $U_n$] $\mapsto\ S$!, and local type inference is applied in turn to infer type arguments for $a_1 \commadots a_n$, using the context in which \code{$e$.$x$} appears. If $x$ is itself polymorphic, the type parameters $a_1 \commadots a_n$ are virtually added to type parameters of $x$ as fresh names, just for the purpose of deferred type inference. 
 
 \paragraph{Case 2: Values}
 If the expression $e$ appears as a value without being applied to some value arguments in a function application, the type arguments are inferred by solving a constraint system which relates the expression's type $T$ with the expected type $\exptype$. Without loss of generality we can assume that $T$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home again). Solving means finding a substitution $\sigma$ of types $T_i$ for the type parameters $a_i$, such that all of the following conditions hold:
 \begin{itemize}
-\item None of inferred types $T_i$ is a singleton type (\sref{sec:singleton-types}). % TBD: decide whether this restriction can be removed
-\item All type parameter bounds are satisfied, i.e. $\sigma L_i \conforms \sigma a_i$ and also $\sigma a_i \conforms \sigma U_i$ for $i = 1 \commadots n$. 
-\item The expression's type conforms to the expected type, i.e. $\sigma T \conforms \sigma \exptype$. 
+  \item None of inferred types $T_i$ is a singleton type (\sref{sec:singleton-types}). % TBD: decide whether this restriction can be removed
+  \item All type parameter bounds are satisfied, i.e. $\sigma L_i \conforms \sigma a_i$ and also $\sigma a_i \conforms \sigma U_i$ for $i = 1 \commadots n$. 
+  \item The expression's type conforms to the expected type, i.e. $\sigma T \conforms \sigma \exptype$. 
 \end{itemize}
 
 It is an error if no such substitution exists. If several substitutions exist, local type inference will choose for each type variable $a_i$ a minimal or a maximal type $T_i$ of the solution space (where a maximal type is closer to \code{Object} and minimal is closer to \code{Nothing}). A {\em maximal} type $T_i$ will be chosen if the type parameter $a_i$ appears contravariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression. A {\em minimal} type $T_i$ will be chosen in all other situations, i.e. if the type variable appears covariantly, non-variantly or not at all in the type $T$. We call such a substitution $\sigma$ an {\em optimal solution} of the given constraint system for the type $T$. 
 
 \paragraph{Case 3: Methods}
-This case applies if the expression $e$ appears in an application \code{$e$($d_1 \commadots d_m$)}. In that case $T$ is a method type ~\lstinline!($p_1$: $R_1 \commadots p_n$: $R_n$) $\mapsto\ T'$!. Without loss of generality we can assume that the result type $T'$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home, yet again). One computes first the types $S_j$ of the argument expressions $d_j$, using two alternative schemes. Each argument expression $d_j$ is typed first with the expected type $R_j$, in which the type parameters $a_1 \commadots a_n$ are taken as type constants. If this fails the argument $d_j$ is typed instead with an expected type $R'_j$, which results from $R_j$ by replacing every type parameter in $a_1 \commadots a_n$ with $\udef$. 
+This case applies if the expression $e$ appears in an application \code{$e$($d_1 \commadots d_m$)}. In that case $T$ is a method type ~\lstinline!($p_1$: $R_1 \commadots p_n$: $R_n$) $\mapsto\ T'$!. Without loss of generality, we can assume that the result type $T'$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home, yet again). One computes first the types $S_j$ of the argument expressions $d_j$, using two alternative schemes. Each argument expression $d_j$ is typed first with the expected type $R_j$, in which the type parameters $a_1 \commadots a_n$ are taken as unknown type constants. If this fails for the particular argument expression\footnote{E.g., because the conformance can't be determined, or maybe $d_j$ is overloaded and could not select a unique member with expected type $R_j$.}, the argument $d_j$ is typed instead with an expected type $R'_j$, which results from $R_j$ by replacing every type parameter in $a_1 \commadots a_n$ with $\udef$. If $d_j$ is overloaded, a unique member is selected based on $R_j$, and if that fails, it is selected based on $R'_j$; it is an error if a unique member for $d_j$ can not be selected. \footnote{Selecting a unique overloaded member here is likely to fail, if $R_j$ is polymorphic and the member is overloaded on result type. Using a typed expression is a way to prevent that.}
+
+If $e$ is a member with multiple parameter lists, then every following passed argument list is considered to be virtually a part of $d_1 \commadots d_m$. Some argument lists may be missing, e.g. in case of partial application, and \code{Undefined} is then inferred for every type parameter that appears only in the missing parameter lists, so that it gets inferred again upon future application\footnote{But the type arguments that are inferred in this step are permanent and not inferred again upon future applications.}. Multiple argument lists may be written in multiple forms, e.g. \code{$e$($d_1 \commadots d_a$)$\ldots$($d_l \commadots d_m$)}, and \code{$e$($d_1 \commadots d_a$).apply($\ldots$).apply($d_l \commadots d_m$)} is accepted as well, as is the shorter form \code{$e$($d_1 \commadots d_a$).($\ldots$).($d_l \commadots d_m$)}.\footnote{This way, methods with multiple parameter lists are first-class citizens, unlike in Scala.}
 
 In a second step, type arguments are inferred by solving a constraint system, which relates the method's type with the expected type $\exptype$ and the argument types $S_1 \commadots S_m$. Solving the constraint system means finding a substitution $\sigma$ of types $T_i$ for the type parameters $a_i$, such that all of the following conditions hold:
 \begin{itemize}
-\item None of inferred types $T_i$ is a singleton type (\sref{sec:singleton-types}). % TBD: decide whether this restriction can be removed
-\item All type parameter bounds are satisfied, i.e. $\sigma L_i \conforms \sigma a_i$ and also $\sigma a_i \conforms \sigma U_i$ for $i = 1 \commadots n$. 
-\item The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' \conforms \sigma \exptype$. 
-\item Each argument type weakly conforms (\sref{sec:conformance}) to the corresponding formal parameter type (\sref{sec:corresponding-parameters}), i.e. $\sigma S_j \conforms _w \sigma R_j$ for $j = 1 \commadots m$. 
+  \item None of inferred types $T_i$ is a singleton type (\sref{sec:singleton-types}). % TBD: decide whether this restriction can be removed
+  \item All type parameter bounds are satisfied, i.e. $\sigma L_i \conforms \sigma a_i$ and also $\sigma a_i \conforms \sigma U_i$ for $i = 1 \commadots n$. 
+  \item The method's result type $T'$ conforms to the expected type, i.e. $\sigma T' \conforms \sigma \exptype$. 
+  \item Each argument type weakly conforms (\sref{sec:conformance}) to the corresponding formal parameter type (\sref{sec:corresponding-parameters}), i.e. $\sigma S_j \conforms _w \sigma R_j$ for $j = 1 \commadots m$. 
+  \item If there is no constraint involving $T_i$, \code{Undefined} is inferred. 
 \end{itemize}
 
 It is an error if no such substitution exists. If several solutions exists, an optimal one for the type $T'$ is chosen. 
 
 All or parts of an expected type $\exptype$ may be undefined. The rules for conformance (\sref{sec:conformance}) are extended to this case by adding the rule that for any type $T$, the following two statements are always true:
 \begin{itemize}
-\item $\udef \conforms T$
-\item $T \conforms \udef$
+  \item $\udef \conforms T$
+  \item $T \conforms \udef$
 \end{itemize}
 
 It is possible that no minimal or maximal solution for a type variable exists, which is an error. Because ``$\conforms$'' is a partial order, it is also possible that a solution set has several optimal solutions for a type. In that case, Coral is free to pick any one of them. 
@@ -2435,7 +2470,7 @@ val xs := cons(1, list_nil)  .
 
 The application of \code{cons} is typed with an undefined expected type. This application is completed by local type inference to \code{cons[Integer](1, list_nil)}. Here, one uses the following reasoning to infer the type argument \code{Integer} for the type parameter \code{A}:
 
-First, the argument expressions are typed. The first argument \code{1} has type \code{Integer}, whereas the second argument \code{list_nil} is itself polymorphic. One tries to type \code{list_nil} with an expected type \code{List[A]}. This leads to the constraint system
+First, the argument expressions are typed. The first argument \code{1} has type \code{Integer}, whereas the second argument \code{list_nil} is not overloaded, and is itself polymorphic. One tries to type \code{list_nil} with an expected type \code{List[A]}. This leads to the constraint system
 \begin{lstlisting}
 List[?B] <: List[A]  ,
 \end{lstlisting}
@@ -2443,6 +2478,8 @@ where we have labeled \code{?B} with a question mark to indicate that it is a va
 \begin{lstlisting}
 B := Nothing  .
 \end{lstlisting}
+
+This finishes one separate local type inferencing instance. 
 
 In the second step, one solves the following constraint system for the type parameter \code{A} of \code{cons}:
 \begin{lstlisting}
@@ -2459,10 +2496,10 @@ so \code{Integer} is the type inferred for \code{A}.
 
 The optimal solution is found based on the following reasoning: 
 \begin{enumerate}
-\item Solutions for the first constraint are types \code{Integer} and its supertypes.
-\item Solutions for the second constraint are \code{Nothing} and all supertypes of \code{Nothing}, basically any type. Together with the first constraint, only those types from the solution of the first constraint are possible. 
-\item Solutions for the third constraint are all types. Together with the first two constraint, only those types from the solution of the first constraint are possible. 
-\item Therefore, the minimal type is chosen from the solution space, as \code{A} appears covariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression (which is \code{List[A]}), which is in turn \code{Integer}. 
+  \item Solutions for the first constraint are types \code{Integer} and its supertypes.
+  \item Solutions for the second constraint are \code{Nothing} and all supertypes of \code{Nothing}, basically any type. Together with the first constraint, only those types from the solution of the first constraint are possible. 
+  \item Solutions for the third constraint are all types. Together with the first two constraint, only those types from the solution of the first constraint are possible. 
+  \item Therefore, the minimal type is chosen from the solution space, as \code{A} appears covariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression (which is \code{List[A]}), which is in turn \code{Integer}. 
 \end{enumerate}
 
 \example Consider now the definition
@@ -2471,10 +2508,7 @@ val ys := cons("abc", xs)  ,
 \end{lstlisting}
 where \code{xs} is defined as type \code{List[Integer]} as before. In this case local type inference proceeds as follows.
 
-First, the argument expressions are typed. The first argument \code{"abc"} is of type \code{String}. The second argument \code{xs} is first tried to be typed with expected type \code{List[A]}. This leads to the constraint system
-\begin{lstlisting}
-List[Integer] <: List[?A]
-\end{lstlisting}
+First, the argument expressions are typed. The first argument \code{"abc"} is of type \code{String}. The second argument \code{xs} is first tried to be typed with expected type \code{List[A]}. This fails, because we can't tell whether \code{List[Integer]} is a subtype or supertype of \code{List[A]}, as we don't yet know what \code{A} is. Therefore, the second strategy is attempted and \code{xs} is typed with expected type \code{List[$\udef$]}. This succeeds and yields the argument type \code{List[Integer]}.
 
 In a second step, one solves the following constraint system for the type parameter \code{A} of \code{cons}:
 \begin{lstlisting}
@@ -2487,8 +2521,12 @@ The optimal solution of this constraint system is
 \begin{lstlisting}
 A := Object  ,
 \end{lstlisting}
-so \code{Object} is the type inferred for \code{A}. 
+so \code{Object} is the type inferred for \code{A}, as it is the least upper bound of \code{String} and \code{Integer}. Notice that if any of those were types not descending from \code{Object}, \code{Any} would be inferred instead, as the least upper bound of any type. 
 
+% TBD: throw in some advanced examples, possibly include:
+% - multiple parameter lists
+% - more variances than just covariant List[T]
+% - nested overloaded argument expressions, also overloaded on result type
 
 
 
@@ -2498,12 +2536,22 @@ so \code{Object} is the type inferred for \code{A}.
 
 {\em Eta-expansion} converts an expression of a method type (not a function application) to an equivalent expression of a function type. It is especially useful to prevent re-evaluation of the expression's subexpressions, if the expression is passed using a by-name strategy. It proceeds in two steps. 
 
-First, one identifies the maximal subexpressions of $e$, let's say these are $e_1 \commadots e_m$. For each of these, one creates a fresh name $x_i$. Let $e'$ be the expression resulting from replacing every maximal subexpression $e_i$ in $e$ by the corresponding fresh name $x_i$. Second, one creates a fresh name $y_i$ for every argument type $T_i$ of the method, for $i = 1 \commadots n$, using named arguments and parameters as defined by the method. The result of eta-conversion is then: 
+First, one identifies the maximal subexpressions of $e$, let's say these are $e_1 \commadots e_m$. For each of these, one creates a fresh name $x_i$. Let $e'$ be the expression resulting from replacing every maximal subexpression $e_i$ in $e$ by the corresponding fresh name $x_i$. Second, one creates a fresh name $y_i$ for every argument type $T_i$ of the method, for $i = 1 \commadots n$, using named arguments and parameters as defined by the method. The result of eta-expansion is then: 
 \begin{lstlisting}
-val $x_1$ := $e_1$
-$\ldots$
-val $x_m$ := $e_m$
-($y_1$: $T_1 \commadots y_n$: $T_n$) -> $e'$($y_1 \commadots y_n$)
+{
+  val $x_1$ := $e_1$
+  $\ldots$
+  val $x_m$ := $e_m$
+  ($y_1$: $T_1 \commadots y_n$: $T_n$) -> $e'$($y_1 \commadots y_n$)
+}
+\end{lstlisting}
+
+\example A few examples of eta-expansion, the original expression and eta-expanded below it:
+\begin{lstlisting}
+// expression:
+&((1 .. 9).fold(z))
+// expands to:
+{ val eta1 := z  val eta2 := (1 .. 9)  x -> eta2.fold(eta1)(x) }
 \end{lstlisting}
 
 

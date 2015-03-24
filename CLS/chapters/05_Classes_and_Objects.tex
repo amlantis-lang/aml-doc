@@ -281,6 +281,9 @@ end object
 \end{lstlisting}
 Class \code{E} uses a similar recommended approach, utilizing standard ways of adding methods to the eigenclass of the class \code{E} and neither declaring nor defining anything for its own instances. Here, the eigenclass instance itself is not accessed directly. 
 
+\paragraph{Note}
+If a metaclass of an object is edited, and such an object is returned from a function, then it might be a good idea to add the edits to its metaclass to the result type of such function, if appropriate, so that outside code may be able to non-dynamically use the edits. 
+
 
 
 
