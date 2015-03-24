@@ -1858,7 +1858,7 @@ reset(ctx)
 \end{lstlisting}
 
 \paragraph{Note}
-Coral uses stack slice/copy mechanisms instead of code conversions to actually implement both continuations. Due to this, the continuations are technically less limited, but the typing of its expressions may get complicated easily, as the control flow is manipulated on VM level.
+Coral uses saguaro stack mechanisms instead of code conversions to actually implement both continuations. Due to this, the continuations are technically less limited, but the typing of its expressions may get complicated easily, as the control flow is manipulated on VM level.
 
 % TBD: add the example from http://dcsobral.blogspot.cz/2009/07/delimited-continuations-explained-in.html and explain it step-by-step, incl. the double flat_map
 
