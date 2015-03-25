@@ -1080,15 +1080,14 @@ A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsign
 \label{sec:method-types-inference}
 
 \paragraph{\em Parameter Type Inference}
-Functions that are members of a class $C$ may define parameters without type annotations. The types of such parameters are inferred as follows. Say, a~method $m$ in a class $C$ has a parameter $p$ which does not have a type annotation. We first determine methods $m'$ in $C$ that might be overridden (\sref{sec:overriding}) by $m$, assuming that appropriate types are assigned to all parameters of $m$ whose types are missing. If there is exactly one such method, the type of the parameter corresponding to $p$ in that method---seen as a member of $C$---is assigned to $p$. It is an error if there are several such overridden methods $m'$. If there is none\footnote{Detected at compile-time. Dynamically added overridden methods are not used with type inference.} ($m$ does not override any $m'$ known at compile-time), then the parameters are inferred to be of type \code{Object}.
+Functions that are members of a class $C$ may define parameters without type annotations. The types of such parameters are inferred as follows. Say, a~method $m$ in a class $C$ has a parameter $p$ which does not have a type annotation. We first determine methods $m'$ in $C$ that might be overridden (\sref{sec:overriding}) by $m$, assuming that appropriate types are assigned to all parameters of $m$ whose types are missing. If there is exactly one such method, the type of the parameter corresponding to $p$ in that method---seen as a member of $C$---is assigned to $p$. It is an error if there are several such overridden methods $m'$. If there is none\footnote{Detected at compile-time. Dynamically added overridden methods are not used with type inference.} ($m$ does not override any $m'$ known at compile-time), then the parameters are inferred to be of type \code{Any}.
 
 \example Assume the following definitions:
-\begin{lstlisting}[escapechar=`]
-protocol I[`\$`A]
-  def f(x: `\$`A)(y: `\$`A): `\$`A
+\begin{lstlisting}
+protocol I[A]
+  def f(x: A)(y: A): A
 end
-class C
-  implements I[Integer]
+class C extends I[Integer]
   def f(x)(y) := x + y
 end
 \end{lstlisting}
@@ -1098,7 +1097,7 @@ Here, the parameter and result types of \lstinline@f@ in \lstinline@C@ are infer
 \end{lstlisting}
 
 \paragraph{\em Result Type Inference}
-A class member definition $m$ that overrides some other function $m'$ in a base class of $C$ may leave out the result type, even if it is recursive. In this case, the result type $R'$ of the overridden function $m'$---seen as a member of $C$---is taken as the result type of $m$ for each recursive invocation of $m$. That way, a type $R$ for the right-hand side of $m$ can be determined, which is then taken as the result type of $m$. Note that $R$ may be different from $R'$, as long as $R$ conforms to $R'$. If $m$ does not override any $m'$, then its result type is inferred to be of type \code{Object}. 
+A class member definition $m$ that overrides some other function $m'$ in a base class of $C$ may leave out the result type, even if it is recursive. In this case, the result type $R'$ of the overridden function $m'$---seen as a member of $C$---is taken as the result type of $m$ for each recursive invocation of $m$. That way, a type $R$ for the right-hand side of $m$ can be determined, which is then taken as the result type of $m$. Note that $R$ may be different from $R'$, as long as $R$ conforms to $R'$. If $m$ does not override any $m'$, then its result type is inferred to be of type \code{Any}. 
 
 \example Assume the following definitions:
 \begin{lstlisting}
@@ -1106,9 +1105,7 @@ protocol I
 begin
   def factorial(x: Integer): Integer
 end
-class C 
-begin
-  implements I
+class C extends I
   def factorial(x: Integer) :=
     if x = 0 then 1 else x * factorial(x - 1) end
 end
@@ -1203,6 +1200,8 @@ is equivalent to the block
 A dynamic use clause has the form ~\lstinline!use lazy $p$.$I$!, where $p$ is a path to the containing type of the imported entity, and $I$ is an import expression. The difference from regular use clauses is that a dynamic use clause can import anything, including dynamically created members. In case of multiple dynamic imports providing the same name, the last one to be provided is preferred, and has to be type-compatible with any possibly previously provided name, i.e., it has to override the previously provided name as if it were a regular member. Dynamic use clause can also import a name that does not exist yet in compile time (by not using wildcard import). 
 
 Note that when importing names via use clauses (or dynamic use clauses), the prefix $p$ of it is always a selection, but never an application. If a name in selection denotes several possible members, there is no way to use overloading resolution on it, other than that provided by type application. 
+
+
 
 
 

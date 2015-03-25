@@ -849,7 +849,7 @@ Constr_Block3   ::= [[Block_Stat {semi Block_Stat} semi]
 Besides the primary constructor, a class may define additional constructors with different parameter sections, that form together with the primary constructor an overloaded constructor definition. Every auxiliary constructor is constrained in means that it has to either invoke another constructor defined before itself, or any superclass constructor. Therefore classes in Coral have multiple entry point, but with great power comes great responsibility: user must ensure that every constructor path defines all necessary members. It is an error if a constructor invocation leads to an instance with abstract members. If a constructor does not explicitly invoke another constructor, an invocation of the implicit constructor is inserted implicitly as the first invocation in the constructor. 
 
 \syntax\begin{lstlisting}
-Ctor_Def     ::= 'constructor' Ctor_Fun_Def
+Ctor_Def     ::= ['convenience'] 'constructor' Ctor_Fun_Def
 Ctor_Fun_Def ::= [Param_Clauses] (':=' Constr_Expr | Constr_Block)
 
 Dtor_Def     ::= 'destructor' Dtor_Fun_Def
@@ -872,7 +872,7 @@ An implicit constructor is an automatically generated constructor. This is what 
 A designated constructor is such a constructor that initializes all members of the class. The primary constructor always has to be also a designated constructor. A designated constructor can only call a constructor of the immediate superclass\footnote{This is a relaxation from Swift by Apple, which only allows to call a designated constructor of the immediate superclass.}. A single class may have multiple designated constructors, but either way all instance members have to be initialized and at least one designated constructor has to exist. Note that new instance members may be added dynamically in runtime -- but those are also initialized at the time they are added by the dynamic code. Also note that the constructor of the superclass may be dealing with an incomplete object\footnote{As the constructors may further edit the new object later.}, therefore a designated constructor must make sure that all instance members are initialized (either with their default values, or ones set up by the constructor), before it delegates up to the constructor of the superclass. 
 
 \paragraph{\em Convenience constructor}
-A convenience constructor is any other constructor than the designated constructors. It can only call a constructor of the same class (either convenience or designated). Convenience constructors can be annotated with \code{@[convenience_constructor]} annotation, but the status can be inferred from the usage of \code{self} to invoke another constructor. Any convenience constructor must ultimately call a designated constructor of the same class. 
+A convenience constructor is any other constructor than the designated constructors. It can only call a constructor of the same class (either convenience or designated). Convenience constructors are annotated with \code{convenience} keyword. Any convenience constructor must ultimately call a designated constructor of the same class. 
 
 \paragraph{\em Inheritance of constructors}
 Constructors are not automatically inherited. Constructors whose signature matches signature of a superclass constructors have to be prefixed with the \code{override} modifier (\sref{sec:modifiers}). The following rules apply to inheritance of constructors:
@@ -890,16 +890,16 @@ The following lists present the order in which object construction occurs.
   \item Somebody calls the \code{new} instance method of \code{Class} with arguments for the desired constructor. 
   \item A constructor is picked up with a 1:1 mapping to the arguments of \code{new}. 
   \item A memory zone allocates memory for the new object. The memory is not yet initialized, and so is not the object. 
-  \item A designated constructor (any of the available for the class of the object) confirms that all instance variables introduced by that class have a value. This value can be from the defined default value, or explicitly set by the constructor. 
-  \item The designated constructor hands off to a superclass constructor to perform the same task for its own introduced instance variables. 
-  \item This repeats up the inheritance chain until the \code{Object}'s constructor is reached. 
+  \item Runtime keeps track of all declared instance variables and their defined-ness during object construction.\footnote{This is again relaxation from Swift by Apple. The object might be fully initialized earlier, or later.} 
+  \item As soon as every instance variable is properly defined, the \code{self} object becomes available for regular use. 
   \item After this point, the object is considered fully initialized, and the phase is complete. 
 \end{enumerate}
 
 {\bfseries Phase 2}
 \begin{enumerate}
-  \item As the control flows back down from the topmost superclass constructor, other constructors have now the ability to access the new object (as \code{self}). This includes both designated and convenience constructors, whichever gets control back earlier goes first. 
-  \item At this phase, instance methods may be also called, because the object is already constructed. Also, modifications of immutable instance variables is still allowed -- up to the point where the bottommost constructor finishes its evaluation. 
+  \item This phase begins as soon as all declared instance variables are defined.
+  \item As the control flows on, either continuing up the inheritance chain, or descending from a parent constructor, other constructors have now the ability to access the new object (as \code{self}). This includes both designated and convenience constructors, whichever gets control back earlier goes first. 
+  \item At this phase, instance methods may be also called, because the object is already constructed. Also, modifications of immutable instance variables are still allowed -- up to the point where the bottommost constructor finishes its evaluation. 
 \end{enumerate}
 
 \paragraph{\em Accessibility of constructors}
@@ -918,12 +918,11 @@ end class
 \example An example of a pair of constructors of class $C$. 
 \begin{lstlisting}
 class $C$
-  @[convenience_constructor]
-  constructor := self(42)
   constructor (param)
     val @resource := param
     super()
   end constructor
+  convenience constructor := self(42)
 end class
 \end{lstlisting}
 
@@ -958,31 +957,33 @@ end class
 \label{sec:clone-def}
 
 \syntax\begin{lstlisting}
-CCtor_Def     ::= 'clone' CCtor_Fun_Def
-CCtor_Fun_Def ::= [Param_Clauses] 
+CCtor_Def     ::= ['convenience'] 'clone' CCtor_Fun_Def
+CCtor_Fun_Def ::= [Type_Param_Clause] [Param_Clauses] 
                   (':=' Constr_Expr | Constr_Block)
 \end{lstlisting}
 
-Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by \code{clone} on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
+Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by ~\lstinline[deletekeywords={clone}]!clone!~ on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
 
 Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self[origin]}, \code{this[origin]} and \code{super[origin]} constructs (the latter being only useful as prefix in function applications), the new cloned object is available with the \code{self[cloned]}, \code{this[cloned]} and \code{super[cloned]} constructs. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, but the original object still has to be accessed with the defined construct. 
 
-Clone constructors have the ability to modify immutable instance variables, but only of the new cloned object -- the original object is already constructed. 
+Clone constructors have the ability to modify immutable instance variables, but only of the new cloned object (\code{self[cloned]}) -- the original object is already constructed. 
 
 Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
 
-A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). 
+A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). The same rules for using \code{self[cloned]} (as \code{self}) as in constructors apply. 
 
-\paragraph{\em Default clone constructor}
-A default clone constructor of a class is the explicit parameterless clone constructor. The \code{Object} class has a default root clone constructor, which carries the modifier \code{protected} (\sref{sec:modifiers}). Therefore, any custom clone constructor has to be explicitly protected in a less restrictive way, or public, in order to allow direct object cloning from outside of the class that defines it. 
+The \code{Object} class has a default root clone constructor, which carries the modifier \code{protected} (\sref{sec:modifiers}). Therefore, any custom clone constructor has to be explicitly protected in a less restrictive way, or public, in order to allow direct object cloning from outside of the class that defines it. 
 
-\paragraph{\em Implicit clone constructor}
+\paragraph{Implicit clone constructor}
 An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
 
-\paragraph{\em Convenience clone constructor}
-A convenience clone constructor is any other clone constructor than the parameterless default clone constructor. The \code{clone} method of objects can accept any number of arguments that are then passed into the clone constructor and the clone constructor is resolved based on these passed arguments. 
+\paragraph{Designated clone constructor}
+A designated clone constructor can only invoke inherited clone constructors from superclass. 
 
-\paragraph{\em Accessibility of clone constructors}
+\paragraph{Convenience clone constructor}
+A convenience clone constructor is a clone constructor marked with the keyword \code{convenience}. They can only invoke clone constructors from the same class. 
+
+\paragraph{Accessibility of clone constructors}
 Clone constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
 
 \example An example of a default clone constructor of class $C$, performing a deep copy. 
@@ -990,7 +991,7 @@ Clone constructors may have modified accessibility, so that only certain functio
 class $C$
   clone
     // super is invoked implicitly here
-    self[cloned].@resource := @resource.clone
+    self[cloned].@resource := self[origin].@resource.clone
   end constructor
 end class
 \end{lstlisting}
@@ -1067,14 +1068,11 @@ Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) par
 
 Every case class implicitly overrides some method definitions of class \code{Object}, unless a definition of the same method is already given in the case class itself or a concrete definition of the same method is given in some base class (including traits) of the case class, different from \code{Object}. Namely: 
 \begin{itemize}
-\item[]
-Method ~\lstinline!equals: (Object) $\mapsto$ Boolean!~ (equivalent to operator ``\lstinline!=!'') is structural equality, where two instances are equal if they both belong to the case class in question and they have equal (with respect to \code{equals}) elements. 
+  \item[] Method ~\lstinline!equals: (Object) $\mapsto$ Boolean!~ (equivalent to operator ``\lstinline!=!'') is structural equality, where two instances are equal if they both belong to the case class in question and they have equal (with respect to \code{equals}) elements. 
 
-\item[]
-Method ~\lstinline!hash_code: () $\mapsto$ Number.Integer_Unsigned!~ computes a hash code. 
+  \item[] Method ~\lstinline!hash_code: () $\mapsto$ Number.Integer_Unsigned!~ computes a hash code. 
 
-\item[]
-Method ~\lstinline!to_string: () $\mapsto$ String!~ returns a string representation which contains the name of the case class and its elements. 
+  \item[] Method ~\lstinline!to_string: () $\mapsto$ String!~ returns a string representation which contains the name of the case class and its elements. 
 \end{itemize}
 
 
@@ -1102,14 +1100,14 @@ Assume a trait $D$ defines some aspect of an instance $x$ of type $C$ (i.e. $D$ 
 
 If $D$ is not a trait, then its actual supertype is simply its least proper supertype (which is statically known). 
 
-\example The following trait defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The trait also requires the self-type to be \lstinline[mathescape=false]!$T!. 
-\begin{lstlisting}[mathescape=false]
-trait Comparable[$T <: Comparable[$T]] {
-  requires $T
-  operator < (that: $T): Boolean end
-  operator <=(that: $T): Boolean := self < that || self = that
-  operator > (that: $T): Boolean := that < self
-  operator >=(that: $T): Boolean := that <= self
+\example The following trait defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The trait also requires the self-type to be \code{T}. 
+\begin{lstlisting}
+trait Comparable[T <: Comparable[T]] {
+  requires T
+  operator < (that: T): Boolean end
+  operator <=(that: T): Boolean := self < that or self = that
+  operator > (that: T): Boolean := that < self
+  operator >=(that: T): Boolean := that <= self
 }
 \end{lstlisting}
 
