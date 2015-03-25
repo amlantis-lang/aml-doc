@@ -551,7 +551,7 @@ A type application ~\lstinline!$e$[$T_1 \commadots T_n$]!~ instantiates a polymo
 
 If the function part $e$ is of some value type, the type application is taken to be equivalent to ~\lstinline!$e$.apply[$T_1 \commadots T_n$]!, i.e. the application of an \code{apply} method defined by $e$. 
 
-Type applications can be omitted if local type inference (\sref{sec:local-type-inference}) can infer best type arguments for a polymorphic function from the types of the actual function arguments and the expected result type. 
+Type applications can be omitted if local type inference (\sref{sec:local-type-inference}) can infer best type arguments for a polymorphic function from the types of the actual function arguments and the expected result type. If any of the type arguments is specified as an underscore ``\code{_}'', it is locally inferred, therefore allowing for partial type application, where the provided type arguments are taken as constant types. 
 
 
 
@@ -1021,8 +1021,13 @@ The conformance check expression ~\lstinline!$e$ is $T$!~ has type \code{Boolean
   \item As a last resort, type of $e$ overrides the method ~\lstinline!is_instance_of[$T$]()!~ and evaluating it results in \code{yes} value.\footnote{This method basically tells whether the instance implements ~\lstinline!as_instance_of[$T$]()!, thus being able to convert itself into another type without other implicit conversions.}
 \end{enumerate}
 
-\paragraph{Note} 
-The conformance check expression as defined here is not used in resolution of function applications (\sref{sec:function-applications}).
+\paragraph{Flow Based Typing} 
+If the conformance check expression is performed on a variable, as defined here, it shadows the type of the variable, if used as a condition in a conditional expression (\sref{sec:conditional-expressions}), in the related branch. Therefore, it is also used in resolution of function applications (\sref{sec:function-applications}). Furthermore, if the type of the variable was already known in the outer code, then it can both restrict and extend the expected type $T$ with $U$ into $T$: 
+\begin{itemize}
+  \item If the type $T$ did not contain $U$, then $T'$ is ~\lstinline!$T$ with $U$!.
+  \item If the type $T$ did contain $U$ and was a union type, then $T'$ is only $U$, dropping the other member types. 
+  \item In the other branches of a conditional expression, it means that $T$ does not conform to $U$, whatever that implies. Also, the same happens to the same branch, if the conformance check is negated (e.g., ~\lstinline!$e$ is not $U$!). 
+\end{itemize}
 
 The conformance check expression ~\lstinline!$e$ is not $T$!~ has type \code{Boolean} and tests whether $e$ does not conform to $T$, basically by asking a question ``Can $e$ not be of type $T$?'', answering either ``It can't be'' or ``It can be''.
 
@@ -1624,7 +1629,7 @@ Case_Pattern   ::= Stable_Id
                  | id
                  | Infix_Expr
 Switch_Scalar  ::= (Literal - Collection_Literal)
-Switch         ::= Switch_Scalar [('..' | '...')  Switch_Scalar]
+Switch         ::= Switch_Scalar [('..' | '...' | '..<')  Switch_Scalar]
 \end{lstlisting}
 
 Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given. 
@@ -1669,7 +1674,7 @@ are extremely simplified pattern matching expressions, though they do not use pa
 Compiler adds extra code to determine the value to switch on if the switched expression is of an unknown type, or not of one of the mentioned types. Generally, there are two internal kinds of switch instructions:
 \begin{enumerate}
   \item Single entry switch table, for switch expressions without ranges,
-  \item Triplet entry switch table, for switch expressions with ranges, where the triplet consists of the two marginal values and an indicator whether the range is inclusive or exclusive of the upper limit. 
+  \item Triplet entry switch table, for switch expressions with ranges, where the triplet consists of the two marginal values and an indicator whether the range is inclusive (\code{..}) or exclusive (\code{...} or \code{..<}) of the upper limit. 
 \end{enumerate}
 
 Switch expressions therefore do not involve any other implicit conversions or user code evaluation, other than that required to get the value to switch on. If a switch branch uses a guard, that guard becomes a part of the conditional expression that follows. 
