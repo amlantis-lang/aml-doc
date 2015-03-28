@@ -816,6 +816,12 @@ Since the parameter has no name to bind to, it is not accessible inside the meth
 
 The parameter's explicit value may also be specified as an enum value (\sref{sec:enums}). The type of the parameter is then the type of the enum value. Optionally, this may be followed by a pattern matching construct, for cases of enums with contained values, which are then extracted according to the pattern matching. It is an error if the value of such an explicit parameter is not of enum type.\footnote{Case classes may and likely will be allowed in the future versions.} % TODO: allow case classes along enums
 
+If the explicit parameter does not denote a value visible during compilation, one of the following happens:
+\begin{itemize}
+  \item If the explicit parameter could be a parameter name, it becomes a parameter name. 
+  \item if the explicit parameter can not be a parameter name, it is an error. 
+\end{itemize}
+
 
 
 
@@ -1066,7 +1072,7 @@ Two methods $M$ and $N$ have the same signature, if they have the same name, the
 The signature of a method $m_1$ is a {\em subsignature} of the signature of a method $m_2$ if either:
 \begin{itemize}
 \item $m_2$ has the same signature as $m_1$, or
-\item the signature of $m_1$ has the same name, the same type parameters (if any), the same parameters with equivalent types, and a result type that conforms to result type of $m_2$. 
+\item the signature of $m_1$ has the same name, the same type parameters (if any), the same parameter lists\footnote{The \code{implicit} modifier does not make a parameter list different in this matter.} and the same parameters within them with equivalent types, and a result type that conforms to result type of $m_2$. 
 \end{itemize}
 
 A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsignature of $m_2$. Two method signatures $m_1$ and $m_2$ are {\em override-equivalent}, iff $m_1$ is the same as $m_2$. 

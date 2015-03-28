@@ -54,7 +54,7 @@ Let's talk about Java. Java uses static typing -- but, in a very limited and unf
 
 Let's talk about Ruby. Ruby uses dynamic typing -- but, using types blindly can possibly lead to some confusion. Ruby is amazing though, because you can write programs with it really fast and enjoy the process at the same time. But when it comes to type safety, you need to be careful. 
 
-And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Any}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and result types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. 
+And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Dynamic}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and result types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. 
 
 While Coral is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a {\em cached binding} would change, it is ok -- as long as the new binding would be compatible with the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Coral interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state with dynamic typing), or if the cached version does not match the current version of the bound type. This mechanism is also used for caching methods, not only types.
 
@@ -590,7 +590,7 @@ Nullable_Mod  ::= '?'
 
 A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Coral types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
 
-A block of code (or whole files or modules) may opt-in to behaviour that raises errors in runtime, instead of issuing warnings, using \code{pragma Error_on_Nil} inside the code block, file or module. 
+A block of code (or whole files or modules) may opt-in to behaviour that raises errors in runtime, instead of issuing warnings, using \code{pragma error_on_nil} inside the code block, file or module. 
 
 If an implicit conversion from \code{Nothing} to $T$ is available, then nullability is not a problem. 
 
@@ -918,7 +918,7 @@ end
 \end{lstlisting}
 Here, the only requirement on the value \code{x} comes from a known requirement of parameter type of the \code{IO.console.print} function. In fact, if \code{IO.console.print} had several overloaded variants, then the type of \code{x} would be inferred to be a union type of all the overloaded variants' requirements on it. 
 
-By default, when a type annotation is missing in a function declaration, then it is either inherited (based on overriding), or taken to be \code{Auto}. A pragma (\sref{sec:pragmas}) exists to modify this default behaviour: to use other type in place of missing type annotation, use ~\lstinline!pragma missing-type $T$!, where $T$ can be also \code{Any}, or any other type, like \code{Object} and even \code{Dynamic} (\sref{sec:dynamic-type}). 
+By default, when a type annotation is missing in a function declaration, then it is either inherited (based on overriding), or taken to be \code{Auto}. A pragma (\sref{sec:pragmas}) exists to modify this default behaviour: to use other type in place of missing type annotation, use ~\lstinline!pragma missing_type $T$!, where $T$ can be also \code{Any}, or any other type, like \code{Object} and even \code{Dynamic} (\sref{sec:dynamic-type}). 
 
 Note that \code{Auto} type inference does not track requirements of values from their usage within other methods.
 
@@ -1023,71 +1023,52 @@ The conformance relation $(\conforms)$ is the smallest transitive relation that 
 
 \begin{itemize}
 
-\item
-Conformance includes equivalence, therefore if $T \equiv U$, then \lstinline@$T \conforms U$@. 
+  \item Conformance includes equivalence, therefore if $T \equiv U$, then \lstinline@$T \conforms U$@. 
 
-\item
-For every value type $T$, \lstinline@Nothing $\conforms T \conforms$ Object@. 
+  \item For every value type $T$, \lstinline!Undefined $\conforms$ Nothing $\conforms T \conforms$ Object $\conforms$ Any!. 
+ 
+  \item For every type constructor $T$ with any number of type parameters, \lstinline!Undefined $\conforms$ Nothing $\conforms T \conforms$ Object $\conforms$ Any!. 
 
-\item
-For every type constructor $T$ with any number of type parameters, \lstinline@Nothing $\conforms T \conforms$ Object@. 
+  \item A type variable $t$ conforms to its upper bound and its lower bound conforms to $t$. 
 
-\item
-A type variable $t$ conforms to its upper bound and its lower bound conforms to $t$. 
+  \item A class type or a parameterized type conforms to any of its base types. 
 
-\item
-A class type or a parameterized type conforms to any of its base types. 
+  \item A class type or a parameterized type conforms to a union type, iff it conforms to at least one of the union's component types. 
 
-\item
-A class type or a parameterized type conforms to a union type, iff it conforms to at least one of the union's component types. 
+  \item  A singleton type ~\lstinline!$p$.type!~ conforms to the type of the path $p$.
 
-\item 
-A singleton type ~\lstinline!$p$.type!~ conforms to the type of the path $p$.
+  \item A type projection ~\lstinline!$T$#$t$!~ conforms to ~\lstinline!$U$#$t$!~ if $T$ conforms to $U$. 
 
-\item
-A type projection ~\lstinline!$T$#$t$!~ conforms to ~\lstinline!$U$#$t$!~ if $T$ conforms to $U$. 
+  \item A unit of measure type $t$ conforms to another unit of measure type $u$ if and only if $t \equiv u$ or $t$ extends $u$, where $us$ is an abstract unit of measure type. 
 
-\item
-A unit of measure type $t$ conforms to another unit of measure type $u$ if and only if $t \equiv u$ or $t$ extends $u$, where $us$ is an abstract unit of measure type. 
+  \item  A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
+    \begin{itemize}
+      \item If the $i^{\superth}$ type parameter of $T$ is declared covariant, then $T_i \conforms U_i$.
+      \item If the $i^{\superth}$ type parameter of $T$ is declared contravariant, then $U_i \conforms T_i$.
+      \item If the $i^{\superth}$ type parameter of $T$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
+      \item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
+    \end{itemize}
 
-\item 
-A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
-  \begin{itemize}
-  \item If the $i^{\superth}$ type parameter of $T$ is declared covariant, then $T_i \conforms U_i$.
-  \item If the $i^{\superth}$ type parameter of $T$ is declared contravariant, then $U_i \conforms T_i$.
-  \item If the $i^{\superth}$ type parameter of $T$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
-  \item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
-  \end{itemize}
+  \item A unit of type $N$ conforms to unit of type $U$ if $N$ extends $U$ or if $N \equiv U$. 
 
-\item
-A unit of type $N$ conforms to unit of type $U$ if $N$ extends $U$ or if $N \equiv U$. 
+  \item A parameterized type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lstinline!$T$[<$U_1 \commadots U_n$>]!~ if the following conditions hold for $i = 1 \commadots n$.
+    \begin{itemize}
+      \item For the $i^{\superth}$ type parameter of $T$, $N_i \conforms U_i$.
+    \end{itemize}
 
-\item
-A parameterized type ~\lstinline!$T$[<$N_1 \commadots N_n$>]!~ conforms to ~\lstinline!$T$[<$U_1 \commadots U_n$>]!~ if the following conditions hold for $i = 1 \commadots n$.
-\begin{itemize}
-\item For the $i^{\superth}$ type parameter of $T$, $N_i \conforms U_i$.
-\end{itemize}
+  \item A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
 
-\item 
-A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
+  \item A constrained type ~\lstinline!$T$ with constraint $b$!~ conforms to $T$. A type ~\lstinline!$T$ with constraint $b_1$!~ conforms to ~\lstinline!$T$ with constraint $b_2$!, if any value $e$ that conforms ~\lstinline!$T$ with constraint $b_1$!~ by being a member of $T$ and passing the test presented by $b_1$, also conforms to ~\lstinline!$T$ with constraint $b_2$!~ by passing the test presented by $b_2$.\footnote{This conformance is only tested based on actual values being tested, not the types themselves.}
 
-\item
-A constrained type ~\lstinline!$T$ with constraint $b$!~ conforms to $T$. A type ~\lstinline!$T$ with constraint $b_1$!~ conforms to ~\lstinline!$T$ with constraint $b_2$!, if any value $e$ that conforms ~\lstinline!$T$ with constraint $b_1$!~ by being a member of $T$ and passing the test presented by $b_1$, also conforms to ~\lstinline!$T$ with constraint $b_2$!~ by passing the test presented by $b_2$.\footnote{This conformance is only tested based on actual values being tested, not the types themselves.}
+  \item If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ with { $R$ }!. 
 
-\item 
-If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ with { $R$ }!. 
+  \item The existential type ~\lstinline!$T$ for-some { $Q$ }!~ conforms to $U$, if its skolemization (\sref{sec:existential-types}) conforms to $U$. This also means that the $t'_i$ type variables have to fall in between $U$'s type parameter bounds. 
 
-\item
-The existential type ~\lstinline!$T$ for-some { $Q$ }!~ conforms to $U$, if its skolemization (\sref{sec:existential-types}) conforms to $U$. This also means that the $t'_i$ type variables have to fall in between $U$'s type parameter bounds. 
+  \item The type $T$ conforms to the existential type ~\lstinline!$U$ for-some { $Q$ }!~ if $T$ conforms to at least one of the type instances (\sref{sec:existential-types}) of ~\lstinline!$U$ for-some { $Q$ }!. 
 
-\item
-The type $T$ conforms to the existential type ~\lstinline!$U$ for-some { $Q$ }!~ if $T$ conforms to at least one of the type instances (\sref{sec:existential-types}) of ~\lstinline!$U$ for-some { $Q$ }!. 
+  \item If $T_i \equiv T'_i$ for $i = 1 \commadots n$ and $R \conforms R'$, then the method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ R$!~ conforms to ~\lstinline!($p'_1$: $T'_1 \commadots p'_n$: $T'_n$) $\mapsto\ R'$!. 
 
-\item
-If $T_i \equiv T'_i$ for $i = 1 \commadots n$ and $R \conforms R'$, then the method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ R$!~ conforms to ~\lstinline!($p'_1$: $T'_1 \commadots p'_n$: $T'_n$) $\mapsto\ R'$!. 
-
-\item
-The polymorphic type or type constructor 
+  \item The polymorphic type or type constructor 
 \begin{lstlisting}
 [$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto\ T$
 \end{lstlisting}
@@ -1097,23 +1078,20 @@ conforms to the polymorphic type or type constructor
 \end{lstlisting}
 if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ for $i = 1 \commadots n$. 
 
-\item
-Polymorphic types or type constructors $T$ and $T'$ must also fulfil the following. We characterize $T$ and $T'$ by their type parameter clauses ~\lstinline![$a_1 \commadots a_n$]!~ and ~\lstinline![$a'_1 \commadots a'_n$]!, where an $a_i$ or $a'_i$ may include a variance annotation, annotations, a higher-order type parameter clauses, and bounds. Then, $T$ conforms to $T'$ if any list ~\lstinline![$t_1 \commadots t_n$]!~ -- with declared variances, annotations, bounds and higher-order type parameter clauses -- of valid type arguments for $T'$ is also a valid list of type arguments for $T$ and ~\lstinline!$T$[$t_1 \commadots t_n$] <: $T'$[$t_1 \commadots t_n$]!. Note that this entails that:
+  \item Polymorphic types or type constructors $T$ and $T'$ must also fulfil the following. We characterize $T$ and $T'$ by their type parameter clauses ~\lstinline![$a_1 \commadots a_n$]!~ and ~\lstinline![$a'_1 \commadots a'_n$]!, where an $a_i$ or $a'_i$ may include a variance annotation, annotations, a higher-order type parameter clauses, and bounds. Then, $T$ conforms to $T'$ if any list ~\lstinline![$t_1 \commadots t_n$]!---with declared variances, annotations, bounds and higher-order type parameter clauses---of valid type arguments for $T'$ is also a valid list of type arguments for $T$ and ~\lstinline!$T$[$t_1 \commadots t_n$] <: $T'$[$t_1 \commadots t_n$]!. Note that this entails that:
   \begin{itemize}
-  \item The bounds on $a_i$ must be the same or weaker than the corresponding bounds declared for $a'_i$. 
-  \item The variance of $a_i$ must match the variance of $a'_i$, where covariance matches covariance, contravariance matches contravariance and any variance matches invariance. 
-  \item If annotation of $a'_i$ restricts conformance (\sref{sec:annotations}), then the corresponding annotation of $a_i$ must conform to it. 
-  \item Recursively, these restrictions apply to the corresponding higher-order type parameter clauses of $a_i$ and $a'_i$. 
+    \item The bounds on $a_i$ must be the same or weaker than the corresponding bounds declared for $a'_i$. 
+    \item The variance of $a_i$ must match the variance of $a'_i$, where covariance matches covariance, contravariance matches contravariance and any variance matches invariance. 
+    \item If annotation of $a'_i$ restricts conformance (\sref{sec:annotations}), then the corresponding annotation of $a_i$ must conform to it. 
+    \item Recursively, these restrictions apply to the corresponding higher-order type parameter clauses of $a_i$ and $a'_i$. 
   \end{itemize}
 
-\item 
-A function type ~\lstinline!($T_1 \commadots T_n$) -> $R$!~ (name it $f$) conforms to a function type ~\lstinline!($T'_1 \commadots T'_m$) -> $R'$!~ (name it $f'$), if types of arguments that are applicable to $f'$ are also applicable to $f$ (\sref{sec:function-applications}), and if $R$ conforms to $R'$. This includes reordering of named arguments/parameters and handling of repeated/optional parameters, and also variances -- since although $f$ might be applied to whatever $f'$ might be applied to, $f'$ might not be applied to whatever $f$ might be applied to (and vice versa).
+  \item A function type ~\lstinline!($T_1 \commadots T_n$) -> $R$!~ (name it $f$) conforms to a function type ~\lstinline!($T'_1 \commadots T'_m$) -> $R'$!~ (name it $f'$), if types of arguments that are applicable to $f'$ are also applicable to $f$ (\sref{sec:function-applications}), and if $R$ conforms to $R'$. This includes reordering of named arguments/parameters and handling of repeated/optional parameters, and also variances -- since although $f$ might be applied to whatever $f'$ might be applied to, $f'$ might not be applied to whatever $f$ might be applied to (and vice versa).
 
-\item
-Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
+  \item Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
  
-\item 
-A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. 
+  \item A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. 
+
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 

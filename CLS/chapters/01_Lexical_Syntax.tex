@@ -78,27 +78,27 @@ aspect        assert        atomic        begin         before
 bitfield      break         broken        case          catch
 class         clone         cloned        constant      constraint
 constructor   declare       def           delta         destructor
-digits        do            else          elsif         end
-ensure        enum          execution     exhausted     extends
-final         for           for-some      function      get
-goto          handler       if            implements    implicit
-in            include       interface     invariant     invoke
-is            label         lazy          let           loop
-macro         match         memoize       message       method
-module        native        next          nil           no
-not           object        of            opaque        operator
-optional      origin        otherwise     out           override
-pointcut      pragma        prepend       private       property
-protected     protocol      public        raise         raising
-range         record        redo          refine        refinement
-rescue        retry         return        returning     requires
-reverse       sealed        self          set           skip
-soft          step          super         switch        target
-then          this          throw         throwing      trait
-transparent   type          undefined     unless        unowned
-until         union         unit-of-measure             use
-val           var           yes           weak          when
-while         with          yield
+digits        dispatch      do            else          elsif
+end           ensure        enum          execution     exhausted
+extends       final         for           for-some      function
+get           goto          handler       if            implements
+implicit      in            include       interface     invariant
+invoke        is            label         lazy          let
+loop          macro         match         memoize       message
+method        module        multi         native        next
+nil           no            not           object        of
+opaque        operator      optional      origin        otherwise
+out           override      pointcut      pragma        prepend
+private       property      protected     protocol      public
+raise         raising       range         record        redo
+refine        refinement    rescue        retry         return
+returning     requires      reverse       sealed        self
+set           skip          soft          step          super
+switch        target        then          this          throw
+throwing      trait         transparent   type          undefined
+unless        unowned       until         union         unit-of-measure
+use           val           var           yes           weak
+when          while         with          yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 

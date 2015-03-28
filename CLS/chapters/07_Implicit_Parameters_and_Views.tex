@@ -1,7 +1,7 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
-\chapter{Implicit Parameters \& Views}
+\chapter[Implicit Parameters, Views \& Multiple Dispatch]{Implicit Parameters, Views \\\& Multiple Dispatch}
 \label{sec:implicit-params-views}
 
 
@@ -155,6 +155,222 @@ If the type of a context-bound parameter uses the type parameter in its definiti
 def f [T : T -> String](t: T) := $\ldots$
 def f [T] (t: T)(implicit $w_1$: Function_1[T, String]) := $\ldots$
 \end{lstlisting}
+
+
+
+
+
+\section{Multi-Methods \& Multiple Dispatch}
+\label{sec:multi-methods}
+
+\syntax\begin{lstlisting}
+Dcl ::= 'def' ['multi' | 'dispatch'] Fun_Dcl 'end' ['def']
+      | ['multi' | 'dispatch'] 'message' Fun_Dcl 'end' ['message']
+      | ['multi' | 'dispatch'] 'function' Fun_Dcl 'end' ['function']
+      | ['multi' | 'dispatch'] 'operator' Op_Dcl 'end' ['operator']
+Def ::= 'def' ['multi' | 'dispatch'] Fun_Def 'end' ['def']
+      | 'def' ['multi' | 'dispatch'] Fun_Alt_Def
+      | ['multi' | 'dispatch'] 'method' Fun_Def 'end' ['method']
+      | ['multi' | 'dispatch'] 'method' Fun_Alt_Def
+      | ['multi' | 'dispatch'] 'function' Fun_Def 'end' ['function']
+      | ['multi' | 'dispatch'] 'function' Fun_Alt_Def
+      | ['multi' | 'dispatch'] 'operator' Op_Def 'end' ['operator']
+      | ['multi' | 'dispatch'] 'operator' Op_Alt_Def
+\end{lstlisting}
+
+Coral offers multiple ways to achieve multiple dispatch and the related multi-methods: 
+
+\begin{enumerate}
+  \item Application to values that are typed \code{Dynamic}.
+  \item Type classes. 
+  \item Dynamic value dispatch (\sref{sec:dynamic-value-dispatch}). 
+\end{enumerate}
+
+
+
+
+\subsection{Application to Dynamic type}
+
+This is the easiest way to achieve multiple dispatch, where the overloaded function is selected based on not only the receiver, but also on any other argument. Those arguments that are typed with \code{Dynamic} (\sref{sec:dynamic-type}) affect the resolved overloaded alternative.\footnote{This is similar to what C\# since its version 4.0 does.}
+
+\example Multiple dispatch with \code{Dynamic} type, Asteroids colliding with Spaceships.  
+\begin{lstlisting}[morekeywords={Dynamic}]
+object program {
+  abstract class Thing extends Object {}
+  class Asteroid extends Thing {}
+  class Spaceship extends Thing {}
+  
+  method collide_with_impl (x: Asteroid, y: Asteroid): Unit
+    print_line "Asteroid hits an Asteroid"
+  end method
+  
+  method collide_with_impl (x: Asteroid, y: Spaceship): Unit
+    print_line "Asteroid hits a Spaceship"
+  end method
+  
+  method collide_with_impl (x: Spaceship, y: Asteroid): Unit
+    print_line "Spaceship hits an Asteroid"
+  end method
+  
+  method collide_with_impl (x: Spaceship, y: Spaceship): Unit
+    print_line "Spaceship hits a Spaceship"
+  end method
+  
+  method collide_with (x: Thing, y: Thing): Unit
+    val a: Dynamic := x
+    val b: Dynamic := y
+    collide_with_impl(a, b)
+  end method
+  
+  method run (*args: String): Unit
+    val asteroid := Asteroid.new
+    val spaceship := Spaceship.new
+    collide_with(asteroid, spaceship)
+    collide_with(spaceship, spaceship)
+  end method
+}
+\end{lstlisting}
+This code upon running \code{program.run} prints the following to the console:
+\begin{lstlisting}
+Asteroid hits a Spaceship
+Spaceship hits a Spaceship
+\end{lstlisting}
+
+
+
+
+
+\subsection{Type Classes}
+
+Another approach to multiple dispatch involves implicit parameters and type classes. This is probably the most verbose approach. 
+
+\example Multiple dispatch with type classes, matrices and vectors. 
+\begin{lstlisting}
+object program {
+  class Matrix extends Object {}
+  class Vector extends Object {}
+  
+  trait Mult_Dep[A, B, C] {
+    message apply (a: A, b: B): C end
+  }
+  implicit object mmm 
+      extends Mult_Dep[Matrix, Matrix, Matrix] {$\ldots$}
+  implicit object mvv 
+      extends Mult_Dep[Matrix, Vector, Vector] {$\ldots$}
+  implicit object mim 
+      extends Mult_Dep[Matrix, Integer, Matrix] {$\ldots$}
+  implicit object imm 
+      extends Mult_Dep[Integer, Matrix, Matrix] {$\ldots$}
+  
+  method multiply [A, B, C]
+      (a: A, b: B)(implicit dep: Mult_Dep[A, B, C]): C
+    dep.apply(a, b)
+  end method
+  
+  method run (*args: String): Unit
+    // ok:
+    val r1: Matrix := multiply(
+        (Matrix with {}).new, (Matrix with {}).new)
+    val r2: Vector := multiply(
+        (Matrix with {}).new, (Vector with {}).new)
+    val r3: Vector := multiply(
+        (Matrix with {}).new, 2)
+    val r4: Matrix := multiply(
+        2, (Matrix with {}).new)
+    
+    // error, no implicit value found for type
+    //   Mult_Dep[Matrix, Vector, Matrix]:
+    val r5: Matrix := multiply(
+        (Matrix with {}).new, (Vector with {}).new)
+  end method
+}
+\end{lstlisting}
+
+
+
+
+
+\subsection{Dynamic Value Dispatch}
+\label{sec:dynamic-value-dispatch}
+
+The last approach is in fact a syntax sugar for the previous approach, with some limitations. 
+
+It uses two-phase dispatch:
+\begin{enumerate}
+  \item A dispatch function is defined with ~\lstinline!def dispatch $x\,\ldots$! (or any alternative syntax using the \code{dispatch} keyword). This function returns a value or a tuple of values, which determine the multi-method to use, but its result type is independent of this value. 
+  \item A multi-method is installed with ~\lstinline!def multi $x\,\ldots$! (or any alternative syntax using the \code{multi} keyword).
+\end{enumerate}
+
+Dynamic value dispatch functions and methods are different from regular functions and methods: their overloading depends not on the argument expressions only, but most importantly, on the value returned by the dispatch function. Even their internal representation in the VM is different. The dispatch function maps the argument expressions to a single value, or a tuple value, based on which a multi-method is selected, using regular overloading resolution, utilizing only the first parameter list.
+
+The dispatch function can itself be overloaded on its parameter lists and result value, by other regular functions and methods, or even other dispatch functions, in which case the multi-methods are shared for each dispatch function. 
+
+Multi-methods expect values only in their first parameter list, therefore, the syntax in them never generates parameter names, which is different from regular methods; therefore, the first parameter list contains only explicit parameters. The types of parameters\footnote{Including extra properties, e.g. ``by-name'' status.} in the following parameter lists are inferred from the dispatch function, which passes the arguments to multi-methods as they are, and it is in fact an error if the multi-method specifies any other types for those parameters. 
+
+\example Multiple dispatch with dynamic value dispatch, Asteroids colliding with Spaceships.
+\begin{lstlisting}
+object program {
+  abstract class Thing extends Object {}
+  class Asteroid extends Thing {}
+  class Spaceship extends Thing {}
+  
+  def dispatch collide_with (a: Thing, b: Thing): Unit
+    (a.type, b.type)
+  end def
+  
+  def multi collide_with (Asteroid, Asteroid)(a, b)
+    print_line "Asteroid hits an Asteroid"
+  end def
+  
+  $\ldots$
+  
+  method run (*args: String): Unit
+    val asteroid := Asteroid.new
+    val spaceship := Spaceship.new
+    collide_with(asteroid, spaceship)
+    collide_with(spaceship, spaceship)
+  end method
+}
+\end{lstlisting}
+
+\example Multiple dispatch with dynamic value dispatch, area of shapes. This example shows a possible direction of extensions to the multi-methods, by providing more implementations for different symbols. 
+\begin{lstlisting}
+object program {
+  def dispatch area (obj: Map[String, Any]): Real
+    obj(:shape)
+  end def
+  
+  def multi area (:Rectangle)(obj)
+    obj(:width) * obj(:height)
+  end def
+  
+  def multi area (:Circle)(obj)
+    Math.$\pi$ * obj(:radius) ^ 2
+  end def
+  
+  def run (*args: String): Unit
+    val rect := %{
+        :shape => :Rectangle,
+        :width => 4 [<cm>],
+        :height => 13 [<cm>]}
+    val circle := %{
+        :shape => :Circle,
+        :radius => 12 [<cm>]}
+    print_line area(rect) // 52 cm^2
+    print_line area(circle) // 452.38$\ldots$ cm^2
+    print_line area(%{}[Symbol, Any]) // error
+  end def
+}
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
 
 
 
