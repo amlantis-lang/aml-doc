@@ -1090,8 +1090,8 @@ Functions that are members of a class $C$ may define parameters without type ann
 
 \example Assume the following definitions:
 \begin{lstlisting}
-protocol I[A]
-  def f(x: A)(y: A): A
+protocol I[A] extends Object
+  def f(x: A)(y: A): A end
 end
 class C extends I[Integer]
   def f(x)(y) := x + y
@@ -1109,7 +1109,7 @@ A class member definition $m$ that overrides some other function $m'$ in a base 
 \begin{lstlisting}
 protocol I
 begin
-  def factorial(x: Integer): Integer
+  def factorial(x: Integer): Integer end
 end
 class C extends I
   def factorial(x: Integer) :=

@@ -1160,9 +1160,9 @@ Tmpl_Def     ::= 'protocol' Pro_Def
 Pro_Def      ::= id [Type_Param_Clause]
                  Pro_Tmpl_Env
 Pro_Tmpl_Env ::= 'extends' Trait_Parents
-                 semi [Template_Body] 'end' ['trait']
+                 semi [Template_Body] 'end' ['protocol']
                | ['extends'] '{' [Template_Body] '}'
-               | ['begin' [Template_Body]] 'end' ['trait']
+               | ['begin' [Template_Body]] 'end' ['protocol']
 \end{lstlisting}
 
 Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}'' or as a part of the type's signature. 

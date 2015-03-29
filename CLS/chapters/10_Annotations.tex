@@ -57,12 +57,12 @@ Macro authors are encouraged to use syntactic forms (\sref{sec:syntactic-forms})
 
 A macro is defined as a regular function, but it's body is required to pass invocation to a method that implements the macro body, where every parameter type $T$ is replaced with ~\lstinline!c.Expr[$T$]!, and where \code{c} is the first parameter of type \code{Context}. The macro implementation has exactly two parameter lists: 
 \begin{enumerate}
-\item A parameter list with exactly one parameter of type either
-\begin{itemize}
-\item \code{Lang~[coral].Reflection.Macros.Whitebox.Context} or 
-\item \code{Lang~[coral].Reflection.Macros.Blackbox.Context}.
-\end{itemize} 
-\item A parameter list with the parameters of the macro definitions, with the described parameter type translation applied. 
+  \item A parameter list with exactly one parameter of type either
+    \begin{itemize}
+      \item \code{Lang~[coral].Reflection.Macros.Whitebox.Context} or 
+      \item \code{Lang~[coral].Reflection.Macros.Blackbox.Context}.
+    \end{itemize} 
+  \item A parameter list with the parameters of the macro definitions, with the described parameter type translation applied. 
 \end{enumerate}
 
 \example The following code is an example implementation of a simple \code{assert} macro. 
@@ -98,14 +98,14 @@ Macros can be applied as an intermediate step by IDEs, so that their resulting t
 \subsection{Whitebox \& Blackbox Macros}
 \label{sec:whitebox-blackbox-macros}
 
-{\em Blackbox macros} are such macros that exactly follow their type signature, including the result type, and therefore can be treated as blackboxes. Their implementations are irrelevant to understanding their behavior. On the otherhand, {\em whitebox macros} do not necessarily follow their type signature, which they have, but only as an approximation, which may or may not be precise. Therefore, whitebox macros may be used to create e.g. type providers, fundep materialization or extractor macros. 
+{\em Blackbox macros} are such macros that exactly follow their type signature, including the result type, and therefore can be treated as blackboxes. Their implementations are irrelevant to understanding their behavior. On the otherhand, {\em whitebox macros} do not necessarily follow their type signature, which they have, but only as an approximation, which may or may not be precise. Therefore, whitebox macros may be used to create e.g. type providers, functional dependency materialization or extractor macros. 
 
 Blackbox macros have the following restrictions applied to them:
 \begin{enumerate}
-\item As an application of a blackbox macro expands into a tree $x$, the expansion is wrapped in a typed expression ~\lstinline!($x$ as $T$)!, where $T$ is the declared result type of the blackbox macro with type arguments and path dependencies applied in consistency with the particular macro application being expanded. This invalidates blackbox macros as a possible implementation of type providers. 
-\item When an application of a blackbox macro still has undetermined type parameters even after type inference, these type parameters are forcedly inferred, in the same manner as type inference works for normal methods. This invalidates blackbox macros from creating fundep materialization. On the contrary, whitebox macros defer type inference of undetermined type parameters until the macro application is expanded. 
-\item When an application of a blackbox macro is used as an implicit candidate, no expansion is performed until the particular macro is finally selected as the result of the search for an implicit. 
-\item It is an error if a blackbox macro is used as an extractor in pattern match. 
+  \item As an application of a blackbox macro expands into a tree $x$, the expansion is wrapped in a typed expression ~\lstinline!($x$ as $T$)!, where $T$ is the declared result type of the blackbox macro with type arguments and path dependencies applied in consistency with the particular macro application being expanded. This invalidates blackbox macros as a possible implementation of type providers. 
+  \item When an application of a blackbox macro still has undetermined type parameters even after type inference, these type parameters are forcedly inferred, in the same manner as type inference works for normal methods. This invalidates blackbox macros from creating functional dependency materialization. On the contrary, whitebox macros defer type inference of undetermined type parameters (\code{Undefined}) until the macro application is expanded. 
+  \item When an application of a blackbox macro is used as an implicit candidate, no expansion is performed until the particular macro is finally selected as the result of the search for an implicit. 
+  \item It is an error if a blackbox macro is used as an extractor in pattern match. 
 \end{enumerate}
 
 
