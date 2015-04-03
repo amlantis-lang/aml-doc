@@ -4,15 +4,17 @@
 \chapter{Basic Declarations \& Definitions}
 
 \syntax\begin{lstlisting}
-Dcl         ::= 'val' Val_Dcl
-              | 'var' Var_Dcl
+R_Modifier  ::= ['weak' | 'soft' | 'unowned']
+Dcl         ::= [R_Modifier] 'val' Val_Dcl
+              | [R_Modifier] 'var' Var_Dcl
               | 'def' Def_Dcl
               | 'message' Fun_Dcl 'end' ['message']
               | 'function' Fun_Dcl 'end' ['function']
               | 'type' Type_Dcl
-Pat_Var_Def ::= 'val' Pat_Def
-              | 'var' Var_Def
-              | 'let' ['!'] id [Param_Clauses] ':=' Expr
+Pat_Var_Def ::= [R_Modifier] 'val' Pat_Def
+              | [R_Modifier] 'var' Var_Def
+              | [R_Modifier] 'let' ['!'] id [Param_Clauses] 
+                ':=' Expr
 Def         ::= Pat_Var_Def
               | 'def' Fun_Def
               | 'method' Fun_Def 'end' ['method']
@@ -62,10 +64,10 @@ This is to keep up consistency with pattern matching, where the type will usuall
 \label{sec:value-dcl-def}
 
 \syntax\begin{lstlisting}
-Dcl         ::= 'val' Val_Dcl
+Dcl         ::= [R_Modifier] 'val' Val_Dcl
 Val_Dcl     ::= val_ids ':' Type
-Pat_Var_Def ::= 'val' Pat_Def
-              | 'let' ['!'] var_dcl ':=' Expr
+Pat_Var_Def ::= [R_Modifier] 'val' Pat_Def
+              | [R_Modifier] 'let' ['!'] var_dcl ':=' Expr
 Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Exprs
               | [var_ids ','] ['*' id [':' Type] ','] var_ids 
                 ':=' Mul_Exprs
@@ -210,8 +212,8 @@ A value definition ~\lstinline!val $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ := $
 \label{sec:variable-dcl-def}
 
 \syntax\begin{lstlisting}
-Dcl         ::= 'var' Var_Dcl
-Pat_Var_Def ::= 'var' Var_Def
+Dcl         ::= [R_Modifier] 'var' Var_Dcl
+Pat_Var_Def ::= [R_Modifier] 'var' Var_Def
 Var_Dcl     ::= var_ids ':' Type
 Var_Def     ::= Pat_Def
               | var_ids ':' Type ':=' '_'
@@ -334,6 +336,67 @@ Prop_Set_Impl ::= '(' id ')' '->' '{' Block '}'
 \end{lstlisting}
 
 Property implementations are restricted to parameterless block expressions for property getters and to block expressions with one parameter for property setters. If the property is specified with a \code{get} or \code{set}, but without a property getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
+
+
+
+
+
+\section{Reference Types}
+\label{sec:ref-types}
+
+\syntax\begin{lstlisting}
+R_Modifier ::= ['weak' | 'soft' | 'unowned']
+\end{lstlisting}
+
+Reference type modifiers are the syntax category \code{R_Modifier} (stands for Reference Modifier). The implicit modifier would be \code{strong}, but it does not have a corresponding keyword.\footnote{This may or may not change in the future.} 
+
+Reference type modifiers are applied to variables, whose \code{id} begins with ``\lstinline!@!'' (class instance variables) or with ``\lstinline!@@!'' (class object variables). Such variable may appear as a part of pattern matching, in that case, the modifier is applied as well. By default, all other declared or defined variables are inferred to be \code{strong}. If a variable is declared with a non-\code{strong} reference type, then it does not have to be explicitly defined with the same reference type, and it is an error if it is defined with a different reference type. 
+
+Coral provides automatic wrapping and unwrapping of variables that are declared or defined non-\code{strong}. Strong references are (usually) not wrapped in anything. 
+
+Non-\code{strong} references are intended to break strong reference cycles that would prevent values from being ever released. 
+
+
+
+
+
+\subsection{Strong Reference}
+
+This reference does not have a direct representation in Coral, but it can be emulated with the \code{Strong_Reference[$T$]} type. 
+
+A {\em strong reference} is a reference that does keep a strong hold on the value it refers to. As long as there are strong references to a value, it does not get released. 
+
+
+
+
+
+
+\subsection{Weak Reference Type}
+
+This reference type is represented in Coral by the type \code{Weak_Reference[$T$]}. 
+
+A {\em weak reference} is a reference that does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it behaves as a nullable type. 
+
+
+
+
+
+\subsection{Unowned Reference Type}
+
+This reference type is represented in Coral by the type \code{Unowned_Reference[$T$]}. 
+
+Like weak references, an {\em unowned reference} does not keep a strong hold on the value it refers to, but it assumes that it will always refer to a non-\code{nil} value until itself released. It is an error if the value is accessed in runtime via this reference type and it is already released. 
+
+
+
+
+
+\subsection{Soft Reference Type}
+
+This reference is represented in Coral by the type \code{Soft_Reference[$T$]}. 
+
+Like weak references, an {\em unowned reference} does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it behaves as a nullable type. A value does not need to be released when there are only soft references referring to it -- there are other facilities which may trigger clearing of soft references, including out-of-memory scenarios and explicit clearing triggers. Soft references are suitable for implementations of various caches. 
+
 
 
 

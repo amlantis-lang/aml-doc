@@ -2162,7 +2162,7 @@ Fun_Dec_Expr   ::= {Annotation} Dcl
 Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
                  | 'alias' id 'is' id
 Capture_Usage  ::= 'use' id {',' id} 
-                   'as' ('weak' | 'unowned' | 'soft')
+                   'as' R_Modifier
 Constraint_Dcl ::= 'constraint' id ['as' Type] 'end' ['constraint']
 Constraint_Def ::= 'constraint' 
                    (id ['as' Type] [':='] Constraint_Block 
@@ -2556,7 +2556,9 @@ First, one identifies the maximal subexpressions of $e$, let's say these are $e_
 // expression:
 &((1 .. 9).fold(z))
 // expands to:
-{ val eta1 := z  val eta2 := (1 .. 9)  x -> eta2.fold(eta1)(x) }
+{ val eta1 := z
+  val eta2 := (1 .. 9)
+  x -> eta2.fold(eta1)(x) }
 \end{lstlisting}
 
 
