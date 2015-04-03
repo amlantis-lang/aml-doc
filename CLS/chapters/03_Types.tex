@@ -623,10 +623,10 @@ Union types represent multiple types, possibly unrelated. Union types are abstra
 
 Unions are indeed virtually ``tagged'' with the actual type that they represent at the runtime moment, although when it comes to overloading resolution, the union type is used, as it is the expected type. 
 
-The first syntax shows a named union type, while the second shows an anonymous union type (which may still be given a name later). If any of the types that are a part of a union type is a union type itself, the two types are merged. The syntax used for the anonymous version is correlating with infix type syntax, but this syntax gives it the meaning of a union type, which is preferred to infix type syntax. In fact, it might be implemented with a native infix type that generates union types:
+The first syntax shows a named union type, while the second shows an anonymous union type (which may still be given a name later). If any of the types that are a part of a union type is a union type itself, the two types are merged. The syntax used for the anonymous version is correlating with infix type syntax, but this syntax gives it the meaning of a union type, which is preferred to infix type syntax. In fact, it might be implemented with an infix type that generates union types:
 
 \begin{lstlisting}
-operator or [A, B] (): Union[A, B] end
+type or [A, B] is Union[A, B]
 \end{lstlisting}
 
 
@@ -642,9 +642,9 @@ Postfix_Type     ::= Compound_Type
 Constraint_Block ::= '{' Block '}'
 \end{lstlisting}
 
-A constrained type constructs a subset of allowed members of its component type. Such a subset is defined as members for which the constraint block returns boolean \code{yes}. Constraints defined within the component type are implicitly available in such block as local variables. In case of a change in any value returned by any defined and used constraint, the type is marked dirty\footnote{For concurrency purposes.} and rechecked upon next value read. 
+A constrained type constructs a subset of allowed members of its component type. Such a subset is defined as members for which the constraint block returns boolean \code{yes}. Constraints defined within the component type are implicitly available in such block as local variables. In case of concurrent changes in the member, the type may not match anymore -- a warning is issued when a constraint is applied to a member that is not frozen nor immutable. 
 
-Constrained types, in face of overloading, force argument expression evaluation, so that the constrained type of a parameter can even be checked. Therefore, constrained types are not suitable candidates for parameters that are supposed to be lazy-evaluated, unless the early evaluation is intended. 
+Constrained types, in face of overloading, trigger eager argument expression evaluation, so that the constrained type of a parameter can even be checked.\footnote{Therefore, constrained types are not really suitable candidates for parameters that are supposed to be lazy-evaluated, unless the early evaluation is intended.}
 
 \paragraph{Note}
 Constrained types are an implementation of {\em dependent types} in Coral. Dependent types are basically functions from values to types, where the value part is present in the defined constraint and/or the constraint block. 
