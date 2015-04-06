@@ -256,6 +256,10 @@ Patterns are corresponding to elements of a tuple returned from \code{unapply} o
 \end{enumerate}
 If any named elements of the tuple are intended to be ignored, simply use the pattern ``\lstinline!$a$: _!'', or, to ignore all remaining named elements of the tuple, use the pattern ``\lstinline!**_!''. 
 
+\paragraph{Overloading}
+The \code{unapply} and \code{unapply_sequence} methods may be overloaded, in which case each overloaded variant is tested for a pattern match. If one variant matches, then the pattern matches. If no variant matches, then the pattern does not match. If more than one variant matches, it is an error because of ambiguity. 
+% TBD: when method preference is added, update this
+
 
 
 

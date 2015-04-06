@@ -698,7 +698,7 @@ d : (@[named :x] @[purely_named] Integer) $\mapsto$ Integer
 e : (@[named :x] @[variadic] Integer) $\mapsto$ Integer
 f : (@[named :x] Integer) $\mapsto$ Unit
 g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
-g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
+h : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
 \end{lstlisting}
 
 The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of result types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
@@ -1078,7 +1078,7 @@ conforms to the polymorphic type or type constructor
 \end{lstlisting}
 if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ for $i = 1 \commadots n$. 
 
-  \item Polymorphic types or type constructors $T$ and $T'$ must also fulfil the following. We characterize $T$ and $T'$ by their type parameter clauses ~\lstinline![$a_1 \commadots a_n$]!~ and ~\lstinline![$a'_1 \commadots a'_n$]!, where an $a_i$ or $a'_i$ may include a variance annotation, annotations, a higher-order type parameter clauses, and bounds. Then, $T$ conforms to $T'$ if any list ~\lstinline![$t_1 \commadots t_n$]!---with declared variances, annotations, bounds and higher-order type parameter clauses---of valid type arguments for $T'$ is also a valid list of type arguments for $T$ and ~\lstinline!$T$[$t_1 \commadots t_n$] <: $T'$[$t_1 \commadots t_n$]!. Note that this entails that:
+  \item Polymorphic types or type constructors $T$ and $T'$ must also fulfill the following. We characterize $T$ and $T'$ by their type parameter clauses ~\lstinline![$a_1 \commadots a_n$]!~ and ~\lstinline![$a'_1 \commadots a'_n$]!, where an $a_i$ or $a'_i$ may include a variance annotation, annotations, a higher-order type parameter clauses, and bounds. Then, $T$ conforms to $T'$ if any list ~\lstinline![$t_1 \commadots t_n$]!---with declared variances, annotations, bounds and higher-order type parameter clauses---of valid type arguments for $T'$ is also a valid list of type arguments for $T$ and ~\lstinline!$T$[$t_1 \commadots t_n$] <: $T'$[$t_1 \commadots t_n$]!. Note that this entails that:
   \begin{itemize}
     \item The bounds on $a_i$ must be the same or weaker than the corresponding bounds declared for $a'_i$. 
     \item The variance of $a_i$ must match the variance of $a'_i$, where covariance matches covariance, contravariance matches contravariance and any variance matches invariance. 

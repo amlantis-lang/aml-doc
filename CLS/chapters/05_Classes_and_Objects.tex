@@ -1000,6 +1000,21 @@ end class
 
 
 
+\subsection{Upgrade Constructor Definitions}
+\label{sec:upgrade-def}
+
+\syntax\begin{lstlisting}
+UCtor_Def     ::= ['convenience'] 'upgrade' 'constructor' 
+                  UCtor_Fun_Def
+UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
+                  (':=' Constr_Expr | Constr_Block)
+\end{lstlisting}
+
+
+
+
+
+
 
 \subsection{Case Classes}
 \label{sec:case-classes}
