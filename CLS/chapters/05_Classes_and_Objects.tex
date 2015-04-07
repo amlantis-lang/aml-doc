@@ -14,8 +14,6 @@ Tmpl_Def ::= ['case'] 'class' Class_Def
            | 'type' Const_Type_Def 'end' ['type']
 \end{lstlisting}
 
-% TBD: | 'aspect' Aspect_Def
-
 Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
 
 
@@ -1037,7 +1035,7 @@ object $c$ {
   def apply[$\tps$]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
       $c$[$\Ts$].new($xs_1$)$\ldots$($xs_n$)
   def unapply[$\tps$]($x$: $c$[$\tps$]?): Option[$e$] :=
-      unless x = nil
+      unless $x$ = nil
         Some($x$.$xs_{11} \commadots x$.$xs_{1k}$)
       else
         None
@@ -1049,7 +1047,7 @@ Here, $\Ts$ stands for the vector of types defined in the type parameter section
 
 If the case class definition contains an empty value parameter list, the \code{unapply} returns a \code{Boolean} instead of an \code{Option} type and is defined as follows:
 \begin{lstlisting}
-def unapply[$\tps$]($x$: $c$[$\tps$]?): Boolean := x /= nil
+def unapply[$\tps$]($x$: $c$[$\tps$]?): Boolean := $x$ /= nil
 \end{lstlisting}
 
 For each case of a value parameter list of $n$ parameters, the \code{unapply} returns these types: 
@@ -1239,18 +1237,23 @@ Object definitions define singleton instances. If no superclass is given, \code{
 It's most general form is ~\lstinline!object $m$ extends $t$!. Here, $m$ is the name of the object to be defined (or of the class object, which is the same as the related class), and $t$ is a template (\sref{sec:templates}) of one of the following forms:
 
 \paragraph{\em Singleton object form}
-This is a form of objects that are not class objects (not instances of ~\lstinline!Class[$C$]!). 
+This is a form of objects that are not class objects (not instances of ~\lstinline!Metaclass[$C$]!). 
 \begin{lstlisting}
 $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
 \end{lstlisting}
 
 \paragraph{\em Class object form}
-This is a form of objects that are class objects, therefore instances of ~\lstinline!Class[$C$]!. 
+This is a form of objects that are class objects, therefore instances of ~\lstinline!Metaclass[$C$]!. 
 \begin{lstlisting}
 $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
 \end{lstlisting}
 
 Every trait applied to a class object does not affect the associated class itself -- here, the class object is the object that inherits features of the included/prepended traits, not the class instances; and the trait is included/prepended in the metaclass of the class object. This also has an implication on self types of traits (\sref{sec:traits}) that are to be included in a class object of class $C$: the self type would have to be ~\lstinline!Class[$C$]!, not just $C$. 
+
+
+
+
+
 
 \subsection{Case Objects}
 \label{sec:case-objects}
@@ -1260,6 +1263,14 @@ Tmpl_Def ::= 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
+
+A case object definition implicitly adds some methods to the object instance, making it suitable as an extractor object (\sref{sec:extractor-patterns}), and are defined as follows:
+\begin{lstlisting}
+object $c$ {
+  def unapply($x$: $c$.type?): Boolean := ($x$ == self)
+}
+\end{lstlisting}
+
 
 
 
