@@ -126,7 +126,7 @@ Defined values and variables may not be undefined by assigning them with the \co
 Simple_Expr1 ::= Path
                | '(' Anon_Class ')' '.' Selection
                | Simple_Expr '.' Selection
-Selection    ::= ['?'] id
+Selection    ::= ['?'] id | digit {digit}
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
@@ -147,7 +147,7 @@ The expected type of a designator's prefix is undefined. The type of a designato
 
 The selection ~\lstinline!$e$.$x$!~ is evaluated by first evaluating the qualifier expression $e$, which yields an object $r$. The selection's result is then the member $m$ of $r$ that is either defined by $m$ or defined by a definition overriding $m$. 
 
-
+A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is useful for selecting members whose name is a decimal number. Tuple types have such members, and other types may define such members by enclosing their names in backticks, e.g. ~\lstinline!def `1` () := 1!. The expression $e$ must not be a number literal. 
 
 
 

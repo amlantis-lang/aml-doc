@@ -249,7 +249,7 @@ Each pattern, which appears inside of a constructor pattern or an extractor patt
 \paragraph{Pattern mappings}
 Patterns are corresponding to elements of a tuple returned from \code{unapply} or \code{unapply_sequence} very much like arguments are corresponding to parameters:
 \begin{enumerate}
-  \item Patterns without a name $p_i$ are mapped in their order of appearance to elements of the tuple, \code{_$i$}. 
+  \item Patterns without a name $p_i$ are mapped in their order of appearance to elements of the tuple, \code{$i$}. 
   \item Remaining patterns with a name are mapped to named elements of the tuple. 
   \item If there are more named elements of the tuple left and there is a pattern prefixed with ``\code{**}'' (i.e. ``\lstinline!**$p_i$!''), then the remaining named elements are mapped to it, with a type of ~\lstinline!Map[Symbol, $S$]!, where $S$ is the union of types of all the remaining named elements. Such pattern is considered to be a named pattern, but does not include a pattern name in its syntax, and should appear as the last in a sequence of named patterns.
   \item It is an error if a pattern has no element in the tuple left to map to, or if the next remaining tuple element is not named. If the tuple has still more elements to map to, it simply does not match the enclosing extractor or constructor pattern, therefore, the patterns have to be exhausting. It is also an error if a pattern without a name maps to an element of the tuple that is purely named. 

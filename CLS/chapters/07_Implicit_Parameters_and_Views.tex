@@ -293,7 +293,7 @@ object program {
 \subsection{Dynamic Value Dispatch}
 \label{sec:dynamic-value-dispatch}
 
-The last approach is in fact a syntax sugar for the previous approach, with some limitations. 
+The last approach taps into a whole new kind of methods. 
 
 It uses two-phase dispatch:
 \begin{enumerate}
@@ -336,7 +336,7 @@ object program {
 \example Multiple dispatch with dynamic value dispatch, area of shapes. This example shows a possible direction of extensions to the multi-methods, by providing more implementations for different symbols. 
 \begin{lstlisting}
 object program {
-  def dispatch area (obj: Map[String, Any]): Real
+  def dispatch area (obj: Map[Symbol, Any]): Real
     obj(:shape)
   end def
   

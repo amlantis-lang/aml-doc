@@ -323,11 +323,11 @@ Simple_Type ::= '(' Types ')'
 
 A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
 
-Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods ~\lstinline!_1$ \commadots $_n!~ (using an ``offset'' that is outside of the tuple's size results in a method-not-found error, not offset-out-of-bounds). 
+Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods ~\lstinline!1$ \commadots n$!. 
 
 Tuple classes are generated lazily by the runtime as needed, so that the language does not constrain users to tuples of only limited sizes, but allows any size. 
 
-If any of the tuple's type parameters $T_i$ is annotated to be named $n$ (see \sref{sec:parameterized-types}, then an additional method named $n$ is added, returning the same value as ~\lstinline!_$i$!, of the type $T_i$. If that type parameter is furthermore annotated with ~\lstinline!@[purely_named]!, then the ~\lstinline!_$i$!~ is removed. 
+If any of the tuple's type parameters $T_i$ is annotated to be named $n$ (see \sref{sec:parameterized-types}, then an additional method named $n$ is added, returning the same value as ~\lstinline!$i$!, of the type $T_i$. If that type parameter is furthermore annotated with ~\lstinline!@[purely_named]!, then the ~\lstinline!$i$!~ is removed. 
 
 
 
