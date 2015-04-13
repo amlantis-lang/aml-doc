@@ -230,7 +230,6 @@ The name of any declared or defined variable must not end with ``\lstinline@_=@'
 A variable definition ~\lstinline!var $x$: $T$ := _!~ introduces a mutable variable with type $T$ and a default initial value. The default value depends on the type $T$ as follows:
 \begin{quote}\begin{tabular}{ll}
 \code{0} & if $T$ is \code{Integer} or one of its subrange types, \\
-\code{0L} & if $T$ is \code{Long},\\
 \lstinline@0.0f@ & if $T$ is \code{Float},\\
 \lstinline@0.0d@ & if $T$ is \code{Double},\\
 \code{no} & if $T$ is \code{Boolean},\\
