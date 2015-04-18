@@ -33,6 +33,40 @@ This section lists commonly used module structure and file suffixes and names.
 
 A module is a directory located in your system at a location unspecified by this specification. In the following sections, it will be referred to as {\em module root}. 
 
+\paragraph{Module directory name}
+A directory holding a module must have the same name as the module, followed by a dot ``\lstinline!.!'' and the vendor name. If it is standalone, so that no other modules of the same name share the same parent directory, the vendor part including the leading dot can be omitted. When the module is a submodule to another module, omitting the vendor part means that the submodule has the same vendor name. 
+
+\example Such directories may look like:
+\begin{lstlisting}
+/Lang.coral
+/Your_Module.com.example
+    /source
+        /coral
+            /Some_Submodule // implied .com.example from parent
+                / $\ldots$
+            /Some_Submodule.different.vendor
+                / $\ldots$
+    /compiled
+        /coral
+            /Some_Submodule // implied .com.example from parent
+                / $\ldots$
+            /Some_Submodule.different.vendor
+                / $\ldots$
+    /vendor
+        /Another_Submodule.foo.bar
+            /protocols
+                / $\ldots$
+    /binaries
+        /an_executable.a
+        / $\ldots$
+    /protocols
+        /Plugin.coralp
+        / $\ldots$
+    /resources
+        /logo.png
+        / $\ldots$
+\end{lstlisting} 
+
 \paragraph{Sources}
 A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Coral sources may be located, or alternatively, it can be forked into more directories, each for a specific language. The directory may then look like:
 \begin{lstlisting}
@@ -44,8 +78,9 @@ A common name for this directory is \code{src}, or \code{source}. Inside of this
     /clojure
     /coral
         /macros
-        /Sub_Module
+        /Submodule
         /Another_Submodule
+        /Submodule.different.vendor
     /java
     /haskell
     /objc
@@ -65,6 +100,8 @@ A module file may be placed in a Coral sources directory, and is named \code{mod
 
 This directory may be omitted from a release version of your software (usually useful for proprietary software). 
 
+Submodules can be placed in a directory of the same name as the submodule's inside the directory where Coral sources are. 
+
 \paragraph{Compiled files}
 A common name for this directory is \code{com}, or \code{compiled}. It follows the same structure as sources directory:
 \begin{lstlisting}
@@ -76,8 +113,9 @@ A common name for this directory is \code{com}, or \code{compiled}. It follows t
     /clojure
     /coral
         /macros
-        /Sub_Module
+        /Submodule
         /Another_Submodule
+        /Submodule.different.vendor
     /java
     /haskell
     /objc
@@ -107,7 +145,7 @@ A common name for this directory is \code{ven}, or \code{vendor}, the latter may
 
 Dependencies for a module may be defined in the module file, along with version requirements and possibly a network path to download the module. 
 
-A path to a vendor directory follows the reversed URL, each component being represented by a separate directory, like: \code{/vendor/com/example}. 
+A path to a vendor directory follows the module name. 
 
 
 

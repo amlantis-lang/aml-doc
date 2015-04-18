@@ -682,7 +682,10 @@ nary_op_id  ::= '?' {opchar}
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [(id | op_id) Infix_expr]
               | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
-Prefix_Expr ::= [op_id | 'not'] Simple_Expr
+              | Range_Expr
+Prefix_Expr ::= [op_id | 'not'] Simple_Expr1
+Range_Expr  ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
+                [FP_Delta [FP_Digits]]
 \end{lstlisting}
 
 Expressions can be constructed from operands and operators. 
@@ -864,6 +867,17 @@ not a    // boolean not (prefix, unary; when applied to booleans)
 % Standard fuzzy logic operators:
 % \begin{lstlisting}
 % \end{lstlisting}
+
+
+
+
+
+\subsubsection{Range Expressions}
+A range expression (the \code{Range_Expr} syntax category) is a special case of an infix expression, which can optionally be followed by delta and digits specifications, so that a range that may result from it the expression can swap a floating point type with a fixed point type, and thus allowing more operations on the range, e.g. iteration (where the delta defines the ``step'' of each iteration). 
+
+If the expression contains both delta and digits specifications, the expected type of both operands is a decimal fixed point type with corresponding specification of delta and digits. The range of the type is implementation-defined. 
+
+If the expression contains only a delta specification, the expected type of both operands is an ordinary fixed point type with corresponding specification of delta. The range of the type is implementation-defined. 
 
 
 
@@ -1108,8 +1122,8 @@ f(i, j) := (e_1, e_2)        f.update(i, j)((e_1, e_2))
 
 \syntax\begin{lstlisting}
 Mul_Assign_Expr ::= Mul_Vars ':=' Mul_Exprs
-Mul_Vars        ::= [val_ids ','] ['*' id [':' Type] ','] val_ids
-                  | [val_ids ','] '*' id [':' Type]
+Mul_Vars        ::= [[val_ids ','] '*' id ','] val_ids
+                  | [val_ids ','] '*' id
 Mul_Exprs       ::= Mul_Expr {',' Mul_Expr}
 Mul_Expr        ::= ['*'] Expr | TT_Expr
 \end{lstlisting}

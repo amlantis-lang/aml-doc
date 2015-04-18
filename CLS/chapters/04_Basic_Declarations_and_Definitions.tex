@@ -69,7 +69,7 @@ Val_Dcl     ::= val_ids ':' Type
 Pat_Var_Def ::= [R_Modifier] 'val' Pat_Def
               | [R_Modifier] 'let' ['!'] var_dcl ':=' Expr
 Pat_Def     ::= Pattern2 {',' Pattern2} [':' Type] ':=' Exprs
-              | [var_ids ','] ['*' id [':' Type] ','] var_ids 
+              | [[var_ids ','] '*' id [':' Type] ','] var_ids 
                 ':=' Mul_Exprs
               | [var_ids ','] '*' id [':' Type] 
                 ':=' Mul_Exprs
@@ -190,17 +190,15 @@ The name of any declared or defined value must not end with ``\lstinline@_=@''.
 
 The following shorthands are recognized: 
 \begin{itemize}
-\item[]
-A value declaration ~\lstinline@val $x_1 \commadots x_n$: $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$: $T$; $\ldots$; val $x_n$: $T$@. 
+  \item[] A value declaration ~\lstinline@val $x_1 \commadots x_n$: $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$: $T$; $\ldots$; val $x_n$: $T$@. 
 
-\item[]
-A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1$ := $e$; $\ldots$; val $p_n$ := $e$@. 
+  \item[] A value definition ~\lstinline@val $p_1 \commadots p_n$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1$ := $e$; $\ldots$; val $p_n$ := $e$@. Multiple such sequences may appear in a single value definition, then every appearing $T$ defined type of the preceding values without an explicit type. 
 
-\item[]
-A value definition ~\lstinline@val $p_1 \commadots p_n: T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1: T$ := $e$; $\ldots$; val $p_n: T$ := $e$@.
+  \item[] A value definition ~\lstinline@val $p_1 \commadots p_n: T$ := $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1: T$ := $e$; $\ldots$; val $p_n: T$ := $e$@.
 
-\item[]
-A value definition ~\lstinline!val $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ := $e$!~ is a shorthand for the sequence of value definitions ~\lstinline!val $p_1$: $\ps$ -> $T \commadots p_n$: $\ps$ -> $T$ := $e$!~, where $\ps$ are parameter sections (\sref{sec:function-decls-defs}).
+  \item[] A value definition ~\lstinline!val $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ := $e$!~ is a shorthand for the sequence of value definitions ~\lstinline!val $p_1$: $\ps$ -> $T \commadots p_n$: $\ps$ -> $T$ := $e$!~, where $\ps$ are parameter sections (\sref{sec:function-decls-defs}).
+
+  \item[] A value definition part ~\lstinline@*$x$: $T$@~ is a shorthand for the type ~\lstinline!Sequence[$T$]!~ of the value name $x$. 
 \end{itemize}
 
 
@@ -229,29 +227,31 @@ The name of any declared or defined variable must not end with ``\lstinline@_=@'
 
 A variable definition ~\lstinline!var $x$: $T$ := _!~ introduces a mutable variable with type $T$ and a default initial value. The default value depends on the type $T$ as follows:
 \begin{quote}\begin{tabular}{ll}
-\code{0} & if $T$ is \code{Integer} or one of its subrange types, \\
-\lstinline@0.0f@ & if $T$ is \code{Float},\\
-\lstinline@0.0d@ & if $T$ is \code{Double},\\
-\code{no} & if $T$ is \code{Boolean},\\
-\lstinline@()@ & if $T$ is \code{Unit}, \\
-\code{nil} & for all other types $T$.
+  \code{0} & if $T$ is \code{Integer} or one of its subrange types, \\
+  \lstinline@0.0f@ & if $T$ is \code{Float} or \code{Half_Float},\\
+  \lstinline@0.0d@ & if $T$ is \code{Double},\\
+  \lstinline@0.0q@ & if $T$ is \code{Quadruple},\\
+  \lstinline@0.0df@ & if $T$ is \code{Decimal} or \code{Real},\\
+  \lstinline@0 / 1r@ & if $T$ is \code{Rational},\\
+  \lstinline@0 + 0i@ & if $T$ is \code{Complex},\\
+  \code{no} & if $T$ is \code{Boolean},\\
+  \lstinline@()@ & if $T$ is \code{Unit}, \\
+  \code{nil} & for all other types $T$.
 \end{tabular}\end{quote}
-It is an error if the type $T$ is not nullable and is expected to have a default value at the same time. 
+It is an error if the type $T$ is not nullable and is expected to have a default value of \code{nil} at the same time. 
 
 The following shorthands are recognized:
 \begin{itemize}
-\item[]
-A variable declaration ~\lstinline@var $x_1 \commadots x_n$: $T$@~ is a
+  \item[] A variable declaration ~\lstinline@var $x_1 \commadots x_n$: $T$@~ is a
 shorthand for the sequence of variable declarations ~\lstinline@var $x_1$: $T$; $\ldots$; var $x_n$: $T$@. 
 
-\item[]
-A variable definition ~\lstinline@var $x_1 \commadots x_n$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ := $e$; $\ldots$; var $x_n$ := $e$@. 
+  \item[] A variable definition ~\lstinline@var $x_1 \commadots x_n$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ := $e$; $\ldots$; var $x_n$ := $e$@. 
 
-\item[]
-A variable definition ~\lstinline@var $x_1 \commadots x_n$: $T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$: $T$ := $e$; $\ldots$; var $x_n$: $T$ := $e$@.
+  \item[] A variable definition ~\lstinline@var $x_1 \commadots x_n$: $T$ := $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$: $T$ := $e$; $\ldots$; var $x_n$: $T$ := $e$@. Multiple such sequences may appear in a single variable definition, then every appearing $T$ defined type of the preceding variables without an explicit type. 
 
-\item[]
-A variable definition ~\lstinline!var $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ := $e$!~ is a shorthand for the sequence of value definitions ~\lstinline!var $p_1$: $\ps$ -> $T \commadots p_n$: $\ps$ -> $T$ := $e$!~, where $\ps$ are parameter sections (\sref{sec:function-decls-defs}).
+  \item[] A variable definition ~\lstinline!var $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ := $e$!~ is a shorthand for the sequence of value definitions ~\lstinline!var $p_1$: $\ps$ -> $T \commadots p_n$: $\ps$ -> $T$ := $e$!~, where $\ps$ are parameter sections (\sref{sec:function-decls-defs}).
+  
+  \item[] A variable definition part ~\lstinline@*$x$: $T$@~ is a shorthand for the type ~\lstinline!Sequence[$T$]!~ of the variable name $x$. 
 \end{itemize}
 
 
@@ -423,14 +423,11 @@ The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!
 
 To illustrate nested scoping, these declarations are all equivalent: 
 \begin{itemize}
-\item[]
-~\lstinline!type t[m[x] <: Bound[x], Bound[x]] end! 
+  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[x]] end! 
 
-\item[]
-~\lstinline!type t[m[x] <: Bound[x], Bound[y]] end!
+  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[y]] end!
 
-\item[]
-~\lstinline!type t[m[x] <: Bound[x], Bound[_]] end!,
+  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[_]] end!,
 \end{itemize} 
 as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline!x!~ is unrelated to the first two occurrences, but may confuse the reader. 
 
@@ -458,6 +455,109 @@ type My_Collection <: Iterable end
   // type constructor members must explicitly state
   // their type parameters
 \end{lstlisting}
+
+
+
+
+
+\subsection{Range, Floating \& Fixed Point Subtype Definitions}
+\label{sec:fl-fi-subtypes}
+
+\syntax\begin{lstlisting}
+Type_Def        ::= FP_Type_Def 
+                  | FP_Subtype_Def 
+                  | FP_Range_Def
+FP_Type_Def     ::= id [Type_Param_Clause] (':=' | 'is')
+                    (FiP_Type_Def | FlP_Type_Def) 
+                    'end' ['type']
+FP_Subtype_Def  ::= id [Type_Param_Clause] (':=' | 'is') 
+                    Type
+                    (FiP_Subtype_Def | FlP_Subtype_Def) 
+                    'end' ['type']
+FP_Range_Def    ::= id [Type_Param_Clause] (':=' | 'is') 
+                    FP_Range 'end' ['type']
+FlP_Type_Def    ::= FP_Digits [FP_Range]
+FlP_Subtype_Def ::= FP_Digits [FP_Range]
+                  | FP_Range
+FiP_Type_Def    ::= FP_Delta [FP_Range] 
+                  | FP_Delta FP_Digits [FP_Range]
+FiP_Subtype_Def ::= FP_Delta [FP_Digits] [FP_Range]
+                  | FP_Digits [FP_Range]
+                  | FP_Range
+FP_Digits       ::= 'digits' Infix_Expr
+FP_Delta        ::= 'delta' Infix_Expr
+FP_Range        ::= 'range' Infix_Expr 
+                    ('..' | '...' | '..<') Infix_Expr
+                  | 'range' Type
+\end{lstlisting}
+
+The described syntaxes are for definitions of 4 special types of values:
+\begin{enumerate}
+  \item Range subtypes.
+  \item Floating point types. 
+  \item Ordinary fixed point types. 
+  \item Decimal fixed point types. 
+\end{enumerate}
+
+\paragraph{Range subtypes}
+A range subtype (the \code{FP_Range_Def} syntax category) is a type defined by a lower and upper bounds. The expected type of both bounds is \code{Magnitude}. Such a range type may be used in combination with the following subtypes to constrain them, or standalone as a regular range value. The lower bound must be lower than or equal to the upper bound. The lower bound may be negative infinity, the upper bound may be positive infinity. The range subtype itself is a subtype of \code{Magnitude}, or more precisely, a subtype of the least upper bound of types of the bounds, selecting a range of its values. For floating and fixed point types, it has to be a range of \code{Real} values. 
+
+\paragraph{Floating point types} ~\\
+A floating point type (the \code{FlP_Type_Def} syntax category) is a way to define an appropriate representation of a floating point number, based on the required accuracy instead. 
+\begin{itemize}
+  \item[] The {\em requested decimal precision}, which is the minimum number of significant decimal digits required for the floating point type, is specified by the value of the expression given after the keyword \code{digits}. Such expression is expected to be of \code{Integer} type. 
+  \item[] The bounds of the range specification are expected to be \code{Real} type; the types do not need to be the same.\footnote{E.g., one bound can be an integer, the other a real number.}
+  \item[] The requested decimal precision shall be positive and not greater than an implementation-defined precision limit in \code{Number.Max_Base_Digits}. If the range specification is omitted, the requested decimal precision shall be not greater than \code{Number.Max_Digits}. 
+  \item[] A floating point type definition is illegal if the implementation does not support a floating point type that satisfies the requested decimal precision and range. 
+  \item[] A subtype of a floating point type is compatible to the parent type if the digits of the subtype are not greater than the digits of the parent type, and its range fits to the range of the parent type. 
+\end{itemize}
+
+\example Examples of floating point types and subtypes:
+\begin{lstlisting}
+type Coefficient is digits 10 range -1.0 ..< 1.0 
+end type
+
+type Mass is digits 7 range 0.0 ..< 1.0e+35 
+end type
+
+// a subtype with a smaller range
+type Probability is Real range 0.0 ... 1.0
+end type
+\end{lstlisting}
+
+\paragraph{Fixed point types}
+An ordinary fixed point type (the first branch of the \code{FiP_Type_Def} syntax category) is a way to define a decimal type, based on the given delta. 
+A decimal fixed point type (the second branch of the \code{FiP_Type_Def} syntax category) is a way to define a decimal type, based on the given delta and number of needed digits.  
+\begin{itemize}
+  \item[] The error bound of a fixed point type is specified as an absolute value, called the {\em delta} of the fixed point type. 
+  \item[] For a type defined by the fixed point type definition, the delta of the type is specified by the value of the expression given after the keyword \code{delta}; this expression is expected to be of a \code{Real} type. For a type defined by the decimal fixed point definition, the number of significant decimal digits is specified by the expression given after the keyword \code{digits}; this expression is expected to be of \code{Integer} type. 
+  \item[] The expressions given after the reserved keywords \code{delta} and \code{digits} shall result in positive values. 
+  \item[] The set of values of a fixed point type comprise the integral multiples of a number called the {\em small} of the type. 
+  \item[] For ordinary fixed point type, the small is an implementation-defined power of 2 not greater than the delta, unless annotation \code{@[fixed_point_small $s$]} is applied to the type, defining the small to be $s$, where $s$ is not greater than the delta. 
+  \item[] For decimal fixed point type, the small equals the delta; the delta shall be a power of 10. If a range specification is given, both bounds of the range shall be in the range $-(10^{\digits}-1)*\fpdelta$ \code{...} $(10^{\digits}-1)*\fpdelta$. 
+  \item[] A fixed point type definition is illegal if the implementation does not support a fixed point type with the given small and specified range or digits. 
+  \item[] An ordinary fixed point type definition defines an ordinary fixed point type, whose base range includes at least all multiples of the small that are between the bounds defined by the range specification, if it is given, or between negative infinity to positive infinity\footnote{Using the \code{Decimal} types.}, if the range specification is not given.
+  \item[] A decimal fixed point type definition defined a decimal fixed point type, whose base range includes at least the range $-(10^{\digits}-1)*\fpdelta$ \code{...} $(10^{\digits}-1)*\fpdelta$. 
+  \item[] If a decimal fixed point type definition does is not given a range specification, then an implicit range $-(10^{\digits}-1)*\fpdelta$ \code{...} $(10^{\digits}-1)*\fpdelta$ is specified for it. 
+  \item[] A subtype of a decimal fixed point type is compatible to the parent type if the digits of the subtype are not greater than the digits of the parent type, and its range fits to the range of the parent type. 
+\end{itemize}
+
+\example Examples of fixed point types and subtypes:
+\begin{lstlisting}
+type Volt is delta 0.125 range 0.0 ..< 255.0 
+end type
+
+type Fraction is delta Number.Fine_Delta range -1.0 ..< 1.0 
+end type
+
+type Money is delta 0.01 digits 15 
+end type
+
+type Salary is Money digits 10 
+end type
+\end{lstlisting}
+
+
 
 
 

@@ -49,7 +49,8 @@ plain_id ::= upper id_rest
 id       ::= ['@' | '@@'] (plain_id
              | '`' [(id_elem - '(') {id_elem}] '`')
 id_rest  ::= {letter | digit | '+' | '-' | '/' | '_'}
-id_elem  ::= id_rest | printable_char
+             (letter | digit) [('?' | '!')]
+id_elem  ::= printable_char
 \end{lstlisting}
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
@@ -305,11 +306,13 @@ Floating point and fixed point literals are of type \lstinline@Number@ as well a
 
 \begin{enumerate}
 
-  \item \lstinline@Float_32@ (IEEE 754 32-bit precision), alias \lstinline@Float@. 
+  \item \lstinline@Float_16@ (IEEE 754-2008 16-bit precision), alias \lstinline@Half_Float@. 
+  
+  \item \lstinline@Float_32@ (IEEE 754-2008 32-bit precision), alias \lstinline@Float@. 
 
-  \item \lstinline@Float_64@ (IEEE 754 64-bit precision), alias \lstinline@Double@.
+  \item \lstinline@Float_64@ (IEEE 754-2008 64-bit precision), alias \lstinline@Double@.
 
-  \item \lstinline@Float_128@ (IEEE 754 128-bit precision).
+  \item \lstinline@Float_128@ (IEEE 754-2008 128-bit precision), alias \lstinline@Quadruple@.
 
   \item \lstinline@Decimal@ ($-\infty$ to $\infty$).
 
