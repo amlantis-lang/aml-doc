@@ -187,6 +187,7 @@ There are literals for numbers (including integer, floating point and complex), 
 Literal ::= integer_literal
 	      | floating_point_literal
 	      | complex_literal
+	      | rational_literal
 	      | character_literal
 	      | string_literal
 	      | symbol_literal
@@ -335,36 +336,14 @@ A member named \code{Not_a_Number} exists in the class cluster \code{Number}, wi
 
 
 
-
-\subsection{Imaginary Number Literals}
-\label{sec:imaginaryliterals}
-
-\syntax\begin{lstlisting}
-imaginary_literal   ::= real_number_literal 'i'
-complex_literal     ::= [real_number_literal ('+' | '-') ]
-                        imaginary_literal
-	                  | imaginary_literal ('+' | '-') 
-	                    real_number_literal
-real_number_literal ::= integer_literal | float_literal
-\end{lstlisting}
-
-Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{+}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
-
-
-
-
-
 \subsection{Rational Number Literals}
 \label{sec:rationalliterals}
 
 \syntax\begin{lstlisting}
+real_number_literal ::= integer_literal | float_literal
 rat_suffix_literal  ::= real_number_literal 'r'
-rational_literal    ::= real_number_literal '/' 
-                        rat_suffix_literal
-number_literal      ::= real_number_literal
-	                  | imaginary_literal
-	                  | complex_literal
-	                  | rational_literal
+rational_literal    ::= real_number_literal 
+                        ['/' rat_suffix_literal]
 \end{lstlisting}
 
 Rational number literals are of type \code{Number}, and have a container type \code{Number.Rational}, which has further methods of creating instances of itself. There are also methods in \code{Number}, such as \code{/-}, which results in a rational number. Rational numbers have sort of increased accuracy of operations, especially when component types are integral types. 
@@ -375,6 +354,28 @@ val a := 1 / 3r
 val b := 1 /- 3
 val c := Rational(1, 3)
 \end{lstlisting}
+
+
+
+
+
+
+
+\subsection{Imaginary Number Literals}
+\label{sec:imaginaryliterals}
+
+\syntax\begin{lstlisting}
+imaginary_literal   ::= rational_literal 'i'
+complex_literal     ::= [rational_literal ('+' | '-') ]
+                        imaginary_literal
+	                  | imaginary_literal ('+' | '-') 
+	                    rational_literal
+number_literal      ::= imaginary_literal
+	                  | complex_literal
+	                  | rational_literal
+\end{lstlisting}
+
+Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{+}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
 
 
 
