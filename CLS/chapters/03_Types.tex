@@ -29,7 +29,7 @@ Simple_Type         ::= Simple_Type [Type_Args]
                       | Stable_Id
                       | Path '.' 'type'
                       | Literal ['.' 'type']
-                      | '(' Types ')'
+                      | '(' [Types] ')'
 Types               ::= Type {',' Type}
 \end{lstlisting}
 
@@ -648,6 +648,38 @@ Constrained types, in face of overloading, trigger eager argument expression eva
 
 \paragraph{Note}
 Constrained types are an implementation of {\em dependent types} in Coral. Dependent types are basically functions from values to types, where the value part is present in the defined constraint and/or the constraint block. 
+
+
+
+
+
+\subsection{Mutable \& Immutable Types}
+\label{sec:mutable-immutable-types}
+
+Coral offers two annotations that can constraint a type to either {\em mutability} or {\em immutability}. Implicitly, types are not constrained in such a way, therefore a type could represent both mutable and immutable values at the same time. 
+
+\paragraph{Mutable types}
+A mutable type is expressed with the annotation \code{@[mutable]}, and is not transitive. It constrains a type to mutable values (i.e. not frozen), but not values referred to by the values it represents. 
+
+\paragraph{Immutable types}
+An immutable type is expressed with the annotation \code{@[immutable]}, and is transitive. It constrain a type to immutable values (i.e. frozen) and also requires that all values that are referred to by those immutable values to be also immutable, unless they are explicitly typed as mutable. 
+
+\paragraph{Note}
+See also section about storage of mutable and immutable values: (\sref{sec:mutable-immutable-storage}).
+
+A \code{mutable} type can be seen as a constrained type, where the constraint is:
+\begin{lstlisting}
+$T$ with constraint { not self'is_frozen? }  ,
+\end{lstlisting}
+where \code{self} would be a constraint published by the type $T$, referring to the \code{self} of a value of the type $T$. 
+
+An \code{immutable} type can be seen as a constrained type, where the constraint is:
+\begin{lstlisting}
+$T$ with constraint { self'is_frozen? }  ,
+\end{lstlisting}
+where \code{self} would be a constraint published by the type $T$, referring to the \code{self} of a value of the type $T$. 
+
+If a mutable or immutable type is seen as a constrained type, but $T$ is already a constrained type, then the condition presented by the already constrained type $T$ can be seen without loss of generality as joined with the mutable/immutable constraint by \code{and}. 
 
 
 

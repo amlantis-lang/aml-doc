@@ -4,11 +4,11 @@
 \chapter{Classes \& Objects}
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= ['case'] 'class' Class_Def
-           | ['case'] 'object' Object_Def
-           | 'trait' Trait_Def
+Tmpl_Def ::= [Mutability] ['case'] 'class' Class_Def
+           | [Mutability] ['case'] 'object' Object_Def
+           | [Mutability] 'trait' Trait_Def
            | 'protocol' Pro_Def
-           | ['case'] 'interface' Ifc_Def
+           | [Mutability] ['case'] 'interface' Ifc_Def
            | 'refinement' Refinement_Def
            | 'aspect' Aspect_Def
            | 'type' Const_Type_Def 'end' ['type']
@@ -559,6 +559,7 @@ Local_Modifier   ::= 'implicit'
 Access_Modifier  ::= 'public'
                    | ('protected' | 'private') [Access_Qualifier]
 Access_Qualifier ::= '[' (id | 'self') ']'
+Mutability       ::= 'mutable' | 'immutable'
 \end{lstlisting}
 
 Access modifiers may appear in two forms:
@@ -601,69 +602,65 @@ Accessibility modifiers can not be applied to instance variables and class insta
 
 The rules governing the validity and meaning of a modifier are as follows: 
 \begin{itemize}
-\item
-The \code{private} access modifier can be used with any declaration or definition in a class. Such members can be accessed only from within the directly enclosing class, the class object (\sref{sec:object-definitions}) and any member of the directly enclosing class, including inner classes. They are not inherited by subclasses and they may not override definitions in parent classes. 
+  \item The \code{private} access modifier can be used with any declaration or definition in a class. Such members can be accessed only from within the directly enclosing class, the class object (\sref{sec:object-definitions}) and any member of the directly enclosing class, including inner classes. They are not inherited by subclasses and they may not override definitions in parent classes. 
 
-The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$ (\sref{sec:object-definitions}). 
+  The modifier may be {\em qualified} with an identifier $C$ (e.g. \lstinline!private[$C$]!) that must denote a class or a module enclosing the declaration or definition. Members labeled with such a modifier are accessible respectively only from code inside the module $C$ or only from code inside the class $C$ and the class object $C$ (\sref{sec:object-definitions}). 
 
-A different form of qualification is \lstinline!private[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self} and starts with $O$ for some class $O$ enclosing the reference. . Moreover, the restrictions for unqualified \code{private} apply as well. 
+  A different form of qualification is \lstinline!private[self]!. A member $M$ marked with this modifier is called {\em object-private}; it can be accessed only from within the object in which it is defined. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this} or \code{self} and starts with $O$ for some class $O$ enclosing the reference. . Moreover, the restrictions for unqualified \code{private} apply as well. 
 
-Members marked \code{private} without any qualifier are called {\em class-private}. A member {\em is private} if it is either class-private or object-private, but not if it is marked \lstinline!private[$C$]!, where $C$ is an identifier, in the latter case the member is called {\em qualified private}. 
+  Members marked \code{private} without any qualifier are called {\em class-private}. A member {\em is private} if it is either class-private or object-private, but not if it is marked \lstinline!private[$C$]!, where $C$ is an identifier, in the latter case the member is called {\em qualified private}. 
 
-Class-private and object-private members must not be \code{abstract}, since there is no way to provide a concrete implementation for them, as private members are not inherited. Moreover, modifiers \code{protected} \& \code{public} can not be applied to them (that would be a contradiction\footnote{E.g., a member can not be public and private at the same time.}), and the modifier \code{override} can not be applied to them as well\footnote{Otherwise, if a private member could override an inherited member, that would mean there is an inherited member that could be overridden, but private members can not override anything: only protected and public members can be overridden. If a member was overriding an inherited member, the parent class would {\em lose access} to it.}. 
+  Class-private and object-private members must not be \code{abstract}, since there is no way to provide a concrete implementation for them, as private members are not inherited. Moreover, modifiers \code{protected} \& \code{public} can not be applied to them (that would be a contradiction\footnote{E.g., a member can not be public and private at the same time.}), and the modifier \code{override} can not be applied to them as well\footnote{Otherwise, if a private member could override an inherited member, that would mean there is an inherited member that could be overridden, but private members can not override anything: only protected and public members can be overridden. If a member was overriding an inherited member, the parent class would {\em lose access} to it.}. 
 
-\item
-The \code{protected} access modifier can be used with any declaration or definition in a class. Protected members of a class can be accessed from within: 
-\begin{itemize}
-\item the defining class
-\item all classes that have the defining class as a base class
-\item all class objects of any of those classes
-\end{itemize}
+  \item The \code{protected} access modifier can be used with any declaration or definition in a class. Protected members of a class can be accessed from within: 
+  \begin{itemize}
+    \item the defining class
+    \item all classes that have the defining class as a base class
+    \item all class objects of any of those classes
+  \end{itemize}
 
-A \code{protected} access modifier can be qualified with an identifier $C$ (e.g. \lstinline!protected[$C$]!) that must denote a class or module enclosing the definition. Members labeled with such a modifier are {\em also}\footnote{In addition to unqualified \code{protected} access.} accessible respectively from all code inside the module $C$ or from all code inside the class $C$ and its class object $C$ (\sref{sec:object-definitions}). 
+  A \code{protected} access modifier can be qualified with an identifier $C$ (e.g. \lstinline!protected[$C$]!) that must denote a class or module enclosing the definition. Members labeled with such a modifier are {\em also}\footnote{In addition to unqualified \code{protected} access.} accessible respectively from all code inside the module $C$ or from all code inside the class $C$ and its class object $C$ (\sref{sec:object-definitions}). 
 
-A protected identifier $x$ can be used as a member name in a selection \lstinline!$r$.$x$! only if one of the following applies: 
-\begin{itemize}
-\item The access is within the class defining the member, or, if a qualification $C$ is given, inside the module $C$, the class $C$ or the class object $C$, or
-\item $r$ ends with one of the keywords \code{this}, \code{self} or \code{super}, or
-\item $r$'s type conforms to a type-instance of the class which has the access to $x$. 
-\end{itemize}
+  A protected identifier $x$ can be used as a member name in a selection \lstinline!$r$.$x$! only if one of the following applies: 
+  \begin{itemize}
+    \item The access is within the class defining the member, or, if a qualification $C$ is given, inside the module $C$, the class $C$ or the class object $C$, or
+    \item $r$ ends with one of the keywords \code{this}, \code{self} or \code{super}, or
+    \item $r$'s type conforms to a type-instance of the class which has the access to $x$. 
+  \end{itemize}
 
-A different form of qualification is \lstinline!protected[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
+  A different form of qualification is \lstinline!protected[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
 
-\item
-The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Coral is virtual, so Coral has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
+  \item The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Coral is virtual, so Coral has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
 
-\item
-The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of traits. 
+  \item The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of traits. 
 
-We call a member $M$ of a class or trait {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
+  We call a member $M$ of a class or trait {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
 
-The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behavior can be turned off only in tests, if needed, and is implicitly turned on. 
+  The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behavior can be turned off only in tests, if needed, and is implicitly turned on. 
 
-The \code{abstract override} modifier combination can be thus used with a full definition in a trait and yet affect the class or trait with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
+  The \code{abstract override} modifier combination can be thus used with a full definition in a trait and yet affect the class or trait with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
 
-Additionally, an annotation \lstinline!@[Override]! exists for class members that triggers only warnings in case the member has no inherited member to override, but does not prevent the class from being created. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+  Additionally, an annotation \lstinline!@[Override]! exists for class members that triggers only warnings in case the member has no inherited member to override, but does not prevent the class from being created. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
 
-\item
-The \code{abstract} local modifier is used in class declarations. It is never mandatory for classes with incomplete members or for declarations and definitions. It is implied (and therefore redundant) for traits. Abstract classes can not be instantiated (an exception is raised if tried to do so), unless provided with traits and/or a refinement which override all incomplete members of the class. Only abstract classes and (all) traits can have abstract term members. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
+  \item The \code{abstract} local modifier is used in class declarations. It is never mandatory for classes with incomplete members or for declarations and definitions. It is implied (and therefore redundant) for traits. Abstract classes can not be instantiated (an exception is raised if tried to do so), unless provided with traits and/or a refinement which override all incomplete members of the class. Only abstract classes and (all) traits can have abstract term members. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
 
-The \code{abstract} local modifier can be used with conjunction with \code{override} modifier for class member definitions. 
+  The \code{abstract} local modifier can be used with conjunction with \code{override} modifier for class member definitions. 
 
-Additionally, an annotation \lstinline!@[Abstract]! exists for classes and class members that triggers only warnings in case of instantiation, but does not prevent the instantiation. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+  Additionally, an annotation \lstinline!@[Abstract]! exists for classes and class members that triggers only warnings in case of instantiation, but does not prevent the instantiation. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
 
-\item
-The \code{final} local modifier applies to class members definitions and to class definitions. Every \code{final} class member can not be overridden in subclasses. Every \code{final} class can not be inherited by a class or trait. Members of final classes are implicitly also final. Note that \code{final} may not be applied to incomplete members, and can not be combined in one modifier list with the \code{sealed} local modifier. 
+  \item The \code{final} local modifier applies to class members definitions and to class definitions. Every \code{final} class member can not be overridden in subclasses. Every \code{final} class can not be inherited by a class or trait. Members of final classes are implicitly also final. Note that \code{final} may not be applied to incomplete members, and can not be combined in one modifier list with the \code{sealed} local modifier. 
 
-Additionally, an annotation \lstinline!@[Final]! exists for classes and class members that triggers only warnings in case of inheriting or overriding respectively, but does not prevent the inheritance or overriding respectively. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+  Additionally, an annotation \lstinline!@[Final]! exists for classes and class members that triggers only warnings in case of inheriting or overriding respectively, but does not prevent the inheritance or overriding respectively. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
 
-\item
-The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or trait is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
+  \item The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or trait is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
 
-Additionally, an annotation \lstinline!@[Sealed]! exists for classes and class members that triggers only warnings in case of inheriting outside the same source file, but does not prevent the inheritance. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+  Additionally, an annotation \lstinline!@[Sealed]! exists for classes and class members that triggers only warnings in case of inheriting outside the same source file, but does not prevent the inheritance. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
+  
+  \item The \code{mutable} mutability modifier guarantees that all member values of the type that it is applied to will not be immutable, hence not frozen. It transitively applies to all subtypes, and is disallowed when any of the parents of the type is declared to be immutable. It is an error to freeze values that are declared mutable. 
+  
+  \item The \code{immutable} mutability modifier guarantees that all member values of the type that it is applied to will be immutable, hence frozen. It transitively applies to all subtypes, and is disallowed when any of the parents of the type is declared to be mutable. When applied to classes, it does so by implicitly freezing all values right before all their constructors are finished\footnote{Freezing is re-entrant and irreversible. If a constructor freezes a value explicitly, nothing is wrong.}. 
 
-\item
-The \code{lazy} local modifier applies to value definitions. A \code{lazy} value is initialized the first time it is accessed (which might eventually never happen). Attempting to access a lazy value during its initialization is a blocking invocation until the value is initialized of failed to initialize. If an exception is thrown during initialization, the value is considered uninitialized and the initialization is restarted on later access, re-evaluating its right hand side. 
+  \item The \code{lazy} local modifier applies to value definitions. A \code{lazy} value is initialized the first time it is accessed (which might eventually never happen). Attempting to access a lazy value during its initialization is a blocking invocation until the value is initialized of failed to initialize. If an exception is thrown during initialization, the value is considered uninitialized and the initialization is restarted on later access, re-evaluating its right hand side. 
 
 \example The following code illustrates the use of qualified and unqualified private: 
 \begin{lstlisting}
@@ -715,7 +712,7 @@ This is just for the sake of completeness, since change from public to public is
 \label{sec:class-definitions}
 
 \syntax\begin{lstlisting}
-Tmpl_Def            ::= 'class' Class_Def
+Tmpl_Def            ::= [Mutability] 'class' Class_Def
 Class_Def           ::= id [Type_Param_Clause] 
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
@@ -1018,7 +1015,7 @@ UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
 \label{sec:case-classes}
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= 'case' 'class' Class_Def
+Tmpl_Def ::= [Mutability] 'case' 'class' Class_Def
 \end{lstlisting}
 
 If a class definition is prefixed with \code{case}, the class is said to be a {\em case class}. 
@@ -1097,7 +1094,7 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 \label{sec:traits}
 
 \syntax\begin{lstlisting}
-Tmpl_Def       ::= 'trait' Trait_Def
+Tmpl_Def       ::= [Mutability] 'trait' Trait_Def
 Trait_Def      ::= id [Type_Param_Clause] 
                    Trait_Tmpl_Env
 Trait_Tmpl_Env ::= 'extends' [Early_Defs] Trait_Parents
@@ -1207,7 +1204,8 @@ Protocol references are preferred to traits to be used by library designers to d
 \label{sec:interfaces}
 
 \syntax\begin{lstlisting}
-Tmpl_Def      ::= ['case'] 'interface' [Ifc_Qualifier] Ifc_Def
+Tmpl_Def      ::= [Mutability] ['case'] 'interface' 
+                  [Ifc_Qualifier] Ifc_Def
 Ifc_Qualifier ::= '[' Ifc_Kind ']'
 Ifc_Kind      ::= 'class' | 'trait' | 'object'
 Ifc_Def       ::= id [Type_Param_Clause]
@@ -1259,7 +1257,7 @@ Every trait applied to a class object does not affect the associated class itsel
 \label{sec:case-objects}
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= 'case' 'object' Object_Def
+Tmpl_Def ::= [Mutability] 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
@@ -1281,15 +1279,58 @@ object $c$ {
 \label{sec:aspects}
 
 \syntax\begin{lstlisting}
-Tmpl_Def        ::= 'aspect' Aspect_Def
-Aspect_Def      ::= id Aspect_Tmpl_Env
+Tmpl_Def        ::= 'aspect' Aspect_Def [Aspect_Clause]
+Aspect_Def      ::= id ['extends' Class_Parents] Aspect_Tmpl_Env
 Aspect_Tmpl_Env ::= '{' Aspect_Body '}'
                   | 'begin' Aspect_Body 'end' ['aspect']
 Aspect_Body     ::= Template_Stat 
                   | Aspect_Stat
-Aspect_Stat     ::= Advice_Stat
-                  | Pointcut_Stat
+Aspect_Stat     ::= Advice_Def
+                  | Pointcut_Def
+Pointcut_Def    ::= 'pointcut' id
+                    ['(' [id [':' Type]] {',' [id [':' Type]]} ')']
+                    'is' Pointcut_Type 'end' ['pointcut']
+Pointcut_Type   ::= 'invoke' (id | regular_expression_literal)
+                  | 'get' (id | regular_expression_literal)
+                  | 'set' (id | regular_expression_literal)
+                  | 'handler' Type
+                  | 'returning' [id [':' Type] | Type]
+                  | 'throwing' [id [':' Type] | Type]
+                  | 'raising' [id [':' Type] | Type]
+                  | 'advice-execution' 
+                    [(id | regular_expression_literal)]
+                  | 'self' (id | Type)
+                  | 'target' (id | Type)
+                  | 'arguments' '(' id [':' Type] | Type 
+                    {',' (id [':' Type] | Type)} ')'
+                  | 'if' (Infix_Expr | '(' Infix_Expr ')')
+                  | 'not' Pointcut_Ref
+                  | Pointcut_Ref 'and' Pointcut_Ref
+                  | Pointcut_Ref 'or' Pointcut_Ref
+                  | '(' Pointcut_Ref ')'
+                  | 'retain' [id [':' Type] | Type]
+                  | 'release' [id [':' Type] | Type]
+Pointcut_Ref    ::= id ['(' id {',' id} ')'] | Pointcut_Type
+Advice_Def      ::= 'advice' 
+                    Advice_Spec (Pointcut_Ref | Pointcut_Type)
+                    Block_Expr
+Advice_Spec     ::= 'before' 
+                  | 'after' [('returning' | 'throwing' | 'raising') 
+                    [id [':' Type] | Type]]
+                  | 'around'
+Aspect_Clause   ::= 'per-self' [Pointcut_Ref] 
+                  | 'per-target' [Pointcut_Ref] 
 \end{lstlisting}
+
+Only for \code{Block_Expr} inside of \code{Advice_Def}:
+\begin{lstlisting}
+Simple_Expr1    ::= 'joinpoint' ['.' Selection]
+\end{lstlisting}
+
+% https://eclipse.org/aspectj/doc/released/progguide/semantics-pointcuts.html
+% https://eclipse.org/aspectj/doc/released/progguide/quick.html (better)
+% important term: published join point context data (args, target, caller etc.)
+% also important: http://en.wikipedia.org/wiki/Cross-cutting_concern#Examples - see memory management (possible join points: allocation, deallocation, retain, release)
 
 
 

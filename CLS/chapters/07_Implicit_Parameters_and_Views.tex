@@ -297,15 +297,17 @@ The last approach taps into a whole new kind of methods.
 
 It uses two-phase dispatch:
 \begin{enumerate}
-  \item A dispatch function is defined with ~\lstinline!def dispatch $x\,\ldots$! (or any alternative syntax using the \code{dispatch} keyword). This function returns a value or a tuple of values, which determine the multi-method to use, but its result type is independent of this value. 
+  \item A dispatch function is defined with ~\lstinline!def dispatch $x\,\ldots$! (or any alternative syntax using the \code{dispatch} keyword). This function returns a value or a tuple of values, called the {\em dispatch value}, which determines the multi-method to use, but its result type is independent of this value. 
   \item A multi-method is installed with ~\lstinline!def multi $x\,\ldots$! (or any alternative syntax using the \code{multi} keyword).
 \end{enumerate}
 
-Dynamic value dispatch functions and methods are different from regular functions and methods: their overloading depends not on the argument expressions only, but most importantly, on the value returned by the dispatch function. Even their internal representation in the VM is different. The dispatch function maps the argument expressions to a single value, or a tuple value, based on which a multi-method is selected, using regular overloading resolution, utilizing only the first parameter list.
+Dynamic value dispatch functions and methods are different from regular functions and methods: their overloading depends not on the argument expressions only, but most importantly, on the dispatch value returned by the dispatch function. Even their internal representation in the VM is different. The dispatch function maps the argument expressions to a single value, or a tuple value, based on which a multi-method is selected, using regular overloading resolution, utilizing only the first parameter list. 
+
+The result type of a dispatch function (or method) is determined based on the dispatch value by the result type of the corresponding installed multi-method, therefore, it may trigger early argument expressions evaluation during overloading resolution (and indeed evaluation of the dispatch function itself),\footnote{Yet the dispatch function may opt-in for lazy argument evaluation, but still, the argument expression may still be evaluated, and very likely it will be.} pretty much like constrained types do. The dispatch function may constrain the types that multi-methods are allowed to result into by its own result type, thus the result types of the multi-methods must be covariant with the result type of the dispatch function. 
 
 The dispatch function can itself be overloaded on its parameter lists and result value, by other regular functions and methods, or even other dispatch functions, in which case the multi-methods are shared for each dispatch function. 
 
-Multi-methods expect values only in their first parameter list, therefore, the syntax in them never generates parameter names, which is different from regular methods; therefore, the first parameter list contains only explicit parameters. The types of parameters\footnote{Including extra properties, e.g. ``by-name'' status.} in the following parameter lists are inferred from the dispatch function, which passes the arguments to multi-methods as they are, and it is in fact an error if the multi-method specifies any other types for those parameters. 
+Multi-methods expect only values in their first parameter list, therefore, the syntax in them never generates parameter names, which is different from regular methods; therefore, the first parameter list contains only explicit parameters. The types of parameters\footnote{Including extra properties, e.g. ``by-name'' status.} in the following parameter lists are inferred from the dispatch function, which passes the arguments to multi-methods as they are, and it is in fact an error if the multi-method specifies any other types for those parameters. 
 
 \example Multiple dispatch with dynamic value dispatch, Asteroids colliding with Spaceships.
 \begin{lstlisting}

@@ -118,7 +118,12 @@ Defined values and variables may not be undefined by assigning them with the \co
 
 
 
-
+% TBD: add "attributes": 
+% predefined attributes like: obj'Class -> Class.of(obj)
+% custom attributes like: obj'Custom -> Custom(obj)
+% +args: obj'Custom(arg) -> Custom(obj)(arg)
+% keyword: attribute ? - maybe
+% annotation: @[attribute] ? - probably not, possible collisions
 \section{Designators}
 \label{sec:designators}
 
@@ -148,6 +153,21 @@ The expected type of a designator's prefix is undefined. The type of a designato
 The selection ~\lstinline!$e$.$x$!~ is evaluated by first evaluating the qualifier expression $e$, which yields an object $r$. The selection's result is then the member $m$ of $r$ that is either defined by $m$ or defined by a definition overriding $m$. 
 
 A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is useful for selecting members whose name is a decimal number. Tuple types have such members, and other types may define such members by enclosing their names in backticks, e.g. ~\lstinline!def `1` () := 1!. The expression $e$ must not be a number literal. 
+
+
+
+
+
+\section{Attribute Selection}
+\label{sec:attribute-selection}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= Simple_Expr ''' Selection
+\end{lstlisting}
+
+An attribute is a special function that has at least one parameter list with a single parameter, and optionally more regular parameter lists following the first one. 
+
+An attribute selection ~\lstinline!$x$'$a$!~ is then viewed as function application ~\lstinline!$a$($x$)!. An attribute selection ~\lstinline!$x$'$a$($\args$)!~ is then viewed as function application ~\lstinline!$a$($x$)($\args$)!~ etc. 
 
 
 
@@ -516,7 +536,7 @@ A function application ~\lstinline!$p$.$f$.($e_1 \commadots e_m$) $b$!~ is a syn
 
 
 
-
+% TBD: rename to receiver universal shortcut, change size to operator $
 \subsection{Receiver Size Shortcut}
 \label{sec:receiver-size-shortcut}
 
@@ -2154,6 +2174,7 @@ Template_Stat  ::= Use
                  | Prop_Def
                  | 'include' Container_Path [Cond_Modifier]
                  | 'prepend' Container_Path [Cond_Modifier]
+                 | 'implements' Container_Path [Cond_Modifier]
                  | Expr
                  | Alias_Expr
                  | ()
@@ -2172,6 +2193,8 @@ Fun_Dec_Expr   ::= {Annotation} Dcl
                  | 'transparent'
                  | 'opaque'
                  | 'native' [Expr]
+                 | 'immutable'
+                 | 'mutable'
                  | ()
 Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
                  | 'alias' id 'is' id
@@ -2198,9 +2221,11 @@ Evaluation of a statement sequence entails evaluation of the statements in the o
 
 Statement can be an import via a use clause (\sref{sec:use-clauses}), a definition or an expression, or it can be empty. Statements used in the template of a class definition can also be declarations. 
 
-A function that is declared with \code{transparent} in its \code{declare} block, is visible as referentially transparent, and therefore the compiler and possibly the runtime as well are given the possibility to replace function applications of this same function with its previously computed result with the same arguments on the same receiver instance. In that sense, it is similar to memoization (\sref{sec:memoization}), but skips one call stack frame and works better during compilation, unlike memoization, which is a runtime feature. On the other hand, a function that is declared with \code{opaque} in its \code{declare} block, is visible as referentially opaque and those optimizations are disabled for it, so the function is re-evaluated each time it is applied. 
+A function that is declared with \code{transparent} in its \code{declare} block, is visible as referentially transparent, and therefore the compiler and possibly the runtime as well are given the possibility to replace function applications of this same function with its previously computed result with the same arguments on the same receiver instance. In that sense, it is similar to memoization (\sref{sec:memoization}), but skips one call stack frame and works better during compilation, unlike memoization, which is a runtime feature. Moreover, all function parameters are then marked as \code{constant}. On the other hand, a function that is declared with \code{opaque} in its \code{declare} block, is visible as referentially opaque and those optimizations are disabled for it, so the function is re-evaluated each time it is applied. 
 
 A function that is declared with \code{native} in its \code{declare} block, has its body defined outside of Coral source files, possibly in other languages, native to the platform of the Coral VM. For now, some CSL functions are declared this way and a possibility to let users define their own native functions is upcoming in future versions of Coral. Note that the native implementation of the function would have to match the expected platform of the Coral VM, or maybe the expression would map platforms to the native implementations of the function. 
+
+A function that is declared with \code{immutable} in its \code{declare} block, has the \code{self} value treated as immutable, therefore it presents a guarantee that applying it will never modify the target value. On the other hand, a function that is declared with \code{mutable} in its \code{declare} block, is no different from a function that is declared without \code{immutable} or \code{mutable}, but it presents a requirement that the target object will be mutable, and thus it is an error if it is not, and also it is an error if a function with such modifier is a member of a template that is declared \code{immutable}, because all of its member values are inherently immutable. 
 
 An alias to a function name creates a duplicate record in method table of a class or a duplicate variable pointing to the aliased function name. From that scope on, the functions are bound by name, and aliased function names are also inherited. If a subtype attempts to override an aliased method, then all methods with that alias are overridden as well. 
 
@@ -2347,6 +2372,7 @@ An alternative $A$ is {\em more specific than} an alternative $B$, if the relati
 
 If $A$ and $B$ share the same relative weight and $A$ requires argument expressions to tuple conversion and $B$ does not, then $B$'s relative weight is taken to be higher than that of $A$, and vice versa. 
 
+\paragraph{Generics based overloading resolution}
 If there are more alternatives in $\mathcal{C}$ that are equally most specific, then let $\mathcal{D}$ be those equally most specific alternatives. One chooses the most specific alternative from $\mathcal{D}$ based on the following redefinition of being ``more specific than''. 
 
 \begin{definition}
@@ -2359,15 +2385,19 @@ The {\em generic relative weight} of an alternative $A$ over an alternative $B$ 
 
 An alternative $A$ is {\em more specific than} an alternative $B$, if the generic relative weight of $A$ over $B$ is greater than the generic relative weight of $B$ over $A$. 
 
-If there are more alternatives in $\mathcal{D}$ that are equally most specific, one chooses one of them as in overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{D}$ here, and the expected type is the expected type of the function application, if there are no consecutive function applications. 
+If there are more alternatives in $\mathcal{D}$ that are equally most specific, continue with overloading resolution on $\mathcal{D}$ using preference declarations. If that fails, one chooses one alternative from $\mathcal{D}$ as in overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{D}$ here, and the expected type is the expected type of the function application, unless there are consecutive function applications. 
 
+\paragraph{Consecutive applications based overloading resolution}
 If there are any consecutive function applications (\sref{sec:curried-functions}) involved, then let $\mathcal{E}$ be those alternatives from $\mathcal{D}$ that have no following parameter lists, and let $\mathcal{F}$ be those alternatives from $\mathcal{D}$, for which one of the following conditions is true:
 \begin{itemize}
   \item There are $a$ following consecutive function applications and the alternative has $a$ more parameter lists. The last parameter list may or may not be marked \code{implicit}, it does not matter. 
   \item There are $a$ following consecutive function applications and the alternative has $a + 1$ more parameter lists, and the last one is marked \code{implicit}. Note that $a$ might be 0, so that methods with an extra implicit parameter list are preferred. 
   \item There are $a$ following consecutive function applications and the alternative has more than $a$ more parameter lists, and the whole expression containing the consecutive function applications is enclosed in a method value, for partial application. 
 \end{itemize}
-Then, if $\mathcal{F}$ is not empty, apply overloading resolution on $\mathcal{F}$ recursively, omitting the already processed parameter list and argument list in each turn. If overloading resolution on $\mathcal{F}$ selects a unique member, that one is chosen. If no unique alternative from $\mathcal{F}$ could be selected (either because none was applicable, or there were multiple applicable alternatives at the end of recursion), continue with overloading resolution on alternatives from $\mathcal{E}$ without any application (\sref{sec:overloading-resolution-no-app}). If $\mathcal{E}$ is empty, it is an error. 
+Then, if $\mathcal{F}$ is not empty, apply overloading resolution on $\mathcal{F}$ recursively, omitting the already processed parameter list and argument list in each turn. If overloading resolution on $\mathcal{F}$ selects a unique member, that one is chosen. If no unique alternative from $\mathcal{F}$ could be selected (either because none was applicable, or there were multiple applicable alternatives at the end of recursion), continue with overloading resolution on alternatives from $\mathcal{E}$ using preference declarations. If $\mathcal{E}$ is empty, it is an error. 
+
+\paragraph{Declared preference based overloading resolution, using arguments preference}
+Let $\mathcal{G}$ be those alternatives that are supposed to be resolved based on declared preference (there are two points from which this can happen). One finds all preference declarations using arguments filter (not limited to) for each alternative over other alternatives in $\mathcal{G}$. If there is one alternative in $\mathcal{G}$ that is preferred strictly more times than any other alternative, then that one is chosen. Otherwise, one continues with overloading resolution without any application (\sref{sec:overloading-resolution-no-app}), where $\mathcal{A}$ is the same as $\mathcal{G}$ (i.e. no elements from $\mathcal{G}$ are left out). 
 
 \paragraph{Note}
 Nested overloading resolutions happen in depth-first order. If an alternative is polymorphic, it needs to be type-reified with local type inference to first determine what the types are. If an argument expression is itself overloaded, overloading resolution needs to be applied on it first and alone, and the expected type of the argument expression defined by the local type inference algorithm. Notice that this is safe in regard to local type inference of the enclosing alternative, since the type of the argument expression is just a part of type bounds for the enclosing alternative. Indeed, ambiguities may need to be resolved explicitly. 
@@ -2417,6 +2447,8 @@ The {\em relative weight} of an alternative $A$ over an alternative $B$ is defin
 \end{definition}
 
 An alternative $A$ is {\em more specific than} an alternative $B$, if the relative weight of $A$ over $B$ is greater than the relative weight of $B$ over $A$. 
+
+If there are multiple most specific alternatives in $\mathcal{B}$, one chooses an alternative from $\mathcal{B}$, which is strictly more times preferred to the other alternatives in $\mathcal{B}$, based on preference declarations that include a result type filter for that alternative.\footnote{This is needed to resolve ambiguities in cases such as when the expected type is the least upper bound of the result types of two or more overloaded alternatives.}
 
 It is an error if there is no alternative in $\mathcal{B}$ which is more specific than all other alternatives in $\mathcal{B}$ -- the method is unapplied.\footnote{This can be fixed e.g. by using typed expressions (\sref{sec:typed-expressions}).}
 
