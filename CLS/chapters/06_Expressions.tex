@@ -2804,29 +2804,10 @@ An interpolating (splice or unquote) expression (like ~\lstinline!#{ $e$ }!) app
 \label{sec:quotation}
 
 \syntax\begin{lstlisting}
-Quote_Expr      ::= ''(' Any_Expr ')' | ''' Quotable_Expr
+Quote_Expr      ::= ''(' Any_Expr ')'
 \end{lstlisting}
 
-A quote expression ~\lstinline!'( $e$ )!~ is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. Quotation does not require parentheses around the expression that it quotes, in the following cases:
-
-\syntax\begin{lstlisting}[language=]
-Quotable_Expr ::= 
-      Cond_Expr 
-    | Loop_Expr - Loop_Mod_Expr
-    | Rescue_Expr
-    | Raise_Expr
-    | Throw_Expr
-    | Catch_Expr
-    | Return_Expr
-    | Yield_Expr
-    | Simple_Expr
-    | Match_Expr
-    | Use_Expr
-    | Jump_Expr
-    | Anon_Class
-    | Metaclass_Access
-\end{lstlisting}
-
+A quote expression ~\lstinline!'( $e$ )!~ is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. 
 
 
 

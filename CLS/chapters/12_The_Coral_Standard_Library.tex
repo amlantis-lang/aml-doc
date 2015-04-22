@@ -258,10 +258,15 @@ object Predef extends Object
     operator => [B] (that: B): Tuple_2[A, B] := 
         Tuple_2(myself, that)
   end class
+  
+  // tapping into values
+  attribute tap (in v: Dynamic)(&block: v.type -> Unit): v.type
+    block(v)
+    return v
+  end attribute
 end
 \end{lstlisting}
 \end{minipage}
-
 
 
 
