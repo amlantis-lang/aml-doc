@@ -340,7 +340,7 @@ If any of the tuple's type parameters $T_i$ is annotated to be named $n$ (see \s
 Annot_Type ::= {Annotation} Simple_Type
 \end{lstlisting}
 
-An annotated type $a_1 \ldots a_n T$ attaches annotations $a_1 \commadots a_n$ to the type $T$. % TBD: add ref to a chapter about annotations.
+An annotated type $a_1 \ldots a_n T$ attaches annotations (\sref{sec:annotations}) $a_1 \commadots a_n$ to the type $T$. 
 
 
 
@@ -358,7 +358,7 @@ Refine_Stats  ::= '{' [Refine_Stat {semi Refine_Stat}] '}'
 Refine_Stat   ::= Dcl
                 | 'type' Type_Def
                 | Constraint_Dcl
-\end{lstlisting} % TBD: define Refine_Stat syntax
+\end{lstlisting}
 
 A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refinement {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
 

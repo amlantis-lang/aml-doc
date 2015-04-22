@@ -118,12 +118,8 @@ Defined values and variables may not be undefined by assigning them with the \co
 
 
 
-% TBD: add "attributes": 
-% predefined attributes like: obj'Class -> Class.of(obj)
-% custom attributes like: obj'Custom -> Custom(obj)
-% +args: obj'Custom(arg) -> Custom(obj)(arg)
-% keyword: attribute ? - maybe
-% annotation: @[attribute] ? - probably not, possible collisions
+
+
 \section{Designators}
 \label{sec:designators}
 
@@ -536,25 +532,29 @@ A function application ~\lstinline!$p$.$f$.($e_1 \commadots e_m$) $b$!~ is a syn
 
 
 
-% TBD: rename to receiver universal shortcut, change size to operator $
-\subsection{Receiver Size Shortcut}
-\label{sec:receiver-size-shortcut}
 
-A function application ~\lstinline!$r$.$f$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!~ or contains it as a sub-expression, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline!$r$.size!. 
+\subsection{Receiver Universal Shortcut}
+\label{sec:receiver-universal-shortcut}
 
-A function application ~\lstinline!$r$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline!$r$.size!~ and $r$ is a variable reference. 
+A function application ~\lstinline!$r$.$f$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!~ or contains it as a sub-expression, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!$r$.`$`()!. 
+
+A function application ~\lstinline!$r$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!$r$.`$`()!~ and $r$ is a variable reference. 
 
 In case of nested function applications, this shortcut is applied absolutely only to the outermost application, to prevent any confusion. It can be combined with application shortcut.
 
-\example Combining receiver size shortcut with application shortcut.
+\example Combining receiver universal shortcut with application shortcut.
 \begin{lstlisting}[mathescape=false]
 // the expression
 prefix.receiver.($)
 // is equivalent to the expression
-prefix.receiver.(prefix.receiver.size)
+prefix.receiver.(prefix.receiver.`$`())
 // which is in turn equivalent to
-prefix.receiver().apply(prefix.receiver().size)
+prefix.receiver().apply(prefix.receiver().`$`())
 \end{lstlisting}
+
+\paragraph{Note}
+The receiver universal shortcut is defined for Coral's collection types as an alias to \code{size} -- to be used in slicing, primarily.
+% TBD: decide whether more shortcuts should be allowed, numbered e.g., probably not 
 
 
 
@@ -2039,7 +2039,6 @@ In the case of a single untyped formal parameter, ~\lstinline!($x$) -> { $b$ }!~
 A formal parameter may also be a wildcard represented by an underscore ``\lstinline!_!''. In that case, a fresh name for the parameter is chosen arbitrarily. 
 
 A parameter of an anonymous function may optionally be preceded by an \code{implicit} modifier. In that case the parameter is labeled \code{implicit} (\sref{sec:implicit-params-views}); however the parameter section itself does not count as an implicit parameter section in the sense of (\sref{sec:implicit-parameters}). Such a parameter ~\lstinline!implicit $x_i$!~ is then added transparently to the block $b$ as ~\lstinline!implicit val $y_i$ := $x_i$!, where $y_i$ is a fresh name. Also, therefore arguments to anonymous functions always have to be given explicitly. 
-% TBD: decide whether to add placeholder syntax: _.map(_ + 1)
 
 \example Examples of anonymous functions:
 \begin{lstlisting}
