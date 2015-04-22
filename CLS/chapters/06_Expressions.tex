@@ -2781,20 +2781,20 @@ Any_Expr        ::= Expr
 Splice_Expr     ::= '#{' Expr '}'
 \end{lstlisting}
 
-Quasi-quote expression ~\lstinline!`( $e$ )!~ is basically a well-formed piece of Coral source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
+Quasi-quote expression ``~\lstinline!`( $e$ )!~'' is basically a well-formed piece of Coral source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
 
 Quasi-quote expressions may optionally be interpolated, so that values or other nodes may be injected into the represented AST. There are the following ways to interpolate the AST:
 \begin{itemize}
-  \item Interpolating expression ~\lstinline!#{ $e$ }!, where $e$'s value is expanded into the AST as is. If the expression would require parentheses around it in the source, then parentheses have to be around the interpolating expression.\footnote{Note that the same delimiters are used to interpolate string literals.}
+  \item Interpolating expression ``~\lstinline!#{ $e$ }!~'', where $e$'s value is expanded into the AST as is. If the expression would require parentheses around it in the source, then parentheses have to be around the interpolating expression.\footnote{Note that the same delimiters are used to interpolate string literals.}
   \item The \code{@[unquote]} annotation, which puts parentheses around the annotated expression.
-  \item The \code{@[splice]} annotation, where the annotated expression is expanded into the AST as it is. Otherwise equivalent to ~\lstinline!#{ $e$ }!.
+  \item The \code{@[splice]} annotation, where the annotated expression is expanded into the AST as it is. Otherwise equivalent to ``~\lstinline!#{ $e$ }!~''.
 \end{itemize}
 
 A quasi-quote without any interpolation is equivalent to a quote (\sref{sec:quotation}). 
 
 Quasi-quotes are useful in combination with macros (\sref{sec:macros}). 
 
-An interpolating (splice or unquote) expression (like ~\lstinline!#{ $e$ }!) appearing outside of a quasi-quote expression produces a compile-time warning and is replaced with $e$ directly. 
+An interpolating (splice or unquote) expression (like ``~\lstinline!#{ $e$ }!~'') appearing outside of a quasi-quote expression produces a compile-time warning and is replaced with $e$ directly. 
 
 
 
@@ -2804,10 +2804,29 @@ An interpolating (splice or unquote) expression (like ~\lstinline!#{ $e$ }!) app
 \label{sec:quotation}
 
 \syntax\begin{lstlisting}
-Quote_Expr      ::= ''(' Any_Expr ')'
+Quote_Expr      ::= ''(' Any_Expr ')' | '''' Quotable_Expr
 \end{lstlisting}
 
-A quote expression ~\lstinline!'( $e$ )!~ is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. 
+A quote expression ``~\lstinline!'( $e$ )!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. Quotation does not require parentheses around the expression that it quotes, iff it starts with two apostrophes (i.e. ``~\lstinline!''$e$!~'') and quotes the following expressions:
+
+\syntax\begin{lstlisting}[language=]
+Quotable_Expr ::= 
+      Cond_Expr 
+    | Loop_Expr - Loop_Mod_Expr
+    | Rescue_Expr
+    | Raise_Expr
+    | Throw_Expr
+    | Catch_Expr
+    | Return_Expr
+    | Yield_Expr
+    | Simple_Expr
+    | Match_Expr
+    | Use_Expr
+    | Jump_Expr
+    | Anon_Class
+    | Metaclass_Access
+\end{lstlisting}
+
 
 
 
