@@ -627,11 +627,11 @@ A command line interface to a CVM should enable two main important functions: to
 
 \section{Threads}
 
-A CVM runtime is all around {\em threads}. A thread models a computation stream, therefore computations may be parallel. Moreover, each thread may compose of multiple {\em fibers}, which are modelled using separate call stacks, some of which do not need to be complete copies. This also enables continuations, both unlimited and delimited. 
+A CVM runtime is all about {\em threads}. A thread models a computation stream, therefore computations may be parallel. Moreover, each thread may compose of multiple {\em fibers}, which are modelled using separate call stacks, some of which do not need to be complete copies. This also enables continuations, both unlimited and delimited. 
 
 A CVM should prefer native implementation of threads wherever possible, providing an abstraction to the languages, which in turn may provide abstraction to its users. Fibers, on the other hand, are not really easy to implement using native resources. 
 
-Fibers may be passed between threads, but for this to actually work, synchronization has to be implemented to make the threads able to pick up the new fiber. This may happen on a language level as well as user level, or even both (as in Coral, where the language enables passing of fibers between threads, but users have to make up the logic in which the receiving thread will pick up the fiber object). 
+Fibers may not be passed between threads, but may be copied and then the copy may be transferred to a different thread, but only before it is resumed. This may happen on a language level as well as user level, or even both (as in Coral, where the language enables passing of fibers between threads, but users have to make up the logic in which the receiving thread will pick up the fiber object). 
 
 
 
@@ -639,7 +639,7 @@ Fibers may be passed between threads, but for this to actually work, synchroniza
 
 \section{Stacks}
 
-A {\em stack} is the low-level structure of a CVM. It contains a stack of stackable frames, which are structures containing reference to an instruction sequence, maintaining an instruction pointer (program counter), containing references to argument values, the result value and thrown values, and optionally some more metadata, e.g. line numbers and corresponding files. 
+A {\em stack} is the low-level structure of a CVM. It contains a stack of stackable frames, which are structures containing reference to an instruction graph, maintaining an instruction pointer (program counter), containing references to argument values, the result value and thrown values, and optionally some more metadata, e.g. line numbers and corresponding files. 
 
 A stack may or may not represent a whole fiber execution, but there is always at least one stack per thread that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
 
@@ -647,6 +647,7 @@ A stackable frame internally increments reference count to the instruction seque
 
 A stackable frame may be a control frame, containing the aforementioned elements, or a native frame, filling in for a native method invocation via \code{FFI} (Foreign Function Invocation). A native frame does not need to contain any program counters due to the nature of its execution. The native function is given access to its stackable frame, so it can e.g. return or throw a value. 
 
+A CVM should use the so-called ``saguaro stack'', or ``parent pointer tree'', so that fibers are possible/easier to implement. 
 
 
 
@@ -654,19 +655,17 @@ A stackable frame may be a control frame, containing the aforementioned elements
 
 \section{Address Spaces \& Values}
 
-A CVM has to give its languages memory zones for allocating new objects. In the context of a CVM, an object and a value are referring to the same concept -- it represents a value that has some address, properties and size. 
+A CVM has to give its languages memory for allocating new objects. In the context of a CVM, an object and a value are referring to the same concept -- it represents a value that has some address, properties and size. 
 
-Languages are given APIs to handle the memory zones that are managed by a CVM. A language may be happy to work with a single memory zone itself, without giving its users access to creation of new memory zones, but it has to be able to accept objects from multiple memory zones -- this has to be handled transparently. 
+Languages are given APIs to handle the memory that is managed by a CVM. Those APIs are implementation-defined, however. Some values may be represented as ``immediates''\footnote{An immediate may be e.g. embedding integral numbers, floating point numbers and/or other special values like booleans into a pointer, or some other combination, like NaN-coding.}, and a CVM shall handle transitions between immediates and referenced values transparently. To prevent undefined behaviours, both CVM and the languages are required to not use non-pure NaN values, since that could break immediates. 
 
-The concept of memory zones (each having its own address space) is to abstract a continuous memory block. Every program running on top of CVM is given one main memory zone with preset behavior. New memory zones may have different settings, e.g. one can create a memory zone designed specifically for lightweight objects that are to be released from memory quickly, or even all at once with the whole memory zone. Making changes to a memory zone is protected by a read/write lock, so that single memory operations are atomic. A set of multiple memory operations still has to be manually synchronized. 
+Every object has its address, locating it in the memory. Every object that is allocated on ``the heap'' has to be either reference counted, or garbage collected. Automatic reference counting is preferred. 
 
-Every object has its address, locating it in one of memory zones. Therefore the address is two-part, first identifying its memory zone, and second identifying it within its memory zone. Each address is a view -- an object does not know anything about its address. 
+For reference counted memory management, every object is associated with a reference counter. It is implementation-defined how this association works. The only requirement of a CVM is to provide strong and weak references. Soft, phantom or other references are optional, and are not implemented in Standard Coral implementations. A CVM has to be able to handle at least 10000 strong references and equal number of weak references. 
 
-For memory management, every object is tagged with a reference counter, and a list of references of variables for managing weak references, which are essential in reference counted environment. 
+Objects are referred to via variable values, which are generally placeholders for object addresses. Addresses may be cached per-thread, unless the variable is specified to be volatile. Volatile variables must be only instance variables, and can opt-in for acquire/release semantics or sequential consistency. 
 
-Objects are referred to via variable values, which are generally placeholders for object addresses. Addresses may be cached per-thread, unless the variable is specified to be volatile. 
-
-An object can have any number of properties, and also a set of flags that are common throughout every language (e.g. the ``frozen'' state for immutable objects). A property can be another object's address, or it can be a special value provided by a CVM. Some of these include: fiber references, memory zone identifiers, or most importantly, numbers. This abstraction goes deep enough to say that a number can replace an object's address in both properties and variables. Every language is required to be able to handle this level of abstraction. 
+An object can have any number of properties, and also a set of flags that are common throughout every language (e.g. the ``frozen'' state for immutable objects). This specification does not require any specific memory layout of object representation. An object may have at least two kinds of instance variables -- those known at compile time, and those that are added in runtime dynamically. A CVM has to be able to handle at least 255 instance variables in memory layout of objects of any kind. 
 
 
 
