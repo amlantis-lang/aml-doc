@@ -815,8 +815,8 @@ These are expressions inside the class template (\sref{sec:templates}) that refe
 \example An example of an explicit primary constructor field. 
 \begin{lstlisting}
 class C (val y: String) {
-  val @x := y                // without modification
-  val @z := y + "_modified"  // with modification
+  val @x := y                ;; without modification
+  val @z := y + "_modified"  ;; with modification
 }
 \end{lstlisting}
 
@@ -884,7 +884,7 @@ The following lists present the order in which object construction occurs.
 \begin{enumerate}
   \item Somebody calls the \code{new} instance method of \code{Class} with arguments for the desired constructor. 
   \item A constructor is picked up with a 1:1 mapping to the arguments of \code{new}. 
-  \item A memory zone allocates memory for the new object. The memory is not yet initialized, and so is not the object. 
+  \item A memory is allocated for the new object. The memory is not yet initialized, and so is not the object. 
   \item Runtime keeps track of all declared instance variables and their defined-ness during object construction.\footnote{This is again relaxation from Swift by Apple. The object might be fully initialized earlier, or later.} 
   \item As soon as every instance variable is properly defined, the \code{self} object becomes available for regular use. 
   \item After this point, the object is considered fully initialized, and the phase is complete. 
@@ -925,7 +925,7 @@ end class
 Any constructor may modify a constant instance variable during its evaluation, even multiple times. This behavior passes on to any methods that are invoked during the object's construction, but should be used with caution. 
 
 \paragraph{\em Explicit destructor}
-An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. 
+An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. To further emphasize that, the \code{this} and \code{self} keywords are disallowed in a destructor body, and invoking any method that does use the \code{self}-value is forbidden. The VM is required to raise an error in case \code{self} would be attempted to be retained again, to prevent zombie objects apocalypse. 
 
 \paragraph{\em Implicit destructor}
 An implicit destructor is an automatically generated bridge destructor to the parameterless super-destructor. An implicit destructor ``does nothing'' but release all members specific to the destructed object and invoke super-destructor afterwards. The destructor of \code{Object} releases every remaining member of the destructed object. A class can only have a single destructor, either an explicit or an implicit one. 
@@ -938,7 +938,7 @@ Destructors, unlike constructors, can not have any accessibility modifiers. They
 class $C$
   destructor
     @resource.close unless @resource.closed?
-    // super is invoked implicitly here
+    ;; super is invoked implicitly here
   end destructor
 end class
 \end{lstlisting}
@@ -985,7 +985,7 @@ Clone constructors may have modified accessibility, so that only certain functio
 \begin{lstlisting}
 class $C$
   clone
-    // super is invoked implicitly here
+    ;; super is invoked implicitly here
     self[cloned].@resource := self[origin].@resource.clone
   end constructor
 end class
@@ -1415,7 +1415,7 @@ end type
 
 type mi extends distance is unit-of-measure
   mi := km * 0.621
-  mi := (m * 1000) * 0.621 // this can be inferred!
+  mi := (m * 1000) * 0.621 ;; this can be inferred!
 end type
 \end{lstlisting}
 This enables types aggregated with units of measure require a number tagged with any distance unit of measure and still work with correct units. 

@@ -1,6 +1,8 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
+% TBD: move this to separate CFR
+
 \chapter{The Coral Standard Library}
 
 The Coral Standard Library (CSL\footnote{Not to be confused with CLS, which is this document.}) consists of the module \code{Lang~[coral]} with a number of classes and submodules. Some of these classes are described in the following sections. 
@@ -219,19 +221,19 @@ Some of its members are defined as follows:
 module Lang~[coral]
 object Predef extends Object
 
-  // identity functions
+  ;; identity functions
   def identity [A] (x: A): A := x
   def implicitly [T] (implicit e: T) := e
 
-  // tuples
+  ;; tuples
   type Pair [+A, +B] := Tuple_2[A, B]
   type Triplet [+A, +B, +C] := Tuple_3[A, B, C]
 
-  // implicit conversions
+  ;; implicit conversions
   implicit def int_8_to_int_16 (i: Integer_8): Integer_16 := $\ldots$
   $\ldots$
 
-  // math aliases
+  ;; math aliases
   type Number := Math.Number
   type Integer := Number.Integer
   type Real := Number.Real
@@ -241,7 +243,7 @@ object Predef extends Object
   type Int := Integer
   $\ldots$
   
-  // reading, printing
+  ;; reading, printing
   def print (x: Any) := VM.Console.print(x)
   def print_line (x: Any) := VM.Console.print_line(x)
   def printf [*T] (text: String_Like, *xs: T) := 
@@ -252,14 +254,14 @@ object Predef extends Object
   def read_byte := VM.Console.read_byte
   $\ldots$
   
-  // definitions
+  ;; definitions
   implicit final class Arrow_Assoc [A] (private val myself: A)
       extends Object
     operator => [B] (that: B): Tuple_2[A, B] := 
         Tuple_2(myself, that)
   end class
   
-  // tapping into values
+  ;; tapping into values
   attribute tap (in v: Dynamic)(&block: v.type -> Unit): v.type
     block(v)
     return v

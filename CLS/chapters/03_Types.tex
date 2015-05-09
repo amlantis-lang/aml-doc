@@ -30,6 +30,7 @@ Simple_Type         ::= Simple_Type [Type_Args]
                       | Path '.' 'type'
                       | Literal ['.' 'type']
                       | '(' [Types] ')'
+                      | Foreign_Type
 Types               ::= Type {',' Type}
 \end{lstlisting}
 
@@ -189,9 +190,9 @@ class A {
 
 val a1 := A.new
 val a2 := A.new
-a2.f a1.B.new     // type mismatch, found a1.B, required a2.B
-a2.g a1.B.new     // prints "Got a B." to stdout
-a2.f a2.B.new     // prints "Got my B." to stdout
+a2.f a1.B.new     ;; type mismatch, found a1.B, required a2.B
+a2.g a1.B.new     ;; prints "Got a B." to stdout
+a2.f a2.B.new     ;; prints "Got my B." to stdout
 \end{lstlisting}
 This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
 
@@ -217,25 +218,25 @@ A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a pa
 
 \example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
 \begin{lstlisting}
-t = $\epsilon$.type#t // "global space"
-Number = Lang~[coral].type#Number // predefined import of Lang~[coral]
+t = $\epsilon$.type#t ;; "global space"
+Number = Lang~[coral].type#Number ;; predefined import of Lang~[coral]
 
 object An_Object {
   type t
-  t = An_Object.type#t // bound by object
+  t = An_Object.type#t ;; bound by object
 }
 
 class A_Class {
   type t
   def a_method := {
-    t = A_Class.self.type#t // bound by class
+    t = A_Class.self.type#t ;; bound by class
   }
   class << self
     type u
-    u = A_Class.type#u // bound by (class) object
+    u = A_Class.type#u ;; bound by (class) object
   end
-  t = A_Class.self.type#t // bound by class
-  self.u = A_Class.type#u // bound by (class) object
+  t = A_Class.self.type#t ;; bound by class
+  self.u = A_Class.type#u ;; bound by (class) object
 }
 \end{lstlisting}
 
@@ -297,17 +298,17 @@ Function_1[named: List[String], String]
 Given the type definitions of the previous example, the following types are malformed: 
 
 \begin{lstlisting}
-Tree_Map[I]               // wrong number of parameters
-Tree_Map[List[I], Number] // type parameter List not within bound
+Tree_Map[I]               ;; wrong number of parameters
+Tree_Map[List[I], Number] ;; type parameter List not within bound
 
-F[Number, Boolean]        // Number is not a type constructor
-F[Tree_Map, Number]       // Tree_Map takes two parameters, 
-                          //   F expects a type constructor taking one
+F[Number, Boolean]        ;; Number is not a type constructor
+F[Tree_Map, Number]       ;; Tree_Map takes two parameters, 
+                          ;;   F expects a type constructor taking one
 
-G[S, Number]              // type S constrains its parameter to
-                          //   conform to String, 
-                          // G expects type constructor with a parameter
-                          //   that conforms to Number
+G[S, Number]              ;; type S constrains its parameter to
+                          ;;   conform to String, 
+                          ;; G expects type constructor with a parameter
+                          ;;   that conforms to Number
 \end{lstlisting}
 
 
@@ -685,6 +686,39 @@ If a mutable or immutable type is seen as a constrained type, but $T$ is already
 
 
 
+\subsection{Foreign Types}
+\label{sec:foreign-types}
+
+\syntax\begin{lstlisting}
+Simple_Type  ::= Foreign_Type
+Foreign_Type ::= 'foreign' lang_name '{' 
+                 printable_char_or_space {',' printable_char_or_space}
+                 '}'
+lang_name    ::= id
+\end{lstlisting}
+
+A {\em foreign type} is a tool that helps Coral programs integrate with other languages written for the same VM, the CVM. It is viewed as extending the type \code{Any}, can be given an alias name and be a part of a compound type with another foreign types or Coral types. 
+
+\paragraph{Syntax note}
+If an opening delimiter ``\lstinline!{!'' appears within the foreign language type name, then it is properly paired with the next ``\lstinline!}!'' by Coral and not treated as closing delimiter, but this is done without any knowledge of the foreign language, only presuming that these delimiters are paired. 
+
+\paragraph{Parameterized foreign types}
+If the foreign type is parameterized, it can be a part of a type application as well, but its type parameters are not declared neither defined on the Coral side. Also, the foreign language defines how the parameterization works -- e.g., Java does type erasure with its type parameters.
+
+\example A foreign type aliases for a few foreign types:
+\begin{lstlisting}
+type Java_Object is foreign java {java.lang.Object} end type
+type Java_int is foreign java {int} end type
+type CS_Object is foreign `c#` {System.Object} end type
+type Rb_Proc_Status is foreign ruby {Process::Status} end type
+\end{lstlisting}
+
+
+
+
+
+
+
 \section{Non-Value Types}
 
 The types explained in the following paragraphs do not appear explicitly in programs, they are internal and do not represent any type of value directly. 
@@ -712,7 +746,7 @@ Extra properties of parameters are as follows: a \lstinline@*@ for variadic para
 
 \example The declarations
 \begin{lstlisting}
-def a: -> Integer // or def a () -> Integer
+def a: -> Integer ;; or def a () -> Integer
 def b (x: Integer): Boolean
 def c (x: Integer): (y : String, z : String) -> String
 def d (~x: Integer): Integer
@@ -856,7 +890,7 @@ The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding 
 
 \syntax\begin{lstlisting}[morekeywords={Any}]
 Simple_Type ::= 'Any'
-// also:
+;; also:
 Simple_Type ::= 'Lang~[coral].Predef.Any'
 \end{lstlisting}
 
@@ -879,7 +913,7 @@ The \code{Any} virtual type is the actual root of the type system of Coral, alth
 
 \syntax\begin{lstlisting}[morekeywords={Auto}]
 Simple_Type ::= 'Auto'
-// also:
+;; also:
 Simple_Type ::= 'Lang~[coral].Predef.Auto'
 \end{lstlisting}
 
@@ -964,7 +998,7 @@ Note that \code{Auto} type inference does not track requirements of values from 
 
 \syntax\begin{lstlisting}[morekeywords={Dynamic}]
 Simple_Type ::= 'Dynamic'
-// also:
+;; also:
 Simple_Type ::= 'Lang~[coral].Predef.Dynamic'
 \end{lstlisting}
 
@@ -1209,42 +1243,42 @@ In Coral, there are a few types and their values that represent emptiness of som
 
 The following lines show some common relations between empty values. 
 \begin{lstlisting}
-nil = undefined  // yes
-nil == undefined // no
-nil = None       // no
-undefined = None // no
-() = undefined   // no
-() = nil         // no
+nil = undefined  ;; yes
+nil == undefined ;; no
+nil = None       ;; no
+undefined = None ;; no
+() = undefined   ;; no
+() = nil         ;; no
 
-Nothing === nil         // yes
-Nothing === undefined   // yes
-Nothing === ()          // no
-Undefined === nil       // no
-Undefined === undefined // yes
-Undefined === ()        // no
-Unit === nil            // no
-Unit === undefined      // no
-Unit === ()             // yes
+Nothing === nil         ;; yes
+Nothing === undefined   ;; yes
+Nothing === ()          ;; no
+Undefined === nil       ;; no
+Undefined === undefined ;; yes
+Undefined === ()        ;; no
+Unit === nil            ;; no
+Unit === undefined      ;; no
+Unit === ()             ;; yes
 
 val nothing := nil
 match nothing {
-  when Some(x) then () // does not match
-  when None then ()    // matches
+  when Some(x) then () ;; does not match
+  when None then ()    ;; matches
 }
 
-val nothing := get_undefined // a function that returns `undefined'
+val nothing := get_undefined ;; a function that returns `undefined'
 match nothing {
-  when Some(x) then () // does not match
-  when None then ()    // matches
+  when Some(x) then () ;; does not match
+  when None then ()    ;; matches
 }
 
 val unit = ()
 match unit {
-  when Some(x) then () // does not match, 
-                       // also compilation warning, because Unit 
-                       // is not compatible to Option[T]
-  when None then ()    // does not match, also not compatible
-  when Unit then ()    // matches
+  when Some(x) then () ;; does not match, 
+                       ;; also compilation warning, because Unit 
+                       ;; is not compatible to Option[T]
+  when None then ()    ;; does not match, also not compatible
+  when Unit then ()    ;; matches
 }
 \end{lstlisting}
 

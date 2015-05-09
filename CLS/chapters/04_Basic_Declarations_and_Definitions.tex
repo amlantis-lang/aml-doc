@@ -462,16 +462,16 @@ type My_Collection[+X] <: Iterable[X] end
 \end{lstlisting}
 The following are illegal:
 \begin{lstlisting}
-type Abs := Comparable[Abs] end // recursive type alias
+type Abs := Comparable[Abs] end ;; recursive type alias
 
-type S <: T end  // S, T are bounded by themselves
+type S <: T end  ;; S, T are bounded by themselves
 type T <: S end
 
-type T >: Comparable[T.That] end // can't select from T
-                                 // T is a type, not a value
+type T >: Comparable[T.That] end ;; can't select from T
+                                 ;; T is a type, not a value
 type My_Collection <: Iterable end
-  // type constructor members must explicitly state
-  // their type parameters
+  ;; type constructor members must explicitly state
+  ;; their type parameters
 \end{lstlisting}
 
 
@@ -536,7 +536,7 @@ end type
 type Mass is digits 7 range 0.0 ..< 1.0e+35 
 end type
 
-// a subtype with a smaller range
+;; a subtype with a smaller range
 type Probability is Real range 0.0 ... 1.0
 end type
 \end{lstlisting}
@@ -612,7 +612,7 @@ A type parameter name may optionally be surrounded with angle brackets, ~\lstinl
 [A <: Comparable[B], B <: A]
 [A, B >: A, C >: A <: B]
 [M[X], N[X]]
-[M[_], N[_]] // equivalent to previous clause
+[M[_], N[_]] ;; equivalent to previous clause
 [M[X <: Bound[X]], Bound[_]]
 [M[+X] <: Iterable[X]]
 [E, <Length_Unit <: length>]
@@ -620,10 +620,10 @@ A type parameter name may optionally be surrounded with angle brackets, ~\lstinl
 \end{lstlisting}
 The following type parameter clauses are illegal:
 \begin{lstlisting}
-[A >: A]                  // illegal, 'A' has itself as bound
-[A <: B, B <: C, C <: A]  // illegal, 'A' has itself as bound
-[A, B, C >: A <: B]       // illegal lower bound 'A' of 'C'
-                          // does not conform to upper bound 'B'
+[A >: A]                  ;; illegal, 'A' has itself as bound
+[A <: B, B <: C, C <: A]  ;; illegal, 'A' has itself as bound
+[A, B, C >: A <: B]       ;; illegal lower bound 'A' of 'C'
+                          ;; does not conform to upper bound 'B'
 \end{lstlisting}
 
 A type parameter name may optionally be prefixed with an asterisk ``\code{*}''. Such type parameter is a {\em variadic type parameter}, and may only appear as the last type parameter in a sequence of type parameters, and its resulting value is a tuple of all passed type arguments that were passed after the preceding type parameters. If such type parameter is used as the type of a function parameter, that parameter's type is a tuple type, as defined by the variadic type parameter, unless the function parameter is a repeated parameter, then the number of captured argument and their types are bound with the variadic type parameter (influencing local type inference (\sref{sec:local-type-inference})). 
@@ -682,15 +682,15 @@ P[Error, String] <: P[Throwable, Object]  .
 If the members of $P$ are mutable variables, the same variance annotation becomes illegal. 
 \begin{lstlisting}
 abstract class P [+A, +B](x: A, y: B) {
-  var @first: A := x   // error: illegal variance:
-  var @second: B := y  // 'A', 'B' occur in invariant position
+  var @first: A := x   ;; error: illegal variance:
+  var @second: B := y  ;; 'A', 'B' occur in invariant position
 }
 \end{lstlisting}
 If the mutable variables are object-private, the class definition becomes legal again: 
 \begin{lstlisting}
 abstract class R [+A, +B](x: A, y: B) {
-  private[self] var @first: A := x   // ok
-  private[self] var @second: B := y  // ok
+  private[self] var @first: A := x   ;; ok
+  private[self] var @second: B := y  ;; ok
 }
 \end{lstlisting}
 
@@ -698,7 +698,7 @@ abstract class R [+A, +B](x: A, y: B) {
 \begin{lstlisting}
 abstract class Sequence [+A] {
   def append (x: Sequence[A]): Sequence[A] end
-    // error: illegal variance, 'A' occurs in contravariant position
+    ;; error: illegal variance, 'A' occurs in contravariant position
 }
 \end{lstlisting}
 The problem can be avoided by generalizing the type of \code{append} by means of lower bound:
@@ -1151,7 +1151,7 @@ val xs := %[1, 2, 3]
 \end{lstlisting}
 The following application of the method \code{sum} is not resolved:\footnote{Unless there is an overloaded version of the method that accepts a list of integers as its parameter.}
 \begin{lstlisting}
-sum xs // Error: method match not found, wrong arguments
+sum xs ;; Error: method match not found, wrong arguments
 \end{lstlisting}
 By contrast, the following application is well-formed and yields again the result \code{14}:
 \begin{lstlisting}

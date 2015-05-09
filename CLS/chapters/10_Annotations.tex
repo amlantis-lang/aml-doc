@@ -67,14 +67,14 @@ A macro is defined as a regular function, but it's body is required to pass invo
 
 \example The following code is an example implementation of a simple \code{assert} macro. 
 \begin{lstlisting}[deletekeywords={message}]
-// import a blackbox context
+;; import a blackbox context
 use Lang~[coral].Reflection.Macros.Blackbox.Context
 
-// define the macro
+;; define the macro
 def macro assert (condition: Boolean, message: String_Like): Unit := 
     Asserts.assert_impl
 
-// implement the macro
+;; implement the macro
 object Asserts {
   def assert_impl 
       (c: Context)

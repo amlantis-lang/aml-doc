@@ -16,7 +16,7 @@ To construct tokens, characters are distinguished according to the following cla
 Whitespace characters. \Unicode{0020} | \Unicode{0009} | \Unicode{000D} | \Unicode{000A} (space, tab character, carriage return, line feed)
 
 \item
-Letters, which include lower case letters (Ll), upper case letters (Lu), title-case letters (Lt), other letters (Lo), letter numerals (Nl), modifier letters (Lm) and the two characters \Unicode{0024} `\lstinline[mathescape=false]!$!' and \Unicode{005F} `\lstinline!_!', which both count as upper case letters. 
+Letters, which include lower case letters (Ll), upper case letters (Lu), title-case letters (Lt), other letters (Lo), letter numerals (Nl), modifier letters (Lm) and the three characters \Unicode{0024} `~\lstinline[mathescape=false]!$!~', \Unicode{00A7} `~§~' and \Unicode{005F} `~\lstinline!_!~', which both count as upper case letters. 
 
 \item
 Digits `\lstinline!0!' | \ldots \thinspace | `\lstinline!9!'. 
@@ -86,26 +86,27 @@ constraint    constructor   declare       def           delta
 destructor    digits        dispatch      do            else
 elsif         end           ensure        enum          execution
 exhausted     extends       final         for           for-some
-function      get           goto          handler       if
-immutable     implements    implicit      in            include
-interface     invariant     invoke        is            joinpoint
-label         lazy          let           loop          macro
-match         memoize       message       method        module
-multi         mutable       native        next          nil
-no            not           object        of            opaque
-operator      optional      origin        otherwise     out
-override      per-self      per-target    pointcut      pragma
-prefer        prepend       private       property      protected
-protocol      public        raise         raising       range
-record        redo          refine        refinement    release
-rescue        retain        retry         return        returning
-requires      reverse       sealed        self          set
-skip          soft          step          super         switch
-target        then          this          throw         throwing
-to            trait         transparent   type          undefined
-unless        unowned       until         union         unit-of-measure
-upgrade       use           val           var           yes
-weak          when          while         with          yield
+foreign       function      get           goto          handler
+if            immutable     implements    implicit      in
+include       interface     invariant     invoke        is
+joinpoint     label         lazy          let           loop
+macro         match         memoize       message       method
+module        multi         mutable       native        next
+nil           no            not           object        of
+opaque        operator      optional      origin        otherwise
+out           override      per-self      per-target    pointcut
+pragma        prefer        prepend       private       property
+protected     protocol      public        raise         raising
+range         record        redo          refine        refinement
+release       rescue        retain        retry         return
+returning     requires      reverse       sealed        self
+set           skip          soft          step          super
+switch        target        then          this          throw
+throwing      to            trait         transparent   type
+undefined     unless        unowned       until         union
+unit-of-measure             upgrade       use           val
+var           yes           weak          when          while
+with          yield
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
@@ -139,34 +140,34 @@ Since REPL can not foresee what the following line will hold, the second criteri
 
 \example Different treating of assignment expression in presence of newline tokens. 
 \begin{lstlisting}
-// the expression:
+;; the expression:
 val a := b
     .c
-// is treated as:
+;; is treated as:
 (val a := b).c
 
-// but the expression:
+;; but the expression:
 val a := (b
     .c)
-// is treated as:
+;; is treated as:
 val a := b.c 
 \end{lstlisting}
 
 \example Different treating of $n$-ary expression in presence of newline tokens.
 \begin{lstlisting}
-// the expression:
+;; the expression:
 val a := b
     ? c
     : d
-// is treated as:
-(val a := b).`?`(c) // and continues with an error,
-                    // because `:` is not a legal operator
+;; is treated as:
+(val a := b).`?`(c) ;; and continues with an error,
+                    ;; because `:` is not a legal operator
 
-// but the expression:
+;; but the expression:
 val a := (b
     ? c
     : d)
-// is treated as:
+;; is treated as:
 val a := b.`?`(c, d) 
 \end{lstlisting}
 
@@ -230,11 +231,11 @@ oct_prefix      ::= '0o'
 sign            ::= ['+' | '-'] | ()
 \end{lstlisting}
 
-Integers are usually of type \lstinline@Number@, which is a class cluster of all classes that can represent numbers. Unlike Java, Coral supports both signed and unsigned integers directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@. Math operations on numbers are handled internally in such a way that the user does't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type. 
+Integers are usually of type \lstinline@Number@, which is a class cluster of all types that can represent numbers. Unlike Java, Coral supports both signed and unsigned integral types directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@, but this is implementation-defined. Math operations on numbers are handled internally in such a way that the user doesn't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type, or maybe even in a smaller container if fit. Expected type is always respected in any case. 
 
 Underscores ``\code{_}'' are allowed between digits for readability, but are otherwise ignored. Decimal integer literals can begin with leading zeros ``\code{0}'', but those zeros are likewise ignored. 
 
-Integral members of the \lstinline@Number@ class cluster include the following container types. 
+Integral members of the \lstinline@Number@ class cluster include the following container types. It is implementation-defined how numbers are actually stored and represented internally by the VM -- the language itself does not care, so long as types are respected. 
 
 \begin{enumerate}
 
@@ -270,7 +271,7 @@ Moreover, a helper type \lstinline@Number.Unsigned@ exists, which can be used fo
 
 Weak conformance applies to the inner members of \lstinline@Number@ class. 
 
-For use with range types, \lstinline@Number.Integer@ and \lstinline@Number.Integer_Unsigned@ exist, to allow constraining of the range types to integral numbers.
+For use with range types, \lstinline@Number.Integer@ and \lstinline@Number.Integer_Unsigned@ exist, to allow constraining of the range types to integral numbers. The class cluster types may also be viewed as range types (or constrained types), utilizing their range of values as bounds (or constraints). 
 
 
 
@@ -306,10 +307,10 @@ exponent_part_e ::= int_exp sign decimal_numeral
 exponent_part_p ::= hex_exp sign decimal_numeral
 int_exp         ::= 'e'
 hex_exp         ::= 'p'
-float_type      ::= 'f' | 'd' | 'q' | 'df'
+float_type      ::= 'h' | 'f' | 'd' | 'q' | 'df'
 \end{lstlisting}
 
-Floating point and fixed point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Literals that have \lstinline@float_type@ of ``\code{df}'' are ({\em d}ecimal) {\em f}ixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly inferred to be fixed point literals, unless specifically converted to a floating point type or using a \code{float_type} of either \code{f} or \code{d}. From \code{Number}'s user perspective, this is only an implementation detail. 
+Floating point and fixed point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Literals that have \lstinline@float_type@ of ``\code{df}'' are ({\em d}ecimal) {\em f}ixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly inferred to be fixed point literals, unless specifically converted to a floating point type or using a \code{float_type} of \code{h}, \code{f} or \code{d}. From \code{Number}'s user perspective, this is only an implementation detail, and the VM is not required to store floating or fixed point values in any specific representation other than that with the required precision and properties. 
 
 \begin{enumerate}
 
@@ -400,10 +401,10 @@ uom_expr         ::= Unit_Conv {',' Unit_Conv}
 \example Some number literals annotated with units of measure:
 \begin{lstlisting}
 var min_motorway_speed := 90 [<km/hour>]
-// in the end, same as:
+;; in the end, same as:
 var distance := 90 [<km>]
 var time := 1 [<hour>]
-min_motorway_speed := distance /- time
+min_motorway_speed := distance // time
 \end{lstlisting}
 
 
@@ -596,17 +597,17 @@ The type of elements of a collection is inferred from combination of the expecte
 
 \example The following lines show how type inference works with collection literals. 
 \begin{lstlisting}
-val a: Array[String] := %[]  // Array[String]
-val b := %[][String]         // Array[String]
-val c := %["hello", "world"] // Array[String]
+val a: Array[String] := %[]  ;; Array[String]
+val b := %[][String]         ;; Array[String]
+val c := %["hello", "world"] ;; Array[String]
 
-val d: Map[String, String] := %{} // Map[String, String]
-val e := %{}[String, String]      // Map[String, String]
-val f := %{"hello" => "world"}    // Map[String, String]
+val d: Map[String, String] := %{} ;; Map[String, String]
+val e := %{}[String, String]      ;; Map[String, String]
+val f := %{"hello" => "world"}    ;; Map[String, String]
 
-val g: Bag[String] := %()    // Bag[String]
-val h := %()[String]         // Bag[String]
-val i := %("hello", "world") // Bag[String]
+val g: Bag[String] := %()    ;; Bag[String]
+val h := %()[String]         ;; Bag[String]
+val i := %("hello", "world") ;; Bag[String]
 \end{lstlisting}
 
 
@@ -618,11 +619,14 @@ val i := %("hello", "world") // Bag[String]
 
 Tokens may be separated by whitespace characters and/or comments. Comments come in two forms: 
 
-A single-line comment is a sequence of characters that starts with \lstinline@//@ and extends to the end of the line. 
-
 A multi-line comment is a sequence of characters between \lstinline@/* and */@. Multi-line comments may be nested. 
 
+A single-line comment is a sequence of characters that starts with \lstinline@;;@ and extends to the end of the line. 
+
 Documentation comments are multi-line comments that start with \lstinline@/*!@. 
+
+
+
 
 
 
