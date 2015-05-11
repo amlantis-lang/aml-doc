@@ -23,8 +23,8 @@ Top_Stat         ::= {Annotation} {Modifier} Tmpl_Def
 
 Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Coral's approach to modules solves these issues: 
 \begin{itemize}
-\item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
-\item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
+  \item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
+  \item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just an identifier that looks like a reverse domain name (similar to Java or Scala packages). 
 \end{itemize}
 
 A compilation unit (a single source file) consists of a sequence of packagings, import clauses, and class and object definitions, which may be preceded (and should be preceded) by a module clause. 
@@ -48,8 +48,8 @@ end module
 
 Implicitly imported into every compilation unit are, in that order: 
 \begin{enumerate}
-\item the module ~\lstinline!Root~Lang~[coral]! 
-\item the object ~\lstinline!Root~Lang~[coral].Predef!
+\item the module ~\lstinline!Lang~[coral]! 
+\item the object ~\lstinline!Lang~[coral].Predef!
 \end{enumerate} 
 Members of a later import in that order hide members of an earlier import. 
 
@@ -57,9 +57,11 @@ Members of a later import in that order hide members of an earlier import.
 
 The implicitly added code looks like the following code listing, with all its implications:\footnote{The \code{Root} is actually redundant, as explained in (\sref{sec:module-refs}).}
 \begin{lstlisting}
-use Root~Lang~[coral].{_}
-use Root~Lang~[coral].Predef.{_}
+use Lang~[coral].{_}
+use Lang~[coral].Predef.{_}
 \end{lstlisting}
+
+The vendor specified in module's \code{src/module.coral} is inherited by every source file in the same module and it's submodules (unless explicitly overwritten). 
 
 
 

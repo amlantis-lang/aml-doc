@@ -721,11 +721,14 @@ Class_Param_Clauses ::= {Annotation} [Access_Modifier]
 Class_Param_Clause  ::= '(' [Class_Params] ')'
 Class_Params        ::= Class_Param {',' Class_Param}
 Class_Param         ::= Param
-Class_Tmpl_Env      ::= 'extends' [Early_Defs] Class_Parents
-                        semi [Template_Body] 'end' ['class']
-                      | ['extends' [Early_Defs]] 
+Class_Tmpl_Env      ::= Tmpl_Env_With_Pars ['class']
+                      | Tmpl_Env_Brackets
+                      | Tmpl_Env_No_Pars ['class']
+Tmpl_Env_With_Pars  ::= 'extends' [Early_Defs] Class_Parents
+                        semi ['begin'] [Template_Body] 'end'
+Tmpl_Env_Brackets   ::= ['extends' [Early_Defs]] 
                         '{' [Template_Body] '}'
-                      | ['begin' [Template_Body]] 'end' ['class']
+Tmpl_Env_No_Pars    ::= ['begin' [Template_Body]] 'end'
 \end{lstlisting}
 
 A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
@@ -954,7 +957,9 @@ end class
 \syntax\begin{lstlisting}
 CCtor_Def     ::= ['convenience'] 'clone' CCtor_Fun_Def
 CCtor_Fun_Def ::= [Type_Param_Clause] [Param_Clauses] 
-                  (':=' Constr_Expr | Constr_Block)
+                  (':=' Constr_Expr | Clone_Block)
+Clone_Block   ::= [semi Constr_Block3] 'end' ['clone']
+                | Constr_Block2
 \end{lstlisting}
 
 Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by ~\lstinline[deletekeywords={clone}]!clone!~ on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
@@ -1097,11 +1102,9 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 Tmpl_Def       ::= [Mutability] 'trait' Trait_Def
 Trait_Def      ::= id [Type_Param_Clause] 
                    Trait_Tmpl_Env
-Trait_Tmpl_Env ::= 'extends' [Early_Defs] Trait_Parents
-                   semi [Template_Body] 'end' ['trait']
-                 | ['extends' [Early_Defs]] 
-                   '{' [Template_Body] '}'
-                 | ['begin' [Template_Body]] 'end' ['trait']
+Trait_Tmpl_Env ::= Tmpl_Env_With_Pars ['trait']
+                 | Tmpl_Env_Brackets
+                 | Tmpl_Env_No_Pars ['trait']
 \end{lstlisting}
 
 A trait is a class that is meant to be injected into some other class as a mixin (including another traits). Unlike normal classes, traits can not be instantiated alone. 
@@ -1227,7 +1230,10 @@ Interfaces are filtered versions of classes and traits with only declarations an
 \label{sec:object-definitions}
 
 \syntax\begin{lstlisting}
-Object_Def ::= id (Class_Tmpl_Env | Trait_Tmpl_Env)
+Object_Def      ::= id Object_Tmpl_Env
+Object_Tmpl_Env ::= Tmpl_Env_With_Pars ['object']
+                  | Tmpl_Env_Brackets
+                  | Tmpl_Env_No_Pars ['object']
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Coral has one scope for both types and terms. 

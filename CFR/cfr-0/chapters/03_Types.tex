@@ -55,7 +55,7 @@ Let's talk about Java. Java uses static typing -- but, in a very limited and unf
 
 Let's talk about Ruby. Ruby uses dynamic typing -- but, using types blindly can possibly lead to some confusion. Ruby is amazing though, because you can write programs with it really fast and enjoy the process at the same time. But when it comes to type safety, you need to be careful. 
 
-And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Dynamic}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and result types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's type system, but modified for this dynamic environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. 
+And now, move on to Coral. Coral uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Dynamic}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and result types to particular types. But you don't have to. Types in Coral were heavily inspired by Scala's and Ruby's type systems, but modified for this hybrid environment that Coral provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Coral are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types, record types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. Implicit conversions are also made available dynamically at runtime, not just during compilation. 
 
 While Coral is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a {\em cached binding} would change, it is ok -- as long as the new binding would be compatible with the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Coral interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state with dynamic typing), or if the cached version does not match the current version of the bound type. This mechanism is also used for caching methods, not only types.
 
@@ -153,7 +153,7 @@ A {\em stable type} is either a cloned type or a type which is declared to be a 
 
 
 
-\subsubsection{Literal-Based Singleton Type}
+\subsection{Literal-Based Singleton Type}
 \label{sec:literal-based-singleton-type}
 
 \syntax\begin{lstlisting}
@@ -1016,8 +1016,37 @@ If the \code{Dynamic} type is used as the type annotation of a parameter, it is 
 
 The \code{Dynamic} type is disallowed from use within type parameters, result types and conformance check expressions (\sref{sec:typed-expressions}). 
 
-Using \code{Dynamic} type is one of possible ways to use multi-methods -- the type of arguments typed as \code{Dynamic} are bound at runtime, not during compilation. Moreover, the two approaches can be combined, as not every argument expression needs to be \code{Dynamic}. 
+Using \code{Dynamic} type is one of possible ways to use multi-methods -- the type of arguments typed as \code{Dynamic} are bound at runtime, not during compilation. Moreover, the two approaches can be combined, as not every argument expression needs to be \code{Dynamic}.
 
+
+
+
+
+\section{Variadic Arguments Type}
+\label{sec:varargs-type}
+
+\syntax\begin{lstlisting}[morekeywords={Dynamic}]
+Simple_Type ::= 'Variadic_Arguments'
+;; also:
+Simple_Type ::= 'Lang~[coral].Predef.Variadic_Arguments'
+\end{lstlisting}
+
+This type is recognized only as a parameter type (be it a function, constructor\ldots), and with a further constraint that it has to be applied to a solely parameter of a whole parameter list. Such parameter list must be the last parameter list of a definition or declaration, and there might be more parameter lists present preceding it. 
+
+When applied to a parameter, the parameter then consumes a tuple of every consecutive argument list with all arguments in a tuple, possibly with named members, if the arguments were passed in as named arguments. If a block argument is also given, it is present in the last tuple element, under the last nested tuple element, named ``\,\lstinline!`&`!\,''. Any possible arguments combination is applicable to this type, it consumes virtually anything. The types of the tuples per each argument list are to be inspected at runtime dynamically. 
+
+The parameter that receives this tuple of tuples is typed as if it was:
+\begin{lstlisting}
+(($T_1 \commadots T_j$), ($T_{j+1} \commadots T_k$)$\commadots$($T_l \commadots T_n$))  ,
+\end{lstlisting}
+where each $T$ has a type that is retrieved as a function type ~\lstinline!() -> $U$!, where $U$ is the type available at function application time. The runtime is however not required to absolutely convert all arguments into functions (that would not be very efficient), but it can (and should) presume that all arguments are passed by-name, and then the function can evaluate them as appropriate. The function notion is there mostly for user programs that do not have access to the native representation, so that it can decide which arguments to treat as by-name and which by-value, as there is no implicit ``function application'' of by-name parameters. 
+
+This type does not represent by itself any concrete value type, instead, it represents a whole class of them (two-dimensional tuples of variable lengths, basically). 
+
+If no arguments are passed to a function that accepts this parameter type, a \code{Unit} value (\lstinline!()!) is used. The \code{Unit} value is also used for matched arguments list that carry no argument expressions. As a special case, when only one argument list is matched, the type is \code{Tuple_1}, a type that is generally avoided throughout Coral (e.g., ~\lstinline!($e$ as $T$)!~ is not of type ~\lstinline!Tuple_1[$T$]!, but just $T$), as its contents can be implicitly unwrapped, but here it is needed to keep the semantics consistent. 
+
+\paragraph{Note}
+This type is used e.g. within the \code{Lang.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Coral VM). 
 
 
 
@@ -1216,11 +1245,11 @@ In Coral, there are a few types and their values that represent emptiness of som
 \begin{enumerate}
   \item The \code{Nothing} type. It represents a missing object in places where an object is expected. 
   
-  The type has just one inhabitant, and that is the frozen \code{nil} value. 
+  The type has just one inhabitant, and that is the frozen \code{nil} value. In a Coral VM, this type is usually an immediate value. 
   
   \item The \code{Undefined} type. It represents a missing object in places where an object is expected, but its source is not defined. This applies to non-defined instance variables, undefined variables, or undefined mappings in, e.g., \code{Map} implementations. 
   
-  The type has just one inhabitant, and that is the frozen \code{undefined} value, which is equal to, but not identical to \code{nil}. 
+  The type has just one inhabitant, and that is the frozen \code{undefined} value, which is equal to, but not identical to \code{nil}. In a Coral VM, this type is usually an immediate value.
   
   The semantical difference between a \code{nil} and \code{undefined} in context of, e.g., \code{Map} implementations is that \code{nil} is returned if the map contains the given key, but has \code{nil} assigned to it on purpose, whereas \code{undefined} means there was no mapping defined. 
   
@@ -1236,7 +1265,7 @@ In Coral, there are a few types and their values that represent emptiness of som
   
   It's semantical meaning is that no value is even expected. It is used for functions that should never return any value, and that are technically procedures, whose purpose lies in side-effects. 
   
-  The type has just one inhabitant, the ``\code{()}'' value, also known as an empty tuple. 
+  The type has just one inhabitant, the ``\code{()}'' value, also known as an empty tuple. In a Coral VM, this type is usually an immediate value.
   
   There are no implicit conversions from \code{Unit} to any other type defined by Coral. 
 \end{enumerate}

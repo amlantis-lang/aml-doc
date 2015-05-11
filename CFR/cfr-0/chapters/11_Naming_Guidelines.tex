@@ -96,7 +96,7 @@ Coral source directory (\code{/src} or \code{/src/coral}) might also contain a b
 
 Macros should be placed in a \code{/macros} directory inside of a directory with Coral sources, so e.g. \code{/src/macros} or \code{/src/coral/macros}. Those files may also use other files as needed. A file that contains solely Coral macro definitions may be optionally named with suffix \code{.coralm}, but that is not a requirement. 
 
-A module file may be placed in a Coral sources directory, and is named \code{module.coral}. This file is important in the fact that it defines the module and vendor name for the module, and the vendor name for all nested submodules. 
+A module file may be placed in a Coral sources directory, and is named \code{module.coral}. This file is important in the fact that it defines the module and vendor name for the module, and the vendor name for all nested submodules. Along with this file, a \code{module.dependencies.coral} and \code{module.dependencies.lock} files may be present, to define the module's dependencies on other modules, where the latter is a generated file, supposed to be checked into your VCS\footnote{Version Control System.}.
 
 This directory may be omitted from a release version of your software (usually useful for proprietary software). 
 
