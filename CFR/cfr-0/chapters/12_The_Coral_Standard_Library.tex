@@ -87,37 +87,6 @@ The \code{Integer} type has also a shorter alias of \code{Int}.
 
 
 
-\subsubsection{Standard Number Operators}
-
-\paragraph{Comparison operators}
-The following table shows a matrix of comparison operators on \code{Number}. ``Unordered'' means that either or both of the operands is a \code{Number.Not_a_Number}. The results described are relative to the number the operator is applied to (defined by binding direction of the operator). ``Raises'' means that if either or both of the operands is a \code{Number.Not_a_Number}, then an error is raised. 
-
-\begin{table}[!h]
-  \caption{Number comparison operators}
-  \begin{tabular}{ l l l l l l l }
-    Op. & Greater & Less & Equal & Unordered & Raises & Relation \\ \hline \hline
-    \code{=} & \code{no} & \code{no} & \code{yes} & \code{no} & \code{no} & equal \\
-    \code{/=} & \code{yes} & \code{yes} & \code{no} & \code{yes} & \code{no} & unordered, less, or greater \\
-    \code{>} & \code{yes} & \code{no} & \code{no} & \code{no} & \code{yes} & greater \\
-    \code{>=} & \code{yes} & \code{no} & \code{yes} & \code{no} & \code{yes} & greater, or equal \\
-    \code{<} & \code{no} & \code{yes} & \code{no} & \code{no} & \code{yes} & less \\
-    \code{<=} & \code{no} & \code{yes} & \code{yes} & \code{no} & \code{yes} & less, or equal \\
-    \code{<>} & \code{yes} & \code{yes} & \code{no} & \code{no} & \code{yes} & less, or greater \\
-    \code{<=>} & \code{yes} & \code{yes} & \code{yes} & \code{no} & \code{yes} & less, equal, or greater \\
-    \code{/<=>} & \code{no} & \code{no} & \code{no} & \code{yes} & \code{no} & unordered \\
-    \code{/<>} & \code{no} & \code{no} & \code{yes} & \code{yes} & \code{no} & unordered, or equal \\
-    \code{/<=} & \code{yes} & \code{no} & \code{no} & \code{yes} & \code{no} & unordered, or greater \\
-    \code{/<} & \code{yes} & \code{no} & \code{yes} & \code{yes} & \code{no} & unordered, equal, or greater \\
-    \code{/>=} & \code{no} & \code{yes} & \code{no} & \code{yes} & \code{no} & unordered, or less \\
-    \code{/>} & \code{no} & \code{yes} & \code{yes} & \code{yes} & \code{no} & unordered, less, or equal \\ \hline
-  \end{tabular}
-  \label{table:number-comparison-operators}
-\end{table}
-\FloatBarrier
-
-
-
-
 
 \subsection{The Boolean Class}
 
