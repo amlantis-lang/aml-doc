@@ -40,59 +40,49 @@ A directory holding a module must have the same name as the module, followed by 
 \begin{lstlisting}
 /Lang.gear
 /Your_Module.com.example
-    /source
+    /source ;; or `src`
+        /gear
+            /Some_Submodule 
+                ;; implied .com.example from parent/module.gear
+            /Some_Submodule.different.vendor
+            /macros
+                /some_macro.gearm
+            /some_source_file.gear
+            /module.gear
+            /build.gear
+            /module.dependencies.gear
+            /module.dependencies.lock
+        /cpp14 ;; or whichever the Gear VM is implemented in
+            /native_method.hpp
+            /native_method.cpp
+    /compiled ;; or `com`
         /gear
             /Some_Submodule ;; implied .com.example from parent
-                / $\ldots$
             /Some_Submodule.different.vendor
-                / $\ldots$
-    /compiled
-        /gear
-            /Some_Submodule ;; implied .com.example from parent
-                / $\ldots$
-            /Some_Submodule.different.vendor
-                / $\ldots$
-    /vendor
-        /Another_Submodule.foo.bar
-            /protocols
-                / $\ldots$
-    /binaries
+            /Your_Module.com.example.gearb
+            /Your_Module.com.example.gearpsi
+        /cpp14
+            /native_method.a
+    /vendor -> /usr/local/A_Gear_VM/modules
+    /binaries ;; or `bin`
         /an_executable.a
-        / $\ldots$
-    /protocols
+        /run_your_module ;; some exec. file using #! to run a Gear VM
+    /protocols ;; or `pro`
         /Plugin.gearp
-        / $\ldots$
-    /resources
+    /resources ;; or `res`
         /logo.png
-        / $\ldots$
+    /.gitignore
+    /.git
 \end{lstlisting} 
 
 \paragraph{Sources}
-A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Gear sources may be located, or alternatively, it can be forked into more directories, each for a specific language. The directory may then look like:
-\begin{lstlisting}
-/src
-    /c
-    /cpp
-    /c-mac
-    /c-windows
-    /clojure
-    /gear
-        /macros
-        /Submodule
-        /Another_Submodule
-        /Submodule.different.vendor
-    /java
-    /haskell
-    /objc
-    /sml
-    /swift
-\end{lstlisting}
+A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Gear sources may be located, or alternatively, it can be forked into more directories, each for a specific language. 
 
 The directory name consists of a lowercase name of the source language, optionally followed by a platform specifier. A build tool used to create the software may then choose the sources appropriately. 
 
 Gear source files have the suffix \code{.gear}. Readme files are not source files, having their name starting with any-case \code{readme}, followed by e.g. \code{.md} for a Markdown-formatted readme. 
 
-Gear source directory (\code{/src} or \code{/src/gear}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly), which, for Gear, is named \code{build.gear}, and can make use of other files as needed. 
+Gear source directory (\code{/src} or \code{/src/gear}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly -- some may be generated during compilation to provide skeletons for implementation of native methods and functions), which, for Gear, is named \code{build.gear}, and can make use of other files as needed. 
 
 Macros should be placed in a \code{/macros} directory inside of a directory with Gear sources, so e.g. \code{/src/macros} or \code{/src/gear/macros}. Those files may also use other files as needed. A file that contains solely Gear macro definitions may be optionally named with suffix \code{.gearm}, but that is not a requirement. 
 
@@ -103,27 +93,9 @@ This directory may be omitted from a release version of your software (usually u
 Submodules can be placed in a directory of the same name as the submodule's inside the directory where Gear sources are. 
 
 \paragraph{Compiled files}
-A common name for this directory is \code{com}, or \code{compiled}. It follows the same structure as sources directory:
-\begin{lstlisting}
-/com
-    /c
-    /cpp
-    /c-mac
-    /c-windows
-    /clojure
-    /gear
-        /macros
-        /Submodule
-        /Another_Submodule
-        /Submodule.different.vendor
-    /java
-    /haskell
-    /objc
-    /sml
-    /swift
-\end{lstlisting}
+A common name for this directory is \code{com}, or \code{compiled}.
 
-Gear compiled files (bytecode) have the suffix \code{.gearb} for bytecode and \code{.gearpsi} for extracted Program Structure Information. Readme files might be copied into it, if needed. 
+Gear compiled files (bytecode) have the suffix \code{.gearb} for bytecode and \code{.gearpsi} for extracted Program Structure Information. Readme files might be copied into it, if needed. Note that Gear VM will refuse to execute module's entry point if the module is not compiled including all native method implementations. 
 
 Note that files compiled from other languages, if not bound to Gear environment via native method definitions, may be still used with \code{FFI} mechanisms. 
 
@@ -141,7 +113,7 @@ Module builds that contain just the protocol files are an option to include in v
 A common name for this directory is \code{res}, or \code{resources}, the latter may be preferred. Such directory is supposed to hold any files that the module needs, may it be images, sounds or whatever. Its organization is up to the module's maintainer. 
 
 \paragraph{Vendor directory}
-A common name for this directory is \code{ven}, or \code{vendor}, the latter may be preferred. Such directory is supposed to hold vendor directories, which in their leave paths have e.g. modules with only protocol files, so that compiler may bind to their identifiers and use that in building of PSI and for type-checking. A vendor directory may also be used to store the whole compiled vendor module, or be a place to download the module dependency on demand as needed and if possible, if the vendor module is not already present in user's system. 
+A common name for this directory is \code{ven}, or \code{vendor}, the latter may be preferred. Such directory is supposed to hold vendor directories (which may be just symlinks to the actual installed vendor modules, or even just virtually displayed in IDE as links to the vendor modules), which in their leave paths have e.g. modules with only protocol files, so that compiler may bind to their identifiers and use that in building of PSI and for type-checking. A vendor directory may also be used to store the whole compiled vendor module, or be a place to download the module dependency on demand as needed and if possible, if the vendor module is not already present in user's system. 
 
 Dependencies for a module may be defined in the module file, along with version requirements and possibly a network path to download the module. 
 
