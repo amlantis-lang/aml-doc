@@ -1,2 +1,2 @@
-A collection of documents about The Coral Programming Language. 
+A collection of documents about The Gear Programming Language. 
 

@@ -1,0 +1,712 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\section*{Preface}
+
+The {\em Gear Virtual Machine} (the Gear VM, or GVM) is a specification for a set of programs and program components. Those programs should enable the Gear programming language (and possibly many more) to execute on virtually any {\em host platform} that the Gear VM is implemented on. 
+
+
+
+
+\section*{Status of This GFR}
+
+This GFR is active and mandatory for every proper Gear implementation that includes and targets a Gear VM. The status of this GFR is not likely to change. This GFR does not prevent existence of Gear implementations that target a different runtime environment, perhaps using a subset or superset of the Gear language. Gear bytecode is however intended to be compatible with a Gear VM primarily, without regard of any other pre-existing or post-existing runtime environment. 
+
+
+
+
+
+
+\chapter{Abstraction vs. the Platform}
+
+Like Java VM, a Gear VM should shield users of its programming languages from specifics of each platform as much as possible. E.g. numbers -- each platform has specific representations of numbers, some of which may fit into the languages, some may need to be represented in a more virtual form, like the \code{Decimal} in Gear, which represents virtually any non-complex number digit-by-digit. 
+
+However, users may need to access the platform natively, in some limited program scope. For that purpose, a Gear VM should provide a native interface, which would inherently be specific to the platform and to the technology that a Gear VM is built with, but most likely it could be just a set of bindings written in the C language. 
+
+A Gear VM has to also provide ways for inter-program communication. A special channel may be available for Gear VM-to-Gear VM communications, and platform's standard channels should also be available, e.g. sockets, shared memory, or messaging services. The range of available non-Gear VM-to-Gear VM channels is inherently limited by the host platform and implementation status of a Gear VM. 
+
+
+
+
+
+\section{Bytecode Portability}
+
+A single bytecode format is required for any Gear VM. A file containing such a bytecode must be executable by any Gear VM, regardless of the host platform. This single bytecode format is derived from the needs of the Gear programming language, and is tagged with a {\em dialect} -- basically a short identifier of the language that is supposed to serve as its backend. Therefore, the single bytecode format is portable to any host platform that has the backing language installed. 
+
+It is however possible for the language to define a Gear VM extension, that would be able to transform any bytecode format it needs into a Gear VM-compatible one. Such extension should be portable between each host platform. 
+
+If a program that targets a Gear VM is to contain native code alongside with Gear VM bytecode, then such program is limited to the host platforms that the native code is compatible with. This native code could be distributed in these major ways: 
+\begin{itemize}
+\item A dynamic library to be loaded at runtime as an extension for a Gear VM. A Gear VM then provides a runtime environment for the library. 
+\item A separate executable to be executed as a separate process from a Gear VM, possibly from within a shell. Such an executable is executed in the context of the host platform, not a Gear VM. 
+\end{itemize}
+
+
+
+
+
+\section{Host Platforms}
+
+The initially supported host platforms should be these:
+\begin{itemize}
+\item Mac OS X (initially 10.9+)
+\item Windows (initially 8.1+)
+\item GNU/Linux and BSD (initially only recent versions)
+\end{itemize}
+
+More platforms are indeed welcome to become supported, but these are the main ones. 
+
+
+
+
+
+
+\chapter{The Abstraction}
+
+With abstraction, we here have the concepts of human-to-computer and language-to-computer communication in mind. Users will use a programming language of choice to communicate with a host platform, in a way that is friendly to them and independent of the host platform, except where needed. 
+
+
+
+
+
+
+
+\section{The Languages}
+
+Initially, the Gear programming language is the primary supported language and may also serve as a intermediary between any further supported languages, using its own data types and instruction sequences. 
+
+A language definition for a Gear VM is basically a set of callbacks to be invoked for various reasons, e.g. method lookup, PSI or AST manipulations and so on. A language should also contain a compiler, which will provide a way to transform a source file set written using it into a form that is understandable by a Gear VM. 
+
+A Gear VM will provide primarily constructs to support the Gear programming language, but it may also be extended in the future to add more constructs for other languages, if ever needed. 
+
+A Gear VM should support programs written in several languages by keeping track of origins of values -- thus each language may use e.g. different object layouts, and yet still make its values available to objects coming from other languages via Gear VM's shared protocols. Such tracking should be implemented using a small tracking label, possibly a number mapped to loaded language definitions. 
+
+For the supported language, as Gear is a hybrid language (it could be seen as both an object-oriented and a non-purely functional), it would be nice if a ML-based or a Lisp-based functional language was supported as well. It might be even possible to create a trans-compiler from other pre-existing languages into Gear VM bytecode, e.g. Java, C\# or even C. However, such pre-existing languages would need their backing language definition for a Gear VM to use. 
+
+
+
+
+
+\section{The Bytecodes}
+
+A Gear VM should natively support only a single bytecode format -- the Gear VM bytecode. Other bytecode formats may be supported by means of Gear VM extensions, working as a compiler from a custom bytecode into a Gear VM bytecode, primarily to support sort of a transpilation, e.g. from Java's \code{.class} format directly into the Gear VM bytecode format, if such extension is ever built. 
+
+The Gear VM bytecode format has to be complex and robust enough to accommodate most languages' needs. 
+
+
+
+
+
+\chapter{The Gear VM Bytecode}
+
+
+
+
+
+
+The Gear VM bytecode is a binary file containing several parts:
+
+\begin{itemize}
+\item Metadata -- the dialect (i.e. the backing language), bytecode version etc.
+\item Constants -- e.g. number literals, strings, symbols, type paths. 
+\item Instruction sequence graph -- graph structures of instruction sequences, one per function. Such a graph is represented by a serialized sequence of instruction nodes along with links to other nodes as specified by each node. The original source file may be a single instruction sequence graph, as it is with Gear. 
+\end{itemize}
+
+This chapter describes the Gear VM Bytecode file format, \code{.gearb}. Each \code{.gearb} file contains definition of a main instruction sequence graph along with additional graphs, which is unlike Java's \code{.class} file format, which only contains definition of a single class. 
+
+A \code{.gearb} file consists of a stream of 8-bit bytes. All 16-bit, 32-bit, 64-bit and 128-bit quantities are constructed by reading in two, four, eight, and sixteen consecutive 8-bit bytes, respectively. Multibyte data items are always stored in big-endian order, where the high bytes come first. 
+
+The types \code{u1}, \code{u2}, \code{u4}, \code{u8} and \code{u16} represent an unsigned one-, two-, four-, eight-, or sixteen-byte quantity, respectively. 
+
+In order to save disk space, numbers can be also expressed with multi-byte constructs. The types \code{m$n$}, where $1 \leq n \leq 20$, then represent 8-bit byte sequences in big-endian order, where only the last 7 bits are used to represent the corresponding number and the very first bit indicates whether the byte is the last byte in a sequence (the bit is \code{0}), or if it does not end a sequence (the bit is \code{1}). The types \code{m1}, \code{m2}, \code{m3} etc. then respectively represent unsigned numbers of 7-bit, 14-bit, 21-bit. The pseudo-type \code{mx} then represents any of these types. 
+
+The \code{.gearb} file format is presented here using pseudo-structures, written in a C-like notation. The contents of these structures are referred to as {\em items}. An item may also be a {\em table}, which consists of zero or more variable-sized items. Due to that fact, a table index may not be used to directly reference a byte offset in the file. 
+
+
+
+
+
+
+\section{The \code{File} Structure}
+
+A \code{.gearb} file consists of a single \code{File} structure: 
+
+\begin{lstlisting}
+File {
+  u4 magic;
+  u4 major_version;
+  u4 minor_version;
+  dialect_info dialect;
+  mx constant_pool_count;
+  cp_item constant_pool[constant_pool_count];
+  mx graphs_count;
+  graph graphs[graphs_count];
+}
+\end{lstlisting}
+
+The items in the \code{File} structure are as follows: 
+
+\begin{description}[font=\ttfamily\mdseries,style=nextline]
+  \item[magic]
+  The \code{magic} item supplies the magic number identifying the \code{.gearb} file format; for the Gear VM bytecode, it has the value of \code{0xC0124189}. 
+  \item[major\_version, minor\_version]
+  The \code{major_version} along with the following \code{minor_version} items determine the version of the bytecode file format. A particular Gear VM may only support file formats in a certain range. 
+  \item[dialect]
+  The \code{dialect} item specifies the identifier and version of the backing language of the \code{File} structure. 
+  \item[constant\_pool\_count]
+  The value of the \code{constant_pool_count} item is equal to the number of entries in the \code{constant_pool} table. 
+  \item[constant\_pool]
+  The \code{constant_pool} item is a table of structures representing various string constants, symbols, numbers and other constants that are referred to within the \code{File} structure and its substructures. Each entry in it is tagged with its format. The \code{constant_pool} is indexed from \code{1} to \code{constant_pool_count}. 
+  \item[graphs\_count]
+  The value of the \code{graphs_count} item is equal to the number of entries in the \code{graphs} table. 
+  \item[graphs]
+  The \code{graphs} item is a table of structures representing instruction sequence graphs. The \code{graphs} table is indexed from \code{1} to \code{graphs_count}. 
+\end{description}
+
+
+
+
+
+\section{The \code{constant_pool} Table}
+
+Instructions refer to items in the \code{constant_pool} table. All entries have the following general format:
+\begin{lstlisting}
+cp_item {
+  u1 tag;
+  u1 data[];
+}
+\end{lstlisting}
+
+Each item in the \code{constant_pool} table must begin with a 1-byte tag indicating the kind of \code{cp_item} entry. The contents of the \code{data} array vary with the value of \code{tag}. The valid tags and their values are listed in \autoref{table:cp-tags}. The format of the additional information in \code{data} varies with the \code{tag} value. 
+
+\begin{table}[!h]
+  \caption{Constant pool item tags}
+  \begin{tabular}{ l r }
+    {\bfseries Constant tag} & {\bfseries Value} \\ \hline \hline
+    \code{Const_UTF8}                & 1 \\ \hline
+    \code{Const_Type_Path_Mutable}   & 2 \\ \hline
+    \code{Const_Type_Path_Immutable} & 3 \\ \hline
+    \code{Const_Int8}                & 4 \\ \hline
+    \code{Const_Int16}               & 5 \\ \hline
+    \code{Const_Int32}               & 6 \\ \hline
+    \code{Const_Int64}               & 7 \\ \hline
+    \code{Const_Int128}              & 8 \\ \hline
+    \code{Const_UInt8}               & 9 \\ \hline
+    \code{Const_UInt16}              & 10 \\ \hline
+    \code{Const_UInt32}              & 11 \\ \hline
+    \code{Const_UInt64}              & 12 \\ \hline
+    \code{Const_UInt128}             & 13 \\ \hline
+    \code{Const_Float32}             & 14 \\ \hline
+    \code{Const_Float64}             & 15 \\ \hline
+    \code{Const_Float128}            & 16 \\ \hline
+    \code{Const_Decimal}             & 17 \\ \hline
+    \code{Const_Complex}             & 18 \\ \hline
+    \code{Const_Symbol}              & 19 \\ \hline
+    \code{Const_String}              & 20 \\ \hline
+  \end{tabular}
+  \label{table:cp-tags}
+\end{table}
+\FloatBarrier
+
+
+
+
+
+\subsection{The \code{Const_UTF8_Item} Structure}
+
+A Gear VM must use the unmodified UTF-8 format. It is an universal item for text representation, used in both strings and symbols. 
+
+The \code{Const_UTF8_Item} structure is:
+\begin{lstlisting}
+Const_UTF8_Item {
+  u1 tag;
+  mx length;
+  u1 bytes[length];
+}
+\end{lstlisting}
+
+The items of the \code{Const_UTF8_Item} are the following:
+\begin{description}[font=\ttfamily\mdseries,style=nextline]
+  \item[tag]
+  The \code{tag} item of the \code{Const_UTF8_Item} structure has the value \code{Const_UTF8} ($1$). 
+  \item[length]
+  The value of the \code{length} item gives the number of bytes in the \code{bytes} array (not the length of the resulting string or symbol, due to the nature of multi-byte \mbox{UTF-8}). It is not null-terminated, as that would be redundant. If the array ends with a null byte, it is a real part of the data. 
+  \item[bytes]
+  The \code{bytes} array contains the bytes of the string. The bytes may have any value. 
+\end{description}
+
+
+
+
+
+\subsection{The \code{Const_Type_Path_*_Item} Structures}
+
+A type path is a simple list structure that consists of: 
+\begin{itemize}
+  \item A variable symbol. 
+  \item A selection symbol. 
+  \item An application type path argument. 
+  \item A type application type path argument. 
+  \item An application comma.
+\end{itemize}
+
+The \code{Const_Type_Path_Mutable_Item} (and \code{Const_Type_Path_Immutable_Item}\footnote{The structures are the same when it comes to their format.}) structures are:
+\begin{lstlisting}
+Const_Type_Path_Mutable_Item {
+  u1 tag;
+  mx length;
+  mx element_count;
+  u1 flags;
+  u1 element_types[element_count];
+  u1 elements[length];
+}
+\end{lstlisting}
+
+The items of both the \code{Const_Type_Path_Mutable_Item} and \code{Const_Type_Path_Immutable_Item} are the following:
+\begin{description}[font=\ttfamily\mdseries,style=nextline]
+  \item[tag]
+  The \code{tag} item of the structure has the value \code{Const_Type_Path_Mutable} ($2$) or \code{Const_Type_Path_Immutable} ($3$). 
+  \item[length]
+  The value of the \code{length} item gives the number of bytes in the \code{elements} array (not the length of the resulting type path).
+  \item[element\_count]
+  The value of the \code{element_count} item gives the number of bytes in the \code{element_types} array.
+  \item[element\_types]
+  The \code{element_types} array contains bytes that mark the type of each element in the \code{elements} array. The valid values of these bytes are listed in \autoref{table:cp-type-path-element-types}. This array is necessary, because there is no possible sub-language that would express a type path with a special syntax within a single byte array, because a Gear VM supports identifiers made by any \mbox{UTF-8} strings. 
+  \item[elements]
+  The \code{elements} array contains bytes that are in fact multi-byte numbers (the \code{mx} type). Indices from \code{element_types} then refer to the assembled \code{mx} types, not each byte. Values of these numbers are then references to \code{Const_Symbol_Item}s (variables, selections) or another \code{Const_Type_Path_Item}s (applications, type applications, expected type). It is an error if a type path contains more that one expected type element, and it is okay if it does not contain any expected type (the expected type is then undefined). The index of the expected type element within the \code{elements} array is unspecified. There are no bytes for elements that are a comma, as that is expressed by the type already. A zero value of an element signifies an unspecified type element. 
+\end{description}
+
+% TBD: in Gear, union types of e.g. if-expressions is to be expressed with three type paths: one to a special type that Gear as a backing language should resolve to a union type (or to the least upper bound, which can be derived from any union type), and two that represent the possible types of the if-positive and if-negative branches. (note that the negative branch may itself extend into more branches in case of else-if, and it's okay) // the type parameter to a union type is a tuple type
+
+% Addition of immutable type path: this can be used to optimize type path resolution, which is bound to each node and cached along with it. If a type path is immutable, then the node does not need to have a mutable-size cache along with it, because the first item that gets resolved (or is pre-cached) is the only one that will always be resolved, as specified by the backing language. Gear may use immutable type paths e.g. for variables, which certainly never change, as they are local to the evaluated instruction sequence graph. Moreover, if such a type path is nested into another type path, its type version does not need to be a part of the cache entry metadata. Moreover, it can be used with mutable type paths in the following way: selection points to an immutable type path and that is a variable, which gets a fixed value once resolved - usable with constant object references, like the object notation in Gear, and yet - when the parent mutable type path cache item is invalidated, the backing language is given an opportunity to change the underlying object along with the type path by replacing it with a reference to another type path or just reset it to another object, still without needing a full cache.
+
+\begin{table}[!h]
+  \caption{Type path flags}
+  \begin{tabular}{ l r p{6.5cm} }
+    {\bfseries Flag} & {\bfseries Value} & {\bfseries Note} \\ \hline \hline
+    \code{Type_Path_Relative} & 0 & path is relative \\ \hline
+    \code{Type_Path_Rooted} & 1 & path is absolute \\ \hline
+    \code{Type_Path_Private} & 2 & path is not referring to user-accessible type \\ \hline
+    \code{Type_Path_Null_Override} & 4 & path is overriding nullability \\ \hline
+    \code{Type_Path_Nullable} & 8 & path is forced nullable; \newline 0 on this bit is forced non-nullable \\ \hline
+  \end{tabular}
+  \label{table:cp-type-path-flags}
+\end{table}
+\FloatBarrier
+
+\begin{table}[!h]
+  \caption{Type path element types}
+  \begin{tabular}{ l r p{6.5cm} }
+    {\bfseries Element type} & {\bfseries Value} & {\bfseries Note} \\ \hline \hline
+    \code{Type_Path_Variable}         & 1   & expects index of a symbol \\ \hline % resolved automatically into an appropriate sub-type-path prior to resolution being passed to the backing language
+    \code{Type_Path_Selection}        & 2   & expects index of a symbol or type path \\ \hline
+    \code{Type_Path_Application}      & 3   & expects index of a type path \\ \hline
+    \code{Type_Path_Type_Application} & 4   & expects index of a type path \\ \hline
+    \code{Type_Path_Expected_Type}    & 5   & expects index of a type path \\ \hline
+    \code{Type_Path_Left_Parens}      & 6   & not present in \code{elements} \\ \hline
+    \code{Type_Path_Right_Parens}     & 7   & not present in \code{elements} \\ \hline
+    \code{Type_Path_Application_Name} & 8   & expects index of a symbol \\ \hline
+    \code{Type_Path_Projection}       & 9   & not present in \code{elements} \\ \hline % this converts the previous elements into something like Gear's (e).type, and the following t is then (e).type#t
+    \code{Type_Path_Rooted}           & 10  & not present in \code{elements} \\ \hline
+    \code{Type_Path_Splat_Flag}       & 64  & not present in \code{elements}, \newline combined with other values \\ \hline
+    \code{Type_Path_Implicit_Flag}    & 128 & not present in \code{elements}, \newline combined with other values \\ \hline
+  \end{tabular}
+  \label{table:cp-type-path-element-types}
+\end{table}
+\FloatBarrier
+
+
+
+
+
+\subsubsection{Type Paths \& Scopes}
+
+A type path---relatively to its used position and scope---determines a type, either by pointing it to a node of PSI (\sref{sec:psi}), or, with a variable symbol, to an actual type of a value in a variable. The list of possibilities of type paths may get extended with support for more backing languages. 
+
+A type path is built as a sequence of references to symbols in the symbols list and a sequence of designators for each of its node (determining whether a node is a variable symbol, a selection symbol etc.).
+
+A type path can also refer to a type that is made available with a type scope, which includes mechanism that can mark a scope being a parent scope of another scope (this is important for reuse of type scopes -- and type scopes can possibly be reused across different bytecode files as well). When talking Gear, this can be done by using \code{use} clauses to import names into a particular scope -- such types are then available with type paths that start with a selection symbol. 
+
+A type scope can also have a wildcard import, by using an extension of a backing language. When talking Gear, a scope can be tagged with a list of types from which it is built up, along with their versions at the time that import was performed. Thus, Gear is able to detect a dynamic change in a scope and next time that scope is accessed, the language is given an opportunity to refresh the scope and check for duplicates (which would be an error). 
+
+A language has to define the order of search for a type, since a type scope is not the only place where it may look for. The way it defines that is irrelevant to Gear VM, and it does so by implementing the language bindings (\sref{sec:language-bindings}). 
+
+\begin{itemize}
+\item The type of the function itself, if the language supports higher-order function types and their extension. 
+\item The type of receiver, if any. 
+\item Super-type(s) of receiver, if any. 
+\item The given type scope assembled while evaluating an instruction sequence graph. 
+\item Another related types to the type of receiver (if any) or the type of the function, such as a namespace or a module. 
+\item Use a dynamic callback. 
+\end{itemize}
+
+To resolve a type that is present in the PSI (note that PSI contains both named and anonymous types), a language binding has to be invoked with the assembled type scope and the corresponding type path with variable types resolved automatically by a Gear VM. 
+
+The backing language then with its implementation defines the order of search (which is arbitrary to each backing language) and either returns a type from PSI, or signals that it could not find a type, which is an error state that is further resolved. Such resolution may be implemented directly in the instruction that failed as a fallback instruction, or if that fails too or is not set up, another language binding (e.g. in Ruby, that could lead to an invocation of \code{const_missing}). 
+
+A very interesting case is when a backing language implements implicit conversions. E.g., say that a type path contains a function application and for some (or maybe even all) of the argument types, the corresponding member is not applicable to the given argument types. The language can make use of an implicit scope -- e.g. search the type scope for a type that can convert a particular argument type to a type that the corresponding member is applicable to, or search some another type for such a conversion. 
+
+To allow the aforementioned behavior, all types referenced from a type scope are tagged with an ``implicit flag'', which (when set) makes the type eligible for implicit search \& querying. 
+
+A Gear VM helps the backing language by providing an API to look for an implicit conversion on demand (therefore, a particular backing language does not need to make sense of the implicit flags at all). A Gear VM also tells the language where does that conversion come from, so that the language may choose whether to use it or not. A Gear VM can also be instructed to only look into the type scope, or some arbitrary other type, to collect all implicit values filtered by the backing language's query. 
+
+With an implicit value for conversion found, the backing language may instruct a Gear VM to apply the conversions before applying the function that requires the conversions. 
+
+An implicit conversion based on an implicit value is not the only option of converting an argument type though -- a backing language has also the following options of converting an argument type (or even the selection itself): 
+
+\begin{itemize}
+\item An implicit value conversion on argument. 
+\item An implicit value conversion on selection. \footnote{Used in Gear for view application.}
+\item A conversion specified by the language itself (e.g. numeric widening). 
+\item Application conversion. \footnote{Used in Gear for method conversion -- evaluation and empty application.}
+\item Eta-expansion. \footnote{Basically a conversion from a complex type path into a simple path that ends with an application symbol, created by evaluating the preceding nodes up to the last function reference. If the type path is an application, then it gets converted to a selection instead, so that incomplete applications to methods with multiple parameter lists can be converted into partial applications -- and therefore the backing language does not need to care about that, as long as it registers its multi-param-list methods correctly along with ad-hoc lambda support (true for every backing language that has registered an appropriate function type).}
+\item Type application. \footnote{Used in Gear for value conversion -- type instantiation, and also type inference that does not need to be deferred on selections, as the whole selection is made available with the type path, and Gear chooses to treat empty applications as selections.}
+\end{itemize}
+% TBD: determine if more conversions during type resolution are needed. Do this while implementing the type path structure along with the backing language model, so that the backing language has all the tools it needs to proceed as fast and as simply as it can. 
+
+A language may indeed choose multiple such conversions (based on its rules) for each component of a type path, and even multiple conversions for one component (e.g. an implicit value conversion followed by an application conversion). It is therefore possible to even replace the whole type path with conversions and cache the resulting conversion (the key in a cache is the type path in the given used position). 
+
+When talking Gear, the language may also implement implicit parameters, along with implicit conversions. Such a feature may be rendered by using an application conversion on a modified type path, adding a flag that such an extra application is implicit (a Gear VM has to know of such possibility), and then what Gear VM does is: if the original function application is directly followed by another application (without selecting another member on the previous result), it ignores that application conversion added to the type path, and if not, then another function application happens, based on the newly added ``virtual'' application conversion (and yet again, the language is tasked with resolving each argument type, which is now tagged as implicit, so that it knows that it should only look for implicit values). 
+
+
+
+
+
+
+\subsection{The \code{Const_(U)Int$n$_Item} Structures}
+
+A Gear VM provides for its bytecode a rather wide range of integral types for constants, including both signed and unsigned versions. Numbers that fall out of the scope of these types or numbers that have to be as precise as possible have the \code{Const_Decimal_Item} structure available (including real numbers).
+
+The \lstinline!Const_Int$n$_Item! structures are:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Int8_Item {
+  u1 tag;
+  u1 value;
+}
+Const_Int16_Item {
+  u1 tag;
+  u2 value;
+}
+Const_Int32_Item {
+  u1 tag;
+  u4 value;
+}
+Const_Int64_Item {
+  u1 tag;
+  u8 value;
+}
+Const_Int128_Item {
+  u1 tag;
+  u16 value;
+}
+\end{lstlisting}
+\end{minipage}
+
+The \lstinline!Const_UInt$n$_Item! structures are:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_UInt8_Item {
+  u1 tag;
+  u1 value;
+}
+Const_UInt16_Item {
+  u1 tag;
+  u2 value;
+}
+Const_UInt32_Item {
+  u1 tag;
+  u4 value;
+}
+Const_UInt64_Item {
+  u1 tag;
+  u8 value;
+}
+Const_UInt128_Item {
+  u1 tag;
+  u16 value;
+}
+\end{lstlisting}
+\end{minipage}
+
+The presence of a sign bit in each structure is determined by its tag: \code{Int$n$} items are signed, \code{UInt$n$} items are not signed. Unsigned versions of these structures have the same layout. 
+
+
+
+
+
+\subsection{The \code{Const_Float$n$_Item} Structure}
+
+A Gear VM provides for its bytecode three structures for representing floating-point numbers in binary form. Each value is represented using the IEEE 754 $n$-bit precision format. 
+
+The \code{Const_Float$n$_Item} structures are:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Float32_Item {
+  u1 tag;
+  u4 value;
+}
+Const_Float64_Item {
+  u1 tag;
+  u8 value;
+}
+Const_Float128_Item {
+  u1 tag;
+  u16 value;
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+
+\subsection{The \code{Const_Decimal_Item} Structure}
+
+A Gear VM provides for its bytecode a structure for representing arbitrary-precision and arbitrary-size numbers, including integral and real numbers. 
+
+The \code{Const_Decimal_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Decimal_Item {
+  u1 tag;
+  mx length;
+  mx scale;
+  u1 numbers[length];
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+
+\subsection{The \code{Const_Symbol_Item} Structure}
+
+A Gear VM uses this structure to represent names in programs. 
+
+The \code{Const_Symbol_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Symbol_Item {
+  u1 tag;
+  mx name_index;
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+
+\subsection{The \code{Const_String_Item} Structure}
+
+A Gear VM uses this structure to represent text literals in programs. 
+
+The \code{Const_String_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_String_Item {
+  u1 tag;
+  mx string_index;
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+
+\subsection{The \code{Const_Complex_Item} Structure}
+
+A Gear VM uses this structure to represent complex numbers in programs. 
+
+The \code{Const_Complex_Item} structure is:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+Const_Complex_Item {
+  u1 tag;
+  mx real_index;
+  mx imaginary_index;
+}
+\end{lstlisting}
+\end{minipage}
+
+
+
+
+
+\section{The \code{graphs} Table}
+
+The \code{graphs} table contains \code{graphs_count} items. Each item represents an instruction sequence graph and has the following general format:
+
+\begin{minipage}{\linewidth}
+\begin{lstlisting}
+graph {
+  u1 opcode;
+  u1 data[];
+}
+\end{lstlisting}
+\end{minipage}
+
+Each item in the \code{graphs} table must begin with a 1-byte opcode indicating the kind of \code{graph} entry. The contents of the \code{data} array vary with the value of \code{opcode}. The valid opcodes and their values are listed in \autoref{table:opcodes}. The format of the additional information in \code{data} varies with the \code{opcode} value. 
+
+% TBD: update the table as it is definitely not finished yet
+\begin{table}[!h]
+  \caption{Graph opcodes}
+  \begin{tabular}{ l r }
+    {\bfseries Opcode}         & {\bfseries Value} \\ \hline \hline
+    \code{Op_Noop}             & 1 \\ \hline
+    \code{Op_Sequence}         & 2 \\ \hline
+    \code{Op_Store}            & 3 \\ \hline % assignment
+    \code{Op_Store_Multi}      & 4 \\ \hline % multi-assignment (a, b := b, a)
+    \code{Op_Branch}           & 5 \\ \hline
+    \code{Op_Branch_Neg}       & 6 \\ \hline
+    \code{Op_Parallel}         & 7 \\ \hline
+    \code{Op_Jump}             & 8 \\ \hline
+    \code{Op_Label}            & 9 \\ \hline
+    \code{Op_Val_Dcl}          & 10 \\ \hline
+    \code{Op_Param_Dcl}        & 11 \\ \hline
+    \code{Op_Result_Dcl}       & 12 \\ \hline
+    \code{Op_Unapply}          & 13 \\ \hline
+    \code{Op_Apply}            & 14 \\ \hline
+    \code{Op_Test_Type}        & 15 \\ \hline
+    \code{Op_Use_Type}         & 16 \\ \hline % use clause
+    \code{Op_Const}            & 17 \\ \hline % including nil - 0 value
+    \code{Op_Val}              & 18 \\ \hline
+    \code{Op_Return}           & 19 \\ \hline
+    \code{Op_Throw}            & 20 \\ \hline
+    \code{Op_Catch}            & 21 \\ \hline
+    \code{Op_Annotated}        & 22 \\ \hline
+    \code{Op_Type_Cache}       & 23 \\ \hline
+    \code{Op_Metadata}         & 24 \\ \hline
+    \code{Op_Native}           & 25 \\ \hline
+    \code{Op_Loop}             & 26 \\ \hline
+    \code{Op_Memoize}          & 27 \\ \hline
+    \code{Op_Self}             & 28 \\ \hline
+    \code{Op_Super}            & 29 \\ \hline
+    \code{Op_Nested_Self}      & 30 \\ \hline
+    \code{Op_Nested_Super}     & 31 \\ \hline
+    \code{Op_Select}           & 32 \\ \hline % method values, can include arguments (useful with method values of methods with multiple parameter lists - apply would fail, select is ok)
+    \code{Op_Type_Dcl}         & 33 \\ \hline
+    \code{Op_Type_Def}         & 34 \\ \hline
+    \code{Op_Method_Dcl}       & 35 \\ \hline
+    \code{Op_Method_Def}       & 36 \\ \hline
+    \code{Op_Type_Param_Dcl}   & 37 \\ \hline
+  \end{tabular}
+  \label{table:opcodes}
+\end{table}
+\FloatBarrier
+
+
+
+
+
+
+
+\chapter{The Components of a Virtual Machine}
+
+\section{Language Interface \& Bindings}
+\label{sec:language-bindings}
+
+\subsection{Compiler Interface}
+
+\subsection{Runtime Interface}
+
+\section{Command Line Interface}
+
+A command line interface to a Gear VM should enable two main important functions: to start a Gear VM with a specified program, and to cover compilation of source of programs and libraries. 
+
+
+
+
+
+
+\section{Threads}
+
+A Gear VM runtime is all about {\em threads}. A thread models a computation stream, therefore computations may be parallel. Moreover, each thread may compose of multiple {\em fibers}, which are modelled using separate call stacks, some of which do not need to be complete copies. This also enables continuations, both unlimited and delimited. 
+
+A Gear VM should prefer native implementation of threads wherever possible, providing an abstraction to the languages, which in turn may provide abstraction to its users. Fibers, on the other hand, are not really easy to implement using native resources. 
+
+Fibers may not be passed between threads, but may be copied and then the copy may be transferred to a different thread, but only before it is resumed. This may happen on a language level as well as user level, or even both (as in Gear, where the language enables passing of fibers between threads, but users have to make up the logic in which the receiving thread will pick up the fiber object). 
+
+
+
+
+
+\section{Stacks}
+
+A {\em stack} is the low-level structure of a Gear VM. It contains a stack of stackable frames, which are structures containing reference to an instruction graph, maintaining an instruction pointer (program counter), containing references to argument values, the result value and thrown values, and optionally some more metadata, e.g. line numbers and corresponding files. 
+
+A stack may or may not represent a whole fiber execution, but there is always at least one stack per thread that does. The other, incomplete ones, are delimited and used with constructs such as other fibers and continuations. 
+
+A stackable frame internally increments reference count to the instruction sequence graph that it references, and decrements it again upon being popped off its stack. This way an instruction sequence graph is persisted during evaluation, while the original function may be already deleted or replaced after a hot swap of code. 
+
+A stackable frame may be a control frame, containing the aforementioned elements, or a native frame, filling in for a native method invocation via \code{FFI} (Foreign Function Invocation). A native frame does not need to contain any program counters due to the nature of its execution. The native function is given access to its stackable frame, so it can e.g. return or throw a value. 
+
+A Gear VM should use the so-called ``saguaro stack'', or ``parent pointer tree'', so that fibers are possible/easier to implement. 
+
+
+
+
+
+\section{Address Spaces \& Values}
+
+A Gear VM has to give its languages memory for allocating new objects. In the context of a Gear VM, an object and a value are referring to the same concept -- it represents a value that has some address, properties and size. 
+
+Languages are given APIs to handle the memory that is managed by a Gear VM. Those APIs are implementation-defined, however. Some values may be represented as ``immediates''\footnote{An immediate may be e.g. embedding integral numbers, floating point numbers and/or other special values like booleans into a pointer, or some other combination, like NaN-coding.}, and a Gear VM shall handle transitions between immediates and referenced values transparently. To prevent undefined behaviours, both Gear VM and the languages are required to not use non-pure NaN values, since that could break immediates. 
+
+Every object has its address, locating it in the memory. Every object that is allocated on ``the heap'' has to be either reference counted, or garbage collected. Automatic reference counting is preferred. 
+
+For reference counted memory management, every object is associated with a reference counter. It is implementation-defined how this association works. The only requirement of a Gear VM is to provide strong and weak references. Soft, phantom or other references are optional, and are not implemented in Standard Gear implementations. A Gear VM has to be able to handle at least 10000 strong references and equal number of weak references. 
+
+Objects are referred to via variable values, which are generally placeholders for object addresses. Addresses may be cached per-thread, unless the variable is specified to be volatile. Volatile variables must be only instance variables, and can opt-in for acquire/release semantics or sequential consistency. 
+
+An object can have any number of properties, and also a set of flags that are common throughout every language (e.g. the ``frozen'' state for immutable objects). This specification does not require any specific memory layout of object representation. An object may have at least two kinds of instance variables -- those known at compile time, and those that are added in runtime dynamically. A Gear VM has to be able to handle at least 255 instance variables in memory layout of objects of any kind. 
+
+
+
+
+
+
+\section{Program Structure Information}
+\label{sec:psi}
+
+A program structure information (\code{PSI}) is a forest of graph structures that hold both compile-time and runtime information about types in a program. One of the most important data stored in it are method references. 
+
+Languages may opt in to implement class objects by having their objects point to various subgraphs of a PSI. 
+
+
+
+
+
+\section{Inter-VM communication} % pipes between VMs
+
+A Gear VM has to implement a mechanism for inter-VM communication between programs. Furthermore, such VMs do not have to run on the same computer. The toolchain provided for this communication does not need to be embedded in a Gear VM and can be shipped separately. 
+
+Also a separate GFR is to be made for this component of a Gear VM. 
+
+
+
+
+
+\section{Native Components} % File I/O, pipes, locks, ...
+
+A Gear VM has to also provide guided access to some components that are underneath mapped to native host platform components, e.g. everything input/output or thread synchronization primitives. This is so that a language can be useful (input/output) and also parallelized (synchronization). 
+
+% TBD: as the implementation of a reference Gear VM progresses, fill in details
+
+
+
+

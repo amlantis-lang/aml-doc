@@ -1,0 +1,192 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{geardoc}[2014/04/20 v0.1 Gear style customization]
+
+\RequirePackage{fourier}
+\usepackage[a4paper]{geometry}
+\usepackage{fontspec,xltxtra,xunicode,titling,ifpdf}
+\RequirePackage{color}
+\RequirePackage{colortbl}
+\usepackage[usenames,dvipsnames]{xcolor}
+
+\RequirePackage{a4}
+\setlength{\textheight}{22.5cm}
+
+% fancy headings
+\RequirePackage[clearempty]{titlesec}
+
+\newcommand{\docversion}{unknown}
+\renewcommand{\maketitlehookb}{\begin{center} {\large Version \docversion}\end{center}}
+
+\newcommand{\mychaptername}{Chapter}
+\titleformat{name=\chapter}
+   [display]
+   {\sffamily\bfseries\Huge}%
+   {\textnormal{\chapterfont\Large\mychaptername{} \thechapter}}%
+   {0pt}%
+   {\vspace*{2.5mm}}%
+   [\vspace*{8mm}]%
+\titleformat{name=\chapter,numberless}%
+   [display]%
+   {\vspace*{-30mm}\sffamily\bfseries\Large}%
+   {}%
+   {0pt}%
+   {}%
+   [\vspace*{2mm}]%
+\titleformat{name=\section}
+   {\sffamily\bfseries\huge}
+   {\thesection}
+   {1em}
+   {}
+\titlespacing{\section}{0pt}{*4}{*2}
+\titleformat{name=\subsection}
+   {\sffamily\bfseries\Large}
+   {\thesubsection}
+   {0.67em}
+   {}
+\titlespacing{\subsection}{0pt}{*2}{*1}
+\titleformat{name=\subsubsection}
+   {\sffamily\bfseries\large}
+   {\thesubsubsection}
+   {0.55em}
+   {}
+\titleformat{name=\paragraph}
+   [runin]
+   {\rmfamily\normalsize\bfseries}
+   {}
+   {opt}
+   {}
+   [.\ ]
+\titleformat{name=\subparagraph}
+   [runin]
+   {\itshape}
+   {}
+   {0pt}
+   {}
+   [.\ ]
+\addtocounter{secnumdepth}{1}
+
+% fancy footers
+\RequirePackage[bottom,multiple,stable]{footmisc}
+
+% fancy headers
+\RequirePackage{fancyhdr}
+\pagestyle{fancy}
+\fancypagestyle{plain}{\fancyhf{}%
+   \renewcommand{\headrulewidth}{0pt}%
+   \renewcommand{\footrulewidth}{0pt}}
+
+\RequirePackage{hyperref}
+
+\makeatletter
+%%%
+\@ifundefined{chaptermark}{}{\renewcommand{\chaptermark}[1]{\markboth{#1}{}}}
+%%%
+\makeatother
+%%%
+\renewcommand{\sectionmark}[1]{\markright{\thesection\ \ #1}}
+\fancyhf{}
+\fancyhead[LE,RO]{\sffamily\footnotesize\thepage}
+\fancyhead[RE]{\sffamily\footnotesize\leftmark}
+\fancyhead[LO]{\sffamily\footnotesize\rightmark}
+\renewcommand{\headrulewidth}{0.5pt}
+
+% set up typefaces
+\defaultfontfeatures{Mapping=tex-text}
+\setmainfont[Scale=0.9,Mapping=tex-text]{Iowan Old Style}
+\setromanfont[Scale=0.9,Mapping=tex-text,ItalicFont=Iowan Old Style Italic]{Iowan Old Style}
+\setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Helvetica Neue Condensed Bold}
+% retrieve at: https://github.com/belluzj/fantasque-sans
+\setmonofont[Scale=MatchLowercase,Mapping=]{Fantasque Sans Mono}
+\newfontfamily\headingfont[]{Helvetica Neue Condensed Bold}
+\newfontfamily\chapterfont[]{Helvetica Neue Thin}
+\renewcommand{\maketitlehooka}{\headingfont}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt plus 2pt minus 2pt}
+
+% customize font sizes
+\makeatletter
+\renewcommand\Huge{\@setfontsize\Huge{28pt}{30}}
+\renewcommand\huge{\@setfontsize\huge{22pt}{24}}
+\renewcommand\Large{\@setfontsize\Large{18pt}{20}}
+\makeatother
+
+\usepackage{listings}
+
+\lstdefinelanguage{Gear}{
+  alsoletter={-},%
+  morekeywords={abstract,advice,advice-execution,after,alias,annotation,arguments,around,as,aspect,assert,atomic,attribute,begin,before,bitfield,break,broken,case,catch,class,clone,cloned,constant,constraint,constructor,convenience,declare,def,delta,destructor,digits,dispatch,do,else,elsif,end,ensure,enum,execution,exhausted,extends,final,for,for-some,foreign,function,get,goto,handler,if,immutable,implements,implicit,in,include,interface,invariant,invoke,is,joinpoint,label,lazy,let,loop,macro,match,memoize,message,method,module,multi,mutable,native,next,nil,no,not,object,of,opaque,operator,optional,origin,otherwise,out,override,per-self,per-target,pointcut,pragma,prefer,prepend,private,property,protected,protocol,public,raise,raising,range,record,redo,refine,refinement,release,rescue,retain,retry,return,returning,requires,reverse,sealed,self,set,skip,soft,step,super,switch,target,then,this,throw,throwing,to,trait,transparent,type,undefined,unless,unowned,until,union,unit-of-measure,upgrade,use,val,var,void,yes,weak,when,while,with,yield},%
+  sensitive,%
+  morecomment=[l];;,%
+  morecomment=[n]{/*}{*/},%
+}[keywords,comments]
+
+% activate the language and predefine settings
+\lstset{
+    language=Gear,%
+    xleftmargin=2mm,%
+    aboveskip=3mm,%
+    belowskip=3mm,%
+    fontadjust=true,%
+    columns=[c]fixed,%
+    keepspaces=true,%
+    basewidth={0.58em, 0.53em},%
+    tabsize=4,%
+    basicstyle=\renewcommand{\baselinestretch}{0.95}\ttfamily,%
+    commentstyle=\itshape\color{gray},%
+    keywordstyle=\bfseries,%
+    mathescape=true,%
+    captionpos=b,%
+    framerule=0.3pt,%
+    firstnumber=0,%
+    numbersep=1.5mm,%
+    numberstyle=\tiny,%
+}
+
+\newcommand{\code}[1]{%
+    \lstinline[%keywordstyle=,%
+               flexiblecolumns=true,%
+               basicstyle=\ttfamily]£#1£}
+
+\usepackage{multicol}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage[justification=justified,singlelinecheck=false]{caption}
+
+\newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
+
+\newcommand{\syntax}{{\bf Syntax:}}
+\newcommand{\sref}[1]{\S\ref{#1}}
+\newcommand{\comma}{,\,}
+\newcommand{\commadots}{\comma \ldots \comma}
+\newcommand{\conforms}{<:}
+\newcommand{\gap}{\quad\quad}
+
+\newcounter{Example}[section]
+\newcounter{result}[section]
+
+\def\example{
+   \def\theresult{Example~\thesection.\arabic{result}}
+   \refstepcounter{result}
+   \trivlist\item[\hskip
+   \labelsep{\bf \theresult}]}
+\def\endexample{\endtrivlist}
+
+\def\definition{
+   \def\theresult{Definition~\thesection.\arabic{result}}
+   \refstepcounter{result}
+   \trivlist\item[\hskip
+   \labelsep{\bf \theresult}]}
+\def\enddefinition{\endtrivlist}
+
+\newcommand{\ba}{\begin{array}}
+\newcommand{\ea}{\end{array}}
+\newcommand{\bda}{\[\ba}
+\newcommand{\eda}{\ea\]}
+\newcommand{\Dollar}{\mbox{\$}}
+
+
+

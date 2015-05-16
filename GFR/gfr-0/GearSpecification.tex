@@ -1,0 +1,28 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[12pt,a4paper,twoside,titlepage]{book}
+\usepackage[english]{babel}
+\usepackage[section]{placeins}
+
+\usepackage{../../tex/geardoc}
+
+\begin{document}
+
+\frontmatter
+\title{GFR-0\\ \large The Gear Language Specification}
+\renewcommand{\docversion}{0.1}
+\author{Markéta Lisová}
+\maketitle
+\clearemptydoublepage
+\tableofcontents
+
+\mainmatter
+\sloppy
+
+\input{Reference}
+
+\appendix
+\input{SyntaxSummary}
+
+\end{document}
