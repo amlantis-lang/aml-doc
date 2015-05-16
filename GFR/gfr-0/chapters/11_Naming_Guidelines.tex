@@ -37,7 +37,7 @@ A module is a directory located in your system at a location unspecified by this
 A directory holding a module must have the same name as the module, followed by a dot ``\lstinline!.!'' and the vendor name. If it is standalone, so that no other modules of the same name share the same parent directory, the vendor part including the leading dot can be omitted. When the module is a submodule to another module, omitting the vendor part means that the submodule has the same vendor name. 
 
 \example Such directories may look like:
-\begin{lstlisting}
+\begin{lstlisting}[deletekeywords={module}]
 /Lang.gear
 /Your_Module.com.example
     /source ;; or `src`
