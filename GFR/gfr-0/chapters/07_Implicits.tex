@@ -82,7 +82,7 @@ end
 
 The monoid in question is marked as an implicit parameter, and can therefore be inferred based on the type of the list. Consider e.g. the call
 \begin{lstlisting}
-sum %[1, 2, 3]
+sum %[1; 2; 3]
 \end{lstlisting}
 in a context where \code{String_Monoid} and \code{Int_Monoid} are visible. We know that the formal type parameter \code{A} of \code{sum} needs to be instantiated to \code{Integer}. The only eligible object which matches the implicit formal parameter type \code{Monoid[Integer]} is \code{Int_Monoid}, thus this object will be passed as implicit parameter. 
 
@@ -352,11 +352,11 @@ object program {
   
   def run (*args: String): Unit
     val rect := %{
-        :shape => :Rectangle,
-        :width => 4 [<cm>],
+        :shape => :Rectangle
+        :width => 4 [<cm>]
         :height => 13 [<cm>]}
     val circle := %{
-        :shape => :Circle,
+        :shape => :Circle
         :radius => 12 [<cm>]}
     print_line area(rect) ;; 52 cm^2
     print_line area(circle) ;; 452.38$\ldots$ cm^2

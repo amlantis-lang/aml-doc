@@ -1303,6 +1303,7 @@ Pointcut_Type   ::= 'invoke' (id | regular_expression_literal)
                   | 'returning' [id [':' Type] | Type]
                   | 'throwing' [id [':' Type] | Type]
                   | 'raising' [id [':' Type] | Type]
+                  | 'yielding' [id [':' Type] | Type]
                   | 'advice-execution' 
                     [(id | regular_expression_literal)]
                   | 'self' (id | Type)
@@ -1321,8 +1322,8 @@ Advice_Def      ::= 'advice'
                     Advice_Spec (Pointcut_Ref | Pointcut_Type)
                     Block_Expr
 Advice_Spec     ::= 'before' 
-                  | 'after' [('returning' | 'throwing' | 'raising') 
-                    [id [':' Type] | Type]]
+                  | 'after' [('returning' | 'throwing' | 'raising'
+                            | 'yielding') [id [':' Type] | Type]]
                   | 'around'
 Aspect_Clause   ::= 'per-self' [Pointcut_Ref] 
                   | 'per-target' [Pointcut_Ref] 

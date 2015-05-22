@@ -9,7 +9,7 @@
 Expr        ::= Cond_Expr
               | Loop_Expr
               | Rescue_Expr
-              | Raise_Expr
+              | Raise_Expr 
               | Throw_Expr
               | Catch_Expr
               | Return_Expr
@@ -21,7 +21,9 @@ Expr        ::= Cond_Expr
               | Match_Expr
               | Annot_Expr
               | Cast_Expr
+              | New_Expr
               | Use_Expr
+              | Delayed_Expr
               | Jump_Expr
               | Anon_Fun
               | Anon_Class
@@ -29,11 +31,13 @@ Expr        ::= Cond_Expr
               | Quote_Expr
               | Workflow_Expr
               | Quasiquote_Expr
-              | Splice_Expr
               | '(' Expr ')'
+              | {Local_Modifier} Tmpl_Def
+              | Def
+              | Expr semi Expr
 Simple_Expr ::= Block_Expr
-              | ['&'] Simple_Expr1
-              | '&' '(' Simple_Expr1 ')'
+              | Simple_Expr1
+              | Method_Expr
               | TT_Expr
 Result_Expr ::= Anon_Params '->' Block 
               | ['memoize'] Expr
@@ -66,6 +70,7 @@ What we call ``statement'', in context of Gear is in fact yet another kind of an
 
 
 \section{Literals}
+\label{sec:literal-expr}
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Literal
@@ -127,7 +132,7 @@ Defined values and variables may not be undefined by assigning them with the \co
 Simple_Expr1 ::= Path
                | '(' Anon_Class ')' '.' Selection
                | Simple_Expr '.' Selection
-Selection    ::= ['?'] id | digit {digit}
+Selection    ::= ['?'] (id | digit {digit})
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
@@ -169,23 +174,28 @@ An attribute selection ~\lstinline!$x$'$a$!~ is then viewed as function applicat
 
 
 
-\section{Self, This \& Super}
+\section{Self, This, Super, Outer \& Module}
 \label{sec:self-this-super}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= [Path '.'] 'self' ['[' ('cloned' | 'origin') ']']
+Simple_Expr1 ::= [id '.'] 'self' ['[' ('cloned' | 'origin') ']']
                  ['.' Selection]
-               | [Path '.'] 'this' ['[' ('cloned' | 'origin') ']']
-                 ['.' Selection]
-               | [Path '.'] 'super' ['[' ('cloned' | 'origin') ']']
+               | [id '.'] 'this' ['[' ('cloned' | 'origin') ']']
+                 '.' Selection
+               | [id '.'] 'super' ['[' ('cloned' | 'origin') ']']
                  [Class_Qualifier] 
                  ['.' Selection]
-               | [Path '.'] Selection
+               | 'outer' Class_Qualifier 
+                 ['.' 'super' [Class_Qualifier]] 
+                 ['.' Selection]
+               | 'outer' Class_Qualifier
+                 '.' 'this' '.' Selection
+               | 'module' [Class_Qualifier] '.' Selection
 \end{lstlisting}
 
 The expression \code{self} stands always for the current instance in the context (and in function resolution searches in the actual class of the instance) in the innermost template containing the reference (thus excluding blocks and anonymous functions). 
 
-The expression \code{this} is the same as \code{self}, except that function resolution searches from the class that this expression appears in, possibly skipping overrides in subtypes of the actual class of \code{self}. The \code{this} expression is interchangeable with \code{self} in the following paragraphs, although use of \code{self} is preferred. 
+The expression \code{this} is the same as \code{self}, except that function resolution searches from the class that this expression appears in, possibly skipping overrides in subtypes of the actual class of \code{self}, and continues as usual up the inheritance chain. The \code{this} expression is interchangeable with \code{self} in the following paragraphs, although use of \code{self} is preferred. 
 
 The expression ~\lstinline!$C$.self!~ refers to the current instance in the context of the enclosing (or even directly enclosing) type $C$. It is an error if $C$ is not an enclosing type. The type of the expression is the same as ~\lstinline!$C$.self.type!. 
 
@@ -193,8 +203,11 @@ A reference ~\lstinline!super.$m$!~ refers to a method or type $m$ in the least 
 
 A reference ~\lstinline!$C$.super.$m$!~ refers to a method or type $m$ in the least proper supertype of the innermost class or object definition named $C$, which encloses the reference. It evaluates to the member $m'$ in the actual supertype of that template, which is equal to $m$ or which overrides $m$. If $m$ refers to a method, then the method must be either concrete, or the template containing the reference must have a member $m'$, which overrides $m$ and which is labeled \code{abstract override}. 
 
-The \code{super} prefix may be followed by a qualifier ~\lstinline![$T$]!, as in ~\lstinline!$C$.super[$T$].$m$!. In this case, the reference is to the type or method $m$ in the parent class or trait of $C$, whose simple name is $T$. The qualifier allows also paths, in case multiple supertypes had the same simple name, working as a suffix search -- the name $T$ then refers the parent class or trait of $C$, whose qualified name ends with $T$. It evaluates to the member $m'$ in the actual supertype of that template, which is equal to $m$ or which overrides $m$. If $m$ refers to a method, then the method must be either concrete, or the template containing the reference must have a member $m'$, which overrides $m$ and which is labeled \code{abstract override}. 
+The \code{super} prefix may be followed by a qualifier ~\lstinline![$T$]!, as in ~\lstinline!$C$.super[$T$].$m$!. In this case, the reference is to the type or method $m$ in the parent class or trait of $C$, whose simple name is $T$. It evaluates to the member $m'$ in the actual supertype of that template, which is equal to $m$ or which overrides $m$. If $m$ refers to a method, then the method must be either concrete, or the template containing the reference must have a member $m'$, which overrides $m$ and which is labeled \code{abstract override}. 
 
+The expression ~\lstinline!outer[$T$]!~ refers to the current instance in the context of enclosing (or even directly enclosing) type $T$. It is an error if $T$ is not an enclosing type. The type of the expression is the same as ~\lstinline!outer[$T$].type!. 
+
+Class qualifier may be a simple name referring to name of an enclosing type or supertype (depending on the preceding keyword: \code{outer} or \code{super}), or---if there is no type of such name or the qualifier is not a simple name---a stable id referring to the enclosing type or supertype. The latter case is useful in cases when there are multiple enclosing types or supertypes of the same simple name. Class qualifiers are evaluated at compile time, but, when the slow path of stable id is taken, it may refer to a lazily imported type name. It is obviously an error if the slow path is taken, no name is found during compilation and there are no lazy imports in the scope, or no name is found using the lazy import. 
 
 
 
@@ -235,15 +248,16 @@ Poetry_Args ::= Args_Expr
 Args_Expr   ::= (Pos_Args [',' Named_Args])
               | Named_Args
 Pos_Args    ::= Pos_Arg {',' Pos_Arg}
-Pos_Arg     ::= 'out' id | ['*'] Expr | '$' | TT_Expr
+Pos_Arg     ::= ['*'] Expr 
+              | '$' 
+              | TT_Expr
+              | Slice_Expr
 Named_Args  ::= Named_Arg {',' Named_Arg} {',' '**' Expr}
               | '**' Expr {',' '**' Expr}
-Named_Arg   ::= 'out' id ':' id
-              | id ':' (Expr | TT_Expr)
+Named_Arg   ::= id ':' (Expr | TT_Expr | Slice_Expr)
               | id ':' '$'
 Block_Arg   ::= Block_Expr 
-              | '&' Simple_Expr1 
-              | '&' '(' Simple_Expr1 ')'
+              | Method_Expr
 \end{lstlisting}
 
 % TODO: describe last block arg
@@ -252,6 +266,9 @@ Block_Arg   ::= Block_Expr
 A function application ~\lstinline!$f$($e_1 \commadots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \commadots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
 
 If none of $e_i$ is purely a named argument, and $f$ accepts a single parameter of \code{Any}, \code{Object} or \code{Tuple_$n$} type (where $n = m$), then the function application is taken as ~\lstinline!$f$(($e_1 \commadots e_m$))!. With respect to overloading resolution (\sref{sec:overloading-resolution}), a member that requires argument expressions to tuple conversion is always less specific than a member that does not require such conversion. 
+
+\paragraph{Note}
+Target type expression (\sref{sec:target-type-expressions}) can't be the first argument in a function application that uses poetry-style arguments passing, due to resulting ambiguity between an argument expression and a chained function application or selection.
 
 
 
@@ -333,30 +350,30 @@ If a corresponding parameter $p_j$ to an argument expression $e_i$ is of a const
 
 \example Assume the following function, which computes the sum of variable number of arguments:
 \begin{lstlisting}
-def sum (*xs: Integer) := (O /: xs) ((x, y) -> { x + y })
+def sum (*xs: Integer) := (0 /: xs) ((x, y) -> { x + y })
 \end{lstlisting}
 Then 
 \begin{lstlisting}
 sum 1, 2, 3, 4
 sum (1, 2, 3, 4)
-sum *%[1, 2, 3, 4]
-sum (*%[1, 2, 3, 4])
-sum 1, 2, *%[3, 4]
-sum (1, 2, *%[3, 4])
-sum 1, *%[2, 3], 4
-sum (1, *%[2, 3], 4)
+sum *%[1; 2; 3; 4]
+sum (*%[1; 2; 3; 4])
+sum 1, 2, *%[3; 4]
+sum (1, 2, *%[3; 4])
+sum 1, *%[2; 3], 4
+sum (1, *%[2; 3], 4)
 \end{lstlisting}
 all yield $10$ as result. On the other hand,
 \begin{lstlisting}
-sum %[1, 2, 3, 4]
+sum %[1; 2; 3; 4]
 \end{lstlisting}
 would not be applicable. Moreover, (note the extra space before the sequence-splat operator),
 \begin{lstlisting}
-sum * %[1, 2, 3, 4]
+sum * %[1; 2; 3; 4]
 \end{lstlisting}
 would be interpreted as 
 \begin{lstlisting}
-sum.`*`(%[1, 2, 3, 4])
+sum.`*`(%[1; 2; 3; 4])
 \end{lstlisting}
 which is an infix expression rather than a function application. On the other hand, a space may appear between the function name and the arguments list.
 
@@ -683,10 +700,23 @@ A block expression may opt-in to {\em shadow variables} that it would otherwise 
 \label{sec:yield-expressions}
 
 \syntax\begin{lstlisting}
-Yield_Expr ::= 'yield' (Parens_Args | Poetry_Args | ())
+Yield_Expr ::= [id '.'] 'yield' [Parens_Args | Poetry_Args]
 \end{lstlisting}
 
-A yield expression ~\lstinline!yield $a_1 \commadots a_n$!~ is a way to invoke the block argument (\sref{sec:function-applications} \& \sref{sec:block-arguments}) and pass it arguments. It's expected type is the result type of the given block argument. 
+A yield expression ~\lstinline!yield $a_1 \commadots a_n$!~ is an universal \code{yield} operation:
+\begin{enumerate}
+  \item A way to invoke the block argument (\sref{sec:function-applications} \& \sref{sec:block-arguments}) and pass it arguments. It's expected type is the result type of the given block argument. The value of the expression is then whatever the block argument returned. 
+  \item When no block argument was given and the invocation happens inside a sequence comprehension, a way to generate next value in the sequence. The value of the expression is then the value ``\code{()}'' of type \code{Unit}. % TBD: this needs further description as to how the value is propagated to the sequence - maybe via a paused fiber, or maybe simply throwing? 
+  \item When no block argument was given and the invocation happens inside a fiber that is not the thread's main fiber, a way to return from a fiber without destroying it's stack. The value of the expression is then whatever value is passed to the method that resumes the fiber (so that it continues with that value in place of the \code{yield} expression). 
+  \item In other cases, it is an error to use \code{yield}. 
+\end{enumerate}
+
+A yield expression ~\lstinline!$T$.yield $a_1 \commadots a_n$!~ is a specialized case of the previous definitions of \code{yield}, where $T$ may be one of:
+\begin{itemize}
+  \item \code{Block}, for invoking block argument. To test if a block argument is available, use \code{Yield.block_available?}, defined in Gear's \code{Language} module. 
+  \item \code{Loop}, for generating sequence values. To test if a yield to a sequence is available, use \code{Yield.loop_available?}, defined in Gear's \code{Language} module. 
+  \item \code{Fiber}, for yielding from a fiber. To test if a yield from a fiber is available, use \code{Yield.fiber_available?}, defined in Gear's \code{Language} module. 
+\end{itemize}
 
 The \code{yield} keyword is also used in collection comprehensions (\sref{sec:collection-comprehensions}) and generators (\sref{sec:generator-expressions}), with a different meaning. 
 
@@ -706,6 +736,8 @@ Infix_Expr  ::= Prefix_Expr
 Prefix_Expr ::= [op_id | 'not'] Simple_Expr1
 Range_Expr  ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
                 [FP_Delta [FP_Digits]]
+Slice_Expr  ::= Infix_Expr ('..' | '...' | '..<') [Infix_Expr]
+              | ('..' | '...' | '..<') Infix_Expr
 \end{lstlisting}
 
 Expressions can be constructed from operands and operators. 
@@ -764,7 +796,7 @@ A number of left-associative alphanumeric operators with different precedence ex
 \begin{itemize}
   \item \code{and}, with precedence of ~\lstinline!&!. 
   \item \code{or}, with precedence of ~\lstinline!|!.  
-  \item \code{xor}, with precedence of ~\lstinline!^!.  
+  \item \code{xor}, with precedence of ~\lstinline!|!.  
   \item \code{rem}, with precedence of ~\lstinline!%!. 
   \item \code{mod}, with precedence of ~\lstinline!%!. 
   \item \code{div}, with precedence of ~\lstinline!/!. 
@@ -836,7 +868,6 @@ a mod b   ;; modulo
 a quot b  ;; quotient
 a rem b   ;; remainder
 a ^ b     ;; power
-conj a    ;; complex conjugate
 \end{lstlisting}
 
 Standard comparison operators:
@@ -868,8 +899,10 @@ a >> b   ;; arithmetic shift right
 a >>> b  ;; logical shift right
 a <<@ b  ;; rotate left
 a >>@ b  ;; rotate right
-a & b    ;; bitwise and
-a | b    ;; bitwise or
+a and b  ;; bitwise and (when applied to numbers)
+a &&& b  ;; bitwise and
+a or b   ;; bitwise or (when applied to numbers)
+a ||| b  ;; bitwise or
 a xor b  ;; bitwise xor (when applied to numbers)
 not a    ;; bitwise not (prefix, unary; when applied to numbers)
 \end{lstlisting}
@@ -899,6 +932,13 @@ If the expression contains both delta and digits specifications, the expected ty
 
 If the expression contains only a delta specification, the expected type of both operands is an ordinary fixed point type with corresponding specification of delta. The range of the type is implementation-defined. 
 
+
+
+
+\subsubsection{Slice Expression}
+A slice expression (the \code{Slice_Expr} syntax category) is a special case of an infix expression, which can only appear in function applications as an argument. 
+
+The expression is a representation of a range that has optional bounds, and if the bound is missing, it is \code{None}. This has special meaning for functions that accept slices as arguments -- usually, missing left bound means ``from first'', missing right bound means ``to last inclusive''. 
 
 
 
@@ -1452,9 +1492,10 @@ However, the loop construct has built-in support for loop control expressions.
 \label{sec:generator-expressions}
 
 \syntax\begin{lstlisting}
-Loop_Expr      ::= 'for' (Generator_Iter | Generator_Expr)
+Loop_Expr      ::= 'for' (Generator_Expr | Generator_Iter)
 Generator_Iter ::= '(' Enumerators ')' {nl} (Expr | For_Loop)
-Generator_Expr ::= '{' Enumerators '}' {nl} 'yield' Expr
+Yield          ::= 'yield' | 'yield!'
+Generator_Expr ::= '{' Enumerators '}' {nl} Yield Expr
 Enumerators    ::= Generator {semi Enumerator}
 Enumerator     ::= Generator
                  | Guard
@@ -1494,6 +1535,26 @@ $e$.map({ when $p$ then $e'$ }, label: $l'$)
 \end{lstlisting}
 where $l'$ is a symbol literal for the label $l$. 
 
+\item A comprehensioin 
+\begin{lstlisting}
+for {$p$ <- $e$} yield! $e'$
+\end{lstlisting}
+is translated to
+\begin{lstlisting}
+$e$.flat_map { when $p$ then $e'$ }
+\end{lstlisting}
+
+\item A comprehension
+\begin{lstlisting}
+for {<<$l$>> $p$ <- $e$} yield! $e'$
+\end{lstlisting}
+where $l$ is a label name, is translated to
+\begin{lstlisting}[deletekeywords={label}]
+$e$.flat_map({ when $p$ then $e'$ }, label: $l'$)
+\end{lstlisting}
+where $l'$ is a symbol literal for the label $l$. 
+
+
 \item A comprehension 
 \begin{lstlisting}
 for ($p$ <- $e$) $e'$
@@ -1521,6 +1582,7 @@ where $\ldots$ is a (possibly empty) sequence of generators, value definitions, 
 \begin{lstlisting}
 $e$.flat_map { when $p$ then for {$p'$ <- $e'\ \ldots$ } yield $e''$ }
 \end{lstlisting}
+If there was \code{yield!} instead of \code{yield}, then \code{yield!} is also in the translated code. 
 
 \item A comprehension 
 \begin{lstlisting}
@@ -1533,7 +1595,7 @@ $e$.flat_map(
   label: $l$
 )
 \end{lstlisting}
-where $l'$ is a symbol literal for the label $l$. 
+where $l'$ is a symbol literal for the label $l$. If there was \code{yield!} instead of \code{yield}, then \code{yield!} is also in the translated code. 
 
 \item A comprehension 
 \begin{lstlisting}
@@ -1619,15 +1681,64 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 \label{sec:collection-comprehensions}
 
 \syntax\begin{lstlisting}
-CF                 ::= Collection_Flags
-List_Literal       ::= '%' CF '[' 'for' Generator_Expr ']'
-Dictionary_Literal ::= '%' CF '{' 'for' Generator_Expr '}'
-Bag_Literal        ::= '%' CF '(' 'for' Generator_Expr ')'
+List_Literal       ::= '%' [CF] '['  Collection_Gen  ']'
+Array_Literal      ::= '%' [CF] '[|' Collection_Gen '|]'
+Dictionary_Literal ::= '%' [CF] '{'  Collection_Gen  '}'
+Bag_Literal        ::= '%' [CF] '('  Collection_Gen  ')'
+Collection_Gen     ::= (Workflow_Expr | Expr) ['in' Range_Expr]
+                     | Short_Workflow
+                     | Range_Expr
 \end{lstlisting}
 
-Collection comprehensions extend the syntax of collection ``literals''\footnote{Pure literals are terminal symbols in the language, but collection literals are wrappers around virtually any expression.}, so that collections may be defined by not their explicit values, but by a function that generates them -- and that function is a generator. Only tuple literals don't have collection comprehension, due to their special nature within the language. 
+Collection comprehensions extend the syntax of collection ``literals''\footnote{Pure literals are terminal symbols in the language, but collection literals are wrappers around virtually any expression.}, so that collections may be defined not by their explicit values, but by a function that generates them -- and that function is a generator. Only tuple literals don't have collection comprehension, due to their special nature within the language. 
 
-Note that the generator expression for dictionary literal comprehension has to generate values of type ~\lstinline!($K$, $E$)!, where $K$ is the type of the keys and $E$ is the type of mapped values. 
+Note that the generator expression for dictionary literal comprehension has to generate values of type ~\lstinline!($K$, $E$)!, where $K$ is the type of the keys and $E$ is the type of mapped values, or, if the actual dictionary type defines its own entry type, values that are members of the entry type. 
+
+If the \code{Workflow_Expr} inside the collection literal uses \code{Seq_Literal} or similar on-demand computations, the collection literal value is also a cache for its results. 
+
+If the expression that generates values would create an infinite collection, the \code{in Range_Expr} specification can be used to constrain the generated values to the given range. 
+
+% TBD: define traits/annotations like "literal-convertible", "collection-literal" and "collection-literal-builder", so that generators may produce different values and those will be inserted into the collection from the literal without the extra allocation for system-defined literal type; convert either from the system-defined literal type, or use update() for dictionaries and add() for lists, arrays, bags/sets. Also add a trait/annotation that will define that this is not needed for when the type is a system-provided type. 
+
+
+
+
+
+\section{Sequence Comprehensions}
+\label{sec:sequence-comprehensions}
+
+\syntax\begin{lstlisting}
+Collection_Literal ::= Seq_Literal
+Eagerness          ::= ['eager' | 'lazy']
+Seq                ::= Eagerness 'seq'
+Seq_Literal        ::= Seq '{' Collection_Gen '}'
+Collection_Literal ::= Seq_Literal
+\end{lstlisting}
+
+Apart from collection comprehensions (\sref{sec:collection-comprehensions}), Gear offers also sequence comprehensions. The crucial difference is in evaluation: collection comprehension trigger eager evaluation, unless indeed the used source collection does not employ lazy evaluation of some kind by itself. Sequence comprehension, on the other hand, is super-lazy. 
+
+A sequence generated by the form ~\lstinline!seq { $e$ }!~ works like a forgetting enumerator -- it computes values using the expression $e$ only when they are required. This is most useful for very large sequences, and/or when the computation is expensive in some way. 
+
+The expression $e$ may be of a few different kinds:
+\begin{itemize}
+  \item A \code{Range_Expr}, in which case the sequence is based on a given range, optionally including a \code{delta}, which then defines the increment between each value (and which can indeed be \code{1} or more, not limited to fractions of \code{1}). Such a sequence is {\em linear}, and its size is determinable without computing all the values. At most one bound can be infinity, in which case the size of the sequence is infinite. 
+  \item A \code{Method_Expr}, in which case a function that accepts a key (or an index, if you wish) and computes the corresponding value. Such a sequence is {\em indexed}, but its size is undefined. 
+  \item A workflow using \code{yield} and \code{yield!} to feed the sequence with a next value. Such a sequence is again {\em linear}, and its size is defined when all values are computed. 
+\end{itemize}
+
+In every case, a range may be optionally given to constrain the generated sequence. 
+
+The Gear Standard Runtime Library offers more functions to manipulate and create sequences. 
+
+A sequence comprehension expression ~\lstinline!seq { $e$ }!~ is equivalent to ~\lstinline!lazy seq { $e$ }!, whereas ~\lstinline!eager seq { $e$ }!~ is implicitly cached, but eagerly evaluated -- and thus can't use \code{Method_Expr}, because there is no known range of keys or indexes.\footnote{The GSRL offers functions to overcome this issue.}
+
+
+
+
+
+
+\section{Literal Conversions \& Collection Builders}
+\label{sec:literal-conversions}
 
 
 
@@ -1642,8 +1753,8 @@ Match_Expr     ::= Pat_Match_Expr | Case_Expr | Switch_Expr
 Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
-When_Clauses   ::= When_Clause {['next'] semi When_Clause} 
-                   [['next'] semi Else Cond_Block]
+When_Clauses   ::= When_Clause {semi When_Clause} 
+                   [semi Else Cond_Block]
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
 Case_Expr      ::= 'case' Simple_Expr1 Case_Body
 Switch_Expr    ::= 'switch' Simple_Expr1 Switch_Body
@@ -1663,7 +1774,7 @@ Case_Pattern   ::= Stable_Id
                  | id
                  | Infix_Expr
 Switch_Scalar  ::= (Literal - Collection_Literal)
-Switch         ::= Switch_Scalar [('..' | '...' | '..<')  Switch_Scalar]
+Switch         ::= Switch_Scalar [('..' | '...' | '..<') Switch_Scalar]
 \end{lstlisting}
 
 Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given. 
@@ -1909,15 +2020,20 @@ Gear uses saguaro stack mechanisms instead of code conversions to actually imple
 \label{sec:throw-catch-expressions}
 
 \syntax\begin{lstlisting}
-Catch_Expr  ::= Catch_Expr1 | Catch_Expr2
-Catch_Expr1 ::= 'begin' Block 
-                'catch' semi When_Clauses
-                ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
-                'end'
-Catch_Expr2 ::= '{' Block '}'
-                'catch' '{' When_Clauses '}'
-                ['ensure' '{' Block_Stat {semi Block_Stat} '}']
-Throw_Expr  ::= 'throw' Expr
+Catch_Expr    ::= Catch_Expr1 | Catch_Expr2
+Catch_Expr1   ::= 'begin' Block 
+                  'catch' [nl] Catch_Clauses
+                  ['ensure' [nl] Block_Stat {semi Block_Stat}] 'end'
+Catch_Expr2   ::= '{' Block '}'
+                  'catch' '{' Catch_Clauses '}'
+                  ['ensure' '{' Block_Stat {semi Block_Stat} '}']
+Throw_Expr    ::= 'throw' Expr
+Catch_Clauses ::= Catch_Clause {semi Catch_Clause}
+                  [semi Else Catch_Block]
+Catch_Clause  ::= 'when' Pattern [Guard] ('then' | semi) Catch_Block
+Catch_Block   ::= Expr | {Catch_Stat semi} [Result_Expr]
+Catch_Stat    ::= Block_Stat | Rethrow_Expr
+Rethrow_Expr  ::= 'rethrow' [Cond_Modifier1]
 \end{lstlisting}
 
 A throw expression ~\lstinline!throw $e$!~ evaluates the expression $e$. The type of this expression must conform to \code{Throwable}. It is an error if $e$ evaluates to \code{nil} or ~\lstinline!()!. If there is an active \code{begin}-\code{catch} expression that handles the thrown value, evaluation is resumed with the handler, otherwise a thread executing the \code{throw} is aborted. The type of a \code{throw} expression is \code{Nothing}. 
@@ -1949,7 +2065,7 @@ An expression ~\lstinline!{ $b$ } catch $e_1$ ensure { $e_2$ }!~ is a shorthand 
 \syntax\begin{lstlisting}
 Raise_Expr ::= 'raise' Raiseable
 Raiseable  ::= string_literal
-             | Path [',' string_literal]
+             | Stable_Id [',' string_literal]
              | Expr
 \end{lstlisting}
 
@@ -1985,8 +2101,9 @@ Fun_Stats    ::= Block
                  {'rescue' [Pattern [Guard]] semi Rescue_Block }
                  ['ensure' semi Block_Stat {semi Block_Stat}]
 Rescue_Block ::= {Rescue_Stat semi} [Result_Expr]
-Rescue_Stat  ::= Block_Stat | Retry_Expr
+Rescue_Stat  ::= Block_Stat | Retry_Expr | Reraise_Expr
 Retry_Expr   ::= 'retry' [label_name] [Cond_Modifier1]
+Reraise_Expr ::= 'reraise' [Cond_Modifier1]
 \end{lstlisting}
 
 Rescue expression ~\lstinline!rescue $h$!~ is similar to catch expression (\sref{sec:throw-catch-expressions}), with two major differences: First, each \code{rescue} is followed by \code{when} clause; second, all \code{rescue} expressions in the same scope form together a handler $h$, where rules from catch expressions apply, only that $h$ is expected to conform to type ~\lstinline!Partial_Function[Raiseable, $T$]!, where $T$ is the expected type of the whole \code{begin}-\code{rescue} expression. 
@@ -2105,7 +2222,7 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 \label{sec:method-values}
 
 \syntax\begin{lstlisting}
-Simple_Expr ::= '&' Simple_Expr1
+Method_Expr ::= '&' Simple_Expr1
               | '&' '(' Simple_Expr1 ')'
 \end{lstlisting}
 
@@ -2129,6 +2246,8 @@ val vs := 1 .. 9; &(vs.fold)
 \end{lstlisting}
 
 Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
+
+If $e$ resolves to an overloaded member, then the type of the expression is a type projection to that member, constrained to the matching alternatives. 
 
 
 
@@ -2171,9 +2290,9 @@ Template_Stat  ::= Use
                  | {Annotation} [Opt_Req] {Modifier} Dcl
                  | Prop_Dcl
                  | Prop_Def
-                 | 'include' Container_Path [Cond_Modifier]
-                 | 'prepend' Container_Path [Cond_Modifier]
-                 | 'implements' Container_Path [Cond_Modifier]
+                 | 'include' Stable_Id [Cond_Modifier]
+                 | 'prepend' Stable_Id [Cond_Modifier]
+                 | 'implements' Stable_Id [Cond_Modifier]
                  | Expr
                  | Alias_Expr
                  | ()
@@ -2286,7 +2405,7 @@ If none of the previous conversions applies, view applications are not disallowe
 \paragraph{Dynamic member selection}
 If none of the previous conversions applies, and $e$ is a prefix of a selection ~\lstinline!$e$.$x$!, then if $e$'s type conforms to \code{Dynamic_Member_Selecting}, the selection is rewritten according to rules for dynamic member selection (\sref{sec:dynamic-member-selection}). Otherwise, \code{member_not_found} is invoked on the receiver, whose implementation in \code{Object} is to raise an error. 
 
-% TBD: explain in a GFR how dynamic member selecting actually works on the Gear VM level - registering a method fallback chain if a member is not found, here it is like %[:apply_dynamic, :member_not_found], and determine what happens when this is not done (no-op maybe? error maybe? language config error maybe?)
+% TBD: explain in a GFR how dynamic member selecting actually works on the Gear VM level - registering a method fallback chain if a member is not found, here it is like %[:apply_dynamic; :member_not_found], and determine what happens when this is not done (no-op maybe? error maybe? language config error maybe?)
 
 
 
@@ -2640,124 +2759,71 @@ foo.array(10) := 11     foo.select_dynamic(:array).update(10)(11)
 \section{Workflows}
 \label{sec:workflows}
 
-Workflows are basically a syntax sugar for a block expression that is passed as an argument to a workflow builder (an object that conforms to \code{Workflow_Builder}). In the following translation table, the left column presents the constructs, and the right column its de-sugared form, where $b$ is the workflow builder. Note that while it does not have to be statically known at compile time that an object is an instance of \code{Workflow_Builder}, it's much more convenient for type inference -- as it is with any other function application. 
+\syntax\begin{lstlisting}
+Workflow_Expr          ::= Expr ['do'] '{' Workflow_or_Range_Expr '}'
+Workflow_or_Range_Expr ::= Workflow | Short_Workflow | Range_Expr
 
-The syntactic category \code{Workflow_Expr} is defined as a follows:
-
-\syntax\begin{lstlisting}[language=]
-Workflow_Expr ::= Simple_Expr1 Workflow_Block_Expr
+Workflow ::= 'let!' (Pattern2 | var_dcl) ':=' Expr semi Workflow
+           | Pat_Var_Def semi Workflow
+           | 'def' Fun_Def semi Workflow           | 'method' Fun_Def 'end' ['method'] semi Workflow           | 'method' Fun_Alt_Def semi Workflow           | 'function' Fun_Def 'end' ['function'] semi Workflow
+           | 'function' Fun_Alt_Def semi Workflow           | 'type' Type_Def 'end' ['type'] semi Workflow
+           | Tmpl_Def semi Workflow
+           | 'yield!' Expr
+           | Yield_Expr
+           | 'return!' Expr
+           | Return_Expr
+           | 'if' Condition ('then' | semi) Workflow 'end' ['if']
+           | 'if' Condition ('then' | semi) Cond_Block 
+             {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
+             Else Workflow 'end' ['if']
+           | 'match' Simple_Expr1 semi Wf_When {semi Wf_When}
+             [semi Else Workflow] 'end' ['match']
+           | 'match' Simple_Expr1 '{' Wf_When {semi Wf_When}
+             [semi Else Workflow] '}'
+           | 'case' Simple_Expr1 semi Wf_Case {semi Wf_Case}
+             [semi Else Workflow] 'end' ['case']
+           | 'case' Simple_Expr1 '{' Wf_Case {semi Wf_Case}
+             [semi Else Workflow] '}'
+           | 'switch' Simple_Expr semi Wf_Switch {semi Wf_Switch}
+             [semi Else Workflow] 'end' ['switch']
+           | 'switch' Simple_Expr '{' Wf_Switch {semi Wf_Switch}
+             [semi Else Workflow] '}'
+           | 'begin' Workflow 
+             'catch' [nl] Wf_When {semi Wf_When} [semi Else Workflow]
+             ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
+           | '{' Workflow '}' 'catch' 
+             '{' Wf_When {semi Wf_When} [semi Else Workflow] '}'
+             'ensure' '{' Block_Stat {semi Block_Stat} '}'
+           | 'begin' Workflow 
+             'rescue' [Pattern [Guard]] semi Workflow
+             {'rescue' [Pattern [Guard]] semi Workflow }
+             ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
+           | '{' Workflow '}' 'rescue' 
+             'rescue' [Pattern [Guard]] '{' Workflow '}'
+             {'rescue' [Pattern [Guard]] '{' Workflow '}' }
+             'ensure' '{' Block_Stat {semi Block_Stat} '}'
+           | Rethrow_Expr (* only between 'catch' .. 'end' *)
+           | Reraise_Expr (* only between 'rescue' .. 'end' *)
+           | ...
+           | Workflow semi Workflow
+           | Expr
+           
+Short_Workflow ::= 'for' Generator_Expr
+                 | [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
+                   ['step' Expr] Wf_For_Loop
+           
+Wf_When       ::= 'when' Pattern [Guard] ('then' | semi) Workflow
+Wf_Case       ::= 'when' Case_Patterns ('then' | semi) Workflow
+Wf_Switch     ::= 'when' Switches ('then' | semi) Workflow
+Wf_For_Loop   ::= 'loop' Wf_Loop_Block 'end' ['loop']
+                | '{' Wf_Loop_Block '}'
+Wf_Loop_Block ::= {Wf_Yield | Block_Stat | Loop_Ctrl_Expr}
+Wf_Yield      ::= Yield Expr
 \end{lstlisting}
 
-\ldots where \code{Workflow_Block_Expr} is based on \code{Block_Expr} with the following properties:
-\begin{itemize}
-  \item The keyword \code{let} may be followed by \code{!}. 
-  \item The keyword \code{return} may be followed by \code{!}. 
-  \item The keyword \code{yield} may be followed by \code{!}. 
-\end{itemize}
+% TODO: finish Workflow, continue with loop, while, for
+% TODO: finish the definitions
 
-
-
-
-
-
-\subsection{Custom Workflows}
-
-It is possible to define the characteristics of a custom workflow, by creating a builder class and defining certain special methods in it. 
-
-
-\begin{table}[!h]
-  \caption{Methods of a {\em Workflow Builder Class}}
-  \begin{tabular}{ l l }
-    Name & Typical signatures \\ 
-    \hline \hline
-    \code{bind} & \lstinline!(M[T], T -> M[U]) -> M[U]! \\ 
-    \hline
-    \code{delay} & \lstinline!(() -> M[T]) -> M[T]! \\ 
-    \hline
-    \lstinline[deletekeywords={return}]!`return`! & \lstinline!T -> M[T]! \\ 
-    \hline
-    \code{return_from} & \lstinline!M[T] -> M[T]! \\ 
-    \hline
-    \code{run} & \lstinline!M[T] -> M[T]! \\
-    & \lstinline!M[T] -> T! \\ 
-    \hline
-    \code{combine} & \lstinline!(M[T], M[T]) -> M[T]! \\
-    & \lstinline!(M[Unit], M[T]) -> M[T]! \\
-    \hline
-    \lstinline[deletekeywords={for}]!`for`! & \lstinline!(Iterable_Like[T], T -> M[U]) -> M[U]! \\
-    & \lstinline!(Iterable_Like[T], T -> M[U]) -> Iterable_Like[M[U]]! \\
-    \hline
-    \lstinline[deletekeywords={catch}]!`catch`! & \lstinline!(M[T], Raiseable -> M[T]) -> M[T]! \\
-    \hline
-    \lstinline[deletekeywords={ensure}]!`ensure`! & \lstinline!(M[T], () -> Unit) -> M[T]! \\
-    \hline
-    \lstinline[deletekeywords={while}]!`while`! & \lstinline!(() -> Boolean, M[T]) -> M[T]! \\
-    \hline
-    \lstinline[deletekeywords={yield}]!`yield`! & \lstinline!T -> M[T]! \\
-    \hline
-    \code{yield_from} & \lstinline!M[T] -> M[T]! \\
-    \hline
-    \code{zero} & \lstinline!() -> M[T]! \\
-    \hline
-  \end{tabular}
-  \label{table:number-comparison-operators}
-\end{table}
-\FloatBarrier
-
-Many of the methods in a builder class use and return an ~\lstinline!M[T]!~ construct, which is typically a separately defined type that characterizes the kind of workflows being combined, e.g. ~\lstinline!Async[T]!~ for asynchronous workflows. The signatures of these methods enable them to be combined and nested with each other, so that the workflow object returned from one construct can be safely passed to the next. Runtime and compile time handling of the workflow converts the expression into a series of nested function calls by using methods from the preceding table and the code in the workflow. 
-
-The nested expression is of the following form: 
-\begin{lstlisting}
-builder.run(builder.delay(() -> { wexpr }))
-\end{lstlisting}
-
-Further notes for some of the \code{Workflow_Builder}'s methods: 
-\begin{description}
-  \item[delay] The whole workflow expression is wrapped in a function. 
-  \item[run] The outermost workflow expression is wrapped in it. 
-  \item[for] Applied to simple \code{for} loops. 
-  \item[zero] Used for empty \code{else} branches. 
-\end{description}
-
-\paragraph{Note}
-Notice that it is safe to not have the knowledge of a workflow builder instance being a workflow builder instance if the translations result in the same type as the expected type of the whole workflow expression. This may be solved with properly used typed expression (\sref{sec:typed-expressions}) wrapping the workflow expression, or by assigning its result to a properly typed value or variable, which both sets up the expected type, even in case of an unknown type of the builder instance. It is an error if the translations are deferred to runtime and their types do not check.
-
-In the above code, the calls to \code{run} and/or \code{delay} are omitted, if the builder class does not define them. The body of the workflow, here denoted as \code{wexpr}, is translated into calls involving the methods of the builder class by the translations described in the following table. The workflow expression \code{wexpr} is defined recursively, according to these translations, where \code{expr} is a Gear expression, \code{pat} is a Gear pattern, \code{other_expr} is another expression that is not listed, and \code{wexpr}-beginning names are workflow expressions, that are then recursively translated. 
-
-\begin{lstlisting}[emph={expr,wexpr,wexpr1,wexpr2,b,pat},emphstyle=\color{RubineRed}]
-;; expression               ;; translation
-b do wexpr end              b.run(b.delay(() -> { wexpr }))
-                            ;; delay not defined:
-                            b.run(() -> { wexpr })
-                            ;; run not defined:
-                            b.delay(() -> { wexpr })
-                            ;; both not defined:
-                            () -> { wexpr }
-let pat := expr; wexpr      let pat := expr; wexpr
-let! pat := expr; wexpr     b.bind(expr, (pat) -> { wexpr })
-return expr                 b.return(expr)
-return! expr                b.return_from(expr)
-yield expr                  b.yield(expr)
-yield! expr                 b.yield_from(expr)
-for pat in expr             b.for(expr, (pat) -> { wexpr })
-  loop wexpr end 
-while expr loop wexpr end   b.while(
-                                () -> { expr }, 
-                                b.delay(() -> { wexpr }))
-if expr then wexpr1         if expr then wexpr1 else wexpr2 end
-  else wexpr2 end
-if expr then wexpr          if expr then wexpr else b.zero()
-wexpr1; wexpr2              b.combine(
-                                wexpr1, 
-                                b.delay(() -> { wexpr2 }))
-begin wexpr1                b.catch(
-  catch wexpr2 end              wexpr1, 
-                                v -> { match v { wexpr2 } })
-begin wexpr1                b.ensure(wexpr1, () -> { wexpr2 })
-  ensure wexpr2 end
-other_expr; wexpr           expr; wexpr
-other_expr                  expr; b.zero()
-\end{lstlisting}
 
 
 
@@ -2770,7 +2836,7 @@ other_expr                  expr; b.zero()
 \label{sec:quasi-quotation}
 
 \syntax\begin{lstlisting}
-Quasiquote_Expr ::= '`(' Any_Expr ')'
+Quasiquote_Expr ::= '<@' Any_Expr '@>'
 Any_Expr        ::= Expr
                   | Block_Stat {semi Block_Stat}
                   | Template_Stat {semi Template_Stat}
@@ -2780,7 +2846,7 @@ Any_Expr        ::= Expr
 Splice_Expr     ::= '#{' Expr '}'
 \end{lstlisting}
 
-Quasi-quote expression ``~\lstinline!`( $e$ )!~'' is basically a well-formed piece of Gear source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
+Quasi-quote expression ``~\lstinline!<@ $e$ @>!~'' is basically a well-formed piece of Gear source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
 
 Quasi-quote expressions may optionally be interpolated, so that values or other nodes may be injected into the represented AST. There are the following ways to interpolate the AST:
 \begin{itemize}
@@ -2803,14 +2869,15 @@ An interpolating (splice or unquote) expression (like ``~\lstinline!#{ $e$ }!~''
 \label{sec:quotation}
 
 \syntax\begin{lstlisting}
-Quote_Expr      ::= ''(' Any_Expr ')' | '''' Quotable_Expr
+Quote_Expr      ::= '<@@' Any_Expr '@@>' | '''' Quotable_Expr
 \end{lstlisting}
 
-A quote expression ``~\lstinline!'( $e$ )!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. Quotation does not require parentheses around the expression that it quotes, iff it starts with two apostrophes (i.e. ``~\lstinline!''$e$!~'') and quotes the following expressions:
+A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. Quotation does not require parentheses around the expression that it quotes, iff it starts with two apostrophes (i.e. ``~\lstinline!''$e$!~'') and quotes the following expressions:
 
 \syntax\begin{lstlisting}[language=]
 Quotable_Expr ::= 
-      Cond_Expr 
+      Simple_Expr
+    | Cond_Expr 
     | Loop_Expr - Loop_Mod_Expr
     | Rescue_Expr
     | Raise_Expr
@@ -2818,7 +2885,6 @@ Quotable_Expr ::=
     | Catch_Expr
     | Return_Expr
     | Yield_Expr
-    | Simple_Expr
     | Match_Expr
     | Use_Expr
     | Jump_Expr

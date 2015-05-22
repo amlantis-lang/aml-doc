@@ -78,35 +78,38 @@ The following names are the reserved words.
 % +attribute
 \begin{lstlisting}
 abstract      advice        advice-execution            after
-alias         annotation    arguments     around        as
-aspect        assert        atomic        attribute     begin
-before        bitfield      break         broken        case
-catch         class         clone         cloned        constant
-constraint    constructor   declare       def           delta
-destructor    digits        dispatch      do            else
-elsif         end           ensure        enum          execution
-exhausted     extends       final         for           for-some
-foreign       function      get           goto          handler
-if            immutable     implements    implicit      in
-include       interface     invariant     invoke        is
-joinpoint     label         lazy          let           loop
-macro         match         memoize       message       method
-module        multi         mutable       native        next
-nil           no            not           object        of
-opaque        operator      optional      origin        otherwise
-out           override      per-self      per-target    pointcut
-pragma        prefer        prepend       private       property
-protected     protocol      public        raise         raising
-range         record        redo          refine        refinement
-release       rescue        retain        retry         return
-returning     requires      reverse       sealed        self
-set           skip          soft          step          super
-switch        target        then          this          throw
-throwing      to            trait         transparent   type
-undefined     unless        unowned       until         union
-unit-of-measure             upgrade       use           val
-var           yes           weak          when          while
-with          yield
+alias         and           annotation    arguments     around
+as            aspect        assert        atomic        attribute
+begin         before        bitfield      break         broken
+case          catch         class         clone         cloned
+constant      constraint    constructor   declare       def
+delta         destructor    digits        dispatch      do
+eager         else          elsif         end           ensure
+enum          execution     exhausted     extends       final
+for           for-some      foreign       function      get
+goto          handler       if            immutable     implements
+implicit      in            include       interface     intersection
+invariant     invoke        is            joinpoint     label
+lazy          let           let!          loop          macro
+match         memoize       message       method        module
+multi         mutable       native        next          nil
+no            not           object        of            opaque
+operator      optional      or            origin        otherwise
+out           outer         override      per-self      per-target
+pointcut      pragma        prefer        prepend       private
+property      protected     protocol      public        pure
+raise         raising       range         rec           record
+redo          refine        refinement    release       reraise
+rescue        retain        rethrow       retry         return
+return!       returning     requires      reverse       sealed
+self          set           seq           skip          soft
+step          super         switch        target        then
+this          throw         throwing      to            trait
+transparent   type          undefined     unless        unowned
+until         union         unit-of-measure             upgrade
+use           val           val!          var           var!
+yes           weak          when          while         with
+xor           yield         yield!        yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
@@ -352,12 +355,12 @@ rational_literal    ::= real_number_literal
                         ['/' rat_suffix_literal]
 \end{lstlisting}
 
-Rational number literals are of type \code{Number}, and have a container type \code{Number.Rational}, which has further methods of creating instances of itself. There are also methods in \code{Number}, such as \code{/-}, which results in a rational number. Rational numbers have sort of increased accuracy of operations, especially when component types are integral types. 
+Rational number literals are of type \code{Number}, and have a container type \code{Number.Rational}, which has further methods of creating instances of itself. There are also methods in \code{Number}, such as \code{//}, which results in a rational number. Rational numbers have sort of increased accuracy of operations, especially when component types are integral types. 
 
 \example Some literal notations and methods that result in rational numbers. 
 \begin{lstlisting}
 val a := 1 / 3r
-val b := 1 /- 3
+val b := 1 // 3
 val c := Rational(1, 3)
 \end{lstlisting}
 
@@ -548,40 +551,50 @@ Collection_Literal ::= Tuple_Literal
 	                 | List_literal
 	                 | Dictionary_Literal
 	                 | Bag_Literal
+Collection_Flags   ::= printable_char {printable_char}
+CF                 ::= Collection_Flags
 Tuple_Literal      ::= '(' [Exprs] ')'
-List_Literal       ::= '%' Collection_Flags '[' [Exprs] ']'
-Dictionary_Literal ::= '%' Collection_Flags '{' [Dict_Exprs] '}'
-Bag_Literal        ::= '%' Collection_Flags '(' [Exprs] ')'
-Dict_Exprs         ::= Dict_Expr {',' Dict_Expr}
+Collection_Exprs   ::= Expr {semi Expr}
+List_Literal       ::= '%' [CF] '['  [Collection_Exprs]  ']'
+Array_Literal      ::= '%' [CF] '[|' [Collection_Exprs] '|]'
+Dictionary_Literal ::= '%' [CF] '{'  [Collection_Exprs]  '}'
+Bag_Literal        ::= '%' [CF] '('  [Collection_Exprs]  ')'
+Dict_Exprs         ::= Dict_Expr {semi Dict_Expr}
 Dict_Expr          ::= Simple_Expr1 '=>' Expr
 	                 | id ':' Expr
-Collection_Flags   ::= printable_char {printable_char}
 \end{lstlisting}
 
-Tuple literals are members of the \lstinline@Tuple@ type family. List literals are members of the \lstinline@List@ type, usually \lstinline@Array_List@ with alias of \lstinline@Array@. Dictionary literals are members of the \lstinline@Dictionary@ type with alias of \lstinline@Map@, usually \lstinline@Hash_Dictionary@ with alias of \lstinline@Hash_Map@. Bag literals are members of the \lstinline@Bag@ type, usually \lstinline@Hash_Bag@ or \lstinline@Hash_Set@. Collection flags may change the actual class of the literal, along with some other properties, described in the following text. 
+Tuple literals are members of the \lstinline@Tuple@ type family. List literals are members of the \lstinline@List_Like@ type, usually \lstinline!Linked_List! with alias of \lstinline@List@. Array literals are members of the \lstinline!Array_Like! type, usually \lstinline!Array!. Dictionary literals are members of the \lstinline@Dictionary@ type with alias of \lstinline@Map@, usually \lstinline@Hash_Dictionary@ with alias of \lstinline@Hash_Map@. Bag literals are members of the \lstinline@Bag@ type, usually \lstinline@Hash_Bag@ or \lstinline@Hash_Set@. Collection flags may change the actual class of the literal, along with some other properties, described in the following text. 
 
 List literal collection flags: 
 
 \begin{enumerate}
-\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the list frozen. 
-\item Flag \lstinline@l@ = \textbf{l}inked, makes the list a member of \lstinline@Linked_List@. 
-\item Flag \lstinline@w@ = \textbf{w}ords, the following expressions are treated as words, converted to strings for each word separated by whitespace. 
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the list frozen. 
+  \item Flag \lstinline@l@ = double \textbf{l}inked, makes the list a member of \lstinline@Double_Linked_List@. 
+  \item Flag \lstinline@w@ = \textbf{w}ords, the following expressions are treated as words, converted to strings for each word separated by whitespace.
+\end{enumerate}
+
+Array literal collection flags:
+
+\begin{enumerate}
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the array frozen.
+  \item Flag \lstinline@w@ = \textbf{w}ords, the following expressions are treated as words, converted to strings for each word separated by whitespace. 
 \end{enumerate}
 
 Dictionary literals collection flags:
 
 \begin{enumerate}
-\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the dictionary frozen. 
-\item Flag \lstinline@l@ = \textbf{l}inked, makes the dictionary a member of \lstinline@Linked_Hash_Dictionary@ (also has alias \lstinline@Linked_Hash_Map@).
-\item Flag \lstinline@m@ = \textbf{m}ulti-map, the dictionary items are then either the items themselves, if there is only one for a particular key, or a set of items, if there is more than one item for a particular key. The dictionary is then a member of \lstinline@Multi_Hash_Dictionary@ (alias \lstinline@Multi_Hash_Map@) or \lstinline@Linked_Multi_Hash_Dictionary@ (alias \lstinline@Linked_Multi_Hash_Map@). 
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the dictionary frozen. 
+  \item Flag \lstinline@l@ = \textbf{l}inked, makes the dictionary a member of \lstinline@Linked_Hash_Dictionary@ (also has alias \lstinline@Linked_Hash_Map@).
+  \item Flag \lstinline@m@ = \textbf{m}ulti-map, the dictionary items are then either the items themselves, if there is only one for a particular key, or a set of items, if there is more than one item for a particular key. The dictionary is then a member of \lstinline@Multi_Hash_Dictionary@ (alias \lstinline@Multi_Hash_Map@) or \lstinline@Linked_Multi_Hash_Dictionary@ (alias \lstinline@Linked_Multi_Hash_Map@). 
 \end{enumerate}
 
 Bag literal collection flags:
 
 \begin{enumerate}
-\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the bag frozen. 
-\item Flag \lstinline@s@ = \textbf{s}et, the collection is a set instead of a bag (a specific bag, such that for each item, its tally is always $0$ or $1$, thus each item is in the collection up to once). 
-\item Flag \lstinline@l@ = \textbf{l}inked, makes the collection linked, so either a member of \lstinline@Linked_Hash_Bag@ in case of a regular bag, or \lstinline@Linked_Hash_Set@ in case of a set. 
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the bag frozen. 
+  \item Flag \lstinline@s@ = \textbf{s}et, the collection is a set instead of a bag (a specific bag, such that for each item, its tally is always $0$ or $1$, thus each item is in the collection up to once). 
+  \item Flag \lstinline@l@ = \textbf{l}inked, makes the collection linked, so either a member of \lstinline@Linked_Hash_Bag@ in case of a regular bag, or \lstinline@Linked_Hash_Set@ in case of a set. 
 \end{enumerate}
 
 Linked collections have a predictable iteration order in case of bags and dictionaries, or are simply stored differently in case of lists. 
@@ -596,17 +609,30 @@ The type of elements of a collection is inferred from combination of the expecte
 
 \example The following lines show how type inference works with collection literals. 
 \begin{lstlisting}
-val a: Array[String] := %[]  ;; Array[String]
-val b := %[][String]         ;; Array[String]
-val c := %["hello", "world"] ;; Array[String]
+/* Linked_List[String] */
+val a: List[String] := %[]
+val b := %[][String]
+val c := %["hello"; "world"]
 
-val d: Map[String, String] := %{} ;; Map[String, String]
-val e := %{}[String, String]      ;; Map[String, String]
-val f := %{"hello" => "world"}    ;; Map[String, String]
+/* Array[String] */
+val a: Array[String] := %[||]
+val b := %[||][String]
+val c := %[|"hello"; "world"|]
 
-val g: Bag[String] := %()    ;; Bag[String]
-val h := %()[String]         ;; Bag[String]
-val i := %("hello", "world") ;; Bag[String]
+/* Hash_Dictionary[String, String] */
+val d: Hash_Dictionary[String, String] := %{}
+val e := %{}[String, String]
+val f := %{"hello" => "world"}
+
+/* Hash_Dictionary[Symbol, String] */
+val d: Hash_Dictionary[Symbol, String] := %{}
+val e := %{}[Symbol, String]
+val f := %{hello: "world"}
+
+/* Hash_Bag[String] */
+val g: Bag[String] := %()
+val h := %()[String]
+val i := %("hello"; "world")
 \end{lstlisting}
 
 
@@ -618,11 +644,11 @@ val i := %("hello", "world") ;; Bag[String]
 
 Tokens may be separated by whitespace characters and/or comments. Comments come in two forms: 
 
-A multi-line comment is a sequence of characters between \lstinline@/* and */@. Multi-line comments may be nested. 
+A multi-line comment is a sequence of characters between \lstinline@(* and *)@. Multi-line comments may be nested. There is a whitespace (including newlines) required after \lstinline@(*@ and before \lstinline@*)@. 
 
 A single-line comment is a sequence of characters that starts with \lstinline@;;@ and extends to the end of the line. 
 
-Documentation comments are multi-line comments that start with \lstinline@/*!@. 
+Documentation comments are multi-line comments that start with \lstinline@(*!@. A whitespace is required after the opening token. 
 
 As a special case (not only) for UNIX-like systems that support the notation, the initial lines of source file that start with the sequence ``\lstinline@#!@'' are ignored. 
 

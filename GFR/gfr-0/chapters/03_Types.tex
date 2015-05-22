@@ -10,8 +10,7 @@ Function_Type       ::= Function_Args {'->' Function_Args}
                         '->' Type
 Function_Args       ::= Infix_Type
                       | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['~'] id ':'] 
-                        Param_Type
+Function_Arg        ::= ['*' | '**' | '&' | ['~'] id ':'] Param_Type
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
 Existential_Dcl     ::= 'type' Type_Dcl
@@ -70,14 +69,21 @@ Types in Gear are represented by objects that are members of the \code{Type} typ
 \label{sec:type-paths}
 
 \syntax\begin{lstlisting}
-path_id          ::= id [Type_Args]
 Path             ::= Stable_Id
-                   | [path_id '.'] ('this' | 'self')
+                   | [id '.'] 'self'
                    | 'self' '[' ('cloned' | 'origin') ']'
-                   | Container_Path
-Stable_Id        ::= [Path '.'] path_id
-                   | [path_id '.'] 'super' [Class_Qualifier]
-Class_Qualifier  ::= '[' Container_Path ']'
+                   | 'outer' Class_Qualifier
+Stable_Id        ::= [Path '.'] id
+                   | [id '.'] 'super' [Class_Qualifier] '.' id
+                   | 'outer' Class_Qualifier '.' id
+                   | Module_Path '.' Stable_ID
+Class_Qualifier  ::= '[' (id | Stable_Id) ']'
+Module_Path      ::= [Root] Module_Selector {'.' Module_Selector}
+Module_Selector  ::= id [Vendor_Arg]
+Root             ::= 'Root' '~'
+Vendor_Arg       ::= '~[' vendor_domain ']'
+vendor_domain    ::= vendor_char {vendor_char}
+vendor_char      ::= lower | '.' | '-' | '_'
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Gear's type system. 
@@ -254,7 +260,7 @@ Type_Args   ::= '[' Types ']'
 Types       ::= Type_Arg {',' Type_Arg}
 Type_Arg    ::= [['~'] id ':'] Type 
               | '<' uom_expr '>'
-              | '_'
+              | ['*'] '_'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
@@ -404,8 +410,7 @@ Type          ::= Function_Args {'->' Function_Args}
                   '->' Type
 Function_Args ::= Infix_Type
                 | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['~'] id ':']
-                  Param_Type
+Function_Arg  ::= ['*' | '**' | '&' | ['~'] id ':'] Param_Type
 \end{lstlisting}
 
 The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. 
@@ -438,9 +443,6 @@ A function that returns ``nothing'' may be declared as returning the type \code{
 
 Function arguments may be optionally annotated with more requirements: 
 \begin{itemize}
-\item
-Parameter prefixed with \code{Param_Io} defines whether the parameter is required to be an output parameter. 
-
 \item
 Parameter prefixed with ``\lstinline!*!'' is a requirement of a repeated parameter. 
 
@@ -599,10 +601,10 @@ Nullable types in this form can appear everywhere where a type is expected.
 
 A nullable type may be seen as a syntax sugar for the following union type ~\code{Nullable[$T$]} (\sref{sec:unions}):
 \begin{lstlisting}
-type Nullable [T] is union of (
+type Nullable [T] is union of 
   T
   Nothing
-) end type
+end type
 \end{lstlisting}
 
 When a method is applied on a variable containing \code{nil}, the standard \code{Member_Not_Found} may occur, if the method is really not found in the class \code{Nothing} or in any of implicit conversions from \code{Nothing} (e.g., \code{Nothing} has an implicit conversion to the option type \code{None}). 
@@ -616,8 +618,8 @@ When a method is applied on a variable containing \code{nil}, the standard \code
 
 \syntax\begin{lstlisting}
 Const_Type_Def ::= id [Type_Param_Clause] 'is' 'union' 'of'
-                   '(' Type {semi Type} ')'
-Simple_Type    ::= '(' Type {'or' Type} ')'
+                   Type {semi Type}
+Simple_Type    ::= Type {'or' Type}
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
@@ -629,6 +631,60 @@ The first syntax shows a named union type, while the second shows an anonymous u
 \begin{lstlisting}
 type or [A, B] is Union[A, B]
 \end{lstlisting}
+
+Union types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
+\begin{itemize}
+  \item Commutativity: \code{X or Y} is equivalent to \code{Y or X}. 
+  \item Associativity: \code{X or (Y or Z)} is equivalent to \code{(X or Y) or Z}, which is equivalent to \code{X or Y or Z}. 
+  \item Simplification: if \code{X} conforms to \code{Y}, then \code{X or Y} is equivalent to \code{Y}. 
+  \item Conformance: \code{X} conforms to \code{X or Y}. 
+  \item Supertypes: if both \code{X} and \code{Y} conform to \code{Z}, then \code{X or Y} also conforms to \code{Z}. 
+  
+  \item \code{X or Nothing} is equivalent to \code{X} for any \code{X} except \code{Undefined}. 
+  \item \code{X or Undefined} is equivalent to \code{X} for any \code{X}. 
+  \item \code{X or Any} is equivalent to \code{Any} for any \code{X}. 
+  
+  \item If \code{X[T]} is covariant in the type parameter \code{T}, then \code{X[U] or X[V]} conforms to \code{X[U or V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+  \item If \code{X[T]} is contravariant in the type parameter \code{T}, then \code{X[U] or X[V]} conforms to \code{X[U with V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+\end{itemize}
+
+
+
+
+
+\subsection{Intersection Types}
+\label{sec:intersection-types}
+
+\syntax\begin{lstlisting}
+Const_Type_Def ::= id [Type_Param_Clause] 'is' 'intersection' 'of'
+                   Type {semi Type}
+Simple_Type    ::= Type {'and' Type}
+\end{lstlisting}
+
+An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. 
+
+The difference between intersection types and compound types (\sref{sec:compound-types}) is that intersection types are commutative and associative -- independent on the order in which the member types appear. 
+
+
+Intersection types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
+\begin{itemize}
+  \item Commutativity: \code{X and Y} is equivalent to \code{Y and X}. 
+  \item Associativity: \code{X and (Y and Z)} is equivalent to \code{(X and Y) and Z}, which is equivalent to \code{X and Y and Z}. 
+  \item Simplification: if \code{X} conforms to \code{Y}, then \code{X and Y} is equivalent to \code{X}. 
+  \item Conformance: \code{X and Y} conforms to \code{X}. 
+  \item Subtypes: if \code{Z} conforms to both type \code{X} and type \code{Y}, then \code{Z} also conforms to \code{X and Y}. 
+  \item Distributivity over union: \code{X and (Y or Z)} is equivalent to \code{(X and Y) or (X and Z)}. 
+  
+  \item \code{X and Nothing} is equivalent to \code{Nothing} for any \code{X} except \code{Undefined}. 
+  \item \code{X and Undefined} is equivalent to \code{Undefined} for any \code{X}. 
+  \item \code{X and Any} is equivalent to \code{X} for any \code{X}. 
+  
+  \item If \code{X[T]} is covariant in the type parameter \code{T}, then \code{X[U and V]} conforms to \code{X[U] and X[V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+  \item If \code{X[T]} is contravariant in the type parameter \code{T}, then \code{X[U or V]} conforms to \code{X[U] and X[V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+\end{itemize}
+
+
+
 
 
 
@@ -1104,6 +1160,9 @@ Two type constructors (\sref{sec:type-constructors}) are equivalent, if they hav
 \item 
 Two unions (\sref{sec:unions}) are equivalent, if they have the same number of member types and those types are pairwise equivalent. 
 
+\item 
+Two intersection types (\sref{sec:intersection-types}) are equivalent, if they have the same number of member types and those types are pairwise equivalent. 
+
 \end{itemize}
 
 
@@ -1151,7 +1210,9 @@ The conformance relation $(\conforms)$ is the smallest transitive relation that 
       \item For the $i^{\superth}$ type parameter of $T$, $N_i \conforms U_i$.
     \end{itemize}
 
-  \item A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
+  \item A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$.
+  
+  \item Conformance of intersection types is defined in (\sref{sec:intersection-types}).
 
   \item A constrained type ~\lstinline!$T$ with constraint $b$!~ conforms to $T$. A type ~\lstinline!$T$ with constraint $b_1$!~ conforms to ~\lstinline!$T$ with constraint $b_2$!, if any value $e$ that conforms ~\lstinline!$T$ with constraint $b_1$!~ by being a member of $T$ and passing the test presented by $b_1$, also conforms to ~\lstinline!$T$ with constraint $b_2$!~ by passing the test presented by $b_2$.\footnote{This conformance is only tested based on actual values being tested, not the types themselves.}
 
@@ -1185,8 +1246,9 @@ if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ f
 
   \item Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
  
-  \item A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. 
+  \item A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. See also: (\sref{sec:unions}).
 
+  \item An overloaded type projection conforms to type of every overloaded alternative. 
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 
@@ -1205,6 +1267,25 @@ The least upper bound or the greatest lower bound of a set of types does not alw
 
 The least upper bound or the greatest lower bound might also not be unique. If there are several such bounds, Gear is free to pick up any of them. 
 
+
+
+
+\subsection{Least Upper Bound}
+\label{sec:least-upper-bound}
+
+The term {\em least upper bound} of a set of types (and the closely related term {\em weak least upper bound} of a set of types) have two possible representations. 
+
+\begin{itemize}
+  \item {\em Common supertype representation}. This approach selects one compound type that is a common supertype of all types in the set. 
+  \item {\em Union type representation}. This approach simply makes a union type (\sref{sec:unions}) out of all types in the set. 
+\end{itemize}
+
+Gear implicitly uses the union type representation for least upper bounds. The union type already presents quite a few simplifications of itself. This behaviour can be changed per-scope, per-file or even per-module, using a pragma:
+\begin{lstlisting}
+pragma least-upper-bound(.Union)  ;; implicit
+pragma least-upper-bound(.Common) ;; optionally
+\end{lstlisting}
+These pragmas are a part of Gear's \code{Language} module. % TBD: specify where these pragmas are exactly located
 
 
 
@@ -1259,7 +1340,7 @@ In Gear, there are a few types and their values that represent emptiness of some
   
   The \code{None} case object is primarily designed to be used with pattern matching, and also plays an important internal part in Gear's implementation of pattern matching. 
   
-  Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Predef} (\sref{sec:predef}), and results in \code{None}. 
+  Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Language.Predef}, and results in \code{None}. 
   
   \item The \code{Unit} type. It is basically a \code{Tuple_0} type. 
   
