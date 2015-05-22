@@ -553,9 +553,9 @@ A function application ~\lstinline!$p$.$f$.($e_1 \commadots e_m$) $b$!~ is a syn
 \subsection{Receiver Universal Shortcut}
 \label{sec:receiver-universal-shortcut}
 
-A function application ~\lstinline!$r$.$f$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!~ or contains it as a sub-expression, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!$r$.`$`()!. 
+A function application ~\lstinline!$r$.$f$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!~ or contains it as a sub-expression, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!r.`$`()!. 
 
-A function application ~\lstinline!$r$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!$r$.`$`()!~ and $r$ is a variable reference. 
+A function application ~\lstinline!$r$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!r.`$`()!~ and \code{r} is a variable reference. 
 
 In case of nested function applications, this shortcut is applied absolutely only to the outermost application, to prevent any confusion. It can be combined with application shortcut.
 
@@ -611,13 +611,46 @@ Sub-expressions in a tuple expression that are prepended with an id (in form of 
 
 
 
-
 \section{Instance Creation Expressions}
 \label{sec:instance-creation-exprs}
 
-Unlike languages like Java, Scala, C\# and similar, Gear does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline!Class#new!~ method (not to be confused with ~\lstinline@Class.new@), which in the end\footnote{Because constructor currying can happen, the constructor is invoked by a native implementation from outside of the \code{new} method, by the curried function, which is a mechanism inaccessible to users otherwise than via the constructor definition.} has all arguments for a constructor, which gets invoked by a native implementation. 
+\syntax\begin{lstlisting}
+New_Expr ::= 'new' [Early_Defs] Class_Parents 
+             ['begin' [Template_Body] 'end']
+           | 'new' [Early_Defs] Class_Parents 
+             ['{' Template_Body '}']
+           | 'new' '{' Template_Body '}'
+\end{lstlisting}
 
+Unlike languages like Java, Scala, C\# and similar, Gear does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline!Class#new!~ method (not to be confused with ``static'' ~\lstinline@Class.new@, which is for dynamic creation of ad-hoc classes), which passes all the arguments to the appropriate constructor (and is defined using \code{Variadic_Arguments}). 
 
+It is indeed possible to write custom ~\lstinline!$T$#new! implementations, where $T$ is the class---or even trait!---for which the custom implementation is, and that implementation may decide to use ~\lstinline!Class#new!~ or not (typical use case: a factory method without the usual corporate factory names).
+
+There is one more way to create an instance of a class, and that is to use a syntax construct of the \code{New_Expr} syntax category. This construct has multiple forms for different use cases. Note that there is also a syntax construct for anonymous classes (\sref{sec:anonymous-classes}), which is related, but has slightly different semantics -- most notably, anonymous classes can be reused and bound to a name, because they do not create any new instance (just yet), and can define class parameters, including type parameters. 
+
+A simple instance creation expression is of the form ~\lstinline!new $c$!, where $c$ is a constructor invocation (\sref{sec:constructor-invocations}). Let $T$ be the type of $c$, then $T$ must denote a type instance of a non-abstract subtype of \code{Any}. $T$ must also conform to the {\em self type} of the class denoted by $T$. The expression is evaluated by invoking ~\lstinline!Class#new!, where the method is invoked with \code{self} being $T$, thus skipping any custom overrides of the method. Note that $c$ might be an instantiated type variable, in which case it might not be entirely possible to guarantee that the expression will be evaluated successfully -- no matching and accessible constructor might be available in the instantiated type. 
+
+A general instance creation expression is of the form ~\lstinline!new $t$!~ for some class template $t$. Such an expression is equivalent to the following block:
+\begin{lstlisting}
+{ class $a$ extends $t$; new $a$ }  ,
+\end{lstlisting}
+where $a$ is a fresh name of an {\em anonymous class} (\sref{sec:anonymous-classes}) bound to the name $a$ within the block (and unbound when the block exits).
+
+A shorthand instance creation expression is of the form ~\lstinline!new { $S$ }!, where ~\lstinline!{ $S$ }! is a class body, which is equivalent to the general instance creation expression ~\lstinline!new Object { $S$ }!. This is for creating structural types, ad-hoc. 
+
+\example Consider the following shorthand instance creation expression:
+\begin{lstlisting}
+new { def name() := "Dagny Taggart" }
+\end{lstlisting}
+This is a shorthand for the general instance creation expression
+\begin{lstlisting}
+new Object { def name() := "Dagny Taggart" }
+\end{lstlisting}
+Which is in turn a shorthand for the block
+\begin{lstlisting}
+{ class $a$ extends Object { def name() := "Dagny Taggart" }; new $a$ }
+\end{lstlisting}
+where $a$ is a freshly created name. 
 
 
 
@@ -627,9 +660,10 @@ Unlike languages like Java, Scala, C\# and similar, Gear does not have dedicated
 
 \syntax\begin{lstlisting}
 Block_Expr      ::= Block_Expr1 | Block_Expr2
-Block_Expr1     ::= '{' [Block_Args semi] Block '}'
-Block_Expr2     ::= 'do' [Block_Args semi] Block 'end'
-Block_Args      ::= '|' [Params] [Block_Shadowing] '|' [':' Type]
+Block_Expr1     ::= '{' [Block_Args] Block '}'
+Block_Expr2     ::= 'do' [Block_Args] Block 'end'
+Block_Args      ::= '|' [Params] [Block_Shadowing] '|' 
+                    [':' Type semi]
 Block_Shadowing ::= ';' [Shad_Val_Dcl {',' Shad_Val_Dcl}]
 Shad_Val_Dcl    ::= 'val' Val_Dcl
                   | 'var' Var_Dcl
@@ -2308,11 +2342,12 @@ Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
 Fun_Stat       ::= Block_Stat
 Fun_Dec_Expr   ::= {Annotation} Dcl
                  | {Annotation} ['implicit'] Def
-                 | 'transparent'
-                 | 'opaque'
+                 | ('transparent'
+                   | 'opaque')
+                 | 'pure'
                  | 'native' [Expr]
-                 | 'immutable'
-                 | 'mutable'
+                 | ('immutable'
+                   | 'mutable')
                  | ()
 Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
                  | 'alias' id 'is' id
@@ -2339,7 +2374,11 @@ Evaluation of a statement sequence entails evaluation of the statements in the o
 
 Statement can be an import via a use clause (\sref{sec:use-clauses}), a definition or an expression, or it can be empty. Statements used in the template of a class definition can also be declarations. 
 
-A function that is declared with \code{transparent} in its \code{declare} block, is visible as referentially transparent, and therefore the compiler and possibly the runtime as well are given the possibility to replace function applications of this same function with its previously computed result with the same arguments on the same receiver instance. In that sense, it is similar to memoization (\sref{sec:memoization}), but skips one call stack frame and works better during compilation, unlike memoization, which is a runtime feature. Moreover, all function parameters are then marked as \code{constant}. On the other hand, a function that is declared with \code{opaque} in its \code{declare} block, is visible as referentially opaque and those optimizations are disabled for it, so the function is re-evaluated each time it is applied. 
+A function that is declared with \code{transparent} in its \code{declare} block, is visible as referentially transparent, and therefore the compiler and possibly the runtime as well are given the possibility to replace function applications of this same function with its previously computed result with the same arguments on the same receiver instance. In that sense, it is similar to memoization (\sref{sec:memoization}), but skips one call stack frame and works better during compilation, unlike memoization, which is a runtime feature. Moreover, all function parameters are then marked as \code{constant}. 
+
+On the other hand, a function that is declared with \code{opaque} in its \code{declare} block, is visible as referentially opaque and those optimizations are disabled for it, so the function is re-evaluated each time it is applied. 
+
+A function that is declared with \code{pure} has no access to the \code{self} object, the \code{Function.self} object is marked \code{constant}, and moreover, it has disabled access to all expressions that were not passed to it via arguments. However, \code{constant} is not added to its parameters. A function that is declared with \code{pure} can't be declared with \code{opaque}, as that would be contradictory. A function that is declared with \code{transparent} combines restrictions from both keywords. 
 
 A function that is declared with \code{native} in its \code{declare} block, has its body defined outside of Gear source files. Compilation of a source code that contains such functions result in generation of necessary header files, so that the native implementation may interface with a particular Gear VM implementation. Every Gear VM that has the ability to run native functions defines its own extra annotations that may be attached to the function, to influence the header file somehow (implementation-defined). 
 

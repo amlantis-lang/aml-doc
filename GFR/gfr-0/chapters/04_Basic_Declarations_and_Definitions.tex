@@ -396,6 +396,8 @@ This reference type is represented in Gear by the type \code{Weak_Reference[$T$]
 
 A {\em weak reference} is a reference that does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it behaves as a nullable type. 
 
+Retrieving the referenced value can end in two different scenarios (and the same applies to all other non-strong reference types): either the value was already destructed (or is being destructed) and \code{nil} is returned, or the value has been retained and the returned value is a strong reference to it. 
+
 Weak reference type is required to be provided by every proper Gear VM implementation. 
 
 
@@ -1095,7 +1097,7 @@ If a variadic parameter is flagged with \code{val}, the parameter itself is immu
 
 Variadic parameter may be passed in a function application by name iff the type of the named argument is compatible with \code{Sequence[$T$]}, or the variadic type parameter $T$, if it is variadic. 
 
-\example The following method definition computes the sum of the squares of a variable number of integer arguments.\footnote{There is a space preceding the ``\code{*}'', because otherwise, \LaTeX would think there is a comment beginning, which it is not.}
+\example The following method definition computes the sum of the squares of a variable number of integer arguments.
 \begin{lstlisting}
 def sum (*args: Integer): Integer
 declare
