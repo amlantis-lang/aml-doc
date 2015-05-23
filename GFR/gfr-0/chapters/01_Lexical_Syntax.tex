@@ -129,50 +129,15 @@ semi ::= nl {nl} | ';'
 Gear is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Gear source file is treated as the special separator token \lstinline@nl@ if the following criteria are satisfied:
 
 \begin{enumerate}
-  \item The tokens preceding the newline can form a syntactically complete expression.
+  \item The token immediately preceding the newline can terminate an expression.
+  \item The token immediatelly following the newline can begin a new expression. 
 \end{enumerate}
 
-Since Gear may be interpreted in a REPL\footnote{Read-Eval-Print Loop} fashion, there are no other suitable criteria. Such a token that can terminate an expression is, for instance, not a binary operator or a message sending operator, which both require further tokens to create an expression. Keywords that expect any following tokens also can not terminate expressions. Gear interpreters and compilers do not look-ahead beyond newlines.
+In interactive environment, top-level expressions are ended by entering the ``\code{;;}'' sequence of tokens. 
 
 If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Gear still sees that as only a one significant newline, to prevent any confusion.
 
-Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end@, \lstinline@opaque@, \lstinline@native@, \lstinline@next@, \lstinline@nil@, \lstinline@no@, \lstinline@redo@, \lstinline@retry@, \lstinline@return@, \lstinline@self@, \lstinline@skip@, \lstinline@super@, \lstinline@this@, \lstinline@transparent@, \lstinline@yes@, \lstinline@yield@.
-
-Since REPL can not foresee what the following line will hold, the second criterion can not be checked earlier than when the following line is entered. However, if the following line continues the previous expression, it is treated as such. The only exception is when the previous expression is of an assignment kind, in that case, there is a simple solution that need to be applied: enclose the right-hand side of the assignment in parentheses. That way the right-hand side expression is not ended sooner than before the closing parenthesis. Too keep syntax rules consistent across both REPL and pre-compiled programs, these rules apply to both. 
-
-\example Different treating of assignment expression in presence of newline tokens. 
-\begin{lstlisting}
-;; the expression:
-val a := b
-    .c
-;; is treated as:
-(val a := b).c
-
-;; but the expression:
-val a := (b
-    .c)
-;; is treated as:
-val a := b.c 
-\end{lstlisting}
-
-\example Different treating of $n$-ary expression in presence of newline tokens.
-\begin{lstlisting}
-;; the expression:
-val a := b
-    ? c
-    : d
-;; is treated as:
-(val a := b).`?`(c) ;; and continues with an error,
-                    ;; because `:` is not a legal operator
-
-;; but the expression:
-val a := (b
-    ? c
-    : d)
-;; is treated as:
-val a := b.`?`(c, d) 
-\end{lstlisting}
-
+The grammar rules contain productions where the optional newline (``\code{[nl]}'') is present, in which case it obviously does not end any expression. 
 
 
 
@@ -403,7 +368,7 @@ uom_expr         ::= Unit_Conv {',' Unit_Conv}
 \example Some number literals annotated with units of measure:
 \begin{lstlisting}
 var min_motorway_speed := 90 [<km/hour>]
-;; in the end, same as:
+(* in the end, same as: *)
 var distance := 90 [<km>]
 var time := 1 [<hour>]
 min_motorway_speed := distance // time
@@ -651,7 +616,7 @@ Tokens may be separated by whitespace characters and/or comments. Comments come 
 
 A multi-line comment is a sequence of characters between \lstinline@(* and *)@. Multi-line comments may be nested. There is a whitespace (including newlines) required after \lstinline@(*@ and before \lstinline@*)@. 
 
-A single-line comment is a sequence of characters that starts with \lstinline@;;@ and extends to the end of the line. 
+A single-line comment in Gear is a multi-line comment, written all on one line. That's all. No special syntax for that. 
 
 Documentation comments are multi-line comments that start with \lstinline@(*!@. A whitespace is required after the opening token. 
 

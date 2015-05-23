@@ -59,33 +59,31 @@ A macro is defined as a regular function, but it's body is required to pass invo
 \begin{enumerate}
   \item A parameter list with exactly one parameter of type either
     \begin{itemize}
-      \item \code{Lang~[gear].Reflection.Macros.Whitebox.Context} or 
-      \item \code{Lang~[gear].Reflection.Macros.Blackbox.Context}.
+      \item \code{Gear/Language.Reflection.Macros.Whitebox.Context} or 
+      \item \code{Gear/Language.Reflection.Macros.Blackbox.Context}.
     \end{itemize} 
   \item A parameter list with the parameters of the macro definitions, with the described parameter type translation applied. 
 \end{enumerate}
 
 \example The following code is an example implementation of a simple \code{assert} macro. 
-\begin{lstlisting}[deletekeywords={message}]
-;; import a blackbox context
-use Lang~[gear].Reflection.Macros.Blackbox.Context
+\begin{lstlisting}[deletekeywords={message,assert}]
+(* import a blackbox context *)
+use Gear/Language.Reflection.Macros.Blackbox.Context
 
-;; define the macro
+(* define the macro *)
 def macro assert (condition: Boolean, message: String_Like): Unit := 
     Asserts.assert_impl
 
-;; implement the macro
+(* implement the macro *)
 object Asserts {
   def assert_impl 
       (c: Context)
       (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit :=
-    `(
-      unless #{cond}
-        raise #{msg}
-      else
-        ()
-      end
-    )
+    <@ unless #{cond}
+         raise #{msg}
+       else
+         ()
+       end @>
 }
 \end{lstlisting}
 

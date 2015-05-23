@@ -22,7 +22,7 @@ Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type}
 Postfix_Type        ::= Compound_Type 
                         ['with' 'constraint' Constraint_Block]
 Infix_Type          ::= Postfix_Type {op_id [nl] Postfix_Type}
-Annot_Type          ::= {Annotation} Simple_Type
+Annot_Type          ::= {Annotation} Simple_Type [Nullable_Mod]
 Simple_Type         ::= Simple_Type [Type_Args]
                       | Simple_Type '#' id
                       | Stable_Id
@@ -78,12 +78,10 @@ Stable_Id        ::= [Path '.'] id
                    | 'outer' Class_Qualifier '.' id
                    | Module_Path '.' Stable_ID
 Class_Qualifier  ::= '[' (id | Stable_Id) ']'
-Module_Path      ::= [Root] Module_Selector {'.' Module_Selector}
-Module_Selector  ::= id [Vendor_Arg]
-Root             ::= 'Root' '~'
-Vendor_Arg       ::= '~[' vendor_domain ']'
-vendor_domain    ::= vendor_char {vendor_char}
-vendor_char      ::= lower | '.' | '-' | '_'
+Module_Path      ::= [Root] Module_Selector {'.' id}
+Module_Selector  ::= [Vendor] id
+Root             ::= '@Root' '.'
+Vendor           ::= id '/'
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Gear's type system. 
@@ -196,9 +194,9 @@ class A {
 
 val a1 := A.new
 val a2 := A.new
-a2.f a1.B.new     ;; type mismatch, found a1.B, required a2.B
-a2.g a1.B.new     ;; prints "Got a B." to stdout
-a2.f a2.B.new     ;; prints "Got my B." to stdout
+a2.f a1.B.new     (* type mismatch, found a1.B, required a2.B *)
+a2.g a1.B.new     (* prints "Got a B." to stdout *)
+a2.f a2.B.new     (* prints "Got my B." to stdout *)
 \end{lstlisting}
 This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
 
@@ -224,25 +222,26 @@ A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a pa
 
 \example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
 \begin{lstlisting}
-t = $\epsilon$.type#t ;; "global space"
-Number = Lang~[gear].type#Number ;; predefined import of Lang~[gear]
+t = $\epsilon$.type#t (* "global space" *)
+(* predefined import of Gear/Language *)
+Number = Gear/Language.type#Number 
 
 object An_Object {
   type t
-  t = An_Object.type#t ;; bound by object
+  t = An_Object.type#t (* bound by object *)
 }
 
 class A_Class {
   type t
   def a_method := {
-    t = A_Class.self.type#t ;; bound by class
+    t = A_Class.self.type#t (* bound by class *)
   }
   class << self
     type u
-    u = A_Class.type#u ;; bound by (class) object
+    u = A_Class.type#u (* bound by (class) object *)
   end
-  t = A_Class.self.type#t ;; bound by class
-  self.u = A_Class.type#u ;; bound by (class) object
+  t = A_Class.self.type#t (* bound by class *)
+  self.u = A_Class.type#u (* bound by (class) object *)
 }
 \end{lstlisting}
 
@@ -304,17 +303,17 @@ Function_1[named: List[String], String]
 Given the type definitions of the previous example, the following types are malformed: 
 
 \begin{lstlisting}
-Tree_Map[I]               ;; wrong number of parameters
-Tree_Map[List[I], Number] ;; type parameter List not within bound
+Tree_Map[I]               (* wrong number of parameters *)
+Tree_Map[List[I], Number] (* type parameter List not within bound *)
 
-F[Number, Boolean]        ;; Number is not a type constructor
-F[Tree_Map, Number]       ;; Tree_Map takes two parameters, 
-                          ;;   F expects a type constructor taking one
+F[Number, Boolean]        (* Number is not a type constructor
+F[Tree_Map, Number]       (* Tree_Map takes two parameters, 
+                             F expects a type constructor taking one *)
 
-G[S, Number]              ;; type S constrains its parameter to
-                          ;;   conform to String, 
-                          ;; G expects type constructor with a parameter
-                          ;;   that conforms to Number
+G[S, Number]              (* type S constrains its parameter to
+                             conform to String, 
+                             G expects type constructor with a parameter
+                             that conforms to Number *)
 \end{lstlisting}
 
 
@@ -456,7 +455,7 @@ Parameter prefixed with ``\lstinline!~$\id$!'' is a requirement of a parameter p
 Parameter prefixed with ``\lstinline!**!'' is a requirement of a captured named parameters. 
 
 \item
-Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discared), but the result type of the passed block must conform (\sref{sec:conformance}).
+Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{undefined}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discarded), but the result type of the passed block must conform (\sref{sec:conformance}).
 \end{itemize}
 
 \paragraph{Note}
@@ -587,8 +586,8 @@ Since this \code{List} type is covariant in its type parameter, then e.g. ~\lsti
 \label{sec:nullable-types}
 
 \syntax\begin{lstlisting}
-Type          ::= Type Nullable_Mod
-Nullable_Mod  ::= '?'
+Annot_Type    ::= {Annotation} Simple_Type Nullable_Mod
+Nullable_Mod  ::= '?' | '!'
 \end{lstlisting}
 
 A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Gear types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
@@ -608,6 +607,14 @@ end type
 \end{lstlisting}
 
 When a method is applied on a variable containing \code{nil}, the standard \code{Member_Not_Found} may occur, if the method is really not found in the class \code{Nothing} or in any of implicit conversions from \code{Nothing} (e.g., \code{Nothing} has an implicit conversion to the option type \code{None}). 
+
+A strictly not-nullable type has the form ~\lstinline@$T$!@, where ``\code{!}'' denotes a not-nullable type. Gear types are implicitly not-nullable, but strictly not-nullable types have the extra property that \code{nil} and \code{undefined} do not cause a warning when assigned to a variable or value that is of a strictly not-nullable type, but raise a type error. In case the referenced value changes in runtime by other means than assignment (native access or maybe due to hot code load), the same error has to be raised. 
+
+A compiler may decide to issue extra warnings when assignment of a \code{nil} or \code{undefined} can be detected. 
+
+A strictly not-nullable may be seen as some implicitly wrapped-on-assignment / unwrapped-on-read box that checks for \code{value = nil} and raises an error when such condition is true. But Gear does not have any special methods for object dereference.\footnote{Yet, and probably never will.} 
+
+When used in a compound type, use nullable modifier only on the first component. When used in a constrained type, use nullable modifier only on the component type of the constrained type. 
 
 
 
@@ -802,7 +809,7 @@ Extra properties of parameters are as follows: a \lstinline@*@ for variadic para
 
 \example The declarations
 \begin{lstlisting}
-def a: -> Integer ;; or def a () -> Integer
+def a: -> Integer (* or def a () -> Integer *)
 def b (x: Integer): Boolean
 def c (x: Integer): (y : String, z : String) -> String
 def d (~x: Integer): Integer
@@ -946,8 +953,8 @@ The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding 
 
 \syntax\begin{lstlisting}[morekeywords={Any}]
 Simple_Type ::= 'Any'
-;; also:
-Simple_Type ::= 'Lang~[gear].Any'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Any'
 \end{lstlisting}
 
 This type does not represent a single concrete value type, but any concrete type. It is used in places where the actual type does not matter, and could be even from other language running along Gear in the VM. 
@@ -969,8 +976,8 @@ The \code{Any} virtual type is the actual root of the type system of Gear, altho
 
 \syntax\begin{lstlisting}[morekeywords={Auto}]
 Simple_Type ::= 'Auto'
-;; also:
-Simple_Type ::= 'Lang~[gear].Auto'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Auto'
 \end{lstlisting}
 
 This type does represent a single concrete value type: a compound type with usually just the refinement part. However, it does not explicitly state what the refinement is. Instead, the refinement is inferred from the context in which it is used. The inference algorithm is very different from local type inference (\sref{sec:local-type-inference}). 
@@ -1054,8 +1061,8 @@ Note that \code{Auto} type inference does not track requirements of values from 
 
 \syntax\begin{lstlisting}[morekeywords={Dynamic}]
 Simple_Type ::= 'Dynamic'
-;; also:
-Simple_Type ::= 'Lang~[gear].Dynamic'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Dynamic'
 \end{lstlisting}
 
 This type does not represent a single concrete value type\footnote{This type is similar to what ~\lstinline[language={[Sharp]C}]!dynamic!~ is to C\#.}, but any concrete type, very much like \code{Any} or \code{Auto}. 
@@ -1083,8 +1090,8 @@ Using \code{Dynamic} type is one of possible ways to use multi-methods -- the ty
 
 \syntax\begin{lstlisting}[morekeywords={Dynamic}]
 Simple_Type ::= 'Variadic_Arguments'
-;; also:
-Simple_Type ::= 'Lang~[gear].Variadic_Arguments'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Variadic_Arguments'
 \end{lstlisting}
 
 This type is recognized only as a parameter type (be it a function, constructor\ldots), and with a further constraint that it has to be applied to a solely parameter of a whole parameter list. Such parameter list must be the last parameter list of a definition or declaration, and there might be more parameter lists present preceding it. 
@@ -1102,7 +1109,7 @@ This type does not represent by itself any concrete value type, instead, it repr
 If no arguments are passed to a function that accepts this parameter type, a \code{Unit} value (\lstinline!()!) is used. The \code{Unit} value is also used for matched arguments list that carry no argument expressions. As a special case, when only one argument list is matched, the type is \code{Tuple_1}, a type that is generally avoided throughout Gear (e.g., ~\lstinline!($e$ as $T$)!~ is not of type ~\lstinline!Tuple_1[$T$]!, but just $T$), as its contents can be implicitly unwrapped, but here it is needed to keep the semantics consistent. 
 
 \paragraph{Note}
-This type is used e.g. within the \code{Lang.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Gear VM). 
+This type is used e.g. within the \code{Language.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Gear VM). 
 
 
 
@@ -1282,8 +1289,8 @@ The term {\em least upper bound} of a set of types (and the closely related term
 
 Gear implicitly uses the union type representation for least upper bounds. The union type already presents quite a few simplifications of itself. This behaviour can be changed per-scope, per-file or even per-module, using a pragma:
 \begin{lstlisting}
-pragma least-upper-bound(.Union)  ;; implicit
-pragma least-upper-bound(.Common) ;; optionally
+pragma least-upper-bound(.Union)  (* implicit *)
+pragma least-upper-bound(.Common) (* optionally *)
 \end{lstlisting}
 These pragmas are a part of Gear's \code{Language} module. % TBD: specify where these pragmas are exactly located
 
@@ -1353,42 +1360,42 @@ In Gear, there are a few types and their values that represent emptiness of some
 
 The following lines show some common relations between empty values. 
 \begin{lstlisting}
-nil = undefined  ;; yes
-nil == undefined ;; no
-nil = None       ;; no
-undefined = None ;; no
-() = undefined   ;; no
-() = nil         ;; no
+nil = undefined  (* yes *)
+nil == undefined (* no *)
+nil = None       (* no *)
+undefined = None (* no *)
+() = undefined   (* no *)
+() = nil         (* no *)
 
-Nothing === nil         ;; yes
-Nothing === undefined   ;; yes
-Nothing === ()          ;; no
-Undefined === nil       ;; no
-Undefined === undefined ;; yes
-Undefined === ()        ;; no
-Unit === nil            ;; no
-Unit === undefined      ;; no
-Unit === ()             ;; yes
+Nothing === nil         (* yes *)
+Nothing === undefined   (* yes *)
+Nothing === ()          (* no *)
+Undefined === nil       (* no *)
+Undefined === undefined (* yes *)
+Undefined === ()        (* no *)
+Unit === nil            (* no *)
+Unit === undefined      (* no *)
+Unit === ()             (* yes *)
 
 val nothing := nil
 match nothing {
-  when Some(x) then () ;; does not match
-  when None then ()    ;; matches
+  when Some(x) then () (* does not match *)
+  when None then ()    (* matches *)
 }
 
-val nothing := get_undefined ;; a function that returns `undefined'
+val nothing := get_undefined (* a function that returns `undefined' *)
 match nothing {
-  when Some(x) then () ;; does not match
-  when None then ()    ;; matches
+  when Some(x) then () (* does not match *)
+  when None then ()    (* matches *)
 }
 
 val unit = ()
 match unit {
-  when Some(x) then () ;; does not match, 
-                       ;; also compilation warning, because Unit 
-                       ;; is not compatible to Option[T]
-  when None then ()    ;; does not match, also not compatible
-  when Unit then ()    ;; matches
+  when Some(x) then () (* does not match, 
+                          also compilation warning, because Unit 
+                          is not compatible to Option[T] *)
+  when None then ()    (* does not match, also not compatible *)
+  when Unit then ()    (* matches *)
 }
 \end{lstlisting}
 

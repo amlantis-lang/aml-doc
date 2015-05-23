@@ -813,22 +813,14 @@ The primary constructor is a special function, more special in its syntax than a
 These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
 
 \paragraph{\em Explicit primary constructor fields}
-These are expressions inside the class template (\sref{sec:templates}) that refer to the formal value parameters, and they become an implicit part of the primary constructor. The evaluation happens after early definitions are evaluated and before explicit primary constructor body is evaluated, but combinations of the two approaches should be avoided for the sake of readability. 
-
-\example An example of an explicit primary constructor field. 
-\begin{lstlisting}
-class C (val y: String) {
-  val @x := y                ;; without modification
-  val @z := y + "_modified"  ;; with modification
-}
-\end{lstlisting}
+These are expressions inside the class template (\sref{sec:templates}) that refer to the formal value parameters, and they become an implicit part of the primary constructor. The evaluation happens after early definitions are evaluated and before explicit primary constructor body is evaluated, but combinations of the two approaches should be avoided for the sake of readability -- the only expressions that the formal value parameters should appear in are simple instance variable definitions. 
 
 \paragraph{\em Explicit primary constructor body}
 If a primary constructor should do something more than simply map parameters to instance values, then its explicit body comes in. It may co-exist with explicit primary constructor fields, which are then executed right after a call to the super-constructor (either in implicit position, or an explicit one). 
 \syntax\begin{lstlisting}
 Def             ::= PCtor_Def
 PCtor_Def       ::= 'constructor' PCtor_Fun_Def
-PCtor_Fun_Def   ::= '(' '_' ')' (':=' Constr_Expr | Constr_Block)
+PCtor_Fun_Def   ::= 'do' (Constr_Expr | Constr_Block)
 Constr_Expr     ::= Self_Invocation
                   | Constr_Block2
 Self_Invocation ::= 'self' Argument_Exprs
@@ -941,7 +933,7 @@ Destructors, unlike constructors, can not have any accessibility modifiers. They
 class $C$
   destructor
     @resource.close unless @resource.closed?
-    ;; super is invoked implicitly here
+    (* super is invoked implicitly here *)
   end destructor
 end class
 \end{lstlisting}
@@ -990,7 +982,7 @@ Clone constructors may have modified accessibility, so that only certain functio
 \begin{lstlisting}
 class $C$
   clone
-    ;; super is invoked implicitly here
+    (* super is invoked implicitly here *)
     self[cloned].@resource := self[origin].@resource.clone
   end constructor
 end class
@@ -1422,7 +1414,7 @@ end type
 
 type mi extends distance is unit-of-measure
   mi := km * 0.621
-  mi := (m * 1000) * 0.621 ;; this can be inferred!
+  mi := (m * 1000) * 0.621 (* this can be inferred! *)
 end type
 \end{lstlisting}
 This enables types aggregated with units of measure require a number tagged with any distance unit of measure and still work with correct units. 

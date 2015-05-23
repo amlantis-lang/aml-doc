@@ -268,7 +268,7 @@ object program {
   end method
   
   method run (*args: String): Unit
-    ;; ok:
+    (* ok: *)
     val r1: Matrix := multiply(
         (Matrix with {}).new, (Matrix with {}).new)
     val r2: Vector := multiply(
@@ -278,8 +278,8 @@ object program {
     val r4: Matrix := multiply(
         2, (Matrix with {}).new)
     
-    ;; error, no implicit value found for type
-    ;;   Mult_Dep[Matrix, Vector, Matrix]:
+    (* error, no implicit value found for type
+         Mult_Dep[Matrix, Vector, Matrix]: *)
     val r5: Matrix := multiply(
         (Matrix with {}).new, (Vector with {}).new)
   end method
@@ -358,9 +358,9 @@ object program {
     val circle := %{
         :shape => :Circle
         :radius => 12 [<cm>]}
-    print_line area(rect) ;; 52 cm^2
-    print_line area(circle) ;; 452.38$\ldots$ cm^2
-    print_line area(%{}[Symbol, Any]) ;; error
+    print_line area(rect) (* 52 cm^2 *)
+    print_line area(circle) (* 452.38$\ldots$ cm^2 *)
+    print_line area(%{}[Symbol, Any]) (* error *)
   end def
 }
 \end{lstlisting}
