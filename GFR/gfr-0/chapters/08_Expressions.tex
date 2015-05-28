@@ -740,19 +740,17 @@ Yield_Expr ::= [id '.'] 'yield' [Parens_Args | Poetry_Args]
 A yield expression ~\lstinline!yield $a_1 \commadots a_n$!~ is an universal \code{yield} operation:
 \begin{enumerate}
   \item A way to invoke the block argument (\sref{sec:function-applications} \& \sref{sec:block-arguments}) and pass it arguments. It's expected type is the result type of the given block argument. The value of the expression is then whatever the block argument returned. 
-  \item When no block argument was given and the invocation happens inside a sequence comprehension, a way to generate next value in the sequence. The value of the expression is then the value ``\code{()}'' of type \code{Unit}. % TBD: this needs further description as to how the value is propagated to the sequence - maybe via a paused fiber, or maybe simply throwing? 
   \item When no block argument was given and the invocation happens inside a fiber that is not the thread's main fiber, a way to return from a fiber without destroying it's stack. The value of the expression is then whatever value is passed to the method that resumes the fiber (so that it continues with that value in place of the \code{yield} expression). 
+  \item A part of workflows (\sref{sec:workflows}).
+  \item A part of generators (\sref{sec:generator-expressions}) and collection comprehensions (\sref{sec:collection-comprehensions}).
   \item In other cases, it is an error to use \code{yield}. 
 \end{enumerate}
 
 A yield expression ~\lstinline!$T$.yield $a_1 \commadots a_n$!~ is a specialized case of the previous definitions of \code{yield}, where $T$ may be one of:
 \begin{itemize}
   \item \code{Block}, for invoking block argument. To test if a block argument is available, use \code{Yield.block_available?}, defined in Gear's \code{Language} module. 
-  \item \code{Loop}, for generating sequence values. To test if a yield to a sequence is available, use \code{Yield.loop_available?}, defined in Gear's \code{Language} module. 
   \item \code{Fiber}, for yielding from a fiber. To test if a yield from a fiber is available, use \code{Yield.fiber_available?}, defined in Gear's \code{Language} module. 
 \end{itemize}
-
-The \code{yield} keyword is also used in collection comprehensions (\sref{sec:collection-comprehensions}) and generators (\sref{sec:generator-expressions}), with a different meaning. 
 
 
 
@@ -762,7 +760,7 @@ The \code{yield} keyword is also used in collection comprehensions (\sref{sec:co
 \label{sec:prefix-infix-ops}
 
 \syntax\begin{lstlisting}
-nary_op_id  ::= '?' {opchar}
+nary_op_id  ::= '?' {op_char}
 Infix_Expr  ::= Prefix_Expr
               | Infix_Expr [(id | op_id) Infix_expr]
               | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
@@ -1037,7 +1035,7 @@ a := (let b := c)
 \label{sec:nary-infix-expressions}
 
 \syntax\begin{lstlisting}
-nary_op_id  ::= '?' {opchar}
+nary_op_id  ::= '?' {op_char}
 Infix_Expr  ::= Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
 \end{lstlisting}
 
@@ -1726,6 +1724,23 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 
 
 
+\section{Delayed Expressions}
+\label{sec:delayed-expressions}
+
+\syntax\begin{lstlisting}
+Delayed_Expr ::= 'lazy' [nl] Expr
+\end{lstlisting}
+
+Delayed expressions of the form ~\lstinline!lazy $e$!~ are a syntax sugar for:
+\begin{lstlisting}[deletekeywords={new}]
+Gear/Language.Lazy.new(() -> { $e$ })
+\end{lstlisting}
+
+The \code{Gear/Language.Lazy} instance is not automatically unboxed, unlike lazy value or variable definitions. It is an error to define a lazy value or variable with a delayed expression, as that would be only redundant. The delayed expression is evaluated by sending the instance a ``\code{value}'' message\footnote{This is the behaviour of call-by-need parameters.}. The delayed expression is force re-evaluated by sending the instance a ``\code{value!}'' message, overwriting any previous value\footnote{This is the behaviour of call-by-name parameters.}. 
+
+
+
+
 
 \section{Workflows}
 \label{sec:workflows}
@@ -1736,8 +1751,12 @@ Workflow_or_Range_Expr ::= Workflow | Short_Workflow | Range_Expr
 
 Workflow ::= 'let!' (Pattern2 | var_dcl) ':=' Expr semi Workflow
            | Pat_Var_Def semi Workflow
-           | 'def' Fun_Def semi Workflow           | 'method' Fun_Def 'end' ['method'] semi Workflow           | 'method' Fun_Alt_Def semi Workflow           | 'function' Fun_Def 'end' ['function'] semi Workflow
-           | 'function' Fun_Alt_Def semi Workflow           | 'type' Type_Def 'end' ['type'] semi Workflow
+           | 'def' Fun_Def semi Workflow
+           | 'method' Fun_Def 'end' ['method'] semi Workflow
+           | 'method' Fun_Alt_Def semi Workflow
+           | 'function' Fun_Def 'end' ['function'] semi Workflow
+           | 'function' Fun_Alt_Def semi Workflow
+           | 'type' Type_Def 'end' ['type'] semi Workflow
            | Tmpl_Def semi Workflow
            | 'yield!' Expr
            | Yield_Expr
@@ -1775,7 +1794,15 @@ Workflow ::= 'let!' (Pattern2 | var_dcl) ':=' Expr semi Workflow
              'ensure' '{' Block_Stat {semi Block_Stat} '}'
            | Rethrow_Expr (* only between 'catch' .. 'end' *)
            | Reraise_Expr (* only between 'rescue' .. 'end' *)
-           | ...
+           | ('while' | 'until') Condition 
+             'loop' Workflow 'end' ['loop']
+           | ('while' | 'until') Condition 
+             '{' Workflow '}'
+           | Workflow ('while' | 'until') Condition
+           | 'for' Val_Dcls 'in' ['reverse'] Expr
+             ['step' Expr] 'loop' Workflow 'end' ['loop']
+           | 'for' Val_Dcls 'in' ['reverse'] Expr
+             ['step' Expr] '{' Workflow '}'
            | Workflow semi Workflow
            | Expr
            

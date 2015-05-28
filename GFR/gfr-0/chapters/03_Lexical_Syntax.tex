@@ -5,31 +5,15 @@
 \newcommand{\UnicodeRange}[2]{\mbox{$\backslash$u{#1}-$\backslash$u{#2}}}
 
 \chapter{Lexical Syntax \& Analysis}
+\label{sec:lexical-analysis}
 
-Gear programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Gear programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs might use may not support the full Unicode character set.
+Gear programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Gear programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs and text editors might use may not support the full Unicode character set.
 
 Grammar of lexical tokens is given in the following sections. These tokens are then used as terminal symbols of the semantical grammar. 
 
-To construct tokens, characters are distinguished according to the following classes (Unicode general category given in parentheses):
-\begin{itemize}
-\item 
-Whitespace characters. \Unicode{0020} | \Unicode{0009} | \Unicode{000D} | \Unicode{000A} (space, tab character, carriage return, line feed)
+To construct tokens, characters are distinguished according to the rules defined in the following sections. Various combination of different Unicode character classes can also build up tokens, and later on, parts of different higher syntax forms. 
 
-\item
-Letters, which include lower case letters (Ll), upper case letters (Lu), title-case letters (Lt), other letters (Lo), letter numerals (Nl), modifier letters (Lm) and the three characters \Unicode{0024} `~\lstinline[mathescape=false]!$!~', \Unicode{00A7} `~§~' and \Unicode{005F} `~\lstinline!_!~', which both count as upper case letters. 
-
-\item
-Digits `\lstinline!0!' | \ldots \thinspace | `\lstinline!9!'. 
-
-\item
-Parentheses. `\lstinline!(!' | `\lstinline!)!' | `\lstinline![!' | `\lstinline!]!' | `\lstinline!{!' | `\lstinline!}!'
-
-\item
-Delimiter characters. `\lstinline!'!' | `\lstinline!"!' | `\lstinline!.!' | `\lstinline!;!' | '\lstinline!,!'
-
-\item
-Operator characters. These consist of all printable ASCII characters \UnicodeRange{0020}{007F} that are in none of the sets above, mathematical symbols (Sm) and other symbols (So). 
-\end{itemize}
+% Unicode overview with lists: http://www.fileformat.info/info/unicode/category/index.htm 
 
 \newpage
 
@@ -38,19 +22,34 @@ Operator characters. These consist of all printable ASCII characters \UnicodeRan
 
 
 
-\section{Identifiers}
+\section{Identifiers \& Keywords}
 \label{sec:identifiers}
+\label{sec:keywords}
 
-\syntax\begin{lstlisting}
-op_id    ::= opchar {opchar}
+\syntax\begin{lstlisting}[deletekeywords={of,and,class,for}]
+digit_char      ::= '0' $\ldots$ '9'
+letter_char     ::= ? Unicode char of classes Lu, Ll, Lt, Lo, 
+                    Lm and Nl ?
+connecting_char ::= ? Unicode char of class Pc ?
+combining_char  ::= ? Unicode char of classes Mn and Mc ?
+formatting_char ::= ? Unicode char of class Cf ?
+lower           ::= ? Unicode char of class Ll ?
+upper           ::= (letter_char - lower) 
+                  | ? Dollar sign ? | '§' | '_'
+
 var_id   ::= lower id_rest
 plain_id ::= upper id_rest
            | var_id
 id       ::= ['@' | '@@'] (plain_id
-             | '`' [(id_elem - '(') {id_elem}] '`')
-id_rest  ::= {letter | digit | '+' | '-' | '/' | '_'}
-             (letter | digit) [('?' | '!')]
-id_elem  ::= printable_char
+             | '`' {any_id}+ '`')
+id_char  ::= letter_char
+           | digit_char
+           | connecting_char
+           | combining_char
+           | formatting_char
+           | '+' | '-' | '/' | '_'
+id_rest  ::= {id_char} [('?' | '!')]
+any_id   ::= ? any Unicode char except for backquote: '`' ?
 \end{lstlisting}
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
@@ -61,22 +60,12 @@ Gear programs are parsed greedily, so that a longest match rule applies. Letters
 
 The ``\lstinline[mathescape=false]!$!'' character is reserved. 
 
-
-
-
-
-
-\section{Keywords}\label{sec:keywords}
-
 A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in some other languages, keywords are not being recognized inside of paths, except for a few specific cases.
 
-The following names are the reserved words.
+The following names are the reserved words. Identifiers that match any of the specified reserved word carry the extra property of being a possible keyword, which is used in syntactic grammar. 
 
-% constant: http://dlang.org/const3.html
-% +immutable, +immutable/transitive, +mutable
-% freezes self; freezes self and everything contained and not mutable; nothing
-% +attribute
-\begin{lstlisting}
+\syntax\begin{lstlisting}
+Identifier_Keyword ::= ? id, one of: ?
 abstract      advice        advice-execution            after
 alias         and           annotation    arguments     around
 as            aspect        assert        atomic        attribute
@@ -90,30 +79,62 @@ for           for-some      foreign       function      get
 goto          handler       if            immutable     implements
 implicit      in            include       interface     intersection
 invariant     invoke        is            joinpoint     label
-lazy          let           let!          loop          macro
-match         memoize       message       method        module
-multi         mutable       native        next          nil
-no            not           object        of            opaque
-operator      optional      or            origin        otherwise
-out           outer         override      per-self      per-target
-pointcut      pragma        prefer        prepend       private
-property      protected     protocol      public        pure
-raise         raising       range         rec           record
-redo          refine        refinement    release       reraise
-rescue        retain        rethrow       retry         return
-return!       returning     requires      reverse       sealed
-self          set           seq           skip          soft
-step          super         switch        target        then
-this          throw         throwing      to            trait
-transparent   type          undefined     unless        unowned
-until         union         unit-of-measure             upgrade
-use           val           val!          var           var!
-yes           weak          when          while         with
-xor           yield         yield!        yielding
+lazy          let           loop          macro         match
+memoize       message       method        module        multi
+mutable       native        next          nil           no
+not           object        of            opaque        operator
+optional      or            origin        otherwise     outer
+override      per-self      per-target    pointcut      pragma
+prefer        prepend       private       property      protected
+protocol      public        pure          raise         raising
+range         rec           record        redo          refine
+refinement    release       reraise       rescue        retain
+rethrow       retry         return        returning     requires
+reverse       sealed        self          set           seq
+skip          soft          step          super         switch
+target        then          this          throw         throwing
+to            trait         transparent   type          undefined
+unless        unowned       until         union         unit-of-measure
+upgrade       use           val           var           yes
+weak          when          while         with          xor
+yield         yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
 
+
+
+
+
+\section{Symbolic Keywords}
+\label{sec:symbolic-keywords}
+
+\syntax\begin{lstlisting}[deletekeywords={of}]
+Symbolic_Keyword ::= ? one of: ?
+let!  yield!  return! 
+|  .  .?  .!  :  (  )  [  ]  <  >  
+%[|  |]  %[  %(  {  %{  }  %/  /
+'  #  ..  ..<  ...  :=  ;  ;;  ->  
+=>  =>>  *  **  &
+_  <@  @>  <@@  @@>
+\end{lstlisting}
+
+Symbolic or partially symbolic character sequences can be treated as keywords, if a lexical or syntactic grammars specifies that. Some lexical grammars extend some of these sequences with ``flags''. 
+
+
+
+
+
+\section{Symbolic Operators}
+\label{sec:symbolic-operators}
+
+\syntax\begin{lstlisting}[deletekeywords={of,and}]
+op_id       ::= Symbolic_Op
+Symbolic_Op ::= {op_char}+
+op_char     ::= ? Unicode char of classes Sm and So ?
+\end{lstlisting}
+
+Symbolic operators are sequences of characters as shown above, except where the sequence of characters is a symbolic keyword (\sref{sec:symbolic-keywords}) and is used by the corresponding grammar as such.\footnote{In another words, symbolic keywords have a precedence over symbolic operators, if a grammar would be otherwise ambiguous.}
 
 
 
@@ -130,7 +151,7 @@ Gear is a line-oriented language, in which statements are expressions and may be
 
 \begin{enumerate}
   \item The token immediately preceding the newline can terminate an expression.
-  \item The token immediatelly following the newline can begin a new expression. 
+  \item The token immediately following the newline can begin a new expression. 
 \end{enumerate}
 
 In interactive environment, top-level expressions are ended by entering the ``\code{;;}'' sequence of tokens. 
@@ -143,17 +164,9 @@ The grammar rules contain productions where the optional newline (``\code{[nl]}'
 
 
 
-\section{Operators}\label{sec:operators}
-A set of identifiers is reserved for language features, some of which may be overridden by user space implementations. Operators have language-defined precedence rules that are supposed to usually comply to user expectations (principle of least surprise), and another desired precedence may be obtained by putting expressions with operators inside of parenthesis pairs. 
 
-Binary (infix) operators have to be separated by whitespace or parentheses on both sides, unary operators by whitespace on left side -- the right side is what they are bound to. 
-
-
-
-
-
-
-\section{Literals}\label{sec:literals}
+\section{Literals}
+\label{sec:literals}
 
 There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
 
@@ -412,12 +425,14 @@ char_escape_seq ::=
     | '\$n$' (* Byte value in octal *)
     | '\$nn$' (* Byte value in octal *)
     | '\$nnn$' (* Byte value in octal *)
-    | '\u$nnnn$' (* Unicode character U+$nnnn$ *)
-    | '\u$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$ *)
+    | '\u$nnnn$' (* Unicode character U+$nnnn$, hex digits *)
+    | '\U$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$, hex digits *)
     | '\' named_char ';' (* Named character entity *)
 \end{lstlisting}
 
 The named character reference (\code{named_char}) is defined by HTML5 (\url{http://www.w3.org/TR/html5/syntax.html#named-character-references});
+
+The octal byte values are consumed with the longest match. 
 
 
 
@@ -610,11 +625,12 @@ val i := %("hello"; "world")
 
 
 
-\section{Whitespace \& Comments}\label{sec:whitespacecomments}
+\section{Whitespace \& Comments}
+\label{sec:whitespacecomments}
 
 Tokens may be separated by whitespace characters and/or comments. Comments come in two forms: 
 
-A multi-line comment is a sequence of characters between \lstinline@(* and *)@. Multi-line comments may be nested. There is a whitespace (including newlines) required after \lstinline@(*@ and before \lstinline@*)@. 
+A multi-line comment is a sequence of characters between \lstinline@(* and *)@. Multi-line comments may be nested. There is a whitespace (including newlines) required after \lstinline@(*@ and before \lstinline@*)@ in the outermost multi-line comment. 
 
 A single-line comment in Gear is a multi-line comment, written all on one line. That's all. No special syntax for that. 
 
@@ -622,8 +638,34 @@ Documentation comments are multi-line comments that start with \lstinline@(*!@. 
 
 As a special case (not only) for UNIX-like systems that support the notation, the initial lines of source file that start with the sequence ``\lstinline@#!@'' are ignored. 
 
+Whitespace tokens and comments are not discarded during lexical analysis, but instead after lexical filtering, by rules described in (\sref{sec:lexical-filtering}).
 
 
+
+
+
+\section{Conditional Compilation}
+\label{sec:conditional-compilation}
+
+\syntax\begin{lstlisting}
+Pragma           ::= If_Directive 
+                   | Else_Directive 
+                   | End_If_Directive 
+If_Directive     ::= 'pragma' 'if' id {'.' id}
+Else_Directive   ::= 'pragma' 'else'
+End_If_Directive ::= 'pragma' 'end-if'
+\end{lstlisting}
+
+If an \code{If_Directive} token is matched during tokenization, text is recursively tokenized until a corresponding \code{Else_Directive} or \code{End_If_Directive}. If the compilation environment defines the associated identifier, the token stream includes the tokens between the \code{If_Directive} and the corresponding \code{Else_Directive} or \code{End_If_Directive}. Otherwise, the tokens are discarded. The converse applies to the tokens between a corresponding \code{Else_Directive} and \code{End_If_Directive}. These directives may be nested. 
+
+
+
+
+
+\section{Hidden Tokens}
+\label{sec:hidden-tokens}
+
+Some hidden tokens are inserted by lexical filtering (\sref{sec:lexical-filtering}), or are used to replace existing tokens. 
 
 
 

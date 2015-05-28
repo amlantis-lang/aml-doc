@@ -550,7 +550,7 @@ Any reference to \code{self} in the right-hand side of an early definition refer
 \syntax\begin{lstlisting}
 Modifier         ::= Local_Modifier
                    | Access_Modifier
-                   | 'override'
+                   | 'override' [Class_Qualifier]
 Local_Modifier   ::= 'implicit'
                    | 'lazy'
                    | 'final'
@@ -630,7 +630,7 @@ The rules governing the validity and meaning of a modifier are as follows:
 
   A different form of qualification is \lstinline!protected[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
 
-  \item The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Gear is virtual, so Gear has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
+  \item The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Gear is virtual, so Gear has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). If the optional class qualifier is present after the \code{override} modifier, then a supertype of the given simple name or identified by the stable id has to provide a member that this modifier is applied to, either abstract or concrete, and it is an error if it does not. 
 
   \item The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of traits. 
 
