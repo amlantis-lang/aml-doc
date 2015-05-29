@@ -3,6 +3,8 @@
 
 \chapter{Basic Declarations \& Definitions}
 
+\minitoc
+
 \syntax\begin{lstlisting}
 R_Modifier  ::= 'weak' | 'soft' | 'unowned'
 M_Modifier  ::= 'constant' | 'mutable' | 'immutable'
@@ -1167,7 +1169,7 @@ Purely named parameters have the same definition of external and internal parame
 
 Purely named parameters do not impose any rules on the position where each of their kind may appear, exactly because their order of appearance is insignificant. Therefore, purely named parameters with default values may appear anywhere, just like the capturing named parameter (which may appear exactly once, or not at all). 
 
-Capturing named parameter is capturing any other applied named parameters that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). It is usually declared after the section of purely named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!, but may generally appear among other purely named parameters, the language does not really care. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary[Symbol, $T$]!. Methods with capturing named parameter take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. capturing named parameter are disallowed for repeated parameters and by-name parameters. 
+Capturing named parameter is capturing any other applied named arguments that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). It is declared after the section of purely named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary[Symbol, $T$]!. Methods with capturing named parameter take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. capturing named parameter are disallowed for repeated parameters and by-name parameters. 
 
 If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. capturing named parameter are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
 

@@ -3,6 +3,8 @@
 
 \chapter{Classes \& Objects}
 
+\minitoc
+
 \syntax\begin{lstlisting}
 Tmpl_Def ::= [Mutability] ['case'] 'class' Class_Def
            | [Mutability] ['case'] 'object' Object_Def
@@ -70,19 +72,19 @@ object O extends Base with Mixin; $\ldots$ end
 
 Unlike in Java, Scala or any other language that does not feature open classes, and similar to Ruby's open classes or C\#'s partial classes, Gear has a feature of open templates. This means that a single template (be it a class or a trait) can have its definition spread across several source files. 
 
-An open template has a {\em leading template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including a parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
+An open template has a {\em main template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including a parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
 
 Auxiliary templates do not need to be eager loaded. There are basically three major ways to make use of an auxiliary template:
 \begin{itemize}
-\item Eager loaded auxiliary template, using the construct ~\lstinline!include 'path/to/file'!. This way the auxiliary template is loaded along with the leading template.
+\item Eager loaded auxiliary template, using the construct ~\lstinline[deletekeywords={to}]!include 'path/to/file'!. This way the auxiliary template is loaded along with the leading template.
 \item Autoload (\sref{sec:autoloading}) of the auxiliary template. 
-\item On-demand load of the auxiliary template via independent ~\lstinline!VM.load 'path/to/file'!, after the leading template is defined.  Gear
+\item On-demand load of the auxiliary template via independent ~\lstinline[deletekeywords={to}]!VM.load 'path/to/file'!, after the leading template is defined.  Gear
 \end{itemize}
 
 To declare a template as an open template, the following annotations are available. All templates are implicitly open, so the annotations are only useful to prevent implicit inheriting from \code{Object}, if the intended leading template inherits from a different base class. 
 \begin{lstlisting}
-@[Open_Template :leading]
-@[Open_Template :auxiliary]
+@[open-template :main]
+@[open-template :auxiliary]
 \end{lstlisting}
 
 
@@ -332,12 +334,14 @@ Note that the linearization of a class refines the inheritance relation: if $C$ 
 \paragraph{\em Include classes}
 A mechanism that allows arbitrary including and prepending of trait into classes and inheritance binary trees\footnote{Yes, trees, not chains: prepended traits make the inheritance game stronger by forking the inheritance chain at each class with prepended traits, forming a shape similar to a rake.} uses a transparent structure called {\em include class}. Include classes are always defined indirectly.
 
-Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Object} class is encountered, which has no superclass. 
+Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Any} class is encountered, which has no superclass. 
 
 \paragraph{\em Included traits}
 When a trait $M$ is included into a class, a new include class $Im_i$ is inserted between the target class and the include class $Is$ that holds a link to its superclass (or to a previously included trait $Im_{i+1}$). This include class $Im_i$ then holds a link to the included trait. Every class that includes the trait $M$ is available via the \code{included_in} method of $M$. 
 
 If a trait $M$ is already (included in or prepended to)\footnote{This is important since both included and prepended traits act like superclasses to every subclass.} any of the superclasses, then it is not included again. Included traits act like superclasses of the class they are included in, and they {\em overlay} the superclasses. 
+
+If a trait $M$ is polymorphic, it is only already (included in or prepended to) any of the superclasses, if the same trait's type instantiation is the one in question, and the same applies if the trait's name is overloaded, with the addition that a monomorphic trait is only already (included in or prepended to) any of the superclasses, if the monomorphic trait is. Therefore, a single trait name may be included multiple times, but only different type instantiations, or the monomorphic one. 
 
 \example A sample trait schema:
 \begin{lstlisting}
@@ -802,6 +806,45 @@ object Sensitive {
 
 
 
+\subsection{Polymorphic \& Monomorphic Class Overloading}
+\label{sec:poly-mono-morphic-classes}
+
+As defined earlier, a class with a type parameter section \lstinline![$\tps$]! is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Furthermore, classes may be distinguished from each other by the count of their type parameters, in which case overloading resolution on their names apply -- and classes that are monomorphic are ``more specific'' than classes that are polymorphic, in case the class name appears without a type application.
+
+\paragraph{Note}
+If full type inference is desired for a polymorphic class $c$, then constructs such as the following can be used:
+\begin{lstlisting}
+(* for polymorphic class with 1 type parameter *)
+$c$[_] 
+
+(* for polymorphic class with 2 type parameters *)
+$c$[_, _] 
+
+(* for polymorphic class with 3 type parameters *)
+$c$[_, _, _] 
+
+(* for polymorphic class with 1 or more type parameters,
+   when there is only one such polymorphic class *)
+$c$[*_]
+\end{lstlisting}
+
+\paragraph{Note}
+Partial type inference is also possible: 
+\begin{lstlisting}
+(* for polymorphic class with 2 type parameters *)
+$c$[_, String] 
+
+(* for polymorphic class with 3 type parameters *)
+$c$[_, Number, _] 
+
+(* for polymorphic class with 2 or more type parameters,
+   when there is only one such polymorphic class *)
+$c$[String, *_]
+\end{lstlisting}
+
+
+
+
 
 \subsection{Constructor \& Destructor Definitions}
 \label{sec:constructor-destructor-def}
@@ -1228,7 +1271,7 @@ Object_Tmpl_Env ::= Tmpl_Env_With_Pars ['object']
                   | Tmpl_Env_No_Pars ['object']
 \end{lstlisting}
 
-Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Gear has one scope for both types and terms. 
+Object definitions define singleton instances. If no superclass is given, \code{Gear/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Gear/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Gear/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Gear/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Gear has one scope for both types and terms. 
 
 It's most general form is ~\lstinline!object $m$ extends $t$!. Here, $m$ is the name of the object to be defined (or of the class object, which is the same as the related class), and $t$ is a template (\sref{sec:templates}) of one of the following forms:
 

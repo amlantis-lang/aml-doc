@@ -6,12 +6,15 @@
 
 The Gear Programming Language System consists of a couple of command line tools: 
 \begin{itemize}
-  \item \code{gear}, runs Gear modules or scripts.
+  \item \code{gear}, runs Gear interactively in a read-eval-print loop.
   \item \code{gearc}, compiles Gear modules or scripts.
+  \item \code{gearopt}, compiles native optimized Gear modules or scripts.
+  \item \code{gearrun}, runs Gear modules or scripts.
   \item \code{geardoc}, generates documentation for Gear modules. 
+  \item \code{geardbg}, debugger for Gear modules or scripts. 
   \item \code{gearp}, inspects compiled Gear modules or scripts.
-  \item \code{gearf}, Gear module bundler.
-  \item \code{igc}, interactively runs Gear programs. 
+  \item \code{gearf}, Gear module bundler and builder.
+  \item \code{gearprof}, Gear module or script profiler.
 \end{itemize}
 
 % TBD: add specialized grammar rules for every source file type
@@ -22,7 +25,7 @@ The inputs to the Gear tools consist of:
       \item Files with extension \code{.gear}, implementation files. 
       \item Files with extension \code{.gearm}, implementation files with permanent macro definitions. 
       \item Files with extension \code{.gearx}, script files. 
-      \item Files with name \code{module.gear}, module definition files. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.gear!, module definition files. 
     \end{itemize}
   \item Compiled files. 
     \begin{itemize}
@@ -32,8 +35,8 @@ The inputs to the Gear tools consist of:
   \item Semi-source files. 
     \begin{itemize}
       \item Files with extension \code{.gearp}, protocol files. 
-      \item Files with name \code{module.dependencies.gear}, module dependencies. 
-      \item Files with name \code{module.dependencies.lock}, locked module dependencies. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.gear!, module dependencies. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.lock!, locked module dependencies. 
     \end{itemize}
   \item Script fragments, used in interactive environments. 
   \item Compilation and runtime parameters passed to the command line tools. 

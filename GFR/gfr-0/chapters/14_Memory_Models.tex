@@ -4,6 +4,8 @@
 \chapter{Memory Models}
 \label{sec:memory-models}
 
+\minitoc
+
 Gear offers to its proper implementations these memory models:
 \begin{itemize}
   \item Automatic Reference Counting (\sref{sec:arc-memory-model})
@@ -29,22 +31,6 @@ Such implementation does not need to support soft and phantom references.
 
 
 
-\subsection{Pros \& Cons}
-
-Pros:
-\begin{itemize}
-  \item Determinable value destruction time.
-  \item No pauses for garbage collection. 
-  \item Values are disposed of as soon as they are no longer referred to -- memory footprint at runtime without peaks caused by delayed garbage collection. 
-\end{itemize}
-
-Cons:
-\begin{itemize}
-  \item No guaranteed support for soft and phantom references. 
-  \item Allocations might be slower. 
-\end{itemize}
-
-
 
 
 
@@ -61,20 +47,6 @@ Such implementation can and should support soft and phantom references.
 
 
 
-\subsection{Pros \& Cons}
-
-Pros:
-\begin{itemize}
-  \item Runtime does not need to insert any retain/release operations. 
-  \item Allocations might be faster, especially if the Gear VM uses two heaps, one smaller for fast allocations by simply increasing byte offset counter. 
-  \item Usually supports soft and phantom references. 
-\end{itemize}
-
-Cons:
-\begin{itemize}
-  \item ``Pauses the world'' to perform garbage collection.
-  \item Undeterminable time of value's destruction. 
-\end{itemize}
 
 
 

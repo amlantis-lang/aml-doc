@@ -3,6 +3,8 @@
 
 \chapter{Design Guidelines \& Code Conventions}
 
+\minitoc
+
 This chapter introduces the way programs {\em should} be written and laid out in Gear. 
 
 
@@ -37,8 +39,8 @@ A module is a directory located in your system at a location unspecified by this
 A directory holding a module must have the same name as the module, contained in a directory of the vendor name. If it is standalone, so that no other modules of the same name share the same parent directory, the vendor part including the leading dot can be omitted.
 
 \example Such directories may look like:
-\begin{lstlisting}[deletekeywords={module}]
-/Gear/Lang
+\begin{lstlisting}[deletekeywords={module},mathescape=false]
+/Gear/Language
 /Example/Your_Module
     /source (* or `src` *)
         /gear
@@ -57,6 +59,7 @@ A directory holding a module must have the same name as the module, contained in
         /gear
             /Some_Submodule
             /Example/Your_Module.gearb
+            /Example/Your_Module/native/ (* optimized code *)
             /Example/Your_Module.gearpsi
         /cpp14
             /native_method.a
