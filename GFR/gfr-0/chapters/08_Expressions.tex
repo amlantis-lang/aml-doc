@@ -10,7 +10,7 @@
 % TBD: update this chapter and the syntax gradually as the CLS evolves
 
 \syntax\begin{lstlisting}
-Expr        ::= Cond_Expr
+Expr        ::= Value_Expr
               | Loop_Expr
               | Rescue_Expr
               | Raise_Expr 
@@ -21,24 +21,25 @@ Expr        ::= Cond_Expr
               | Update_Expr
               | Yield_Expr
               | Infix_Expr
-              | Simple_Expr
-              | Match_Expr
               | Annot_Expr
               | Cast_Expr
-              | New_Expr
               | Use_Expr
               | Delayed_Expr
               | Jump_Expr
               | Anon_Fun
               | Anon_Class
-              | Metaclass_Access
-              | Quote_Expr
-              | Workflow_Expr
-              | Quasiquote_Expr
-              | '(' Expr ')'
-              | {Local_Modifier} Tmpl_Def
-              | Def
               | Expr semi Expr
+Value_Expr  ::= Simple_Expr
+              | Cond_Expr
+              | Match_Expr
+              | New_Expr
+              | Def
+              | {Local_Modifier} Tmpl_Def
+              | '(' Expr ')'
+              | Quasiquote_Expr
+              | Quote_Expr
+              | Metaclass_Access
+              | Workflow_Expr
 Simple_Expr ::= Block_Expr
               | Simple_Expr1
               | Method_Expr
@@ -79,17 +80,25 @@ What we call ``statement'', in context of Gear is in fact yet another kind of an
 
 
 
-\subsection{Literals}
+\subsection{Simple Constant Expressions}
 \label{sec:literal-expr}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= Literal
-               | Collection_Literal Type_Args
+Simple_Expr1 ::= integer_literal
+               | floating_point_literal
+               | complex_literal
+               | rational_literal
+               | character_literal
+               | boolean_literal
+               | string_literal
+               | symbol_literal
+               | regular_expression_literal
 \end{lstlisting}
 
-Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate, including non-scalar literals (collection literals). 
+Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate. 
 
-The second line of syntax merely emphasizes that it is legal to add type arguments to collection literals (although there is another equivalent syntax form, see \sref{sec:typed-expressions}). 
+Gear guarantees that methods of numeric literals (the class \code{Number}) always terminate, are idempotent, and do not have any observable side effects. 
+
 
 
 
@@ -107,18 +116,9 @@ The \code{nil} value is of type \code{Nothing}, and is thus compatible with ever
 
 The \code{undefined} value is of type \code{Undefined}, a subtype of \code{Nothing}, and is thus also compatible with every type that is nullable (\sref{sec:nullable-types}). 
 
-The \code{nil} represents a ``no object'', and is itself represented by an object. This object overrides methods in \code{Object} or defines them as follows: 
-\begin{itemize}
-  \item \lstinline!equals($x$)! and \lstinline!=($x$)! return \code{yes} if the argument $x$ is also the \code{nil} object. 
+The \code{nil} represents a ``no object'', and is itself represented by an object. 
 
-  \item \lstinline!/=($x$)! return \code{yes} if the argument $x$ is not the \code{nil} object.
-
-  \item \lstinline[mathescape=false]!as_instance_of[$T]()! returns always \code{nil}. 
-
-  \item \lstinline!hash_code()! returns \code{0}. 
-\end{itemize}
-
-A reference to any other member of the \code{nil} object causes \code{Member_Not_Found} to be raised, unless the member in fact exists. The \code{nil} object is also frozen by default. 
+A reference to any member of the \code{nil} object causes \code{Member_Not_Found} to be raised, unless the member in fact exists. The \code{nil} object is also frozen by default. 
 
 The \code{undefined} represents also ``no object'', being itself represented by an object, but also represents ``undefined value'', which could be any of the following:
 \begin{itemize}
@@ -129,6 +129,8 @@ The \code{undefined} represents also ``no object'', being itself represented by 
 \end{itemize}
 
 Defined values and variables may not be undefined by assigning them with the \code{undefined} object directly by user code, but it is important to note that this may happen on special occasions indirectly, most notably during hot code loading, e.g. if the definition of an instance variable goes missing from the new code version. 
+
+See (\sref{sec:emptiness}) for more details on ``nothing'' values. 
 
 
 
@@ -610,12 +612,26 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 
 
 
-\subsubsection{Method Values}
+\subsubsection{Method Values \& Partial Applications}
 \label{sec:method-values}
 
 \syntax\begin{lstlisting}
-Method_Expr ::= '&' Simple_Expr1
-              | '&' '(' Simple_Expr1 ')'
+Method_Expr       ::= '&' Simple_Expr2
+                    | '&' '(' Simple_Expr3 ')'
+Simple_Expr2      ::= (Simple_Expr1 - Poetry_Args) Papply_Parens
+Simple_Expr3      ::= (Simple_Expr1 - Poetry_Args) 
+                      (Papply_Poetry | Papply_Parens)
+Papply_Parens     ::= '(' [Papply_Args_Expr] ')'
+Papply_Poetry     ::= Papply_Args_Expr
+Papply_Args_Expr  ::= (Papply_Pos_Args [',' Papply_Named_Args])
+                    | Papply_Named_Args
+Papply_Pos_Args   ::= Papply_Pos_Arg {',' Papply_Pos_Arg}
+Papply_Pos_Arg    ::= Pos_Arg | '_' ['as' Type]
+Papply_Named_Args ::= Papply_Named_Arg {',' Papply_Named_Arg}
+                      {',' '**' Expr}
+                    | '**' Expr{',' '**' Expr}
+Papply_Named_Arg  ::= Named_Arg
+                    | id ':' '_' ['as' Type]
 \end{lstlisting}
 
 The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
@@ -640,6 +656,12 @@ val vs := 1 .. 9; &(vs.fold)
 Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
 
 If $e$ resolves to an overloaded member, then the type of the expression is a type projection to that member, constrained to the matching alternatives. 
+
+If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_ as $T$!'', called {\em argument placeholders}, then the method value contains only those overloaded alternatives that are applicable to the given sub-expressions, including the argument placeholders. Such an expression is then partially applied and resolves to an anonymous function, where the argument placeholders become parameters of the anonymous function. 
+
+A function application using poetry-style argument passing is implicitly partially applied per each argument given. The runtime is allowed to optimize such serial partial applications to fit as many arguments given as possible into a single argument list of any overloaded alternative. If in the end the partial application has all arguments needed for a single overloaded alternative (and an implicit parameter list can be provided automatically with arguments, if any is present in the alternative), then such an application is fully applied -- except if it is in a method value, then it needs to be applied either with an empty arguments list, or concrete arguments for the implicit parameter list; or else it can be used in further (partial or full) applications, or method values. This rule practically means that methods with more parameters in a single parameter list are preferred to methods with fewer parameters in a single parameter list, when it comes to poetry-style argument passing. However, it is possible to split poetry-style argument passing with parentheses, to delimit separate applications in consecutive function applications. 
+
+% TBD: write a GFR that shows examples of this in further details
 
 
 
@@ -673,13 +695,13 @@ Optionally, the anonymous class may define its own primary constructor parameter
 
 
 
-\subsection{Designators}
+\subsection{Designator Expressions}
 \label{sec:designators}
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Path
                | '(' Anon_Class ')' '.' Selection
-               | Simple_Expr '.' Selection
+               | Value_Expr '.' Selection
 Selection    ::= ['?'] (id | digit {digit})
 \end{lstlisting}
 
@@ -707,7 +729,7 @@ A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is usef
 
 
 
-\subsection{Attribute Selection}
+\subsection{Attribute Selection Expressions}
 \label{sec:attribute-selection}
 
 \syntax\begin{lstlisting}
@@ -786,7 +808,7 @@ Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified as
 \label{sec:function-applications}
 
 \syntax\begin{lstlisting}[mathescape=false]
-Simple_Expr1   ::= Simple_Expr1 Argument_Exprs 
+Simple_Expr1   ::= (Simple_Expr1 - Poetry_Args) Argument_Exprs 
 Argument_Exprs ::= ['.'] Parens_Args {Parens_Args} [Block_Arg] 
                  | Poetry_Args [Block_Expr2]
                  | Block_Arg
@@ -814,6 +836,9 @@ Block_Arg   ::= Block_Expr
 A function application ~\lstinline!$f$($e_1 \commadots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \commadots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
 
 If none of $e_i$ is purely a named argument, and $f$ accepts a single parameter of \code{Any}, \code{Object} or \code{Tuple_$n$} type (where $n = m$), then the function application is taken as ~\lstinline!$f$(($e_1 \commadots e_m$))!. With respect to overloading resolution (\sref{sec:overloading-resolution}), a member that requires argument expressions to tuple conversion is always less specific than a member that does not require such conversion. 
+
+\paragraph{Distinctions}
+Function applications using the \code{Poetry_Args} syntactic category are automatically partially applied, see (\sref{sec:method-values}).
 
 \paragraph{Note}
 Target type expression (\sref{sec:target-type-expressions}) can't be the first argument in a function application that uses poetry-style arguments passing, due to resulting ambiguity between an argument expression and a chained function application or selection.
@@ -1276,9 +1301,12 @@ A yield expression ~\lstinline!$T$.yield $a_1 \commadots a_n$!~ is a specialized
 \syntax\begin{lstlisting}
 nary_op_id  ::= '?' {op_char}
 Infix_Expr  ::= Prefix_Expr
-              | Infix_Expr [(id | op_id) Infix_expr]
+              | Infix_Expr [Infix_Op Infix_expr]
               | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
               | Range_Expr
+              | '(' op_id ')' Infix_Expr {',' Infix_Expr}
+              | '(' nary_op_id ')' Infix_Expr {',' Infix_Expr}
+Infix_Op    ::= op_id | id
 Prefix_Expr ::= [op_id | 'not'] Simple_Expr1
 Range_Expr  ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
                 [FP_Delta [FP_Digits]]
@@ -1294,11 +1322,11 @@ Expressions can be constructed from operands and operators.
 
 \subsubsection{Prefix Operations}
 
-A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, unlike in Scala, but must not be followed by any whitespace, only identifiers or parentheses (except for the special operator \code{not}, which has to be separated by a space from the expression that it prefixes). The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). 
+A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, but must not be followed by any whitespace, only identifiers or parentheses (except for the special operator \code{not}, which has to be separated by a space from the expression that it prefixes). The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). 
 
 There is also a keyword prefix operator: \code{not}, which must be followed by a whitespace and is always prefix.
 
-The precedence of prefix operators is higher than that of infix operators (\sref{sec:infix-operations}). For example, the source input sequence \code{-sin(x)} is read as \code{-(sin(x))}, which is in turn read as \code{sin.apply(x).`-`()}, whereas the function application \code{negate sin(x)} would be parsed as \code{negate(sin(x))}, using poetry-style arguments\footnote{Yes, this is different from Scala, and, although arguably, even better.}. To further emphasize the precedence of prefix operators, \code{-a + b} is read as \code{-(a) + b}, and \code{-(a + b)} as just that. 
+The precedence of prefix operators is higher than that of infix operators (\sref{sec:infix-operations}). For example, the source input sequence \code{-sin(x)} is read as \code{-(sin(x))}, which is in turn read as \code{sin.apply(x).`-`()}, whereas the function application \code{negate sin(x)} would be parsed as \code{negate(sin(x))}, using poetry-style arguments. To further emphasize the precedence of prefix operators, \code{-a + b} is read as \code{-(a) + b}, and \code{-(a + b)} as just that. 
 
 
 
@@ -1576,16 +1604,14 @@ class Boolean extends Object
 end
 \end{lstlisting}
 
-Such definition of the conditional operator includes lazy evaluation of the arguments. A shorthand version could use a wrapper object and an implicit conversion:
+Such definition of the conditional operator includes lazy evaluation of the arguments. A shorthand version could use an object definition from which the operator name may be imported into scope:
 
 \begin{lstlisting}
-class Boolean_Wrapper [W] extends Object
-  constructor (wrapped: W)
-    val @wrapped := wrapped
-  end
-  operator ?: [A, B <: A] (if_false: => B): A
-    if @wrapped.to_boolean
-      @wrapped
+object Conditional
+begin
+  operator ?: [A, B] (if_true: => A, if_false: => B): A or B
+    if if_true.to_boolean
+      if_true
     else
       if_false
     end
@@ -1603,6 +1629,15 @@ Then, one may use these operators as follows:
 val a := b ? c : d
 val e := b ?: d (* which is equal to `b ? b : d` *)
 \end{lstlisting}
+
+
+
+
+
+\subsubsection{Operator Name Resolution}
+
+In any operator-related expression (prefix, infix, $n$-ary), the operator name is first searched in the receiver. Then, if not found, the name scope in which the operator expression appears, is searched for an operator of the given name and arity of arguments count incremented with 1 (for the original receiver). After that, implicit conversions are applied to the receiver, to a type that contains operator with the given name. 
+
 
 
 

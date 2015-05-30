@@ -113,7 +113,7 @@ Not every reserved word is a keyword in every context, this behavior will be fur
 
 \syntax\begin{lstlisting}[deletekeywords={of}]
 Symbolic_Keyword ::= ? one of: ?
-let!  yield!  return! 
+let!  yield!  return!  as?  as!  is!  not!
 |  .  .?  .!  :  (  )  [  ]  <  >  
 %[|  |]  %[  %(  {  %{  }  %/  /
 '  #  ..  ..<  ...  :=  ;  ;;  ->  
@@ -178,6 +178,8 @@ Literal ::= integer_literal
 	      | complex_literal
 	      | rational_literal
 	      | character_literal
+	      | boolean_literal
+	      | unit_literal
 	      | string_literal
 	      | symbol_literal
 	      | regular_expression_literal
@@ -449,6 +451,18 @@ boolean_literal ::= 'yes' | 'no'
 \end{lstlisting}
 
 Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different, and \code{no} does not match in pattern matching (\sref{sec:pattern-matching}) as \code{nil} and vice versa. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
+
+
+
+
+\subsection{Unit Literal}
+\label{sec:unit-literal}
+
+\syntax\begin{lstlisting}
+unit_literal ::= '()'
+\end{lstlisting}
+
+Unit literal is of the type \code{Unit} (also known as \code{Gear/Language.Unit}, and has alias of \code{Gear/Language.Tuple_0}).
 
 
 

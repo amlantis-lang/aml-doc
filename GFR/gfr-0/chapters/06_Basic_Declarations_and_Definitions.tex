@@ -1349,8 +1349,8 @@ Preference declarations are inherited to subtypes, without regard of visibility.
 \label{sec:use-clauses}
 
 \syntax\begin{lstlisting}
-Use             ::= 'use' ['lazy'] Use_Expr
-Use_Expr        ::= (Type | Stable_Id) '.' Import_Expr
+Use             ::= 'use' ['lazy'] (Type | Stable_Id) 
+                    '.' Import_Expr
 Import_Expr     ::= Single_Import
                   | '{' Import_Exprs '}'
                   | '_'
