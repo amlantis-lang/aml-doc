@@ -785,9 +785,9 @@ Params        ::= Param {',' Param}
 Param         ::= {Annotation} [Param_Extra] id [id]
                   [':' Param_Type] [':=' Expr]
                 | Pattern2
-Param_Extra   ::= ['lazy'] [M_Modifier] [Param_Rw] 
+Param_Extra   ::= ['lazy' | 'eager'] [M_Modifier] [Param_Rw] 
                   ['*' | '**' | '&' | '~']
-Param_Rw      ::= 'val' | 'var'
+Param_Rw      ::= 'val' | 'var' | 'ref'
 Param_Type    ::= ['=>' | '=>>'] (Type | id | '_')
 \end{lstlisting}
 
@@ -912,17 +912,29 @@ Gear utilizes five parameter (resp. argument) evaluation strategies. Every strat
 Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. This includes explicit parameter values (\sref{sec:explicit-parameters}).
 
 \paragraph{Call-by-reference, strict}
-Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in Gear, by usage of wrapper objects.\footnote{Note that even C does not allow you to modify a variable without a wrapper construct -- but in C's case, it's a pointer. Gear offers you just an object holding a reference to some value.}
+Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in Gear, by usage of wrapper objects. Those are described in (\sref{sec:by-ref-parameters}).
 
 \paragraph{Call-by-name, non-strict}
 The argument is not evaluated until accessed, and is re-evaluated each time it is accessed, providing another tool to create DSLs. Those are described in (\sref{sec:by-name-parameters}). 
 
 \paragraph{Call-by-need, non-strict}
-Also known as {\em lazy evaluation}, this is a memoized version of {\em call-by-name} strategy. The difference is, {\em call-by-need} parameters are not re-evaluated, once they are evaluated. 
+Also known as {\em lazy evaluation}, this is a memoized version of {\em call-by-name} strategy. The difference is, {\em call-by-need} parameters are not re-evaluated, once they are evaluated. Those are described in (\sref{sec:by-need-parameters}). 
 
 \paragraph{Call-by-future, non-deterministic}
 This is a rather experimental feature of Gear, depending on whether the Gear VM is capable of parallelization and whether there are defined standard tools for ``system'' parallelization. These are described in (\sref{sec:by-future-parameters}).
 
+
+
+
+
+\subsubsection{By-Reference Parameters}
+\label{sec:by-ref-parameters}
+
+\syntax\begin{lstlisting}
+Param_Rw ::= 'ref'
+\end{lstlisting}
+
+The name of a parameter may be prefixed with a ``\code{ref}'' keyword, in which case the parameter's type $T$ is boxed into ~\lstinline!Reference_Cell[$T$]!. See (\sref{sec:ref-expressions}) for more details on reference cells. 
 
 
 
@@ -963,6 +975,8 @@ The parameter definition may be preceded by \code{lazy} keyword. This indicates 
 The by-need modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}). The by-need modifier implies \code{val} parameter and is allowed for \code{var} parameters. 
 
 By-need parameters with default value expressions evaluate the default value expression the first time the parameter is accessed, like optional parameters that evaluate the default value expression only once. 
+
+If a parameter is prefixed with \code{eager} instead, it can't be prefixed with \code{lazy}, or be by-need, by-name or by-future. 
 
 
 

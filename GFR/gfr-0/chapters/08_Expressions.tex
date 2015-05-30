@@ -25,6 +25,7 @@ Expr        ::= Value_Expr
               | Cast_Expr
               | Use_Expr
               | Delayed_Expr
+              | Ref_Expr
               | Jump_Expr
               | Anon_Fun
               | Anon_Class
@@ -168,7 +169,44 @@ Delayed expressions of the form ~\lstinline!lazy $e$!~ are a syntax sugar for:
 Gear/Language.Lazy.new(() -> { $e$ })
 \end{lstlisting}
 
-The \code{Gear/Language.Lazy} instance is not automatically unboxed, unlike lazy value or variable definitions. It is an error to define a lazy value or variable with a delayed expression, as that would be only redundant. The delayed expression is evaluated by sending the instance a ``\code{value}'' message\footnote{This is the behaviour of call-by-need parameters.}. The delayed expression is force re-evaluated by sending the instance a ``\code{value!}'' message, overwriting any previous value\footnote{This is the behaviour of call-by-name parameters.}. 
+The \code{Gear/Language.Lazy} instance is not automatically unboxed, unlike lazy value or variable definitions. It is an error to define a lazy value or variable with a delayed expression, as that would be only redundant. The delayed expression is evaluated by sending the instance a ``\code{value}'' message\footnote{This is the behaviour of call-by-need parameters.}, or by using the prefix operator ``\lstinline@!@''. The delayed expression is force re-evaluated by sending the instance a ``\code{value!}'' message, overwriting any previous value\footnote{This is the behaviour of call-by-name parameters.}, or by using the prefix operator ``\lstinline@!!@'', with the same side-effect. 
+
+
+
+
+
+
+\subsection{Ref Expressions}
+\label{sec:ref-expressions}
+
+\syntax\begin{lstlisting}
+Ref_Expr ::= 'ref' [nl] Expr
+\end{lstlisting}
+
+Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
+\begin{lstlisting}[deletekeywords={new}]
+Gear/Language.Reference_Cell.new($e$)
+\end{lstlisting}
+
+The \code{Gear/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@'', or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{value_=}'' message. 
+
+Reference cells are lightweight instances that can be used to simulate output parameters at low costs, in both CPU cycles and the language design.
+
+\example An example of how to manipulate reference cells. 
+\begin{lstlisting}
+(* initialize a reference cell *)
+let a := ref 42
+let b := Gear/Language.Reference_Cell.new(42)
+let c := new Gear/Language.Reference_Cell(42)
+
+(* retrieve contained value from reference cell *)
+let d := !a
+let e := a.value
+
+(* change the value the reference cell contains *)
+a <- 64
+a.value := 128
+\end{lstlisting}
 
 
 
@@ -659,9 +697,66 @@ If $e$ resolves to an overloaded member, then the type of the expression is a ty
 
 If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_ as $T$!'', called {\em argument placeholders}, then the method value contains only those overloaded alternatives that are applicable to the given sub-expressions, including the argument placeholders. Such an expression is then partially applied and resolves to an anonymous function, where the argument placeholders become parameters of the anonymous function. 
 
-A function application using poetry-style argument passing is implicitly partially applied per each argument given. The runtime is allowed to optimize such serial partial applications to fit as many arguments given as possible into a single argument list of any overloaded alternative. If in the end the partial application has all arguments needed for a single overloaded alternative (and an implicit parameter list can be provided automatically with arguments, if any is present in the alternative), then such an application is fully applied -- except if it is in a method value, then it needs to be applied either with an empty arguments list, or concrete arguments for the implicit parameter list; or else it can be used in further (partial or full) applications, or method values. This rule practically means that methods with more parameters in a single parameter list are preferred to methods with fewer parameters in a single parameter list, when it comes to poetry-style argument passing. However, it is possible to split poetry-style argument passing with parentheses, to delimit separate applications in consecutive function applications. 
+\paragraph{Implicit partial application}
+
+A function application (\sref{sec:function-applications}) using poetry-style argument passing is implicitly partially applied per each argument given. 
+
+The runtime is allowed to optimize such serial partial applications to fit as many arguments given as possible into a single argument list of any overloaded alternative. If the following conditions are all met, then the partial application is also fully applied:
+\begin{enumerate}
+  \item Function application has all arguments needed for a single overloaded alternative, so that it can be applied to the arguments. 
+  \item An implicit parameter list can be provided automatically with arguments, if any is present in the alternative. This is different from regular function applications, in the sense that regular function application signals an error if the implicit arguments can't be assembled. 
+  \item The result type is compatible to the expected type. If the expected type is \code{Gear/Language.Auto}, then it is always compatible. 
+  \item It is not in a method value, which prevents full application not just in case of implicit partial applications.
+\end{enumerate}
+
+This rule practically means that methods with more parameters in a single parameter list are preferred to methods with fewer parameters in a single parameter list, when it comes to poetry-style argument passing. However, it is possible to split poetry-style argument passing with parentheses, to delimit separate applications in consecutive function applications. 
 
 % TBD: write a GFR that shows examples of this in further details
+
+\example Basic examples of implicit partial applications using poetry-style arguments passing. 
+\begin{lstlisting}
+def papplied (a, b, c): Number := a + b + c
+
+(* resolves to partially applied `papplied`, 
+   `a` reified to `1` *)
+let papplied_1 (b, c) := papplied 1
+
+(* resolves to partially applied `papplied_1`, 
+   `b` reified to `2` *)
+let papplied_2 (c) := papplied_1 2
+
+(* finally applies `papplied`, 
+   resolves to evaluated `1 + 2 + 3` *)
+let fully_applied := papplied_2 3
+
+(* resolves to partially applied `papplied`, 
+   `a` reified to `1` and `b` reified to `2` *)
+let papplied_3 (c) := papplied 1, 2
+\end{lstlisting}
+
+\example Examples of implicit partial applications in face of overloaded members. 
+\begin{lstlisting}
+def papplied (a, b, c): Number := a + b + c
+def papplied (a): Number := a + 3
+
+(* resolves to partially applied `papplied`, 
+   `a` reified to `1` *)
+let papplied_1 (b, c) := papplied 1
+
+(* resolves to partially applied `papplied`, 
+   `a` reified to `1` *)
+let papplied_2 () := papplied 1
+(* full application *)
+let papplied_full := papplied_2() 
+
+(* finally applies `papplied`, 
+   resolves to evaluated `1 + 3` *)
+let papplied_3 := papplied 1
+
+(* finally applies `papplied`, 
+   resolves to evaluated `1 + 2 + 3` *)
+let papplied_4 := papplied 1, 2, 3
+\end{lstlisting}
 
 
 
@@ -908,8 +1003,6 @@ If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, t
   \item The given block or the last argument prefixed with ``\lstinline!&!'' is of a type compatible (\sref{sec:implicit-conversions}) with the type of the captured block parameter, if such parameter is defined. 
 
   \item If the expected type of the function application is defined, the result type $R$ is compatible (\sref{sec:implicit-conversions}) to it. 
-
-  \item For every argument $a_i$, if the corresponding parameter is defined as \code{out}, the argument is prefixed with \code{out} as well and must be a local variable. If the corresponding parameter is defined as only \code{out} and not \code{in} at the same time, the argument is converted to \code{out} argument and any previous value of the argument variable is released. See (\sref{sec:io-arguments}) for details. 
 
   \item Every formal parameter $p_j$: $T_j$ which is not specified by either a positional or a named argument has a default value (\sref{sec:optional-parameters} \& \sref{sec:named-parameters}). 
   
@@ -1322,11 +1415,13 @@ Expressions can be constructed from operands and operators.
 
 \subsubsection{Prefix Operations}
 
-A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, but must not be followed by any whitespace, only identifiers or parentheses (except for the special operator \code{not}, which has to be separated by a space from the expression that it prefixes). The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). 
+A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, but must not be followed by any whitespace, only identifiers or parentheses (except for the special operator \code{not}, which has to be separated by a space from the expression that it prefixes). The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). If such method does not exist, it is equivalent to the function application ~\lstinline!$\op$($e$)!, and if such function does not exist either, implicit conversions on $e$ are attempted. 
 
 There is also a keyword prefix operator: \code{not}, which must be followed by a whitespace and is always prefix.
 
 The precedence of prefix operators is higher than that of infix operators (\sref{sec:infix-operations}). For example, the source input sequence \code{-sin(x)} is read as \code{-(sin(x))}, which is in turn read as \code{sin.apply(x).`-`()}, whereas the function application \code{negate sin(x)} would be parsed as \code{negate(sin(x))}, using poetry-style arguments. To further emphasize the precedence of prefix operators, \code{-a + b} is read as \code{-(a) + b}, and \code{-(a + b)} as just that. 
+
+Prefix operations may alternatively appear in the form $(\op)\ e$, which is equivalent to a function application form, but still searches for implementation of the operator in $e$ first. 
 
 
 
@@ -1346,6 +1441,8 @@ Apart from standard function applications (\sref{sec:function-applications}) tha
 An infix operator can be an arbitrary identifier, usually an operator identifier. Infix operators have static {\em precedence}, {\em associativity} and {\em binding direction} defined as follows:
 
 Infix operators have to be separated from both sides by whitespace from the expressions that they connect. If the following whitespace is a newline character, then precedence rules can not be followed (due to line-by-line parsing and evaluation) and usual behaviour described in (\sref{sec:newlinecharacters}) is followed. 
+
+Infix operations and $n$-ary operations may alternatively appear in the form $(\op)\ e_1 \commadots e_n$, which is equivalent to a function application with poetry-style arguments passing (unless $e_1$ is a tuple expression with more than 1 elements, then it's regular-style arguments passing). 
 
 The {\em precedence} of an infix operator is determined by the operator's first character. Characters are listed below in increasing order of precedence, with characters on the same line having the same precedence.
 
@@ -1382,15 +1479,17 @@ The {\em associativity} and {\em binding direction} of an operator is determined
 Precedence, associativity and binding direction of operators determine the grouping of parts of an expression as follows.
 
 \begin{itemize}
-\item If there are several infix operations in an expression, then operators with higher precedence bind more closely than operators with lower precedence. 
+  \item If there are several infix operations in an expression, then operators with higher precedence bind more closely than operators with lower precedence. 
 
-\item If there are consecutive infix operations $e_0\ \op_1\ e_1\ \op_2 \ldots \op_n\ e_n$ with operators $\op_1 \ldots \op_n$ of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). If all operators are left-associative, then the sequence is interpreted as ~\lstinline!(($e_0\ \op_1\ e_1$) $\op_2 \ldots$) $\op_n\ e_n$!. Otherwise, if all operators are right-associative, the sequence is interpreted as ~\lstinline!$e_0\ \op_1$ ($e_1\ \op_2$ ($\ldots \op_n\ e_n$))!.
+  \item If there are consecutive infix operations $e_0\ \op_1\ e_1\ \op_2 \ldots \op_n\ e_n$ with operators $\op_1 \ldots \op_n$ of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). If all operators are left-associative, then the sequence is interpreted as ~\lstinline!(($e_0\ \op_1\ e_1$) $\op_2 \ldots$) $\op_n\ e_n$!. Otherwise, if all operators are right-associative, the sequence is interpreted as ~\lstinline!$e_0\ \op_1$ ($e_1\ \op_2$ ($\ldots \op_n\ e_n$))!.
 
-\item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative or right-binding, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
+  \item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative or right-binding, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
 
-\item The right-hand operand of a left-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!$e\ \op$ ($e_1 \commadots e_n$)!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
+  \item The right-hand operand of a left-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!$e\ \op$ ($e_1 \commadots e_n$)!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
 
-\item The left-hand operand of a right-associative or right-binding operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!($e_1 \commadots e_n$) $\op\ e$!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
+  \item The left-hand operand of a right-associative or right-binding operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!($e_1 \commadots e_n$) $\op\ e$!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
+  
+  \item If $e_0$ in $e_0\ \op_1\ e_1$ does not implement the operator, then the infix operation is equivalent to function application $\op_1(e_0,\ e_1)$, and if such function does not exist either, then implicit conversions are attempted on $e_0$. This is also applied recursively to consecutive infix operations. 
 \end{itemize}
 
 
@@ -1412,6 +1511,8 @@ file.open("hello_world.txt")
 a shift-left b
 (* is an infix expression equivalent to *)
 a.shift-left(b)
+(* or alternatively *)
+shift-left(a, b)
 (* and not to the less obvious *)
 a(shift-left(b))
 \end{lstlisting}
