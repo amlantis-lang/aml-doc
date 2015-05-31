@@ -271,8 +271,9 @@ Prop_Spec  ::= ([Access_Modifier] ('get' | 'set'))
              | 'unowned'
              | ['optional'] 'soft'
 Prop_Def   ::= 'property' ['(' Prop_Specs ')'] simple_id 
-               [':' Type]
-               '{' Prop_Impl {semi Prop_Impl} '}'
+               [':' Type] Prop_Impls
+Prop_Impls ::= '{' Prop_Impl {semi Prop_Impl} '}'
+             | [nl] 'with' Prop_Impl {[nl] 'and' Prop_Impl}
 Prop_Impl  ::= ('get' Prop_Get_Impl)
              | ('set' Prop_Set_Impl)
              | ('val' ':=' Expr)
@@ -281,7 +282,7 @@ Prop_Impl  ::= ('get' Prop_Get_Impl)
 
 A property declaration \lstinline@property $x$: $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
 
-A property definition \lstinline@property $x$: $T$ {get $\ldots$; set $\ldots$}@ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behavior and storage of a property, but may as well opt-in for auto-generated implementation, which is: 
+A property definition \lstinline@property $x$: $T$ {get $\ldots$; set $\ldots$}@ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behavior and storage of a property, but may as well opt-in for auto-generated implementation, by specifying the implementation block as ``~\code{_}~'', which is: 
 
 \begin{enumerate}
 \item 
@@ -330,11 +331,21 @@ Assignment to properties is translated automatically into a setter function call
 \begin{lstlisting}
 Prop_Get_Impl ::= '(' ')' '->' '{' Block '}'
                 | '{' Block '}'
-Prop_Set_Impl ::= '(' id ')' '->' '{' Block '}'
-                | '{' '|' id '|' semi Block '}'
+                | 'do' Block 'end'
+                | ':=' Expr
+                | '_'
+Prop_Set_Impl ::= '(' Param ')' '->' '{' Block '}'
+                | '{' '|' Param '|' [':' Type [semi]] 
+                  [semi] Block '}'
+                | 'do' '|' Param '|' [':' Type [semi]] 
+                  [semi] Block 'end' 
+                | '(' Param ')' [':' Type [semi]] ':=' Expr
+                | '_'
 \end{lstlisting}
 
 Property implementations are restricted to parameterless block expressions for property getters and to block expressions with one parameter for property setters. If the property is specified with a \code{get} or \code{set}, but without a property getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
+
+If a property setter (\code{set}) does not specify return type, then it is inferred as \code{Unit}. 
 
 
 

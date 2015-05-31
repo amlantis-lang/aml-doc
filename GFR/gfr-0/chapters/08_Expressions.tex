@@ -1295,8 +1295,8 @@ Block_Expr      ::= Block_Expr1 | Block_Expr2
 Block_Expr1     ::= '{' [Block_Args] Block '}'
 Block_Expr2     ::= 'do' [Block_Args] Block 'end'
 Block_Args      ::= '|' [Params] [Block_Shadowing] '|' 
-                    [':' Type semi]
-Block_Shadowing ::= ';' [Shad_Val_Dcl {',' Shad_Val_Dcl}]
+                    [':' Type [semi]]
+Block_Shadowing ::= ';' [nl] [Shad_Val_Dcl {',' Shad_Val_Dcl}]
 Shad_Val_Dcl    ::= 'val' Val_Dcl
                   | 'var' Var_Dcl
                   | 'def' Def_Dcl
