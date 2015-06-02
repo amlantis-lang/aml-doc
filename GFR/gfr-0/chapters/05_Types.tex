@@ -5,6 +5,8 @@
 
 \minitoc
 
+\newpage
+
 \syntax\begin{lstlisting}
 Type                ::= Function_Type
                       | Infix_Type [Existential_Clauses]
@@ -32,7 +34,8 @@ Simple_Type         ::= Simple_Type [Type_Args]
                       | Literal ['.' 'type']
                       | '(' [Types] ')'
                       | Foreign_Type
-Types               ::= Type {',' Type}
+Types               ::= Named_Subtype {',' Named_Subtype}
+Named_Subtype       ::= [['~'] id ':'] Type
 \end{lstlisting}
 
 When we say \textit{type} in the context of Gear, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Gear is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
@@ -327,9 +330,12 @@ G[S, Number]              (* type S constrains its parameter to
 
 \syntax\begin{lstlisting}
 Simple_Type ::= '(' Types ')'
+Infix_Type  ::= Named_Subtype {'*' Named_Subtype}
 \end{lstlisting}
 
 A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
+
+A tuple type $T_1 * \ldots * T_n$ is an infix type (\sref{sec:infix-types}) representing the exact same tuple type as ($T_1 \commadots T_n$).
 
 Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods ~\lstinline!1$ \commadots n$!. 
 
@@ -626,9 +632,9 @@ When used in a compound type, use nullable modifier only on the first component.
 \label{sec:unions}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= id [Type_Param_Clause] 'is' 'union' 'of'
-                   Type {semi Type}
-Simple_Type    ::= Type {'or' Type}
+Const_Type_Def ::= id [Type_Param_Clause] 'is' Union
+Union          ::= 'union' 'of' Type {semi Type}
+Infix_Type     ::= Type {'or' Type}
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
@@ -667,7 +673,7 @@ Union types also employ the following set of rules, given some types \code{X}, \
 \syntax\begin{lstlisting}
 Const_Type_Def ::= id [Type_Param_Clause] 'is' 'intersection' 'of'
                    Type {semi Type}
-Simple_Type    ::= Type {'and' Type}
+Infix_Type     ::= Type {'and' Type}
 \end{lstlisting}
 
 An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. 

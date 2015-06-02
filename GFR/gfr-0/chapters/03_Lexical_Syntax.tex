@@ -43,7 +43,8 @@ var_id   ::= lower id_rest
 plain_id ::= upper id_rest
            | var_id
 id       ::= ['@' | '@@'] (plain_id
-             | '`' {any_id}+ '`')
+             | '`' plain_id '`'
+             | '``' {any_id}+ '``')
 id_char  ::= letter_char
            | digit_char
            | connecting_char
@@ -56,9 +57,9 @@ any_id   ::= ? any Unicode char except for backquote: '`' ?
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
 
-An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Gear keywords, and to allow to identify operators. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Gear keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
-Gear programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
+Gear programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
 
 The ``\lstinline[mathescape=false]!$!'' character is reserved. 
 
@@ -75,31 +76,33 @@ begin         before        bitfield      break         broken
 case          catch         class         clone         cloned
 constant      constraint    constructor   declare       def
 delta         destructor    digits        dispatch      do
-eager         else          elsif         end           ensure
-enum          execution     exhausted     extends       final
-for           for-some      foreign       function      get
-goto          handler       if            immutable     implements
-implicit      in            include       interface     intersection
-invariant     invoke        is            joinpoint     label
-lazy          let           loop          macro         match
-memoize       message       method        module        multi
+done          eager         else          elsif         end
+ensure        enum          execution     exhausted     extends
+final         for           for-some      foreign       function
+functor       get           goto          handler       if
+immutable     implements    implicit      in            include
+interface     intersection  invariant     invoke        is
+joinpoint     label         lazy          let           loop
+macro         match         measure       member        memoize
+message       method        module        monitored     multi
 mutable       native        next          nil           no
 not           object        of            opaque        operator
 optional      or            origin        otherwise     outer
-override      per-self      per-target    pointcut      pragma
-prefer        prepend       private       property      protected
-protocol      public        pure          raise         raising
-range         rec           record        redo          ref
-refine        refinement    release       reraise       rescue
-retain        rethrow       retry         return        returning
-requires      reverse       sealed        self          set
-seq           skip          soft          step          super
-switch        target        then          this          throw
-throwing      to            trait         transparent   type
-undefined     unless        unowned       until         union
-unit-of-measure             upgrade       use           val
-var           yes           weak          when          while
-with          xor           yield         yielding
+override      parallel      per-self      per-target    pointcut
+pragma        prefer        prepend       private       property
+protected     protocol      public        pure          raise
+raiseable     raising       range         rec           recursive
+record        redo          ref           refine        refinement
+release       reraise       rescue        retain        rethrow
+retry         return        returning     requires      reverse
+sealed        self          set           seq           sig
+skip          soft          step          struct        super
+switch        synchronized  tailcall      target        then
+this          throw         throwable     throwing      to
+trait         transparent   type          undefined     unless
+unowned       until         union         upgrade       use
+val           var           yes           weak          when
+while         with          xor           yield         yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
@@ -133,6 +136,7 @@ Symbolic or partially symbolic character sequences can be treated as keywords, i
 \syntax\begin{lstlisting}[deletekeywords={of,and}]
 op_id       ::= Symbolic_Op
 Symbolic_Op ::= {op_char}+
+              | '`' {op_char}+ '`'
 op_char     ::= ? Unicode char of classes Sm and So ?
 \end{lstlisting}
 
@@ -146,7 +150,27 @@ Symbolic operators are sequences of characters as shown above, except where the 
 \label{sec:newlinecharacters}
 
 \syntax\begin{lstlisting}
-semi ::= nl {nl} | ';'
+nl   ::= (* Line Feed, LF; Multics, Unix, Unix-like... *)
+         ? $\Unicode{000A}$ ? 
+         
+         (* Carriage Return, CR; Mac OS 9-, ZX Spectrum... *)
+       | ? $\Unicode{000D}$ ? 
+       
+         (* CR+LF; Windows, DOS, OS/2, Symbian OS... *)
+       | ? $\Unicode{000D}$ $\Unicode{000A}$ ?
+       
+         (* LF+CR; RISC OS... *)
+       | ? $\Unicode{000A}$ $\Unicode{000D}$ ?
+       
+         (* Unicode conformance *)
+       | ? $\Unicode{000B}$ ? (* Vertical Tab, VT *)
+       | ? $\Unicode{000C}$ ? (* Form Feed, FF *)
+       | ? $\Unicode{0085}$ ? (* NExt Line, NEL *)
+       | ? $\Unicode{2028}$ ? (* Line Separator, LS *)
+       | ? $\Unicode{2029}$ ? (* Paragraph Separator, PS *)
+       
+semi ::= {nl}+ | ';' {nl}
+tend ::= ';;'
 \end{lstlisting}
 
 Gear is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Gear source file is treated as the special separator token \lstinline@nl@ if the following criteria are satisfied:
@@ -156,7 +180,7 @@ Gear is a line-oriented language, in which statements are expressions and may be
   \item The token immediately following the newline can begin a new expression. 
 \end{enumerate}
 
-In interactive environment, top-level expressions are ended by entering the ``\code{;;}'' sequence of tokens. 
+In interactive environment, top-level expressions are ended by entering the ``\code{;;}'' sequence of tokens (\code{tend}). 
 
 If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Gear still sees that as only a one significant newline, to prevent any confusion.
 

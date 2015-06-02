@@ -57,11 +57,11 @@ Rest_Pattern   ::= '*' var_id [':' Type_Pat]
 Named_Patterns ::= Named_Pattern {',' Named_Pattern} [',' Capt_Pattern]
                  | Capt_Pattern
 Named_Pattern  ::= NPattern1 {'|' NPattern1}
-NPattern1      ::= ['implicit'] var_id var_id ':' Type_Pat
+NPattern1      ::= ['implicit'] ['~'] var_id var_id ':' Type_Pat
                  | ['implicit'] '~' var_id ':' Type_Pat
                  | var_id '_' ':' Type_Pat
                  | ['implicit'] var_id ['@' NPattern2]
-NPattern2      ::= var_id Simple_Pattern {id Simple_Pattern}
+NPattern2      ::= ['~'] var_id Simple_Pattern {id Simple_Pattern}
                  | '~' var_id
 Capt_Pattern   ::= '**' var_id [':' Type_Pat]
                  | '**' '_' [':' Type_Pat]

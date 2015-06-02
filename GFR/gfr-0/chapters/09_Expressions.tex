@@ -30,6 +30,7 @@ Expr        ::= Value_Expr
               | Anon_Fun
               | Anon_Class
               | Expr semi Expr
+              | Type_Expr
 Value_Expr  ::= Simple_Expr
               | Cond_Expr
               | Match_Expr
@@ -41,12 +42,15 @@ Value_Expr  ::= Simple_Expr
               | Quote_Expr
               | Metaclass_Access
               | Workflow_Expr
+Type_Expr   ::= '(' Type ')'
+              | Annot_Type - Nullable_Mod
 Simple_Expr ::= Block_Expr
               | Simple_Expr1
               | Method_Expr
               | TT_Expr
 Result_Expr ::= Anon_Params '->' Block 
               | ['memoize'] Expr
+              | ['memoize'] 'tailcall' Argument_Exprs
 Exprs       ::= Expr {',' Expr}
 \end{lstlisting}
 
@@ -142,9 +146,9 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 \label{sec:tuples}
 
 \syntax\begin{lstlisting}
-Simple_Expr ::= '(' [Named_Exprs] ')'
-Named_Exprs ::= Named_Expr {',' Named_Expr}
-Named_Expr  ::= [id ':'] Expr
+Simple_Expr1 ::= '(' [Named_Exprs] ')'
+Named_Exprs  ::= Named_Expr {',' Named_Expr}
+Named_Expr   ::= [['~'] id ':'] Expr
 \end{lstlisting}
 
 A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple. Also ~\lstinline!Tuple_1!~ is a special type (pretty much like \code{Any} or \code{Auto}), which helps to make this possible even in dynamic use cases. 
@@ -656,6 +660,8 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 \syntax\begin{lstlisting}
 Method_Expr       ::= '&' Simple_Expr2
                     | '&' '(' Simple_Expr3 ')'
+                    | '&' '(' op_id ')' (Papply_Poetry | Papply_Parens)
+                    | '&' '(' nary_op_id ')' (Papply_Poetry | Papply_Parens)
 Simple_Expr2      ::= (Simple_Expr1 - Poetry_Args) Papply_Parens
 Simple_Expr3      ::= (Simple_Expr1 - Poetry_Args) 
                       (Papply_Poetry | Papply_Parens)
@@ -667,9 +673,9 @@ Papply_Pos_Args   ::= Papply_Pos_Arg {',' Papply_Pos_Arg}
 Papply_Pos_Arg    ::= Pos_Arg | '_' ['as' Type]
 Papply_Named_Args ::= Papply_Named_Arg {',' Papply_Named_Arg}
                       {',' '**' Expr}
-                    | '**' Expr{',' '**' Expr}
+                    | '**' Expr {',' '**' Expr}
 Papply_Named_Arg  ::= Named_Arg
-                    | id ':' '_' ['as' Type]
+                    | ['~'] id ':' '_' ['as' Type]
 \end{lstlisting}
 
 The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
@@ -919,8 +925,8 @@ Pos_Arg     ::= ['*'] Expr
               | Slice_Expr
 Named_Args  ::= Named_Arg {',' Named_Arg} {',' '**' Expr}
               | '**' Expr {',' '**' Expr}
-Named_Arg   ::= id ':' (Expr | TT_Expr | Slice_Expr)
-              | id ':' '$'
+Named_Arg   ::= ['~'] id ':' (Expr | TT_Expr | Slice_Expr)
+              | ['~'] id ':' '$'
 Block_Arg   ::= Block_Expr 
               | Method_Expr
 \end{lstlisting}
@@ -1254,13 +1260,13 @@ New_Expr ::= 'new' [Early_Defs] Class_Parents
            | 'new' '{' Template_Body '}'
 \end{lstlisting}
 
-Unlike languages like Java, Scala, C\# and similar, Gear does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline!Class#new!~ method (not to be confused with ``static'' ~\lstinline@Class.new@, which is for dynamic creation of ad-hoc classes), which passes all the arguments to the appropriate constructor (and is defined using \code{Variadic_Arguments}). 
+Unlike languages like Java, Scala, C\# and similar, Gear does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline[deletekeywords={new}]!Class#new!~ method (not to be confused with ``static'' ~\lstinline[deletekeywords={new}]@Class.new@, which is for dynamic creation of ad-hoc classes), which passes all the arguments to the appropriate constructor (and is defined using \code{Variadic_Arguments}). 
 
-It is indeed possible to write custom ~\lstinline!$T$#new! implementations, where $T$ is the class---or even trait!---for which the custom implementation is, and that implementation may decide to use ~\lstinline!Class#new!~ or not (typical use case: a factory method without the usual corporate factory names).
+It is indeed possible to write custom ~\lstinline[deletekeywords={new}]!$T$#new! implementations, where $T$ is the class---or even trait!---for which the custom implementation is, and that implementation may decide to use ~\lstinline[deletekeywords={new}]!Class#new!~ or not (typical use case: a factory method without the usual corporate factory names).
 
 There is one more way to create an instance of a class, and that is to use a syntax construct of the \code{New_Expr} syntax category. This construct has multiple forms for different use cases. Note that there is also a syntax construct for anonymous classes (\sref{sec:anonymous-classes}), which is related, but has slightly different semantics -- most notably, anonymous classes can be reused and bound to a name, because they do not create any new instance (just yet), and can define class parameters, including type parameters. 
 
-A simple instance creation expression is of the form ~\lstinline!new $c$!, where $c$ is a constructor invocation (\sref{sec:constructor-invocations}). Let $T$ be the type of $c$, then $T$ must denote a type instance of a non-abstract subtype of \code{Any}. $T$ must also conform to the {\em self type} of the class denoted by $T$. The expression is evaluated by invoking ~\lstinline!Class#new!, where the method is invoked with \code{self} being $T$, thus skipping any custom overrides of the method. Note that $c$ might be an instantiated type variable, in which case it might not be entirely possible to guarantee that the expression will be evaluated successfully -- no matching and accessible constructor might be available in the instantiated type. 
+A simple instance creation expression is of the form ~\lstinline!new $c$!, where $c$ is a constructor invocation (\sref{sec:constructor-invocations}). Let $T$ be the type of $c$, then $T$ must denote a type instance of a non-abstract subtype of \code{Any}. $T$ must also conform to the {\em self type} of the class denoted by $T$. The expression is evaluated by invoking ~\lstinline[deletekeywords={new}]!Class#new!, where the method is invoked with \code{self} being $T$, thus skipping any custom overrides of the method. Note that $c$ might be an instantiated type variable, in which case it might not be entirely possible to guarantee that the expression will be evaluated successfully -- no matching and accessible constructor might be available in the instantiated type. 
 
 A general instance creation expression is of the form ~\lstinline!new $t$!~ for some class template $t$. Such an expression is equivalent to the following block:
 \begin{lstlisting}
@@ -1293,7 +1299,7 @@ where $a$ is a freshly created name.
 \syntax\begin{lstlisting}
 Block_Expr      ::= Block_Expr1 | Block_Expr2
 Block_Expr1     ::= '{' [Block_Args] Block '}'
-Block_Expr2     ::= 'do' [Block_Args] Block 'end'
+Block_Expr2     ::= 'do' [Block_Args] Block ('end' | 'done')
 Block_Args      ::= '|' [Params] [Block_Shadowing] '|' 
                     [':' Type [semi]]
 Block_Shadowing ::= ';' [nl] [Shad_Val_Dcl {',' Shad_Val_Dcl}]
@@ -1392,19 +1398,19 @@ A yield expression ~\lstinline!$T$.yield $a_1 \commadots a_n$!~ is a specialized
 \label{sec:prefix-infix-ops}
 
 \syntax\begin{lstlisting}
-nary_op_id  ::= '?' {op_char}
-Infix_Expr  ::= Prefix_Expr
-              | Infix_Expr [Infix_Op Infix_expr]
-              | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
-              | Range_Expr
-              | '(' op_id ')' Infix_Expr {',' Infix_Expr}
-              | '(' nary_op_id ')' Infix_Expr {',' Infix_Expr}
-Infix_Op    ::= op_id | id
-Prefix_Expr ::= [op_id | 'not'] Simple_Expr1
-Range_Expr  ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
-                [FP_Delta [FP_Digits]]
-Slice_Expr  ::= Infix_Expr ('..' | '...' | '..<') [Infix_Expr]
-              | ('..' | '...' | '..<') Infix_Expr
+nary_op_id   ::= '?' {op_char}
+Infix_Expr   ::= Prefix_Expr
+               | Infix_Expr [Infix_Op Infix_expr]
+               | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
+               | Range_Expr
+Simple_Expr1 ::= '(' op_id ')' Poetry_Args
+               | '(' nary_op_id ')' Poetry_Args
+Infix_Op     ::= op_id | id
+Prefix_Expr  ::= [op_id | 'not'] Simple_Expr1
+Range_Expr   ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
+                 [FP_Delta [FP_Digits]]
+Slice_Expr   ::= Infix_Expr ('..' | '...' | '..<') [Infix_Expr]
+               | ('..' | '...' | '..<') Infix_Expr
 \end{lstlisting}
 
 Expressions can be constructed from operands and operators. 
@@ -2065,6 +2071,7 @@ The standard library provides loop-like methods, where these loop control struct
 Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
                     ['step' Expr] For_Loop
 For_Loop        ::= 'loop' Loop_Block_Expr 'end' ['loop']
+                  | 'do' Loop_Block_Expr 'done'
                   | '{' Loop_Block_Expr '}'
 Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
 Val_Dcls        ::= Val_Dcl
@@ -2207,7 +2214,7 @@ However, the loop construct has built-in support for loop control expressions.
 
 
 
-\subsection{Pattern Matching \& Case Expressions}
+\subsection[Pattern Matching, Case Expressions \& Switch Expressions]{Pattern Matching, Case Expressions \\\& Switch Expressions}
 \label{sec:case-exprs}
 
 % TBD: add use of `parallel`
@@ -2317,6 +2324,7 @@ Implicit return expression is always the value of the last expression in a code 
 \syntax\begin{lstlisting}
 Result_Expr ::= Anon_Params '->' Block 
               | ['memoize'] Expr
+              | ['memoize'] 'tailcall' Argument_Exprs
 \end{lstlisting}
 
 \paragraph{Explicit return expressions}
@@ -2635,29 +2643,10 @@ An interpolating (splice or unquote) expression (like ``~\lstinline!#{ $e$ }!~''
 \label{sec:quotation}
 
 \syntax\begin{lstlisting}
-Quote_Expr      ::= '<@@' Any_Expr '@@>' | '''' Quotable_Expr
+Quote_Expr      ::= '<@@' Any_Expr '@@>'
 \end{lstlisting}
 
-A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. Quotation does not require parentheses around the expression that it quotes, iff it starts with two apostrophes (i.e. ``~\lstinline!''$e$!~'') and quotes the following expressions:
-
-\syntax\begin{lstlisting}[language=]
-Quotable_Expr ::= 
-      Simple_Expr
-    | Cond_Expr 
-    | Loop_Expr - Loop_Mod_Expr
-    | Rescue_Expr
-    | Raise_Expr
-    | Throw_Expr
-    | Catch_Expr
-    | Return_Expr
-    | Yield_Expr
-    | Match_Expr
-    | Use_Expr
-    | Jump_Expr
-    | Anon_Class
-    | Metaclass_Access
-\end{lstlisting}
-
+A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. 
 
 
 
@@ -2668,20 +2657,27 @@ Quotable_Expr ::=
 
 \syntax\begin{lstlisting}
 Block_Stat     ::= Use
-                 | {Annotation} ['implicit'] Def
+                 | {Annotation} ['implicit'] Def 
+                   [In_Sep Block_Stat ['end']]
                  | {Annotation} {Local_Modifier} Tmpl_Def
                  | Expr
                  | Alias_Expr
                  | Capture_Usage
                  | ()
+                 | 'open' Stable_Id
                  | 'assert' Expr
 Template_Stat  ::= Use
                  | {Annotation} {Modifier} Def
+                   [In_Sep Block_Stat ['end']]
+                 | Tmpl_Member [In_Sep Block_Stat ['end']]
+                 | Tmpl_Ifc_Impl
+                 | Tmpl_Ifc_Dcl
                  | {Annotation} [Opt_Req] {Modifier} Dcl
-                 | Prop_Dcl
-                 | Prop_Def
+                 | {Annotation} {Modifier} Prop_Dcl
+                 | {Annotation} {Modifier} Prop_Def
+                 | 'inherit' Stable_Id [Cond_Modifier]
                  | 'include' Stable_Id [Cond_Modifier]
-                 | 'prepend' Stable_Id [Cond_Modifier]
+                 | ['inherit' 'as'] 'prepend' Stable_Id [Cond_Modifier]
                  | 'implements' Stable_Id [Cond_Modifier]
                  | Expr
                  | Alias_Expr
@@ -2696,6 +2692,12 @@ Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                    {'rescue' [Pattern [Guard]] semi Block }
                    ['ensure' semi Block_Stat {semi Block_Stat}]
 Fun_Stat       ::= Block_Stat
+Tmpl_Member    ::= {Annotation} {Modifier} 'member' Def
+Tmpl_Ifc_Impl  ::= 'interface' (Annot_Type - Nullable_Mod) 
+                   'with' Record_Extension {'and' Record_Extension} 
+                   'end' ['interface']
+Tmpl_Ifc_Dcl   ::= 'interface' (Annot_Type - Nullable_Mod) 
+                   'end' ['interface']
 Fun_Dec_Expr   ::= {Annotation} Dcl
                  | {Annotation} ['implicit'] Def
                  | ('transparent'
