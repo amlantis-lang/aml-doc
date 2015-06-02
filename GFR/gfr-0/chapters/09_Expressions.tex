@@ -142,7 +142,7 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 
 
 
-\subsection{Tuples}
+\subsection{Tuple Expressions}
 \label{sec:tuples}
 
 \syntax\begin{lstlisting}
@@ -153,9 +153,103 @@ Named_Expr   ::= [['~'] id ':'] Expr
 
 A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple. Also ~\lstinline!Tuple_1!~ is a special type (pretty much like \code{Any} or \code{Auto}), which helps to make this possible even in dynamic use cases. 
 
-Sub-expressions in a tuple expression that are prepended with an id (in form of ~\lstinline!$x_i$: $e_i$!) are named $x$ -- this adds annotation ~\lstinline!@[named :$x$]!~ to the type of the sub-expression. If the annotation is explicitly added, the behaviour is the same. Named sub-expressions, either in the syntax sugar or explicit form, can only appear at the end of the sequence of sub-expressions, thus no unnamed sub-expressions can appear after a named sub-expression. 
+Sub-expressions in a tuple expression that are prepended with an id (in form of ~\lstinline!~$x_i$: $e_i$!) are named $x_i$ -- this adds annotation ~\lstinline!@[named :$x_i$]!~ to the type of the sub-expression. If the annotation is explicitly added, the behaviour is the same. Named sub-expressions, either in the syntax sugar or explicit form, can only appear at the end of the sequence of sub-expressions, thus no unnamed sub-expressions can appear after a named sub-expression. 
+
+Tuple expressions have the runtime type of ~\lstinline!Gear/Language.Tuple_$n$[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that name sub-expressions. 
+
+Tuple expressions might be automatically converted into full argument expressions, as defined in (\sref{sec:function-applications}).
 
 
+
+
+
+\subsection{List Expressions}
+\label{sec:list-expressions}
+
+\syntax\begin{lstlisting}
+Words        ::= Word {{? Unicode whitespace ?}+ Word}
+Word         ::= {id_char}+
+Simple_Expr1 ::= List_Expr
+List_Expr    ::= '%' List_Flags '[' [Expr {semi Expr}] ']'
+               | '%w' List_Flags '[' [Words] ']'
+List_Flags   ::= [['i' | (* immutable *)
+                   'm']  (* mutable *)
+                  ['l']] (* double linked *)]
+\end{lstlisting}
+
+An expression of the form ~\lstinline!%[$e_1$; $\ldots$; $e_n$]! is a list expression. 
+
+% TBD: elaborate on the forms and types
+
+
+
+
+\subsection{Array Expressions}
+\label{sec:array-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= Array_Expr
+Array_Expr   ::= '%' Array_Flags '[|' [Expr {semi Expr}] '|]'
+               | '%w' Array_Flags '[|' Words '|]'
+Array_Flags  ::= [['i' | (* immutable *)
+                   'm']] (* mutable *)
+\end{lstlisting}
+
+An expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]! is an array expression. 
+
+
+
+
+
+\subsection{Dictionary Expressions}
+\label{sec:dict-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1    ::= Dictionary_Expr
+Dictionary_Expr ::= '%' Dict_Flags '{' [Dict_Mapping1 {semi Dict_Mapping1}] '}'
+                  | '%' Dict_Flags '{' [Dict_Mapping2 {semi Dict_Mapping2}] '}'
+Dict_Mapping1   ::= Simple_Expr1 '=>' Expr
+Dict_Mapping2   ::= ['~'] id ':' Expr
+Dict_Flags      ::= [['i' | (* immutable *)
+                      'm']  (* mutable *)
+                     ['l']] (* linked *)
+\end{lstlisting}
+
+An expression of the form ~\lstinline!%{$e_1$; $\ldots$; $e_n$}! is a dictionary expression. 
+
+
+
+
+\subsection{Multimap Expressions}
+\label{sec:multimap-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1  ::= Multimap_Expr
+Multimap_Expr ::= '%' Dict_Flags '{{' [Dict_Mapping1 {semi Dict_Mapping1}] '}}'
+                | '%' Dict_Flags '{{' [Dict_Mapping2 {semi Dict_Mapping2}] '}}'
+\end{lstlisting}
+
+An expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}! is a multimap expression. 
+
+
+
+
+
+
+\subsection{Bag Expressions}
+\label{sec:bag-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= Bag_Expr
+Bag_Expr     ::= '%' Bag_Flags '(' [Expr {semi Expr}] ')'
+               | '%' Bag_Flags '(' [Expr {semi Expr}] ')'
+Bag_Flags    ::= [['i' | (* immutable *)
+                   'm']  (* mutable *)
+                  ['l']  (* linked *)
+                  ['s']] (* set instead of bag (tally-less bag) *)
+\end{lstlisting}
+
+An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expression. 
 
 
 
