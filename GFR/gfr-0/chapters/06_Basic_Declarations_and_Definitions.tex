@@ -1288,6 +1288,8 @@ Preference declarations are inherited to subtypes, without regard of visibility.
 \syntax\begin{lstlisting}
 Use             ::= 'use' ['lazy'] (Type | Stable_Id) 
                     '.' Import_Expr
+                  | 'open' (Type | Stable_Id)
+                  | 'open!' (Type | Stable_Id)
 Import_Expr     ::= Single_Import
                   | '{' Import_Exprs '}'
                   | '_'
@@ -1308,6 +1310,8 @@ If the target name in an import selector is a wildcard, the import selector hide
 The scope of a binding introduced by an import-clause starts immediately after the import clause and extends to the end of the enclosing scope and all nested scopes. 
 
 Several shorthands exists. An import selector may be just a simple name $x$, in which case, $x$ is imported without renaming, so the import selector is equivalent to \lstinline!$x$ as $y$!. Furthermore, it is possible to replace the whole import selector list by a single identifier of wildcard. The use clause \lstinline!use $p$.$x$! is equivalent to \lstinline!use $p$.{$x$}!, i.e. it makes available without qualification the member $x$ of $p$. The use clause \lstinline!use $p$._! is equivalent to \lstinline!use $p$.{_}!, i.e. it makes available without qualification all importable members of $p$ (this is analogous to \lstinline[language=Java]!import $p$.*! in Java or \lstinline[language=Java]!import $p$._! in Scala). 
+
+The use clause \lstinline!open $p$! is similar to \lstinline!use $p$.{_}!, just the precedence of bindings introduced by it is the same that of explicit \code{use} clauses. It is an error if any of those bindings shadow names that are already present in the scope -- for which the alternative form \lstinline@open! $p$@ shadows those names without any error. 
 
 \example Consider the object definition:
 \begin{lstlisting}
