@@ -804,7 +804,7 @@ The {\em external parameter name} is the one which may be used in function appli
 
 If a function applies itself as a part of its own definition, then again, the external parameter name is effective, never the internal parameter name. 
 
-Each internal parameter name may appear only once across every parameter list. Each external parameter name may only appear once per one parameter list, but may generally appear across multiple parameter lists, provided that its internal parameter name does not. 
+Each internal parameter name may appear only once across every parameter list. Each external parameter name may only appear once in each parameter list, but may generally appear across multiple parameter lists multiple times, provided that its internal parameter name does not. 
 
 If an external parameter name is specified to be just an underscore ``\code{_}'' (the only acceptable form of such parameter name is then ``\lstinline!_ $b$!'', where $b$ is the internal parameter name), then no named argument will ever correspond to it. It is an error if this is combined with a purely named parameter, since there would be no way to create a corresponding argument to it. The other implication of this is that such external parameter names may only be used as the first parameters in each parameter list, never appearing after parameters with external names, and also arguments expressions must include as many positional arguments as there are parameters without external name for the function to be applicable. Such parameters are effectively {\em purely positional}. 
 

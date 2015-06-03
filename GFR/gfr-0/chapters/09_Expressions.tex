@@ -795,14 +795,19 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 
 \syntax\begin{lstlisting}
 Method_Expr       ::= '&' Simple_Expr2
-                    | '&' '(' Simple_Expr3 ')'
-                    | '&' '(' op_id ')' (Papply_Poetry | Papply_Parens)
-                    | '&' '(' nary_op_id ')' (Papply_Poetry | Papply_Parens)
-Simple_Expr2      ::= (Simple_Expr1 - Poetry_Args) Papply_Parens
+                    | '&(' Simple_Expr3 ')'
+                    | '&(' op_id ')' [Papply_Poetry1 | Papply_Parens1]
+                    | '&(' nary_op_id ')' [Papply_Poetry1 | Papply_Parens1]
+Simple_Expr2      ::= (Simple_Expr1 - Poetry_Args) [Papply_Parens]
 Simple_Expr3      ::= (Simple_Expr1 - Poetry_Args) 
-                      (Papply_Poetry | Papply_Parens)
-Papply_Parens     ::= '(' [Papply_Args_Expr] ')'
-Papply_Poetry     ::= Papply_Args_Expr
+                      [Papply_Poetry | Papply_Parens]
+Papply_Parens     ::= Papply_Parens1 [Block_Arg | '&_' ['as' Type]]
+                    | Block_Arg 
+                    | '&_' ['as' Type]
+Papply_Parens1    ::= {'(' [Papply_Args_Expr] ')'}+ 
+Papply_Poetry     ::= Papply_Poetry1 
+                      [Block_Expr2 | ',' '&_' ['as' Type]]
+Papply_Poetry1    ::= Papply_Args_Expr
 Papply_Args_Expr  ::= (Papply_Pos_Args [',' Papply_Named_Args])
                     | Papply_Named_Args
 Papply_Pos_Args   ::= Papply_Pos_Arg {',' Papply_Pos_Arg}
@@ -839,6 +844,14 @@ If $e$ resolves to an overloaded member, then the type of the expression is a ty
 
 If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_ as $T$!'', called {\em argument placeholders}, then the method value contains only those overloaded alternatives that are applicable to the given sub-expressions, including the argument placeholders. Such an expression is then partially applied and resolves to an anonymous function, where the argument placeholders become parameters of the anonymous function. 
 
+\paragraph{Joined parameters}
+
+A partial application generates an anonymous function, in which all skipped parameters are joined into a single fresh parameter list, containing all the skipped parameters, with preserved order and typing. Such an anonymous function may again be a subject to further partial application, if so desired.\footnote{A proper IDE should show all the possible fresh parameter lists per each overloaded alternative.} 
+
+Parameters appearing in parameter lists that were not provided any arguments are not considered skipped, and due to the behaviour of automatic currying, are only a regular part of the result value of the anonymous function. 
+
+Parameters that are optional, variadic, or purely named with default values, are never considered as skipped, and thus do not make it into the fresh new parameter list. 
+
 \paragraph{Implicit partial application}
 
 A function application (\sref{sec:function-applications}) using poetry-style argument passing is implicitly partially applied per each argument given. 
@@ -852,6 +865,8 @@ The runtime is allowed to optimize such serial partial applications to fit as ma
 \end{enumerate}
 
 This rule practically means that methods with more parameters in a single parameter list are preferred to methods with fewer parameters in a single parameter list, when it comes to poetry-style argument passing. However, it is possible to split poetry-style argument passing with parentheses, to delimit separate applications in consecutive function applications. 
+
+If poetry-style arguments include {\em named arguments}, and any overloaded alternative or non-overloaded member has the same external parameter name across multiple parameter lists, then their order of appearance in those parameter lists is preserved in the order of named arguments. Moreover, it is possible to create a partial application that skips not just parameters, but even whole parameter lists, and the order and typing of missing arguments is preserved in parameters of the generated anonymous function. 
 
 % TBD: write a GFR that shows examples of this in further details
 
@@ -899,6 +914,20 @@ let papplied_3 := papplied 1
    resolves to evaluated `1 + 2 + 3` *)
 let papplied_4 := papplied 1, 2, 3
 \end{lstlisting}
+
+\example Example of skipping parameters and parameter lists. 
+\begin{lstlisting}
+def papplied (a, b)(c): Number := a + b + c
+
+(* resolves to partially applied `papplied`, 
+   skipping first parameter list *)
+let papplied_1 (a, b) := papplied ~c: 3
+
+(* resolves to partially applied `papplied`, 
+   skipping `a` in its first parameter list *)
+let papplied_2 (a)(c) := papplied ~b: 2
+\end{lstlisting}
+
 
 
 
@@ -2828,7 +2857,7 @@ Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                    {'rescue' [Pattern [Guard]] semi Block }
                    ['ensure' semi Block_Stat {semi Block_Stat}]
 Fun_Stat       ::= Block_Stat
-Tmpl_Member    ::= {Annotation} {Modifier} 'member' Def
+Tmpl_Member    ::= {Annotation} {Modifier} ['member'] Def
 Tmpl_Ifc_Impl  ::= 'interface' (Annot_Type - Nullable_Mod) 
                    'with' Record_Extension {'and' Record_Extension} 
                    'end' ['interface']
@@ -3134,7 +3163,7 @@ If the expression $e$ appears as a value without being applied to some value arg
   \item The expression's type conforms to the expected type, i.e. $\sigma T \conforms \sigma \exptype$. 
 \end{itemize}
 
-It is an error if no such substitution exists. If several substitutions exist, local type inference will choose for each type variable $a_i$ a minimal or a maximal type $T_i$ of the solution space (where a maximal type is closer to \code{Object} and minimal is closer to \code{Nothing}). A {\em maximal} type $T_i$ will be chosen if the type parameter $a_i$ appears contravariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression. A {\em minimal} type $T_i$ will be chosen in all other situations, i.e. if the type variable appears covariantly, non-variantly or not at all in the type $T$. We call such a substitution $\sigma$ an {\em optimal solution} of the given constraint system for the type $T$. 
+It is an error if no such substitution exists. If several substitutions exist, local type inference will choose for each type variable $a_i$ a minimal or a maximal type $T_i$ of the solution space (where a maximal type is closer to \code{Any} and minimal is closer to \code{Undefined}). A {\em maximal} type $T_i$ will be chosen if the type parameter $a_i$ appears contravariantly (\sref{sec:variance-of-type-parameters}) in the type $T$ of the expression. A {\em minimal} type $T_i$ will be chosen in all other situations, i.e. if the type variable appears covariantly, non-variantly or not at all in the type $T$. We call such a substitution $\sigma$ an {\em optimal solution} of the given constraint system for the type $T$. 
 
 \paragraph{Case 3: Methods}
 This case applies if the expression $e$ appears in an application \code{$e$($d_1 \commadots d_m$)}. In that case $T$ is a method type ~\lstinline!($p_1$: $R_1 \commadots p_n$: $R_n$) $\mapsto\ T'$!. Without loss of generality, we can assume that the result type $T'$ is a value type; if it is a method type, we apply eta-expansion (\sref{sec:eta-expansion}) to convert it to a function type (which is a value type and we're home, yet again). One computes first the types $S_j$ of the argument expressions $d_j$, using two alternative schemes. Each argument expression $d_j$ is typed first with the expected type $R_j$, in which the type parameters $a_1 \commadots a_n$ are taken as unknown type constants. If this fails for the particular argument expression\footnote{E.g., because the conformance can't be determined, or maybe $d_j$ is overloaded and could not select a unique member with expected type $R_j$.}, the argument $d_j$ is typed instead with an expected type $R'_j$, which results from $R_j$ by replacing every type parameter in $a_1 \commadots a_n$ with $\udef$. If $d_j$ is overloaded, a unique member is selected based on $R_j$, and if that fails, it is selected based on $R'_j$; it is an error if a unique member for $d_j$ can not be selected. \footnote{Selecting a unique overloaded member here is likely to fail, if $R_j$ is polymorphic and the member is overloaded on result type. Using a typed expression is a way to prevent that.}

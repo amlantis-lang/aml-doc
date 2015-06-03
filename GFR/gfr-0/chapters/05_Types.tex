@@ -1210,13 +1210,17 @@ The conformance relation $(\conforms)$ is the smallest transitive relation that 
 
   \item A unit of measure type $t$ conforms to another unit of measure type $u$ if and only if $t \equiv u$ or $t$ extends $u$, where $us$ is an abstract unit of measure type. 
 
-  \item  A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
+  \item A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
     \begin{itemize}
       \item If the $i^{\superth}$ type parameter of $T$ is declared covariant, then $T_i \conforms U_i$.
       \item If the $i^{\superth}$ type parameter of $T$ is declared contravariant, then $U_i \conforms T_i$.
       \item If the $i^{\superth}$ type parameter of $T$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
       \item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
     \end{itemize}
+    
+  \item A constant constructor $T$ of a variant type $U$ (\sref{sec:variant-types}) conforms to $U$. If $U$ is a parameterized variant type, $T$ still conforms to $U$, even though it itself is not parameterized. 
+  
+  \item A non-constant constructor $T$ of a variant type $U$ (\sref{sec:variant-types}) conforms to $U$. If $U$ is a parameterized variant type, then $T$ conforms to $U$ if $T$ seen as a parameterized type conforms to parameterized $U$\footnote{Quite obviously.}. 
 
   \item A unit of type $N$ conforms to unit of type $U$ if $N$ extends $U$ or if $N \equiv U$. 
 
