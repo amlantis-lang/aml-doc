@@ -30,7 +30,6 @@ Expr        ::= Value_Expr
               | Anon_Fun
               | Anon_Class
               | Expr semi Expr
-              | Type_Expr
 Value_Expr  ::= Simple_Expr
               | Cond_Expr
               | Match_Expr
@@ -42,6 +41,7 @@ Value_Expr  ::= Simple_Expr
               | Quote_Expr
               | Metaclass_Access
               | Workflow_Expr
+              | Type_Expr
 Type_Expr   ::= '(' Type ')'
               | Annot_Type - Nullable_Mod
 Simple_Expr ::= Block_Expr
@@ -250,6 +250,48 @@ Bag_Flags    ::= [['i' | (* immutable *)
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expression. 
+
+
+
+
+
+\subsection{Record Expressions}
+\label{sec:record-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1       ::= Record_Expr
+Record_Expr        ::= 'record' [nl] '{' [nl] Record_Fields_Init [nl] '}'
+Record_Fields_Init ::= Record_Field_Init {semi Record_Field_Init}
+Record_Field_Init  ::= Stable_Id '=>' Expr
+\end{lstlisting}
+
+An expression of the form
+\begin{lstlisting}
+record { $i_1$ => $e_1$; $\ldots$; $i_n$ => $e_n$ }
+\end{lstlisting}
+is a record expression. 
+
+
+
+
+
+
+\subsection{Record Clone Expressions}
+\label{sec:record-clone-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1       ::= Record_Clone_Expr
+Record_Clone_Expr  ::= 'record' [nl] 
+                       '{' [nl] Expr 'with' Record_Fields_Init [nl] '}'
+Record_Fields_Init ::= Record_Field_Init {semi Record_Field_Init}
+Record_Field_Init  ::= Stable_Id '=>' Expr
+\end{lstlisting}
+
+An expression of the form
+\begin{lstlisting}
+record { $e$ with $i_1$ => $e_1$; $\ldots$; $i_n$ => $e_n$ }
+\end{lstlisting}
+is a record clone expression. 
 
 
 
