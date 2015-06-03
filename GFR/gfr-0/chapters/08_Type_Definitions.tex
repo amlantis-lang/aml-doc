@@ -103,13 +103,13 @@ Such a union type may contain the optional template body, and is called {\em cas
 
 
 
-\section{Enums}
+\section{Enumeration Types}
 \label{sec:enums}
 
 \syntax\begin{lstlisting}
 Const_Type_Def     ::= id [Type_Param_Clause] [Class_Param_Clauses]
                        ['extends' Class_Parents] 
-                       'is' ['bitfield' | 'case'] 
+                       Is ['bitfield' | 'case'] 
                        'enum' '(' Enum_Field {semi Enum_Field} ')'
                        [Enum_Body]
 Enum_Field         ::= id [':=' scalar_literal]
@@ -137,8 +137,7 @@ An enum constant can be enhanced with custom parameters, which are then passed t
 \label{sec:record-types}
 
 \syntax\begin{lstlisting}
-Const_Type_Def    ::= Record_Name Is ['abstract'] 'record'
-                      (Record1 | Record2)
+Const_Type_Def    ::= Record_Name Is 'record' (Record1 | Record2)
 Record1           ::= Record_Components [Record_Extensions]
 Record2           ::= '{' Record_Components '}' [Record_Extensions]
 Record_Name       ::= id [Type_Param_Clause]

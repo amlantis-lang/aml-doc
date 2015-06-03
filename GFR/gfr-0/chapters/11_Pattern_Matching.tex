@@ -44,6 +44,7 @@ Simple_Pattern ::= '_'
                    {semi Pattern} ')'
                  | '%(' '*' (var_id | '_') {semi Pattern} ')'
                  | Pattern '&' Pattern
+                 | Record_Pattern
 Patterns       ::= Pattern {',' Pattern}
 Extractions    ::= Pos_Patterns {',' Named_Patterns} [Block_Pattern]
                  | Named_Patterns [Block_Pattern]
@@ -70,6 +71,10 @@ Block_Pattern  ::= '&' var_id [':' Function_Type]
 Dict_Key       ::= Simple_Expr1
                  | (Literal - Collection_Literal)
                  | '_'
+Record_Pattern ::= 'record' '{' Field_Patterns '}'
+Field_Patterns ::= Field_Pattern {semi Field_Pattern} [semi '_']
+                 | '_'
+Field_Pattern  ::= Stable_Id '=>' Pattern
 \end{lstlisting}
 
 
@@ -257,6 +262,27 @@ The bag pattern enables values of \code{Bag} type to be decomposed into a number
 An important thing to know about bag patterns is that the order in which elements are matched is irrelevant, therefore the pattern matching needs to match all unmatched elements left in the bag with each next sub-pattern. Iff the matched bag is sorted\footnote{This guarantee has to be made by the actual type of the matched bag.}, only then the order in which elements are possibly matched is determinable. Otherwise, it could be any order, even orders that make no apparent logical sense. And also -- searching the bag over and over for a matching element increases the complexity of the pattern match, which is short-circuited only when the matched bag has less than the number of needed elements. 
 
 A bag pattern contributes \code{Bag[$T$]} to type of parameter, when used in function parameter list, where $T$ is inferred from its sub-patterns automatically, or \code{Any}. 
+
+
+
+
+
+\subsection{Record Patterns}
+\label{sec:record-patterns}
+
+\syntax\begin{lstlisting}
+Simple_Pattern ::= Record_Pattern
+Record_Pattern ::= 'record' '{' Field_Patterns '}'
+Field_Patterns ::= Field_Pattern {semi Field_Pattern} [semi '_']
+                 | '_'
+Field_Pattern  ::= Stable_Id '=>' Pattern
+\end{lstlisting}
+
+A record pattern enables values of record types to be decomposed into a number of record fields. 
+
+The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$ }!~ matches records that define exactly the fields $f_1$ to $f_n$, and such that the value associated with $f_i$ matches the pattern $p_i$, for $i = 1 \commadots n$. If there are multiple record types that have the same fields, then at least one of $f_i$ have to specify the field with a path to the intended type\footnote{The first field should be used for this.}: \code{$T$.$f$}, where $T$ is a path to the record type, and $f$ is the field. 
+
+The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$; _ }!~ matches records that define at least the fields $f_1$ to $f_n$, with the same rules as the previous record pattern, where the extra fields, if any, are simply discarded.\footnote{Such a pattern is more prone to ambiguous record types. In such a case, the record type has to be resolved by specifying the path to it in at least one of the fields.}
 
 
 
