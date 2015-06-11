@@ -22,7 +22,7 @@ Def         ::= Pat_Var_Def
               | 'method' Fun_Alt_Def
               | 'function' Fun_Def 'end' ['function']
               | 'function' Fun_Alt_Def
-              | 'type' Type_Def 'end' ['type']
+              | Type_Def
               | Tmpl_Def
 In_Sep      ::= [nl] 'in' [nl] | semi
 \end{lstlisting}
@@ -448,66 +448,6 @@ Gear/Language.Soft_Reference.is_supported?
 
 
 
-
-\section{Type Declarations \& Aliases}
-\label{sec:type-decls-aliases}
-
-\syntax\begin{lstlisting}
-Dcl      ::= 'type' Type_Dcl 'end' ['type']
-Type_Dcl ::= id [Type_Param_Clause] 
-             ['>:' Type] ['<:' Type]
-Def      ::= 'type' Type_Def 'end' ['type']
-Type_Def ::= id [Type_Param_Clause] 
-             (':=' | 'is') [['alias'] Type | 'class']
-\end{lstlisting}
-
-A {\em type declaration} \lstinline!type $t$[$\tps$] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
-
-If a type declaration appears as a member declaration of a type, implementations of the type may implement $t$ with any type $T$, for which $L \conforms T \conforms U$. It is an error if $L$ does not conform to $U$. Either or both bounds may be omitted. If the lower bound $L$ is omitted, the bottom type \code{Nothing} is implied. If the upper bound $U$ is omitted, the top type \code{Object} is implied. 
-
-A type constructor declaration declaration imposes additional restriction on the concrete types for which $t$ may stand. Besides the bounds $L$ and $U$, the type parameter clause, indexing parameter clause and units of measure parameter clause may impose higher-order bounds and variances, as governed by the conformance of type constructors (\sref{sec:conformance}).
-
-The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!~ and the type parameter clause $\tps$ itself. A higher-order type parameter clause (of an abstract type constructor $tc$) has the same kind of scope, restricted to the declaration of the type parameter $tc$. 
-
-To illustrate nested scoping, these declarations are all equivalent: 
-\begin{itemize}
-  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[x]] end! 
-
-  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[y]] end!
-
-  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[_]] end!,
-\end{itemize} 
-as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline!x!~ is unrelated to the first two occurrences, but may confuse the reader. 
-
-A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$[$\tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $\tps$ itself. 
-
-It is an error if a type alias refers recursively to the defined type constructor itself. 
-
-\example The following are legal type declarations and aliases:
-\begin{lstlisting}
-type Integer_List := List[Integer] end
-type T <: Comparable[T] end
-type Two[A] := Tuple_2[A, A] end
-type My_Collection[+X] <: Iterable[X] end
-\end{lstlisting}
-The following are illegal:
-\begin{lstlisting}
-type Abs := Comparable[Abs] end (* recursive type alias *)
-
-type S <: T end  (* S, T are bounded by themselves *)
-type T <: S end
-
-type T >: Comparable[T.That] end (* can't select from T
-                                    T is a type, not a value *)
-type My_Collection <: Iterable end
-  (* type constructor members must explicitly state
-     their type parameters *)
-\end{lstlisting}
-
-
-
-
-
 \section{Type Parameters}
 
 \syntax\begin{lstlisting}
@@ -576,13 +516,13 @@ A variance annotation constrains the way the annotated type variable may appear 
 
 The variance position of a type parameter in a type or template is defined as follows. Let the opposite of covariance be contravariance (thus positive positions are flipped to negative positions and vice versa), and the opposite of invariance be itself. The top-level of the type or template is always in covariant position (positive). The variance position changes at the following constructs. 
 \begin{itemize}
-\item The variance position of a method parameter is the opposite of the variance position of the enclosing parameter clause. 
-\item The variance position of a type parameter is the opposite of the variance position of the enclosing type parameter clause. 
-\item The variance position of the lower bound of a type declaration or a type parameter is the opposite of the variance position of the type declaration or the type parameter. 
-\item The type of a mutable (instance) variable is always in invariant position (neutral). 
-\item The right-hand side of a type alias is always in invariant position (neutral). 
-\item The prefix $S$ of a type projection ~\lstinline!$S$#$T$!~ is always in invariant position (neutral). 
-\item For a type argument $T$ of a type ~\lstinline!$S$[$\ldots T \ldots$]!: If the corresponding type parameter is covariant, then the variance position stays unchanged. If the corresponding type parameter is invariant (no variance annotation), then $T$ is in invariant position (neutral). If the corresponding type parameter is contravariant, the variance position of $T$ is the opposite of the variance position of the enclosing type ~\lstinline!$S$[$\ldots T \ldots$]!. 
+  \item The variance position of a method parameter is the opposite of the variance position of the enclosing parameter clause. 
+  \item The variance position of a type parameter is the opposite of the variance position of the enclosing type parameter clause. 
+  \item The variance position of the lower bound of a type declaration or a type parameter is the opposite of the variance position of the type declaration or the type parameter. 
+  \item The type of a mutable (instance) variable is always in invariant position (neutral). 
+  \item The right-hand side of a type alias is always in invariant position (neutral). 
+  \item The prefix $S$ of a type projection ~\lstinline!$S$#$T$!~ is always in invariant position (neutral). 
+  \item For a type argument $T$ of a type ~\lstinline!$S$[$\ldots T \ldots$]!: If the corresponding type parameter is covariant, then the variance position stays unchanged. If the corresponding type parameter is invariant (no variance annotation), then $T$ is in invariant position (neutral). If the corresponding type parameter is contravariant, the variance position of $T$ is the opposite of the variance position of the enclosing type ~\lstinline!$S$[$\ldots T \ldots$]!. 
 \end{itemize}
 
 \example In the following example, variance of positions is annotated with $^+$ (for positive) or $^-$ (for negative):
@@ -643,7 +583,63 @@ abstract class Output_Channel [-A] {
 }
 \end{lstlisting}
 With that annotation, we have that \code{Output_Channel[Object]} conforms to \code{Output_Channel[String]}. That is, a channel on which one can write any object can substitute for a channel on which one can write only strings. 
- 
+
+
+
+
+\section{Explicit Polymorphic Type Annotations}
+\label{sec:explicit-polymorphic-type-annotations}
+
+Every time a type parameter $T$ appears in the type parameters list, then the type parameter is explicitly polymorphic. This polymorphism can be used in recursive occurrences. 
+
+Possible applications of this feature are e.g. polymorphic recursion, and ensuring that some definition is sufficiently polymorphic.
+
+\example Polymorphic recursion.
+\begin{lstlisting}
+type T['a] is variant
+  Leaf of 'a
+  Node of T['a * 'a]
+end type
+let rec depth ['a] (x: T['a]): 'b := match x
+  when Leaf(_) then 1
+  when Node(y) then 1 + depth y
+end match
+\end{lstlisting}
+Note that ~\lstinline!'b!~ is not explicitly polymorphic here, and will be actually unified with \code{Gear/Language.Number.Integer} (since it is almost equivalent to \code{Gear/Language.Auto}). 
+
+\example Ensuring that some definition is sufficiently polymorphic.
+\begin{lstlisting}
+let id ['a] (x: 'a): 'a := x + 1 
+\end{lstlisting}
+Now type of \code{x + 1} is required to be polymorphic. The type of the expression \code{x + 1} is not \code{Gear/Language.Number.Integer}, because the operator \code{+} can be implemented for many other different types.
+
+
+
+
+
+\section{Locally Abstract Types}
+\label{sec:locally-abstract-types}
+
+\syntax\begin{lstlisting}
+Param_Clause ::= '(' 'type' Stable_Id ')'
+\end{lstlisting}
+
+A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named $x$, which is considered abstract in the scope of the function or method it appears in, but then replaced by a fresh type variable of the form ~\lstinline!'$x$!~ outside the function or method, and which is unifiable by (\sref{sec:automatic-inference}).
+
+
+
+
+
+\section{Explicitly Polymorphic Locally Abstract Types}
+\label{sec:locally-abstract-polymorphic-types}
+
+\syntax\begin{lstlisting}
+Variant_Type_Param ::= {Annotation} 'type' ['+' | '-'] Type_Param
+\end{lstlisting}
+
+Explicitly polymorphic locally abstract types are a combination of (\sref{sec:explicit-polymorphic-type-annotations}) and (\sref{sec:locally-abstract-types}).
+
+The locally abstract type syntax form by itself does not make polymorphic the type variable it introduces, but it can be combined with explicit polymorphic type annotations, where needed. 
 
 
 

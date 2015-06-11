@@ -37,6 +37,7 @@ Value_Expr  ::= Simple_Expr
               | Def
               | {Local_Modifier} Tmpl_Def
               | '(' Expr ')'
+              | 'begin' Expr 'end'
               | Quasiquote_Expr
               | Quote_Expr
               | Metaclass_Access
@@ -297,6 +298,20 @@ is a record clone expression.
 
 
 
+\subsection{Object Clone Expressions}
+\label{sec:object-clone-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1      ::= Object_Clone_Expr
+Object_Clone_Expr ::= '{<' Object_Ivars_Init '>}'
+Object_Ivars_Init ::= Object_Ivar_Init {semi Object_Ivar_Init}
+Object_Ivar_Init  ::= id '=>' Expr
+\end{lstlisting}
+
+
+
+
+
 \subsection{Delayed Expressions}
 \label{sec:delayed-expressions}
 
@@ -494,10 +509,46 @@ A sequence comprehension expression ~\lstinline!seq { $e$ }!~ is equivalent to ~
 
 
 
-
 \subsection{Literal Conversions \& Collection Builders}
 \label{sec:literal-conversions}
 
+Literal convertible implementations can be seen as a higher-priority views from a literal to the expected type -- these are automatically attempted before any view applications (\sref{sec:implicit-conversions}), and are not affected by implicit conversions being disabled in the scope.
+
+
+
+
+
+\subsubsection{Nil \& Undefined Literal Convertible}
+
+\begin{lstlisting}
+protocol Nil_Literal_Convertible 
+    [T <: Nil_Literal_Convertible[T]] 
+    extends Object
+  message self.new (nil_literal: Nothing): T end
+end protocol
+\end{lstlisting}
+
+A not-nullable or strictly not-nullable value type may implement the protocol \code{Gear/Language.Nil_Literal_Convertible}, and then it accepts both \code{nil} and \code{undefined} values without error -- the expression that assigns these values to a variable of such a type $T$ is converted into application of \code{$T$.new(nil)}. The conversion is applied also dynamically, and also before any attempts of view applications. 
+
+In GSRL, the \code{Gear/Language.Option[T]} type implements this protocol. 
+
+% \subsubsection{String Literal Convertible}
+% TBD: finish this after API is ready
+% \subsubsection{Tuple Literal Convertible}
+% TBD: is this needed?
+
+\subsubsection{List Literal Convertible}
+
+\begin{lstlisting}
+protocol List_Literal_Convertible 
+    [T <: List_Literal_Convertible[T]] 
+    extends Object
+  type Acceptable_Element_Type end type
+  message self.new (list_literal: List[Acceptable_Element_Type]): T end
+end protocol
+\end{lstlisting}
+
+Any type may implement the protocol \code{Gear/Language.List_Literal_Convertible}, and then list literals may be converted to the type. 
 
 
 
@@ -1053,15 +1104,20 @@ Class qualifier may be a simple name referring to name of an enclosing type or s
 \label{sec:use-expressions}
 
 \syntax\begin{lstlisting}
-Use_Expr    ::= Use_Expr_As | Use_Aspect
-Use_Expr_As ::= 'use' Simple_Expr ('as' | 'as!' | 'as?')
-                [id ':'] Type [Block_Expr]
-Use_Aspect  ::= 'use' 'aspect' Path [Block_Expr]
+Use_Expr       ::= Use_Expr_As 
+                 | Use_Aspect
+                 | Use_Refinement
+Use_Expr_As    ::= 'use' Simple_Expr ('as' | 'as!' | 'as?')
+                   [id ':'] Type [Block_Expr]
+Use_Aspect     ::= 'use' 'aspect' Stable_Id [Block_Expr]
+Use_Refinement ::= 'use' 'refinement' Stable_Id [Block_Expr]
 \end{lstlisting}
 
 Use expressions of the form ~\lstinline!use $e$ as $a$: $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
 
-Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified aspect, either in the scope defined by the given block, or if no block is given, then from that point onward. If the expression is used as a template statement, then the aspect is enabled for the whole template anywhere, if it does not have the block part. 
+Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified aspect, either in the scope defined by the given block, or if no block is given, then from that point onward, up to the scope end. If the expression is used as a template statement, then the aspect is enabled for the whole template anywhere, unless it has the block part. 
+
+Use expressions of the form ~\lstinline!use refinement $T$!~ enable the specified refinement, either in the scope defined by the given block, or if no block is given, then from that point onward, up to the scope end. If the expression is used as a template statement, then the refinement is enabled for the whole template anywhere, unless it has the block part. 
 
 
 
@@ -1092,6 +1148,7 @@ Named_Args  ::= Named_Arg {',' Named_Arg} {',' '**' Expr}
               | '**' Expr {',' '**' Expr}
 Named_Arg   ::= ['~'] id ':' (Expr | TT_Expr | Slice_Expr)
               | ['~'] id ':' '$'
+              | '~' id
 Block_Arg   ::= Block_Expr 
               | Method_Expr
 \end{lstlisting}

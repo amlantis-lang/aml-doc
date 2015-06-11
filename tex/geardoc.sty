@@ -6,7 +6,7 @@
 
 \RequirePackage{fourier}
 \usepackage[a4paper]{geometry}
-\usepackage{fontspec,xltxtra,xunicode,titling,ifpdf}
+\usepackage{mathspec,xltxtra,xunicode,titling,ifpdf}
 \RequirePackage{color}
 \RequirePackage{colortbl}
 \usepackage[usenames,dvipsnames]{xcolor}
@@ -101,6 +101,7 @@
 \setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Helvetica Neue Condensed Bold}
 % retrieve at: https://github.com/belluzj/fantasque-sans
 \setmonofont[Scale=MatchLowercase,Mapping=]{Fantasque Sans Mono}
+\setmathfont(Digits,Latin,Greek)[Scale=MatchLowercase,ItalicFont=Iowan Old Style Italic]{Iowan Old Style}
 \newfontfamily\headingfont[]{Helvetica Neue Condensed Bold}
 \newfontfamily\chapterfont[]{Helvetica Neue Thin}
 \renewcommand{\maketitlehooka}{\headingfont}
@@ -117,7 +118,7 @@
 \usepackage{listings}
 
 \lstdefinelanguage{Gear}{
-  alsoletter={-,!,?},%
+  alsoletter={-!?},%
   morekeywords={abstract,%
     advice,%
     advice-execution,%
@@ -292,6 +293,7 @@
     use,%
     val,%
     var,%
+    variant,%
     yes,%
     weak,%
     when,%

@@ -6,15 +6,19 @@
 \minitoc
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= [Mutability] ['case'] 'class' Class_Def
-           | [Mutability] ['case'] 'object' Object_Def
-           | [Mutability] 'trait' Trait_Def
-           | 'protocol' Pro_Def
-           | [Mutability] ['case'] 'interface' Ifc_Def
-           | 'refinement' Refinement_Def
-           | 'aspect' Aspect_Def
-           | 'type' Const_Type_Def 'end' ['type']
-Is       ::= 'is' [nl] | ':=' [nl]
+Tmpl_Def             ::= Class_Definition
+                       | Object_Definition
+                       | Trait_Definition
+                       | Protocol_Definition
+                       | Interface_Definition
+                       | 'refinement' Refinement_Def
+                       | 'aspect' Aspect_Def
+                       | Type_Definition
+Class_Definition     ::= [Mutability] ['case'] 'class' Class_Def
+Object_Definition    ::= [Mutability] ['case'] 'object' Object_Def
+Trait_Definition     ::= [Mutability] 'trait' Trait_Def
+Protocol_Definition  ::= 'protocol' Pro_Def
+Interface_Definition ::= [Mutability] ['case'] 'interface' Ifc_Def
 \end{lstlisting}
 
 Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
@@ -717,7 +721,7 @@ This is just for the sake of completeness, since change from public to public is
 \label{sec:class-definitions}
 
 \syntax\begin{lstlisting}
-Tmpl_Def            ::= [Mutability] 'class' Class_Def
+Class_Definition    ::= [Mutability] 'class' Class_Def
 Class_Def           ::= id [Type_Param_Clause] 
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
@@ -1056,7 +1060,7 @@ UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
 \label{sec:case-classes}
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= [Mutability] 'case' 'class' Class_Def
+Class_Definition ::= [Mutability] 'case' 'class' Class_Def
 \end{lstlisting}
 
 If a class definition is prefixed with \code{case}, the class is said to be a {\em case class}. 
@@ -1130,17 +1134,16 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 
 
 
-
-\subsection{Traits}
+\section{Trait Definitions}
 \label{sec:traits}
 
 \syntax\begin{lstlisting}
-Tmpl_Def       ::= [Mutability] 'trait' Trait_Def
-Trait_Def      ::= id [Type_Param_Clause] 
-                   Trait_Tmpl_Env
-Trait_Tmpl_Env ::= Tmpl_Env_With_Pars ['trait']
-                 | Tmpl_Env_Brackets
-                 | Tmpl_Env_No_Pars ['trait']
+Trait_Definition ::= [Mutability] 'trait' Trait_Def
+Trait_Def        ::= id [Type_Param_Clause] 
+                     Trait_Tmpl_Env
+Trait_Tmpl_Env   ::= Tmpl_Env_With_Pars ['trait']
+                   | Tmpl_Env_Brackets
+                   | Tmpl_Env_No_Pars ['trait']
 \end{lstlisting}
 
 A trait is a class that is meant to be injected into some other class as a mixin (including another traits). Unlike normal classes, traits can not be instantiated alone. 
@@ -1165,30 +1168,31 @@ trait Comparable[T <: Comparable[T]] {
 
 
 
-\subsection{Refinements}
+\section{Refinement Definitions}
 \label{sec:refinements}
 
 There are two separate branches of refinements in Gear, both are quite similar, but used for different purposes. Refinements are kind of a trait (\sref{sec:traits}). The branches are as follows:
 \begin{itemize}
-\item[]
-First, refinements as part of the type system. Those refinements present only declarations and further type restrictions as part of compound types (\sref{sec:compound-types}).
+  \item[] First, refinements as part of the type system. Those refinements present only declarations and further type restrictions as part of compound types (\sref{sec:compound-types}).
 
-\item[]
-Second, refinements that are basically traits designed to be locally prepended to classes. The second branch is described here. 
+  \item[] Second, refinements that are basically traits designed to be locally prepended to classes. The second branch is described here. 
 \end{itemize}
 
 \syntax\begin{lstlisting}
-Tmpl_Def            ::= 'refinement' Refinement_Def
-Refinement_Def      ::= id 'refine' id 
-                        Refinement_Tmpl_Env
-Refinement_Tmpl_Env ::= '{' [Template_Body] '}'
-                      | (semi | 'begin') [Template_Body] 
-                        'end' ['refinement']
+Refinement_Definition ::= 'refinement' Refinement_Def
+Refinement_Def        ::= id 'refine' Type {'and' Type} 
+                          Refinement_Tmpl_Env
+Refinement_Tmpl_Env   ::= Tmpl_Env_With_Pars ['refinement']
+                        | Tmpl_Env_Brackets
 \end{lstlisting}
 
-Such a refinement does not declare any type parameters, since those are already declared on the type that it refines. Therefore, the type and units of measure parameters are made visible to the refinement in order to allow it to override the class methods type-correctly. 
+Such a refinement does not declare any type parameters, since those are already declared on the types that it refines. Therefore, the type and units of measure parameters are made visible to the refinement in order to allow it to override the class methods type-correctly. 
 
-Refinements need to be ``activated'' in the scope for it to take effect (\sref{sec:use-expressions}).
+If multiple types are refined at once, then special care has to be taken when overriding existing members of the refined types -- those members have to be all present in every refined type, as well as all members of the refined types that are accessed from within the refinement. Then, such a refinement is equivalent to a series of refinements, one per each refined type. 
+
+Multiple refinements bearing the same name may co-exist in any module, as long as each refinement per each refined type does not define multiple members of the same signature. 
+
+Refinements need to be ``activated'' in the scope for it to take effect (\sref{sec:use-expressions}), similar to aspects.
 
 If a refinement refines a parameterized type, then the refinement only activates for this parameterized type (\sref{sec:parameterized-types}). 
 
@@ -1201,34 +1205,29 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 
 
 
-\subsection{Protocols}
+\section{Protocol Definitions}
 \label{sec:protocols}
 
 \syntax\begin{lstlisting}
-Tmpl_Def     ::= 'protocol' Pro_Def
-Pro_Def      ::= id [Type_Param_Clause]
-                 Pro_Tmpl_Env
-Pro_Tmpl_Env ::= 'extends' Trait_Parents
-                 semi [Template_Body] 'end' ['protocol']
-               | ['extends'] '{' [Template_Body] '}'
-               | ['begin' [Template_Body]] 'end' ['protocol']
+Protocol_Definition ::= 'protocol' Pro_Def
+Pro_Def             ::= id [Type_Param_Clause]
+                        Pro_Tmpl_Env
+Pro_Tmpl_Env        ::= Tmpl_Env_With_Pars ['protocol']
+                      | Tmpl_Env_Brackets
+                      | Tmpl_Env_No_Pars ['protocol']
 \end{lstlisting}
 
 Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}'' or as a part of the type's signature. 
 
 Protocols are basically traits (\sref{sec:traits}) that are stripped of some features, namely: 
 \begin{itemize}
-\item
-Only declarations are allowed as the template body. If a method definition is needed, use a trait instead. 
+  \item Only declarations are allowed as the template body. If a method definition is needed, use a trait instead. 
 
-\item
-Protocols can't declare anything for the class or metaclass of the class that implements them. If this is needed, use a trait instead. 
+  \item Protocols can't declare anything for the class or metaclass of the class that implements them. If this is needed, use a trait instead. 
 
-\item
-Protocols don't have early definitions (\sref{sec:early-defs}). If this is needed, again, use a trait instead. 
+  \item Protocols don't have early definitions (\sref{sec:early-defs}). If this is needed, again, use a trait instead. 
 
-\item 
-Protocols can make use of the \code{optional} and \code{requires} keywords as modifiers in their template (\sref{sec:statements}), as any other traits, but their usage is preferred within protocols. 
+  \item Protocols can make use of the \code{optional} and \code{requires} keywords as modifiers in their template (\sref{sec:statements}), as any other traits, but their usage is preferred within protocols. 
 \end{itemize}
 
 Protocol references are preferred to traits to be used by library designers to declare contracts for the code that uses them. 
@@ -1237,26 +1236,22 @@ Protocol references are preferred to traits to be used by library designers to d
 
 
 
-
-
-\subsection{Interfaces}
+\section{Interface Definitions}
 \label{sec:interfaces}
 
 \syntax\begin{lstlisting}
-Tmpl_Def      ::= [Mutability] ['case'] 'interface' 
-                  [Ifc_Qualifier] Ifc_Def
-Ifc_Qualifier ::= '[' Ifc_Kind ']'
-Ifc_Kind      ::= 'class' | 'trait' | 'object'
-Ifc_Def       ::= id [Type_Param_Clause]
-                  [Class_Param_Clauses] Ifc_Tmpl_Env
-Ifc_Tmpl_Env  ::= 'extends' Class_Parents
-                  semi [Template_Body] 'end' ['interface']
-                | ['extends'] '{' [Template_Body '}'
-                | ['begin' [Template_Body]] 'end' ['interface']
+Interface_Definition ::= [Mutability] Ifc_Kind 'interface' Ifc_Def
+Ifc_Kind             ::= ['case'] 'class' 
+                       | ['case'] 'object'
+                       | 'trait' 
+Ifc_Def              ::= id [Type_Param_Clause]
+                         [Class_Param_Clauses] Ifc_Tmpl_Env
+Ifc_Tmpl_Env         ::= Tmpl_Env_With_Pars ['interface']
+                       | Tmpl_Env_Brackets
+                       | Tmpl_Env_No_Pars ['interface']
 \end{lstlisting}
 
 Interfaces are filtered versions of classes and traits with only declarations and without early definitions or any definitions at all, except for auxiliary constructor definitions that become empty constructor declarations (without function bodies). Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols are. 
-
 
 
 
@@ -1266,10 +1261,11 @@ Interfaces are filtered versions of classes and traits with only declarations an
 \label{sec:object-definitions}
 
 \syntax\begin{lstlisting}
-Object_Def      ::= id Object_Tmpl_Env
-Object_Tmpl_Env ::= Tmpl_Env_With_Pars ['object']
-                  | Tmpl_Env_Brackets
-                  | Tmpl_Env_No_Pars ['object']
+Object_Definition ::= [Mutability] 'object' Object_Def
+Object_Def        ::= id Object_Tmpl_Env
+Object_Tmpl_Env   ::= Tmpl_Env_With_Pars ['object']
+                    | Tmpl_Env_Brackets
+                    | Tmpl_Env_No_Pars ['object']
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Gear/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Gear/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Gear/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Gear/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Gear has one scope for both types and terms. 
@@ -1299,7 +1295,7 @@ Every trait applied to a class object does not affect the associated class itsel
 \label{sec:case-objects}
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= [Mutability] 'case' 'object' Object_Def
+Object_Definition ::= [Mutability] 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 

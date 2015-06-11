@@ -36,6 +36,7 @@ Simple_Type         ::= Simple_Type [Type_Args]
                       | Foreign_Type
 Types               ::= Named_Subtype {',' Named_Subtype}
 Named_Subtype       ::= [['~'] id ':'] Type
+Type_Equation       ::= '=' Type
 \end{lstlisting}
 
 When we say \textit{type} in the context of Gear, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Gear is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
@@ -82,6 +83,7 @@ Stable_Id        ::= [Path '.'] id
                    | [id '.'] 'super' [Class_Qualifier] '.' id
                    | 'outer' Class_Qualifier '.' id
                    | Module_Path '.' Stable_Id
+                   | ''' id
 Class_Qualifier  ::= '[' (id | Simple_Type) ']'
 Module_Path      ::= [Root] Module_Selector {'.' id}
 Module_Selector  ::= [Vendor] id
@@ -94,26 +96,21 @@ Paths are not types themselves, but they can be a part of named types and in tha
 A path is one of the following:
 
 \begin{itemize}
-\item 
-The empty path $\epsilon$ (which can not be written explicitly in user programs). 
+  \item The empty path $\epsilon$ (which can not be written explicitly in user programs). 
 
-\item 
-\code{this}, which references the directly enclosing class. 
+  \item \code{this}, which references the directly enclosing class. 
 
-\item 
-\lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Gear's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
+  \item \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Gear's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
 
-\item
-\lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
+  \item \lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
 
-\item
-\lstinline@self[origin]@, which references the directly enclosing class of an original object (an instance being cloned, see \sref{sec:clone-def}). 
+  \item \lstinline@self[origin]@, which references the directly enclosing class of an original object (an instance being cloned, see \sref{sec:clone-def}). 
 
-\item 
-\lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$.. 
+  \item \lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$.. 
 
-\item
-\lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
+  \item \lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
+
+  \item \lstinline!'$x$!, where $x$ is a type variable name.\footnote{Not quite the same as type parameter nor type argument.}
 \end{itemize}
 
 Paths introduce also {\em path dependent types}, if the referenced member is a type. 
@@ -368,10 +365,12 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations (\sref{sec:annotations
 Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type} 
                   ['with' ['refinement'] Refine_Stats]
                 | ['refinement'] Refine_Stats
-Refine_Stats  ::= '{' [Refine_Stat {semi Refine_Stat}] '}'
+Refine_Stats  ::= '{' Refine_Stat {semi Refine_Stat} '}'
 Refine_Stat   ::= Dcl
-                | 'type' Type_Def
+                | Type_Definition
                 | Constraint_Dcl
+                | Struct_Constraint
+                | ()
 \end{lstlisting}
 
 A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refinement {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
@@ -632,9 +631,9 @@ When used in a compound type, use nullable modifier only on the first component.
 \label{sec:unions}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= id [Type_Param_Clause] 'is' Union
-Union          ::= 'union' 'of' Type {semi Type}
-Infix_Type     ::= Type {'or' Type}
+Type_Representation ::= Is Union
+Union               ::= 'union' 'of' Type {semi Type}
+Infix_Type          ::= Type {'or' Type}
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
@@ -671,9 +670,9 @@ Union types also employ the following set of rules, given some types \code{X}, \
 \label{sec:intersection-types}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= id [Type_Param_Clause] 'is' 'intersection' 'of'
-                   Type {semi Type}
-Infix_Type     ::= Type {'and' Type}
+Type_Representation ::= Is 'intersection' 'of'
+                        Type {semi Type}
+Infix_Type          ::= Type {'and' Type}
 \end{lstlisting}
 
 An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. 
@@ -979,7 +978,7 @@ The \code{Any} virtual type is the actual root of the type system of Gear, altho
 
 
 
-\section{Structural Inferred Auto Type}
+\section{Automatically Inferred Type}
 \label{sec:auto-type}
 
 \syntax\begin{lstlisting}[morekeywords={Auto}]
@@ -988,23 +987,17 @@ Simple_Type ::= 'Auto'
 Simple_Type ::= 'Gear/Language.Auto'
 \end{lstlisting}
 
+See ({\sref{sec:automatic-inference}}).
+
 This type does represent a single concrete value type: a compound type with usually just the refinement part. However, it does not explicitly state what the refinement is. Instead, the refinement is inferred from the context in which it is used. The inference algorithm is very different from local type inference (\sref{sec:local-type-inference}). 
 
 Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Auto} is used as a class type (never a trait type) and its parts of the inferred refinement are merged with any given refinement from the compound type. 
 
 The \code{Auto} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Language} module, and therefore can be shadowed and aliased (e.g. to \code{Inferred}). 
 
-Elements that determines the inferred parts of the \code{Auto} type:
+If a type variable of the form ~\lstinline!'$x$! is not present in the type parameters list, then it is a placeholder for the \code{Auto} type with a name $x$, also generating type equality constraints, if used more than once across parameters or result type -- for every type parameter name $x_i$, an equivalent type has to be inferred for every occurrence of $x_i$. 
 
-% TBD: update this simple list with more concrete details as the inference is defined
-\begin{itemize}
-  \item Any methods that are invoked on the value that has this type assigned. These are parts of the refinement. 
-  \item Any classes or traits that are required of the value, except when there is a definitive \code{else}-style clause that allows the value to be of any other type as well. Those requirements are then presented in a union type, with the refinement being compound with each member of the union type. 
-  \item If the value is passed as an argument anywhere, where the expected type is determined to be not \code{Any} or locally type inferred, then the aforementioned handling applies as if the expected type was required of the value.
-  \item If a method is dynamically added to the value before being required, then it is not included in the refinement. 
-  \item The \code{Auto} type is also automatically generalized. If a method that uses it has already type parameters, then these are appended after them, in order of appearance, with method result type being the last one. 
-  \item If the value is passed as an argument, with an expected type to be locally type inferred, then it itself becomes typed with an unknown type and a type parameter is appended to the containing function.
-\end{itemize}
+See (\sref{sec:automatic-inference}) for details on (non-local) automatic type inference. 
 
 There is one important limitation: the \code{Auto} type must not cause circular references between functions. In that case, the type has to be specified in another way. This inference happens only during compilation, unlike local type inference, which takes place in runtime. 
 

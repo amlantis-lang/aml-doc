@@ -7,7 +7,70 @@
 
 \newpage
 
-\section{Aspects}
+\section{Type Definitions}
+\label{sec:type-decls-aliases}
+
+\syntax\begin{lstlisting}
+Def              ::= Type_Definition
+Type_Definition  ::= 'type' Typedef {'and' Typedef} 'end' ['type']
+Typedef          ::= id [Type_Param_Clause] [Type_Information]
+Type_Information ::= [ Type_Equation 
+                     | Type_Abstract 
+                     | Type_Representation] {semi Type_Constraint}
+Type_Equation    ::= Is ['alias'] Type
+Type_Abstract    ::= ['>:' Type] ['<:' Type]
+Type_Constraint  ::= 'constraint' Stable_Id '=' Type
+Is               ::= 'is' [nl] | ':=' [nl]
+\end{lstlisting}
+
+A {\em type declaration} \lstinline!type $t$[$\tps$] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
+
+If a type declaration appears as a member declaration of a type, implementations of the type may implement $t$ with any type $T$, for which $L \conforms T \conforms U$. It is an error if $L$ does not conform to $U$. Either or both bounds may be omitted. If the lower bound $L$ is omitted, the bottom type \code{Nothing} is implied. If the upper bound $U$ is omitted, the top type \code{Object} is implied. 
+
+A type constructor declaration declaration imposes additional restriction on the concrete types for which $t$ may stand. Besides the bounds $L$ and $U$, the type parameter clause, indexing parameter clause and units of measure parameter clause may impose higher-order bounds and variances, as governed by the conformance of type constructors (\sref{sec:conformance}).
+
+The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!~ and the type parameter clause $\tps$ itself. A higher-order type parameter clause (of an abstract type constructor $tc$) has the same kind of scope, restricted to the declaration of the type parameter $tc$. 
+
+To illustrate nested scoping, these declarations are all equivalent: 
+\begin{itemize}
+  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[x]] end! 
+
+  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[y]] end!
+
+  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[_]] end!,
+\end{itemize} 
+as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline!x!~ is unrelated to the first two occurrences, but may confuse the reader. 
+
+A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$[$\tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $\tps$ itself. 
+
+It is an error if a type alias refers recursively to the defined type constructor itself. 
+
+\example The following are legal type declarations and aliases:
+\begin{lstlisting}
+type Integer_List := List[Integer] end
+type T <: Comparable[T] end
+type Two[A] := Tuple_2[A, A] end
+type My_Collection[+X] <: Iterable[X] end
+\end{lstlisting}
+The following are illegal:
+\begin{lstlisting}
+type Abs := Comparable[Abs] end (* recursive type alias *)
+
+type S <: T end  (* S, T are bounded by themselves *)
+type T <: S end
+
+type T >: Comparable[T.That] end (* can't select from T
+                                    T is a type, not a value *)
+type My_Collection <: Iterable end
+  (* type constructor members must explicitly state
+     their type parameters *)
+\end{lstlisting}
+
+
+
+
+
+\section{Aspect Definitions}
 \label{sec:aspects}
 
 \syntax\begin{lstlisting}
@@ -70,49 +133,18 @@ Simple_Expr1    ::= 'joinpoint' ['.' Selection]
 
 
 
-\section{Union Cases}
-\label{sec:unions}
 
-\syntax\begin{lstlisting}
-Const_Type_Def ::= id [Type_Param_Clause] 'is' Case_Union
-Case_Union     ::= 'case' 'union' 'of' 
-                   id ['of' Type] {semi id ['of' Type]}
-                   [semi Template_Body]
-\end{lstlisting}
-
-Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
-
-Unions are indeed virtually ``tagged'' with the actual type that they represent at the runtime moment, although when it comes to overloading resolution, the union type is used, as it is the expected type. 
-
-Types contained in a union type of form \code{case union $t$} are given a case name, with the syntax form of ~\lstinline!$a$ of $T$!, where $a$ is the case name. The case name can be used as extractor in pattern matching:
-\begin{lstlisting}
-type Message is case union of 
-  Result of String
-  Request of Integer * String
-  def name := match self 
-    when Result(nm) then nm
-    when Request(_, nm) then nm
-  end match
-end type
-\end{lstlisting}
-Such a union type may contain the optional template body, and is called {\em case union type}. A case union type is a simplified form for a series of case classes and case objects. 
-
-
-
-
-
-
-
-\section{Enumeration Types}
+\section{Enumeration Type Definitions}
 \label{sec:enums}
 
 \syntax\begin{lstlisting}
-Const_Type_Def     ::= id Is ['bitfield'] 
-                       'enum' '{' Enum_Field {semi Enum_Field} '}'
-                       [Record_Extensions]
-Enum_Field         ::= id ':=' scalar_literal
-                     | id 'of' Named_Exprs
-                     | id
+Type_Representation ::= Is ['bitfield'] 
+                        'enum' ('{' Enum_Field {semi Enum_Field} '}'
+                        | Enum_Field {semi Enum_Field})
+                        [Record_Extensions]
+Enum_Field          ::= id ':=' scalar_literal
+                      | id 'of' Named_Exprs
+                      | id
 \end{lstlisting}
 
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
@@ -124,23 +156,28 @@ An enum constant can be enhanced with custom parameters, which are then passed t
   \item Initialized with custom expression. The argument expression can be extracted with pattern matching as a contained single value, or if the argument expression is a tuple, as a tuple. It is highly recommended for every enum constant to be immutable, but it is not mandatory. This form can't extend any parent class and has the same implicit ordering as the previous form. 
 \end{itemize}
 
+Unlike variant types (\sref{sec:variant-types}), enumeration types do not represent classes of values, but instead enumerate a limited set of concrete values. 
 
 
 
 
-\section{Variant Types \& Algebraic Data Types}
+
+\section{Variant Type Definitions}
 \label{sec:variant-types}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= id [Type_Param_Clause] Is 'case' 'enum' [nl]
-                   (Variant1 | Variant2)
-                   [Record_Extensions]
-Variant1       ::= Variant_Field {semi Variant_Field}
-Variant2       ::= '{' Variant_Field {semi Variant_Field} '}'
-Variant_Field  ::= id ['of' Types]
+Type_Representation ::= Is 'variant' [nl]
+                        (Variant1 | Variant2)
+                        [Record_Extensions]
+Variant1            ::= Variant_Field {semi Variant_Field}
+Variant2            ::= '{' Variant_Field {semi Variant_Field} '}'
+Variant_Field       ::= Type_Constr_Dcl
+Type_Constr_Dcl     ::= id ['of' Types]
 \end{lstlisting}
 
-Variant types are similar to a simplified form for a series of case classes (\sref{sec:case-classes}) and case objects (\sref{sec:case-objects}), with shared interface and a common ancestor. Variant types are also an implementation of {\em algebraic data types}, and case classes and case object may be used to achieve similar properties as well. Pattern matching is possible on variant types, as it would be done on case classes and case objects. 
+Variant types are similar to a simplified form for a series of case classes (\sref{sec:case-classes}) and case objects (\sref{sec:case-objects}), with shared interface and a common ancestor. Pattern matching is possible on variant types, as it would be done on case classes and case objects. 
+
+Variant type is the algebraic sum type. Unlike unions (\sref{sec:unions}), variant type is a disjoint union -- its values are pairwise disjoint. The contained values however need not be pairwise disjoint. 
 
 Unlike enumerations (\sref{sec:enums}), variant types are not just constants, they instead define classes of values. 
 
@@ -149,7 +186,7 @@ The form ~\lstinline!$\id$ of $T$! is called {\em non-constant variant construct
 \paragraph{Note}
 Non-constant variant constructors are internally type-parameterized with the same type parameters as the variant type. 
 
-The form ~\lstinline!$\id$! is called {\em constant variant constructors}. The objects that represent constant variant constructors are singletons. 
+The form ~\lstinline!$\id$! is called {\em constant variant constructors}. The objects that represent constant variant constructors are singletons. Unlike with regular union types in Gear, constant variant constructors are not pre-existing types, but rather new types. 
 
 Variant types may be parameterized, therefore polymorphic. Overloading on type parameters is possible. 
 
@@ -182,35 +219,112 @@ and def insert (x, b-tree) :=
 end type
 \end{lstlisting}
 
+Unlike enumeration types (\sref{sec:enums}), variant types do not enumerate a limited set of values, but instead represent classes of values with non-constant variant constructors and enumerate a limited set of singleton values with constant variant constructors\footnote{Thus a variant type that has only constant variant constructors is identical to an enumeration type, which is a situation to be avoided.}. 
 
 
 
 
-\section{Record Types}
+
+\subsection{Generalized Algebraic Datatype Definitions}
+\label{sec:gadt-types}
+
+\syntax\begin{lstlisting}
+Type_Representation ::= Is 'variant' [nl]
+                        (Gadt1 | Gadt2)
+                        [Record_Extensions]
+Gadt1               ::= Gadt_Field {semi Gadt_Field}
+Gadt2               ::= '{' Gadt_Field {semi Gadt_Field} '}'
+Gadt_Field          ::= id [Type_Param_Clause] ':' [Type '->'] Type
+\end{lstlisting}
+
+
+
+
+
+
+\section{Record Type Definitions}
 \label{sec:record-types}
 
 \syntax\begin{lstlisting}
-Const_Type_Def    ::= Record_Name Is 'record' (Record1 | Record2)
-Record1           ::= Record_Components [Record_Extensions]
-Record2           ::= '{' Record_Components '}' [Record_Extensions]
-Record_Name       ::= id [Type_Param_Clause]
-Record_Components ::= Record_Component {semi Record_Component}
-Record_Component  ::= ['val' | 'var'] id ':' (Type | id)
-                    | 'case' id Record_Cases
-                      {'when' id 
-                      ('then' | nl) 
-                      Record_Components} 'end' ['case']
-Record_Cases      ::= semi Record_Case {semi Record_Case} 'end' ['case']
-                    | '{' Record_Case {semi Record_Case} '}'
-Record_Case       ::= 'when' ['.'] Stable_Id ['(' [Extractions] ')']
-                      ('then' | semi) Record_Components
-Record_Extensions ::= [nl] 'with' Record_Extension {'and' Record_Extension}
-Record_Extension  ::= Tmpl_Member
-                    | Tmpl_Ifc_Impl
-                    | Tmpl_Ifc_Dcl
+Type_Representation ::= Is 'record' (Record1 | Record2)
+Record1             ::= Record_Components [Record_Extensions]
+Record2             ::= '{' Record_Components '}' [Record_Extensions]
+Record_Components   ::= Record_Component {semi Record_Component}
+Record_Component    ::= ['val' | 'var'] id ':' (Type | id)
+                      | 'case' id Record_Cases
+                        {'when' id 
+                        ('then' | nl) 
+                        Record_Components} 'end' ['case']
+Record_Cases        ::= semi Record_Case {semi Record_Case} 'end' ['case']
+                      | '{' Record_Case {semi Record_Case} '}'
+Record_Case         ::= 'when' ['.'] Stable_Id ['(' [Extractions] ')']
+                        ('then' | semi) Record_Components
+Record_Extensions   ::= [nl] 'with' Record_Extension {'and' Record_Extension}
+Record_Extension    ::= Tmpl_Member
+                      | Tmpl_Ifc_Impl
+                      | Tmpl_Ifc_Dcl
 \end{lstlisting}
 
 Record extension members, if given, are added to the type object, unless they are specified with \code{member} keyword, then they are added to the type instances. Implementations and declarations of interfaces are automatically added to the type instances. 
+
+
+
+
+
+\section{Structure, Signature \& Functor Type Definitions}
+\label{sec:struct-types}
+
+% TBD: finish
+% TBD: replace Dcl and Def by something more sensible, also (in) Tmpl_things, sync with top-level definitions, separate interfaces from implementations
+\syntax\begin{lstlisting}
+Dcl               ::= Struct_Spec
+Struct_Type       ::= Struct_Type_Path
+                    | 'sig' [Struct_Spec {semi Struct_Spec}] 'end'
+                    | 'functor' '(' id ':' Struct_Type ')' '->' Struct_Type
+                    | Struct_Type 'with' Struct_Constraint 
+                      {'and' Struct_Constraint}
+                    | '(' Struct_Type ')'
+Struct_Spec       ::= 'val' id ':' Type
+                    | Type_Definition
+                    | 'throwable' Type_Constr_Dcl 'end' ['throwable']
+                    | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
+                    | Interface_Definition
+                    | 'structure' id ':' Struct_Type 'end' ['structure']
+                    | 'signature' id [Is Struct_Type] 'end' ['signature']
+                    | 'open' Struct_Path
+                    | 'include' Struct_Type
+Def               ::= Struct_Def
+Struct_Expr       ::= Struct_Path
+                    | 'struct' [Struct_Items] 'end' ['struct']
+                    | 'struct' '{' [Struct_Items] '}'
+                    | 'functor' '(' id ':' Struct_Type ')' '->' Struct_Expr
+                    | Struct_Expr '(' Struct_Expr ')'
+                    | '(' Struct_Expr ')'
+                    | '(' Struct_Expr 'as' Struct_Type ')'
+Struct_Items      ::= Struct_Item {semi Struct_Item} 
+Struct_Item       ::= Struct_Def | Expr
+Struct_Def        ::= Pat_Var_Def
+                    | Type_Definition
+                    | 'throwable' Type_Constr_Dcl 'end' ['throwable']
+                    | 'throwable' id Is Stable_Id
+                    | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
+                    | 'raiseable' id Is Stable_Id
+                    | Class_Definition
+                    | Object_Definition
+                    | Trait_Definition
+                    | Refinement_Definition
+                    | Protocol_Definition
+                    | 'structure' id 
+                      [Struct_Ascription Struct_Type] 
+                      Is Struct_Expr
+                    | 'open' Struct_Path
+                    | 'include' Struct_Expr
+Struct_Ascription ::= ':' | ':>'
+Struct_Constraint ::= 'type' id [Type_Param_Clause] Type_Equation
+                    | 'type' id [Type_Param_Clause] ':=' Type
+                    | 'struct' Struct_Path '=' Extended_Struct_Path
+                    | 'struct' Struct_Path ':=' Extended_Struct_Path
+\end{lstlisting}
 
 
 
@@ -220,29 +334,25 @@ Record extension members, if given, are added to the type object, unless they ar
 \label{sec:fl-fi-subtypes}
 
 \syntax\begin{lstlisting}
-Type_Def        ::= FP_Type_Def 
-                  | FP_Subtype_Def 
-                  | FP_Range_Def
-FP_Type_Def     ::= id [Type_Param_Clause] (':=' | 'is')
-                    (FiP_Type_Def | FlP_Type_Def) 
-FP_Subtype_Def  ::= id [Type_Param_Clause] (':=' | 'is') 
-                    Type
-                    (FiP_Subtype_Def | FlP_Subtype_Def) 
-FP_Range_Def    ::= id [Type_Param_Clause] (':=' | 'is') 
-                    FP_Range
-FlP_Type_Def    ::= FP_Digits [FP_Range]
-FlP_Subtype_Def ::= FP_Digits [FP_Range]
-                  | FP_Range
-FiP_Type_Def    ::= FP_Delta [FP_Range] 
-                  | FP_Delta FP_Digits [FP_Range]
-FiP_Subtype_Def ::= FP_Delta [FP_Digits] [FP_Range]
-                  | FP_Digits [FP_Range]
-                  | FP_Range
-FP_Digits       ::= 'digits' Infix_Expr
-FP_Delta        ::= 'delta' Infix_Expr
-FP_Range        ::= 'range' Infix_Expr 
-                    ('..' | '...' | '..<') Infix_Expr
-                  | 'range' Type
+Type_Representation ::= Is FP_Type_Def 
+                      | Is FP_Subtype_Def 
+                      | Is FP_Range_Def
+FP_Type_Def         ::= (FiP_Type_Def | FlP_Type_Def) 
+FP_Subtype_Def      ::= Type (FiP_Subtype_Def | FlP_Subtype_Def) 
+FP_Range_Def        ::= FP_Range
+FlP_Type_Def        ::= FP_Digits [FP_Range]
+FlP_Subtype_Def     ::= FP_Digits [FP_Range]
+                      | FP_Range
+FiP_Type_Def        ::= FP_Delta [FP_Range] 
+                      | FP_Delta FP_Digits [FP_Range]
+FiP_Subtype_Def     ::= FP_Delta [FP_Digits] [FP_Range]
+                      | FP_Digits [FP_Range]
+                      | FP_Range
+FP_Digits           ::= 'digits' Infix_Expr
+FP_Delta            ::= 'delta' Infix_Expr
+FP_Range            ::= 'range' Infix_Expr 
+                        ('..' | '...' | '..<') Infix_Expr
+                      | 'range' Type
 \end{lstlisting}
 
 The described syntaxes are for definitions of 4 special types of values:
