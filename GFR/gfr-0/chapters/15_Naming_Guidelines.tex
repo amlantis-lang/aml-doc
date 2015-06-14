@@ -3,6 +3,8 @@
 
 \chapter{Design Guidelines \& Code Conventions}
 
+\minitoc
+
 This chapter introduces the way programs {\em should} be written and laid out in Gear. 
 
 
@@ -34,65 +36,54 @@ This section lists commonly used module structure and file suffixes and names.
 A module is a directory located in your system at a location unspecified by this specification. In the following sections, it will be referred to as {\em module root}. 
 
 \paragraph{Module directory name}
-A directory holding a module must have the same name as the module, followed by a dot ``\lstinline!.!'' and the vendor name. If it is standalone, so that no other modules of the same name share the same parent directory, the vendor part including the leading dot can be omitted. When the module is a submodule to another module, omitting the vendor part means that the submodule has the same vendor name. 
+A directory holding a module must have the same name as the module, contained in a directory of the vendor name. If it is standalone, so that no other modules of the same name share the same parent directory, the vendor part including the leading dot can be omitted.
 
 \example Such directories may look like:
-\begin{lstlisting}
-/Lang.gear
-/Your_Module.com.example
-    /source
+\begin{lstlisting}[deletekeywords={module},mathescape=false]
+/Gear/Language
+/Example/Your_Module
+    /source (* or `src` *)
         /gear
-            /Some_Submodule ;; implied .com.example from parent
-                / $\ldots$
-            /Some_Submodule.different.vendor
-                / $\ldots$
-    /compiled
+            /Some_Submodule 
+            /macros
+                /some_macro.gearm
+            /some_source_file.gear
+            /module.gear
+            /build.gear
+            /module.dependencies.gear
+            /module.dependencies.lock
+        /cpp14 (* or whichever the Gear VM is implemented in *)
+            /native_method.hpp
+            /native_method.cpp
+    /compiled (* or `com` *)
         /gear
-            /Some_Submodule ;; implied .com.example from parent
-                / $\ldots$
-            /Some_Submodule.different.vendor
-                / $\ldots$
-    /vendor
-        /Another_Submodule.foo.bar
-            /protocols
-                / $\ldots$
-    /binaries
+            /Some_Submodule
+            /Example/Your_Module.gearb
+            /Example/Your_Module/native/ (* optimized code *)
+            /Example/Your_Module.gearpsi
+        /cpp14
+            /native_method.a
+    /vendor -> /usr/local/A_Gear_VM/modules
+    /binaries (* or `bin` *)
         /an_executable.a
-        / $\ldots$
-    /protocols
+        /run_your_module (* some executable file 
+                            using #! to run a Gear VM *)
+    /protocols (* or `pro` *)
         /Plugin.gearp
-        / $\ldots$
-    /resources
+    /resources (* or `res` *)
         /logo.png
-        / $\ldots$
+    /.gitignore
+    /.git
 \end{lstlisting} 
 
 \paragraph{Sources}
-A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Gear sources may be located, or alternatively, it can be forked into more directories, each for a specific language. The directory may then look like:
-\begin{lstlisting}
-/src
-    /c
-    /cpp
-    /c-mac
-    /c-windows
-    /clojure
-    /gear
-        /macros
-        /Submodule
-        /Another_Submodule
-        /Submodule.different.vendor
-    /java
-    /haskell
-    /objc
-    /sml
-    /swift
-\end{lstlisting}
+A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Gear sources may be located, or alternatively, it can be forked into more directories, each for a specific language. 
 
 The directory name consists of a lowercase name of the source language, optionally followed by a platform specifier. A build tool used to create the software may then choose the sources appropriately. 
 
 Gear source files have the suffix \code{.gear}. Readme files are not source files, having their name starting with any-case \code{readme}, followed by e.g. \code{.md} for a Markdown-formatted readme. 
 
-Gear source directory (\code{/src} or \code{/src/gear}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly), which, for Gear, is named \code{build.gear}, and can make use of other files as needed. 
+Gear source directory (\code{/src} or \code{/src/gear}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly -- some may be generated during compilation to provide skeletons for implementation of native methods and functions), which, for Gear, is named \code{build.gear}, and can make use of other files as needed. 
 
 Macros should be placed in a \code{/macros} directory inside of a directory with Gear sources, so e.g. \code{/src/macros} or \code{/src/gear/macros}. Those files may also use other files as needed. A file that contains solely Gear macro definitions may be optionally named with suffix \code{.gearm}, but that is not a requirement. 
 
@@ -103,27 +94,9 @@ This directory may be omitted from a release version of your software (usually u
 Submodules can be placed in a directory of the same name as the submodule's inside the directory where Gear sources are. 
 
 \paragraph{Compiled files}
-A common name for this directory is \code{com}, or \code{compiled}. It follows the same structure as sources directory:
-\begin{lstlisting}
-/com
-    /c
-    /cpp
-    /c-mac
-    /c-windows
-    /clojure
-    /gear
-        /macros
-        /Submodule
-        /Another_Submodule
-        /Submodule.different.vendor
-    /java
-    /haskell
-    /objc
-    /sml
-    /swift
-\end{lstlisting}
+A common name for this directory is \code{com}, or \code{compiled}.
 
-Gear compiled files (bytecode) have the suffix \code{.gearb} for bytecode and \code{.gearpsi} for extracted Program Structure Information. Readme files might be copied into it, if needed. 
+Gear compiled files (bytecode) have the suffix \code{.gearb} for bytecode and \code{.gearpsi} for extracted Program Structure Information. Readme files might be copied into it, if needed. Note that Gear VM will refuse to execute module's entry point if the module is not compiled including all native method implementations. 
 
 Note that files compiled from other languages, if not bound to Gear environment via native method definitions, may be still used with \code{FFI} mechanisms. 
 
@@ -141,7 +114,7 @@ Module builds that contain just the protocol files are an option to include in v
 A common name for this directory is \code{res}, or \code{resources}, the latter may be preferred. Such directory is supposed to hold any files that the module needs, may it be images, sounds or whatever. Its organization is up to the module's maintainer. 
 
 \paragraph{Vendor directory}
-A common name for this directory is \code{ven}, or \code{vendor}, the latter may be preferred. Such directory is supposed to hold vendor directories, which in their leave paths have e.g. modules with only protocol files, so that compiler may bind to their identifiers and use that in building of PSI and for type-checking. A vendor directory may also be used to store the whole compiled vendor module, or be a place to download the module dependency on demand as needed and if possible, if the vendor module is not already present in user's system. 
+A common name for this directory is \code{ven}, or \code{vendor}, the latter may be preferred. Such directory is supposed to hold vendor directories (which may be just symlinks to the actual installed vendor modules, or even just virtually displayed in IDE as links to the vendor modules), which in their leave paths have e.g. modules with only protocol files, so that compiler may bind to their identifiers and use that in building of PSI and for type-checking. A vendor directory may also be used to store the whole compiled vendor module, or be a place to download the module dependency on demand as needed and if possible, if the vendor module is not already present in user's system. 
 
 Dependencies for a module may be defined in the module file, along with version requirements and possibly a network path to download the module. 
 
@@ -171,12 +144,12 @@ A typical Gear source file has the following ordering:
 \begin{enumerate}
 \item Module identification, e.g.:
 \begin{lstlisting}
-module Cool_App~[com.example.heroes]
+module Heroes/Cool_App
 \end{lstlisting}
 
 \item Imports, e.g.:
 \begin{lstlisting}
-use Cool_Library~[com.example.them].{Some_Class as A_Class, _}
+use Them/Cool_Library.{Some_Class as A_Class, _}
 \end{lstlisting}
 
 \item Pragmas for the whole file, e.g.:
@@ -266,13 +239,13 @@ When an expression will not fit into a single line, break it according to the fo
 \example Here are some examples of breaking function applications: 
 
 \begin{lstlisting}
-;; preferable
+(* preferable *)
 function_1 (long_expression_1, long_expression_2, long_expression_3,
             long_expression_4, long_expression_5)
 val a := function_1 (long_expression_1,
                      function_2 (long_expression_2,
                                  long_expression_3))
-;; acceptable
+(* acceptable *)
 function_1 (long_expression_1, long_expression_2, 
     long_expression_3, long_expression_4, 
     long_expression_5)
@@ -286,10 +259,10 @@ val a := function_1 (
 \example Following are examples of breaking an expression with operators. The first is preferred, since the break occurs outside the parenthesized expression, which is at a higher level. 
 
 \begin{lstlisting}
-;; prefer
+(* prefer *)
 long_name_1 := long_name_2 * (long_name_3 + long_name_4 - long_name_5)
                + 4 * long_name_6
-;; avoid
+(* avoid *)
 long_name_1 := long_name_2 * (long_name_3 + long_name_4 
                               - long_name_5) + 4 * long_name_6
 \end{lstlisting}
@@ -297,14 +270,14 @@ long_name_1 := long_name_2 * (long_name_3 + long_name_4
 \example Following are examples of indenting method definitions. The first is the conventional case, the second would shift the second and third line to the far right if it used conventional indentation, so instead it indents two tabs. Also, if a visibility modifier is causing the line to be too long, consider using it as a pragma before the method definition instead (but remember that definitions following it will have the same visibility). 
 
 \begin{lstlisting}
-;; conventional indentation
+(* conventional indentation *)
 def some_method (an_arg: Integer, another_arg: Object, 
                  yet_another: String,
                  and_still_another: Object): Unit := {
   $\ldots$
 }
 
-;; indent two tabs to avoid very deep indents
+(* indent two tabs to avoid very deep indents *)
 private method self.very_long_method_name (an_arg: Integer,
     another_arg: Object, yet_another_arg: String, 
     and_still_another: Object): Unit := {
@@ -315,26 +288,26 @@ private method self.very_long_method_name (an_arg: Integer,
 \example Line wrapping conditional statements should generally use the two tabs rule, since conventional one tab indentation makes seeing the body difficult. For example: 
 
 \begin{lstlisting}
-;; don't use this indentation
+(* don't use this indentation *)
 if ((condition_1 && condition_2)
   || (condition_3 && condition_4)
   || not (condition_5 && condition_6))
-  do_something_about_it ;; this line is easy to miss
+  do_something_about_it (* this line is easy to miss *)
 end
 
-;; use this indentation instead (notice the extra spaces)
+(* use this indentation instead (notice the extra spaces) *)
 if (       (condition_1 && condition_2)
     ||     (condition_3 && condition_4)
     || not (condition_5 && condition_6))
   do_something_about_it
 end
 
-;; or use this
+(* or use this *)
 if (     (condition_1 && condition_2)
   ||     (condition_3 && condition_4)
   || not (condition_5 && condition_6))
 then
-  do_something_about_it ;; this line is now harder to miss
+  do_something_about_it (* this line is now harder to miss *)
 end
 \end{lstlisting}
 
@@ -347,7 +320,7 @@ alpha := if a_long_boolean_expression
            gamma
          end
 
-;; or alternatively
+(* or alternatively *)
 alpha := if a_long_boolean_expression
   beta
 else
@@ -361,7 +334,7 @@ end
 
 \section{Comments}
 
-Gear programs can have two kinds of comments: implementation comments and documentation comments. Implementation comments are delimited by block \code{/* $\ \ldots$ */} or line \code{;;}. Documentation comments are delimited by \code{/*! $\ \ldots$ */} or alternatively \code{/** $\ \ldots$ */}\footnote{As a convenience for those used to this syntax from other languages. Gear toolchain prefers the first version.}. Documentation comments can be extracted by Gear toolchains. ;;
+Gear programs can have two kinds of comments: implementation comments and documentation comments. Implementation comments are delimited by block \code{(* $\ \ldots$ *)}. Documentation comments are delimited by \code{(*! $\ \ldots$ *)} or alternatively \code{(** $\ \ldots$ *)}\footnote{As a convenience for those used to this syntax from other languages. Gear toolchain prefers the first version.}. Documentation comments can be extracted by Gear toolchains.
 
 Implementation comments are meant for commenting-out code (to temporarily disable it) or for comments about the particular implementation. Documentation comments are meant to describe the specification of the code, independently on the actual implementation. 
 
@@ -393,11 +366,11 @@ Multiple declaration expressions on the same line using a semicolon to separate 
 
 \example The following shows preferred variable declarations and declarations to be avoided:
 \begin{lstlisting}
-;; preferred
+(* preferred *)
 val level: Integer
 val size: Integer
 
-;; avoid
+(* avoid *)
 val level, size: Integer
 val level: Integer; size: Integer
 \end{lstlisting}

@@ -3,15 +3,24 @@
 
 \chapter{Classes \& Objects}
 
+\minitoc
+
+\newpage
+
 \syntax\begin{lstlisting}
-Tmpl_Def ::= [Mutability] ['case'] 'class' Class_Def
-           | [Mutability] ['case'] 'object' Object_Def
-           | [Mutability] 'trait' Trait_Def
-           | 'protocol' Pro_Def
-           | [Mutability] ['case'] 'interface' Ifc_Def
-           | 'refinement' Refinement_Def
-           | 'aspect' Aspect_Def
-           | 'type' Const_Type_Def 'end' ['type']
+Tmpl_Def             ::= Class_Definition
+                       | Object_Definition
+                       | Trait_Definition
+                       | Protocol_Definition
+                       | Interface_Definition
+                       | Refinement_Definition
+                       | Aspect_Definition
+                       | Type_Definition
+Class_Definition     ::= [Mutability] ['case'] 'class' Class_Def
+Object_Definition    ::= [Mutability] ['case'] 'object' Object_Def
+Trait_Definition     ::= [Mutability] 'trait' Trait_Def
+Protocol_Definition  ::= 'protocol' Pro_Def
+Interface_Definition ::= [Mutability] ['case'] 'interface' Ifc_Def
 \end{lstlisting}
 
 Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
@@ -70,21 +79,14 @@ object O extends Base with Mixin; $\ldots$ end
 
 Unlike in Java, Scala or any other language that does not feature open classes, and similar to Ruby's open classes or C\#'s partial classes, Gear has a feature of open templates. This means that a single template (be it a class or a trait) can have its definition spread across several source files. 
 
-An open template has a {\em leading template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including a parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
+An open template has a {\em main template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including the parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
 
 Auxiliary templates do not need to be eager loaded. There are basically three major ways to make use of an auxiliary template:
 \begin{itemize}
-\item Eager loaded auxiliary template, using the construct ~\lstinline!include 'path/to/file'!. This way the auxiliary template is loaded along with the leading template.
-\item Autoload (\sref{sec:autoloading}) of the auxiliary template. 
-\item On-demand load of the auxiliary template via independent ~\lstinline!VM.load 'path/to/file'!, after the leading template is defined.  Gear
+  \item Eager loaded auxiliary template, using a file name scheme ~\lstinline!$t$.aux/$a$.gear!, where $t$ is the name of the template and $a$ is arbitrary auxiliary name. This way the auxiliary template is loaded along with the leading template, on-demand, without incrementing the template's version.
+  \item Autoload (\sref{sec:autoloading}) of the auxiliary template. 
+  \item On-demand load of the auxiliary template via independent ~\lstinline[deletekeywords={to}]!VM.load 'path/to/file'!, after the leading template is defined.
 \end{itemize}
-
-To declare a template as an open template, the following annotations are available. All templates are implicitly open, so the annotations are only useful to prevent implicit inheriting from \code{Object}, if the intended leading template inherits from a different base class. 
-\begin{lstlisting}
-@[Open_Template :leading]
-@[Open_Template :auxiliary]
-\end{lstlisting}
-
 
 
 
@@ -96,12 +98,12 @@ To declare a template as an open template, the following annotations are availab
 Autoloading is a mechanism of putting code from different source files and source directories together in runtime. There are two kinds of autoloading.
 
 \paragraph{Implicit autoloading}
-This kind of autoloading is basically the expected layout of source files, source directories and terms inside of a directory. Given that a root directory represents a module sources root, each template definition is expected to appear in a file that directly appears in this directory, preferably with a name of the included template. If multiple templates appear in one source file, then the implicit autoloading uses the mechanism of template index to track location of these templates. However, if the name of the template is generated dynamically in runtime (i.e. not via template definition or a constant initialization), then it needs to be loaded using explicit autoloading. Also, if the source file is used as a script, every such term needs to be loaded using explicit autoloading, since the compiler does not know about anything that hasn't been yet loaded or otherwise defined and is not in the same source file. 
+This kind of autoloading is basically the expected layout of source files, source directories and terms inside of a directory. Given that a root directory represents a module sources root, each template definition is expected to appear in a file that directly appears in this directory, preferably with a name of the included template. If multiple templates appear in one source file, then the implicit autoloading uses the mechanism of template index to track location of these templates. However, if the name of the template is generated dynamically in runtime (i.e. not via template definition or a constant initialization), then it needs to be loaded using explicit autoloading. 
 
 \paragraph{Explicit autoloading}
 This kind of autoloading is basically a custom definition of the layout of source files, source directories and terms inside of a directory. Explicit autoloading happens every time a member is accessed in a template and it is not defined. Explicit autoloading is defined in means of using the \code{autoload} method, provided by the \code{Class} class, and therefore available inside of any template definition. The method has the following overloaded declarations: 
 \begin{lstlisting}
-type Autoloaded_Term is union of ( Symbol, Regexp )
+type Autoloaded_Term is Symbol or Regexp 
 end type
 def autoload (term: Autoloaded_Term, 
               path: String): Unit
@@ -332,12 +334,14 @@ Note that the linearization of a class refines the inheritance relation: if $C$ 
 \paragraph{\em Include classes}
 A mechanism that allows arbitrary including and prepending of trait into classes and inheritance binary trees\footnote{Yes, trees, not chains: prepended traits make the inheritance game stronger by forking the inheritance chain at each class with prepended traits, forming a shape similar to a rake.} uses a transparent structure called {\em include class}. Include classes are always defined indirectly.
 
-Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Object} class is encountered, which has no superclass. 
+Every class has a link to its superclass. In fact, the link is made up of an include class structure, which itself holds an actual link to the superclass. That superclass has its own link to its superclass and this chain goes forever until the \code{Any} class is encountered, which has no superclass. 
 
 \paragraph{\em Included traits}
 When a trait $M$ is included into a class, a new include class $Im_i$ is inserted between the target class and the include class $Is$ that holds a link to its superclass (or to a previously included trait $Im_{i+1}$). This include class $Im_i$ then holds a link to the included trait. Every class that includes the trait $M$ is available via the \code{included_in} method of $M$. 
 
 If a trait $M$ is already (included in or prepended to)\footnote{This is important since both included and prepended traits act like superclasses to every subclass.} any of the superclasses, then it is not included again. Included traits act like superclasses of the class they are included in, and they {\em overlay} the superclasses. 
+
+If a trait $M$ is polymorphic, it is only already (included in or prepended to) any of the superclasses, if the same trait's type instantiation is the one in question, and the same applies if the trait's name is overloaded, with the addition that a monomorphic trait is only already (included in or prepended to) any of the superclasses, if the monomorphic trait is. Therefore, a single trait name may be included multiple times, but only different type instantiations, or the monomorphic one. 
 
 \example A sample trait schema:
 \begin{lstlisting}
@@ -523,7 +527,7 @@ It is an error if the inheritance closure of a class type consists of an infinit
 \syntax\begin{lstlisting}
 Early_Defs ::= '{' [Early_Def {semi Early_Def}] '}' 
                'with'
-Early_Def  ::= {Annotation} {Modifier} Pat_Var_Def
+Early_Def  ::= {Annotation} {Modifier} (Var_Def | Val_Def)
 \end{lstlisting}
 
 A template may start with an {\em early definition} clause, which serves to define certain field values before the supertype constructor is called. In a template
@@ -550,7 +554,7 @@ Any reference to \code{self} in the right-hand side of an early definition refer
 \syntax\begin{lstlisting}
 Modifier         ::= Local_Modifier
                    | Access_Modifier
-                   | 'override'
+                   | 'override' [Class_Qualifier]
 Local_Modifier   ::= 'implicit'
                    | 'lazy'
                    | 'final'
@@ -630,7 +634,7 @@ The rules governing the validity and meaning of a modifier are as follows:
 
   A different form of qualification is \lstinline!protected[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
 
-  \item The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Gear is virtual, so Gear has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). 
+  \item The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Gear is virtual, so Gear has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). If the optional class qualifier is present after the \code{override} modifier, then a supertype of the given simple name or identified by the stable id has to provide a member that this modifier is applied to, either abstract or concrete, and it is an error if it does not. 
 
   \item The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of traits. 
 
@@ -712,7 +716,7 @@ This is just for the sake of completeness, since change from public to public is
 \label{sec:class-definitions}
 
 \syntax\begin{lstlisting}
-Tmpl_Def            ::= [Mutability] 'class' Class_Def
+Class_Definition    ::= [Mutability] 'class' Class_Def
 Class_Def           ::= id [Type_Param_Clause] 
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
@@ -802,6 +806,45 @@ object Sensitive {
 
 
 
+\subsection{Polymorphic \& Monomorphic Class Overloading}
+\label{sec:poly-mono-morphic-classes}
+
+As defined earlier, a class with a type parameter section \lstinline![$\tps$]! is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Furthermore, classes may be distinguished from each other by the count of their type parameters, in which case overloading resolution on their names apply -- and classes that are monomorphic are ``more specific'' than classes that are polymorphic, in case the class name appears without a type application.
+
+\paragraph{Note}
+If full type inference is desired for a polymorphic class $c$, then constructs such as the following can be used:
+\begin{lstlisting}
+(* for polymorphic class with 1 type parameter *)
+$c$[_] 
+
+(* for polymorphic class with 2 type parameters *)
+$c$[_, _] 
+
+(* for polymorphic class with 3 type parameters *)
+$c$[_, _, _] 
+
+(* for polymorphic class with 1 or more type parameters,
+   when there is only one such polymorphic class *)
+$c$[*_]
+\end{lstlisting}
+
+\paragraph{Note}
+Partial type inference is also possible: 
+\begin{lstlisting}
+(* for polymorphic class with 2 type parameters *)
+$c$[_, String] 
+
+(* for polymorphic class with 3 type parameters *)
+$c$[_, Number, _] 
+
+(* for polymorphic class with 2 or more type parameters,
+   when there is only one such polymorphic class *)
+$c$[String, *_]
+\end{lstlisting}
+
+
+
+
 
 \subsection{Constructor \& Destructor Definitions}
 \label{sec:constructor-destructor-def}
@@ -813,22 +856,14 @@ The primary constructor is a special function, more special in its syntax than a
 These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
 
 \paragraph{\em Explicit primary constructor fields}
-These are expressions inside the class template (\sref{sec:templates}) that refer to the formal value parameters, and they become an implicit part of the primary constructor. The evaluation happens after early definitions are evaluated and before explicit primary constructor body is evaluated, but combinations of the two approaches should be avoided for the sake of readability. 
-
-\example An example of an explicit primary constructor field. 
-\begin{lstlisting}
-class C (val y: String) {
-  val @x := y                ;; without modification
-  val @z := y + "_modified"  ;; with modification
-}
-\end{lstlisting}
+These are expressions inside the class template (\sref{sec:templates}) that refer to the formal value parameters, and they become an implicit part of the primary constructor. The evaluation happens after early definitions are evaluated and before explicit primary constructor body is evaluated, but combinations of the two approaches should be avoided for the sake of readability -- the only expressions that the formal value parameters should appear in are simple instance variable definitions. 
 
 \paragraph{\em Explicit primary constructor body}
 If a primary constructor should do something more than simply map parameters to instance values, then its explicit body comes in. It may co-exist with explicit primary constructor fields, which are then executed right after a call to the super-constructor (either in implicit position, or an explicit one). 
 \syntax\begin{lstlisting}
 Def             ::= PCtor_Def
 PCtor_Def       ::= 'constructor' PCtor_Fun_Def
-PCtor_Fun_Def   ::= '(' '_' ')' (':=' Constr_Expr | Constr_Block)
+PCtor_Fun_Def   ::= 'do' (Constr_Expr | Constr_Block)
 Constr_Expr     ::= Self_Invocation
                   | Constr_Block2
 Self_Invocation ::= 'self' Argument_Exprs
@@ -941,7 +976,7 @@ Destructors, unlike constructors, can not have any accessibility modifiers. They
 class $C$
   destructor
     @resource.close unless @resource.closed?
-    ;; super is invoked implicitly here
+    (* super is invoked implicitly here *)
   end destructor
 end class
 \end{lstlisting}
@@ -990,7 +1025,7 @@ Clone constructors may have modified accessibility, so that only certain functio
 \begin{lstlisting}
 class $C$
   clone
-    ;; super is invoked implicitly here
+    (* super is invoked implicitly here *)
     self[cloned].@resource := self[origin].@resource.clone
   end constructor
 end class
@@ -1020,7 +1055,7 @@ UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
 \label{sec:case-classes}
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= [Mutability] 'case' 'class' Class_Def
+Class_Definition ::= [Mutability] 'case' 'class' Class_Def
 \end{lstlisting}
 
 If a class definition is prefixed with \code{case}, the class is said to be a {\em case class}. 
@@ -1094,17 +1129,16 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 
 
 
-
-\subsection{Traits}
+\section{Trait Definitions}
 \label{sec:traits}
 
 \syntax\begin{lstlisting}
-Tmpl_Def       ::= [Mutability] 'trait' Trait_Def
-Trait_Def      ::= id [Type_Param_Clause] 
-                   Trait_Tmpl_Env
-Trait_Tmpl_Env ::= Tmpl_Env_With_Pars ['trait']
-                 | Tmpl_Env_Brackets
-                 | Tmpl_Env_No_Pars ['trait']
+Trait_Definition ::= [Mutability] 'trait' Trait_Def
+Trait_Def        ::= id [Type_Param_Clause] 
+                     Trait_Tmpl_Env
+Trait_Tmpl_Env   ::= Tmpl_Env_With_Pars ['trait']
+                   | Tmpl_Env_Brackets
+                   | Tmpl_Env_No_Pars ['trait']
 \end{lstlisting}
 
 A trait is a class that is meant to be injected into some other class as a mixin (including another traits). Unlike normal classes, traits can not be instantiated alone. 
@@ -1129,30 +1163,31 @@ trait Comparable[T <: Comparable[T]] {
 
 
 
-\subsection{Refinements}
+\section{Refinement Definitions}
 \label{sec:refinements}
 
 There are two separate branches of refinements in Gear, both are quite similar, but used for different purposes. Refinements are kind of a trait (\sref{sec:traits}). The branches are as follows:
 \begin{itemize}
-\item[]
-First, refinements as part of the type system. Those refinements present only declarations and further type restrictions as part of compound types (\sref{sec:compound-types}).
+  \item[] First, refinements as part of the type system. Those refinements present only declarations and further type restrictions as part of compound types (\sref{sec:compound-types}).
 
-\item[]
-Second, refinements that are basically traits designed to be locally prepended to classes. The second branch is described here. 
+  \item[] Second, refinements that are basically traits designed to be locally prepended to classes. The second branch is described here. 
 \end{itemize}
 
 \syntax\begin{lstlisting}
-Tmpl_Def            ::= 'refinement' Refinement_Def
-Refinement_Def      ::= id 'refine' id 
-                        Refinement_Tmpl_Env
-Refinement_Tmpl_Env ::= '{' [Template_Body] '}'
-                      | (semi | 'begin') [Template_Body] 
-                        'end' ['refinement']
+Refinement_Definition ::= 'refinement' Refinement_Def
+Refinement_Def        ::= id 'refine' Type {'and' Type} 
+                          Refinement_Tmpl_Env
+Refinement_Tmpl_Env   ::= Tmpl_Env_With_Pars ['refinement']
+                        | Tmpl_Env_Brackets
 \end{lstlisting}
 
-Such a refinement does not declare any type parameters, since those are already declared on the type that it refines. Therefore, the type and units of measure parameters are made visible to the refinement in order to allow it to override the class methods type-correctly. 
+Such a refinement does not declare any type parameters, since those are already declared on the types that it refines. Therefore, the type and units of measure parameters are made visible to the refinement in order to allow it to override the class methods type-correctly. 
 
-Refinements need to be ``activated'' in the scope for it to take effect (\sref{sec:use-expressions}).
+If multiple types are refined at once, then special care has to be taken when overriding existing members of the refined types -- those members have to be all present in every refined type, as well as all members of the refined types that are accessed from within the refinement. Then, such a refinement is equivalent to a series of refinements, one per each refined type. 
+
+Multiple refinements bearing the same name may co-exist in any module, as long as each refinement per each refined type does not define multiple members of the same signature. 
+
+Refinements need to be ``activated'' in the scope for it to take effect (\sref{sec:use-expressions}), similar to aspects.
 
 If a refinement refines a parameterized type, then the refinement only activates for this parameterized type (\sref{sec:parameterized-types}). 
 
@@ -1165,34 +1200,29 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 
 
 
-\subsection{Protocols}
+\section{Protocol Definitions}
 \label{sec:protocols}
 
 \syntax\begin{lstlisting}
-Tmpl_Def     ::= 'protocol' Pro_Def
-Pro_Def      ::= id [Type_Param_Clause]
-                 Pro_Tmpl_Env
-Pro_Tmpl_Env ::= 'extends' Trait_Parents
-                 semi [Template_Body] 'end' ['protocol']
-               | ['extends'] '{' [Template_Body] '}'
-               | ['begin' [Template_Body]] 'end' ['protocol']
+Protocol_Definition ::= 'protocol' Pro_Def
+Pro_Def             ::= id [Type_Param_Clause]
+                        Pro_Tmpl_Env
+Pro_Tmpl_Env        ::= Tmpl_Env_With_Pars ['protocol']
+                      | Tmpl_Env_Brackets
+                      | Tmpl_Env_No_Pars ['protocol']
 \end{lstlisting}
 
 Protocols express the contracts that other classes have to implement, and are added to classes with the keyword ``\code{implements}'' or as a part of the type's signature. 
 
 Protocols are basically traits (\sref{sec:traits}) that are stripped of some features, namely: 
 \begin{itemize}
-\item
-Only declarations are allowed as the template body. If a method definition is needed, use a trait instead. 
+  \item Only declarations are allowed as the template body. If a method definition is needed, use a trait instead. 
 
-\item
-Protocols can't declare anything for the class or metaclass of the class that implements them. If this is needed, use a trait instead. 
+  \item Protocols can't declare anything for the class or metaclass of the class that implements them. If this is needed, use a trait instead. 
 
-\item
-Protocols don't have early definitions (\sref{sec:early-defs}). If this is needed, again, use a trait instead. 
+  \item Protocols don't have early definitions (\sref{sec:early-defs}). If this is needed, again, use a trait instead. 
 
-\item 
-Protocols can make use of the \code{optional} and \code{requires} keywords as modifiers in their template (\sref{sec:statements}), as any other traits, but their usage is preferred within protocols. 
+  \item Protocols can make use of the \code{optional} and \code{requires} keywords as modifiers in their template (\sref{sec:statements}), as any other traits, but their usage is preferred within protocols. 
 \end{itemize}
 
 Protocol references are preferred to traits to be used by library designers to declare contracts for the code that uses them. 
@@ -1201,26 +1231,23 @@ Protocol references are preferred to traits to be used by library designers to d
 
 
 
-
-
-\subsection{Interfaces}
+\section{Interface Definitions}
 \label{sec:interfaces}
 
 \syntax\begin{lstlisting}
-Tmpl_Def      ::= [Mutability] ['case'] 'interface' 
-                  [Ifc_Qualifier] Ifc_Def
-Ifc_Qualifier ::= '[' Ifc_Kind ']'
-Ifc_Kind      ::= 'class' | 'trait' | 'object'
-Ifc_Def       ::= id [Type_Param_Clause]
-                  [Class_Param_Clauses] Ifc_Tmpl_Env
-Ifc_Tmpl_Env  ::= 'extends' Class_Parents
-                  semi [Template_Body] 'end' ['interface']
-                | ['extends'] '{' [Template_Body '}'
-                | ['begin' [Template_Body]] 'end' ['interface']
+Interface_Definition ::= [Mutability] Ifc_Kind 'interface' Ifc_Def
+Ifc_Kind             ::= ['case'] 'class' 
+                       | ['case'] 'object'
+                       | 'trait'
+                       | 'refinement'
+Ifc_Def              ::= id [Type_Param_Clause]
+                         [Class_Param_Clauses] Ifc_Tmpl_Env
+Ifc_Tmpl_Env         ::= Tmpl_Env_With_Pars ['interface']
+                       | Tmpl_Env_Brackets
+                       | Tmpl_Env_No_Pars ['interface']
 \end{lstlisting}
 
 Interfaces are filtered versions of classes and traits with only declarations and without early definitions or any definitions at all, except for auxiliary constructor definitions that become empty constructor declarations (without function bodies). Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols are. 
-
 
 
 
@@ -1230,13 +1257,15 @@ Interfaces are filtered versions of classes and traits with only declarations an
 \label{sec:object-definitions}
 
 \syntax\begin{lstlisting}
-Object_Def      ::= id Object_Tmpl_Env
-Object_Tmpl_Env ::= Tmpl_Env_With_Pars ['object']
-                  | Tmpl_Env_Brackets
-                  | Tmpl_Env_No_Pars ['object']
+Object_Definition ::= [Mutability] 'object' Object_Def
+Object_Def        ::= id Object_Tmpl_Env
+Object_Tmpl_Env   ::= Tmpl_Env_With_Pars ['object']
+                    | Tmpl_Env_Brackets
+                    | Tmpl_Env_No_Pars ['object']
+Expr              ::= [Mutability] 'object' Object_Tmpl_Env
 \end{lstlisting}
 
-Object definitions define singleton instances. If no superclass is given, \code{Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Gear has one scope for both types and terms. 
+Object definitions define singleton instances. If no superclass is given, \code{Gear/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Gear/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Gear/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Gear/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Gear has one scope for both types and terms. 
 
 It's most general form is ~\lstinline!object $m$ extends $t$!. Here, $m$ is the name of the object to be defined (or of the class object, which is the same as the related class), and $t$ is a template (\sref{sec:templates}) of one of the following forms:
 
@@ -1263,7 +1292,7 @@ Every trait applied to a class object does not affect the associated class itsel
 \label{sec:case-objects}
 
 \syntax\begin{lstlisting}
-Tmpl_Def ::= [Mutability] 'case' 'object' Object_Def
+Object_Definition ::= [Mutability] 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
@@ -1277,262 +1306,6 @@ object $c$ {
 
 
 
-
-
-
-
-\section{Aspects}
-\label{sec:aspects}
-
-\syntax\begin{lstlisting}
-Tmpl_Def        ::= 'aspect' Aspect_Def [Aspect_Clause]
-Aspect_Def      ::= id ['extends' Class_Parents] Aspect_Tmpl_Env
-Aspect_Tmpl_Env ::= '{' Aspect_Body '}'
-                  | 'begin' Aspect_Body 'end' ['aspect']
-Aspect_Body     ::= Template_Stat 
-                  | Aspect_Stat
-Aspect_Stat     ::= Advice_Def
-                  | Pointcut_Def
-Pointcut_Def    ::= 'pointcut' id
-                    ['(' [id [':' Type]] {',' [id [':' Type]]} ')']
-                    'is' Pointcut_Type 'end' ['pointcut']
-Pointcut_Type   ::= 'invoke' (id | regular_expression_literal)
-                  | 'get' (id | regular_expression_literal)
-                  | 'set' (id | regular_expression_literal)
-                  | 'handler' Type
-                  | 'returning' [id [':' Type] | Type]
-                  | 'throwing' [id [':' Type] | Type]
-                  | 'raising' [id [':' Type] | Type]
-                  | 'advice-execution' 
-                    [(id | regular_expression_literal)]
-                  | 'self' (id | Type)
-                  | 'target' (id | Type)
-                  | 'arguments' '(' id [':' Type] | Type 
-                    {',' (id [':' Type] | Type)} ')'
-                  | 'if' (Infix_Expr | '(' Infix_Expr ')')
-                  | 'not' Pointcut_Ref
-                  | Pointcut_Ref 'and' Pointcut_Ref
-                  | Pointcut_Ref 'or' Pointcut_Ref
-                  | '(' Pointcut_Ref ')'
-                  | 'retain' [id [':' Type] | Type]
-                  | 'release' [id [':' Type] | Type]
-Pointcut_Ref    ::= id ['(' id {',' id} ')'] | Pointcut_Type
-Advice_Def      ::= 'advice' 
-                    Advice_Spec (Pointcut_Ref | Pointcut_Type)
-                    Block_Expr
-Advice_Spec     ::= 'before' 
-                  | 'after' [('returning' | 'throwing' | 'raising') 
-                    [id [':' Type] | Type]]
-                  | 'around'
-Aspect_Clause   ::= 'per-self' [Pointcut_Ref] 
-                  | 'per-target' [Pointcut_Ref] 
-\end{lstlisting}
-
-Only for \code{Block_Expr} inside of \code{Advice_Def}:
-\begin{lstlisting}
-Simple_Expr1    ::= 'joinpoint' ['.' Selection]
-\end{lstlisting}
-
-% https://eclipse.org/aspectj/doc/released/progguide/semantics-pointcuts.html
-% https://eclipse.org/aspectj/doc/released/progguide/quick.html (better)
-% important term: published join point context data (args, target, caller etc.)
-% also important: http://en.wikipedia.org/wiki/Cross-cutting_concern#Examples - see memory management (possible join points: allocation, deallocation, retain, release)
-
-
-
-
-
-\section{Enums}
-\label{sec:enums}
-
-\syntax\begin{lstlisting}
-Const_Type_Def     ::= id [Type_Param_Clause] [Class_Param_Clauses]
-                       ['extends' Class_Parents] 
-                       'is' ['bitfield' | 'case'] 
-                       'enum' '(' Enum_Field {semi Enum_Field} ')'
-                       [Enum_Body]
-Enum_Field         ::= id [':=' scalar_literal]
-                     | id {'(' [Exprs] ')'}
-                     | id Class_Param_Clauses [Case_Enum_Body]
-Enum_Body          ::= Template_Body
-Case_Enum_Body     ::= '{' [Template_Body] '}'
-                     | 'begin' Template_Body 'end'
-\end{lstlisting}
-
-Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
-
-An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in four forms: 
-\begin{itemize}
-  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear. The signature of the enum must extend a scalar type, and is the only one that allows for the \code{bitfield} keyword to be used with it.
-  \item Initialized with nothing, then each enum constant is by itself the ordering, no implicit literal value is added. The comparison operators are automatically added and their implementations reflect the order in which the enum constants appear. 
-  \item Initialized with custom expressions. Each argument expression has to have a corresponding constructor defined in the enum template body or use the primary constructor. It is highly recommended for every enum constant to be immutable, but it is not mandatory. This form can't extend any parent class and has the same implicit ordering as the previous form. 
-  \item Initialized like a case class. Each enum item defines its own parameters and those then behave like case classes. The \code{case} keyword may or may not be used to enforce this definition form: if it is present, then this form is required for each item, meaning that the enum can not extend a scalar type. If primary constructor is defined, then each item has to use it. If a parent class is defined, then the constructors must make sure that the parent's designated constructor is invoked. The generated \code{apply} method is memoized and referentially transparent, thus lowering the possible number of instances of each case class. 
-\end{itemize}
-
-
-
-
-
-\section{Units of Measure}
-\label{sec:units-of-measure}
-
-\syntax\begin{lstlisting}
-Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'unit-of-measure' 
-                   [semi Unit_Convs {semi Unit_Convs}]
-Unit_Name      ::= id - Unit_Op ['extends' id - Unit_Op]
-Unit_Convs     ::= Unit_Name ':=' Unit_Conv
-Unit_Conv      ::= '(' Unit_Conv ')'
-                 | Unit_Elem [Unit_Op Unit_Elem]
-                 | Unit_Conv Unit_Op Unit_Conv
-Unit_Elem      ::= number_literal | id |
-Unit_Op        ::= '*' | '/' | '^'
-\end{lstlisting}
-
-Numbers in Gear can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
-
-\paragraph{Syntax exception}
-Unlike most identifiers, names of units of measures are forbidden from using \code{Unit_Op} characters in their names, and with respect to that, these characters do not need to be separated by spaces from their operands, where units of measure name are expected, comprising of (\sref{sec:unitsofmeasuresyntax}) and (\sref{sec:parameterized-types}).
-
-\example The following defines the measure \code{cm} (centimeter).
-\begin{lstlisting}
-type cm is unit-of-measure
-end type
-\end{lstlisting}
-
-\example The following defines the measure \code{ml} (milliliter) as a cubic centimeter (\lstinline!cm ^ 3!).
-\begin{lstlisting}
-type ml is unit-of-measure
-  ml := cm ^ 3
-end type
-\end{lstlisting}
-
-\example The following shows possible usage of abstract units of measure. 
-\begin{lstlisting}
-type distance is abstract unit-of-measure
-end type
-
-type m extends distance is unit-of-measure
-  m := km / 1000
-end type
-
-type km extends distance is unit-of-measure
-  km := m * 1000
-end type
-
-type mi extends distance is unit-of-measure
-  mi := km * 0.621
-  mi := (m * 1000) * 0.621 ;; this can be inferred!
-end type
-\end{lstlisting}
-This enables types aggregated with units of measure require a number tagged with any distance unit of measure and still work with correct units. 
-
-Every unit of measure is defined in the same scope as any other type would be, but the application of units of measure to numbers or {\em aggregated unit types} require to import units of measure by name into the scope where a unit of measure from a different unrelated module would be used. 
-
-\paragraph{\em Types Aggregated with Units of Measure}
-In addition to type parameters of each type, every type may be parameterized with a units of measure aggregation. These parameters are each put into angle brackets, and the only available bound is an upper bound for abstract unit of measure type. 
-
-\syntax\begin{lstlisting}[mathescape=false]
-Variant_Type_Param ::= '<' (id | '_') ['<:' id] '>'
-\end{lstlisting}
-
-Names of unit of measure parameters must not clash with names of type parameters or other unit of measure parameters, otherwise it is a compile-time error. 
-
-\paragraph{\em Persistence of Units of Measure}
-There is a huge difference between the way F\# handles units of measure and Gear's way. In F\#, the unit of measure information is lost after compilation, but persists in Gear in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
-
-
-
-
-
-
-\section{Record Types}
-\label{sec:record-types}
-
-\syntax\begin{lstlisting}
-Const_Type_Def    ::= Record_Name 'is' ['abstract'] 'record'
-                      [semi] Record_Components
-Record_Name       ::= id [Type_Param_Clause] [Param_Clause]
-                      ['extends' Class_Parents]
-Record_Components ::= Record_Component {semi Record_Component}
-Record_Component  ::= 'val' (Val_Dcl | Pat_Def)
-                    | 'var' (Var_Dcl | Var_Def)
-                    | 'case' id semi 
-                      {'when' id 
-                      ('then' | nl) 
-                      Record_Components} 'end' ['case']
-\end{lstlisting}
-
-Record types are simple syntax sugar for classes that represent {\em data objects}, i.e., objects that don't really care about behaviour, their only purpose is to store data. 
-
-Record types can appear in three different forms: {\em basic records}, {\em discriminated records} and {\em variant records}.\footnote{Note that the syntax for record types in Gear differs from Ada's \lstinline[language=Ada]!type Record_Name is record $\ldots$ end record;!. Gear ends a type, not a record. This difference appears in more places than just this syntax.}
-
-\paragraph{\em Basic Records}
-Basic records have no discriminating parameters, and can have only type parameters. Their structure is always the same. 
-
-\paragraph{\em Discriminated Records}
-Discriminated records are similar to variant records, they can have discriminating parameters and a discriminated record may also be a variant record. 
-
-\paragraph{\em Variant Records}
-Variant records are similar to discriminated records, they can have discriminating parameters and a discriminated record may also be a discriminated record. Variant parameters are enums (\sref{sec:enums}). Variant records render new (anonymous) subtypes of the original record type, similar to a concrete type constructor. The new subtypes are a cartesian product of all the enumerated variant parameter values, therefore there is a fixed and well defined number of the subtypes. If the enumerated variant parameters contain values, those values in no way affect the variant record subtypes. Since variant records can possibly have different components per each variant, they also have different instance sizes. 
-
-Both discriminated and variant records generate a second constructor parameter list, which consists purely of named parameters (never positional parameters), whose names correspond to the components of the particular record subtype (in case of variant records), or of the whole record type in the other case. If the components define a default value, those become the default values of the generated parameters as well. 
-
-The generated structure of every record type is as follows:
-\begin{itemize}
-  \item Component $c$ renders two methods: \code{$c$()}, where the result type is defined by the type of the component $c$; and if $c$ is mutable, then also \code{$c$_=($p$)}, where $p$ is an (immutable) by-value parameter with type defined by the type of the component $c$. 
-  \item Discriminating parameter $p$ renders only one method: \code{$p$()}, where the result type is defined by the type of the discriminating parameter $p$, therefore, it is immutable. 
-\end{itemize}
-
-If a record type inherits from an abstract record type, then the components introduced in it must not conflict with components of the parent record type, and all parameters of the parent's second constructor parameter list are merged into the generated second parameter lists of the record type, passing inherited parameters to the parent constructor automatically. 
-
-\example The following example defines a variant record. 
-\begin{lstlisting}
-type Traffic_Light is bitfield enum
-  Red
-  Yellow
-  Green
-end type
-
-type Variant_Record (option: Traffic_Light) is record
-  val a: A
-  var b: B? := nil
-  case option
-  when Red
-    val c: C
-  when Yellow
-    var d: D
-  when Green
-    val e: E
-  end case
-end type
-
-let vr := Variant_Record.new(.Red)(a: A.new, b: B.new, c: C.new)
-\end{lstlisting}
-
-The generated constructors then behave like this:
-\begin{lstlisting}
-constructor (Traffic_Light.Red) (
-    val ~a: A, val ~b: B? := nil, val ~c: C)
-  val @option: Traffic_Light := .Red
-  val @a: A := a
-  val @b: B? := b
-  val @c: C := c
-end constructor
-constructor (Traffic_Light.Yellow) (
-    val ~a: A, val ~b: B? := nil, val ~d: D)
-  val @option: Traffic_Light := .Yellow
-  val @a: A := a
-  val @b: B? := b
-  val @d: D := d
-end constructor
-constructor (Traffic_Light.Green) (
-    val ~a: A, val ~b: B? := nil, val ~e: E)
-  val @option: Traffic_Light := .Green
-  val @a: A := a
-  val @b: B? := b
-  val @e: E := e
-end constructor
-\end{lstlisting}
 
 
 

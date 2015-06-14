@@ -3,6 +3,10 @@
 
 \chapter{Types}
 
+\minitoc
+
+\newpage
+
 \syntax\begin{lstlisting}
 Type                ::= Function_Type
                       | Infix_Type [Existential_Clauses]
@@ -10,20 +14,18 @@ Function_Type       ::= Function_Args {'->' Function_Args}
                         '->' Type
 Function_Args       ::= Infix_Type
                       | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg        ::= [Param_Io] ['*' | '**' | '&' | ['~'] id ':'] 
-                        Param_Type
+Function_Arg        ::= ['*' | '**' | '&' | ['~'] id ':'] Param_Type
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
-Existential_Dcl     ::= 'type' Type_Dcl
-                      | 'val' Val_Dcl
-                      | 'var' Var_Dcl
+Existential_Dcl     ::= Type_Definition
+                      | Val_Dcl
 Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type} 
                         ['with' ['refinement'] Refine_Stats]
                       | ['refinement'] Refine_Stats
 Postfix_Type        ::= Compound_Type 
                         ['with' 'constraint' Constraint_Block]
 Infix_Type          ::= Postfix_Type {op_id [nl] Postfix_Type}
-Annot_Type          ::= {Annotation} Simple_Type
+Annot_Type          ::= {Annotation} Simple_Type [Nullable_Mod]
 Simple_Type         ::= Simple_Type [Type_Args]
                       | Simple_Type '#' id
                       | Stable_Id
@@ -31,7 +33,9 @@ Simple_Type         ::= Simple_Type [Type_Args]
                       | Literal ['.' 'type']
                       | '(' [Types] ')'
                       | Foreign_Type
-Types               ::= Type {',' Type}
+Types               ::= Named_Subtype {',' Named_Subtype}
+Named_Subtype       ::= [['~'] id ':'] Type
+Type_Equation       ::= '=' Type
 \end{lstlisting}
 
 When we say \textit{type} in the context of Gear, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Gear is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
@@ -70,14 +74,20 @@ Types in Gear are represented by objects that are members of the \code{Type} typ
 \label{sec:type-paths}
 
 \syntax\begin{lstlisting}
-path_id          ::= id [Type_Args]
 Path             ::= Stable_Id
-                   | [path_id '.'] ('this' | 'self')
+                   | [id '.'] 'self'
                    | 'self' '[' ('cloned' | 'origin') ']'
-                   | Container_Path
-Stable_Id        ::= [Path '.'] path_id
-                   | [path_id '.'] 'super' [Class_Qualifier]
-Class_Qualifier  ::= '[' Container_Path ']'
+                   | 'outer' Class_Qualifier
+Stable_Id        ::= [Path '.'] id
+                   | [id '.'] 'super' [Class_Qualifier] '.' id
+                   | 'outer' Class_Qualifier '.' id
+                   | Module_Path '.' Stable_Id
+                   | ''' id
+Class_Qualifier  ::= '[' (id | Simple_Type) ']'
+Module_Path      ::= [Root] Module_Selector {'.' id}
+Module_Selector  ::= [Vendor] id
+Root             ::= '@Root' '.'
+Vendor           ::= id '/'
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Gear's type system. 
@@ -85,26 +95,21 @@ Paths are not types themselves, but they can be a part of named types and in tha
 A path is one of the following:
 
 \begin{itemize}
-\item 
-The empty path $\epsilon$ (which can not be written explicitly in user programs). 
+  \item The empty path $\epsilon$ (which can not be written explicitly in user programs). 
 
-\item 
-\code{this}, which references the directly enclosing class. 
+  \item \code{this}, which references the directly enclosing class. 
 
-\item 
-\lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Gear's \code{Lang} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
+  \item \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Gear's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
 
-\item
-\lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
+  \item \lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
 
-\item
-\lstinline@self[origin]@, which references the directly enclosing class of an original object (an instance being cloned, see \sref{sec:clone-def}). 
+  \item \lstinline@self[origin]@, which references the directly enclosing class of an original object (an instance being cloned, see \sref{sec:clone-def}). 
 
-\item 
-\lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$. Additionally, $p$ allows modules to appear instead of references to classes or traits, but no module reference can follow a class or a trait reference: \lstinline@{module_ref '.'} {(class_ref|trait_ref) '.'} $\ldots$@. 
+  \item \lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$.. 
 
-\item
-\lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
+  \item \lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
+
+  \item \lstinline!'$x$!, where $x$ is a type variable name.\footnote{Not quite the same as type parameter nor type argument.}
 \end{itemize}
 
 Paths introduce also {\em path dependent types}, if the referenced member is a type. 
@@ -190,9 +195,9 @@ class A {
 
 val a1 := A.new
 val a2 := A.new
-a2.f a1.B.new     ;; type mismatch, found a1.B, required a2.B
-a2.g a1.B.new     ;; prints "Got a B." to stdout
-a2.f a2.B.new     ;; prints "Got my B." to stdout
+a2.f a1.B.new     (* type mismatch, found a1.B, required a2.B *)
+a2.g a1.B.new     (* prints "Got a B." to stdout *)
+a2.f a2.B.new     (* prints "Got my B." to stdout *)
 \end{lstlisting}
 This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
 
@@ -218,25 +223,26 @@ A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a pa
 
 \example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
 \begin{lstlisting}
-t = $\epsilon$.type#t ;; "global space"
-Number = Lang~[gear].type#Number ;; predefined import of Lang~[gear]
+t = $\epsilon$.type#t (* "global space" *)
+(* predefined import of Gear/Language *)
+Number = Gear/Language.type#Number 
 
 object An_Object {
   type t
-  t = An_Object.type#t ;; bound by object
+  t = An_Object.type#t (* bound by object *)
 }
 
 class A_Class {
   type t
   def a_method := {
-    t = A_Class.self.type#t ;; bound by class
+    t = A_Class.self.type#t (* bound by class *)
   }
   class << self
     type u
-    u = A_Class.type#u ;; bound by (class) object
+    u = A_Class.type#u (* bound by (class) object *)
   end
-  t = A_Class.self.type#t ;; bound by class
-  self.u = A_Class.type#u ;; bound by (class) object
+  t = A_Class.self.type#t (* bound by class *)
+  self.u = A_Class.type#u (* bound by (class) object *)
 }
 \end{lstlisting}
 
@@ -254,7 +260,7 @@ Type_Args   ::= '[' Types ']'
 Types       ::= Type_Arg {',' Type_Arg}
 Type_Arg    ::= [['~'] id ':'] Type 
               | '<' uom_expr '>'
-              | '_'
+              | ['*'] '_'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
@@ -298,17 +304,17 @@ Function_1[named: List[String], String]
 Given the type definitions of the previous example, the following types are malformed: 
 
 \begin{lstlisting}
-Tree_Map[I]               ;; wrong number of parameters
-Tree_Map[List[I], Number] ;; type parameter List not within bound
+Tree_Map[I]               (* wrong number of parameters *)
+Tree_Map[List[I], Number] (* type parameter List not within bound *)
 
-F[Number, Boolean]        ;; Number is not a type constructor
-F[Tree_Map, Number]       ;; Tree_Map takes two parameters, 
-                          ;;   F expects a type constructor taking one
+F[Number, Boolean]        (* Number is not a type constructor
+F[Tree_Map, Number]       (* Tree_Map takes two parameters, 
+                             F expects a type constructor taking one *)
 
-G[S, Number]              ;; type S constrains its parameter to
-                          ;;   conform to String, 
-                          ;; G expects type constructor with a parameter
-                          ;;   that conforms to Number
+G[S, Number]              (* type S constrains its parameter to
+                             conform to String, 
+                             G expects type constructor with a parameter
+                             that conforms to Number *)
 \end{lstlisting}
 
 
@@ -320,9 +326,12 @@ G[S, Number]              ;; type S constrains its parameter to
 
 \syntax\begin{lstlisting}
 Simple_Type ::= '(' Types ')'
+Infix_Type  ::= Named_Subtype {'*' Named_Subtype}
 \end{lstlisting}
 
 A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
+
+A tuple type $T_1 * \ldots * T_n$ is an infix type (\sref{sec:infix-types}) representing the exact same tuple type as ($T_1 \commadots T_n$).
 
 Tuple classes are available as patterns for pattern matching. The properties can be accessed as methods ~\lstinline!1$ \commadots n$!. 
 
@@ -355,10 +364,12 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations (\sref{sec:annotations
 Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type} 
                   ['with' ['refinement'] Refine_Stats]
                 | ['refinement'] Refine_Stats
-Refine_Stats  ::= '{' [Refine_Stat {semi Refine_Stat}] '}'
+Refine_Stats  ::= '{' Refine_Stat {semi Refine_Stat} '}'
 Refine_Stat   ::= Dcl
-                | 'type' Type_Def
+                | Type_Definition
                 | Constraint_Dcl
+                | Struct_Constraint
+                | ()
 \end{lstlisting}
 
 A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refinement {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
@@ -404,8 +415,7 @@ Type          ::= Function_Args {'->' Function_Args}
                   '->' Type
 Function_Args ::= Infix_Type
                 | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg  ::= [Param_Io] ['*' | '**' | '&' | ['~'] id ':']
-                  Param_Type
+Function_Arg  ::= ['*' | '**' | '&' | ['~'] id ':'] Param_Type
 \end{lstlisting}
 
 The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. 
@@ -439,9 +449,6 @@ A function that returns ``nothing'' may be declared as returning the type \code{
 Function arguments may be optionally annotated with more requirements: 
 \begin{itemize}
 \item
-Parameter prefixed with \code{Param_Io} defines whether the parameter is required to be an output parameter. 
-
-\item
 Parameter prefixed with ``\lstinline!*!'' is a requirement of a repeated parameter. 
 
 \item 
@@ -454,7 +461,7 @@ Parameter prefixed with ``\lstinline!~$\id$!'' is a requirement of a parameter p
 Parameter prefixed with ``\lstinline!**!'' is a requirement of a captured named parameters. 
 
 \item
-Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{nil}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discared), but the result type of the passed block must conform (\sref{sec:conformance}).
+Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{undefined}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discarded), but the result type of the passed block must conform (\sref{sec:conformance}).
 \end{itemize}
 
 \paragraph{Note}
@@ -479,8 +486,8 @@ def h (x: Integer, y: Integer, z: Integer) end
 Type                ::= Infix_Type Existential_Clauses
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
-Existential_Dcl     ::= 'type' Type_Dcl
-                      | 'val' Val_Dcl
+Existential_Dcl     ::= Type_Definition
+                      | Val_Dcl
 \end{lstlisting}
 
 An existential type has the form ~\lstinline@$T$ for-some { $Q$ }@, where $Q$ is a sequence of type declarations (\sref{sec:type-decls-aliases}). Let ~\lstinline@$t_1$[$\tps_1$] >: $L_1$ <: $U_1\ \commadots\ t_n$[$\tps_n$] >: $L_n$ <: $U_n$@~ be the types declared in $Q$ (any of the type parameter sections ~\lstinline![$\tps_i$]!~ might be missing). The scope of each type $t_i$ includes the type $T$ and the existential clause $Q$. The type variables $t_i$ (occurring in the sequence $Q$) are said to be {\em bound} in the type ~\lstinline!$T$ for-some { $Q$ }!. Type variables that occur in a type $T$, but which are not bound in $T$, are said to be {\em free} in $T$. 
@@ -585,8 +592,8 @@ Since this \code{List} type is covariant in its type parameter, then e.g. ~\lsti
 \label{sec:nullable-types}
 
 \syntax\begin{lstlisting}
-Type          ::= Type Nullable_Mod
-Nullable_Mod  ::= '?'
+Annot_Type    ::= {Annotation} Simple_Type Nullable_Mod
+Nullable_Mod  ::= '?' | '!'
 \end{lstlisting}
 
 A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Gear types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
@@ -599,13 +606,21 @@ Nullable types in this form can appear everywhere where a type is expected.
 
 A nullable type may be seen as a syntax sugar for the following union type ~\code{Nullable[$T$]} (\sref{sec:unions}):
 \begin{lstlisting}
-type Nullable [T] is union of (
+type Nullable [T] is union of 
   T
   Nothing
-) end type
+end type
 \end{lstlisting}
 
 When a method is applied on a variable containing \code{nil}, the standard \code{Member_Not_Found} may occur, if the method is really not found in the class \code{Nothing} or in any of implicit conversions from \code{Nothing} (e.g., \code{Nothing} has an implicit conversion to the option type \code{None}). 
+
+A strictly not-nullable type has the form ~\lstinline@$T$!@, where ``\code{!}'' denotes a not-nullable type. Gear types are implicitly not-nullable, but strictly not-nullable types have the extra property that \code{nil} and \code{undefined} do not cause a warning when assigned to a variable or value that is of a strictly not-nullable type, but raise a type error. In case the referenced value changes in runtime by other means than assignment (native access or maybe due to hot code load), the same error has to be raised. 
+
+A compiler may decide to issue extra warnings when assignment of a \code{nil} or \code{undefined} can be detected. 
+
+A strictly not-nullable may be seen as some implicitly wrapped-on-assignment / unwrapped-on-read box that checks for \code{value = nil} and raises an error when such condition is true. But Gear does not have any special methods for object dereference.\footnote{Yet, and probably never will.} 
+
+When used in a compound type, use nullable modifier only on the first component. When used in a constrained type, use nullable modifier only on the component type of the constrained type. 
 
 
 
@@ -615,9 +630,9 @@ When a method is applied on a variable containing \code{nil}, the standard \code
 \label{sec:unions}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= id [Type_Param_Clause] 'is' 'union' 'of'
-                   '(' Type {semi Type} ')'
-Simple_Type    ::= '(' Type {'or' Type} ')'
+Type_Representation ::= Is Union
+Union               ::= 'union' 'of' Type {semi Type}
+Infix_Type          ::= Type {'or' Type}
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
@@ -627,8 +642,63 @@ Unions are indeed virtually ``tagged'' with the actual type that they represent 
 The first syntax shows a named union type, while the second shows an anonymous union type (which may still be given a name later). If any of the types that are a part of a union type is a union type itself, the two types are merged. The syntax used for the anonymous version is correlating with infix type syntax, but this syntax gives it the meaning of a union type, which is preferred to infix type syntax. In fact, it might be implemented with an infix type that generates union types:
 
 \begin{lstlisting}
-type or [A, B] is Union[A, B]
+type or [A, B] is Union[A, B] 
+end type
 \end{lstlisting}
+
+Union types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
+\begin{itemize}
+  \item Commutativity: \code{X or Y} is equivalent to \code{Y or X}. 
+  \item Associativity: \code{X or (Y or Z)} is equivalent to \code{(X or Y) or Z}, which is equivalent to \code{X or Y or Z}. 
+  \item Simplification: if \code{X} conforms to \code{Y}, then \code{X or Y} is equivalent to \code{Y}. 
+  \item Conformance: \code{X} conforms to \code{X or Y}. 
+  \item Supertypes: if both \code{X} and \code{Y} conform to \code{Z}, then \code{X or Y} also conforms to \code{Z}. 
+  
+  \item \code{X or Nothing} is equivalent to \code{X} for any \code{X} except \code{Undefined}. 
+  \item \code{X or Undefined} is equivalent to \code{X} for any \code{X}. 
+  \item \code{X or Any} is equivalent to \code{Any} for any \code{X}. 
+  
+  \item If \code{X[T]} is covariant in the type parameter \code{T}, then \code{X[U] or X[V]} conforms to \code{X[U or V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+  \item If \code{X[T]} is contravariant in the type parameter \code{T}, then \code{X[U] or X[V]} conforms to \code{X[U with V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+\end{itemize}
+
+
+
+
+
+\subsection{Intersection Types}
+\label{sec:intersection-types}
+
+\syntax\begin{lstlisting}
+Type_Representation ::= Is 'intersection' 'of'
+                        Type {semi Type}
+Infix_Type          ::= Type {'and' Type}
+\end{lstlisting}
+
+An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. 
+
+The difference between intersection types and compound types (\sref{sec:compound-types}) is that intersection types are commutative and associative -- independent on the order in which the member types appear. 
+
+
+Intersection types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
+\begin{itemize}
+  \item Commutativity: \code{X and Y} is equivalent to \code{Y and X}. 
+  \item Associativity: \code{X and (Y and Z)} is equivalent to \code{(X and Y) and Z}, which is equivalent to \code{X and Y and Z}. 
+  \item Simplification: if \code{X} conforms to \code{Y}, then \code{X and Y} is equivalent to \code{X}. 
+  \item Conformance: \code{X and Y} conforms to \code{X}. 
+  \item Subtypes: if \code{Z} conforms to both type \code{X} and type \code{Y}, then \code{Z} also conforms to \code{X and Y}. 
+  \item Distributivity over union: \code{X and (Y or Z)} is equivalent to \code{(X and Y) or (X and Z)}. 
+  
+  \item \code{X and Nothing} is equivalent to \code{Nothing} for any \code{X} except \code{Undefined}. 
+  \item \code{X and Undefined} is equivalent to \code{Undefined} for any \code{X}. 
+  \item \code{X and Any} is equivalent to \code{X} for any \code{X}. 
+  
+  \item If \code{X[T]} is covariant in the type parameter \code{T}, then \code{X[U and V]} conforms to \code{X[U] and X[V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+  \item If \code{X[T]} is contravariant in the type parameter \code{T}, then \code{X[U or V]} conforms to \code{X[U] and X[V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
+\end{itemize}
+
+
+
 
 
 
@@ -746,7 +816,7 @@ Extra properties of parameters are as follows: a \lstinline@*@ for variadic para
 
 \example The declarations
 \begin{lstlisting}
-def a: -> Integer ;; or def a () -> Integer
+def a: -> Integer (* or def a () -> Integer *)
 def b (x: Integer): Boolean
 def c (x: Integer): (y : String, z : String) -> String
 def d (~x: Integer): Integer
@@ -890,8 +960,8 @@ The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding 
 
 \syntax\begin{lstlisting}[morekeywords={Any}]
 Simple_Type ::= 'Any'
-;; also:
-Simple_Type ::= 'Lang~[gear].Any'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Any'
 \end{lstlisting}
 
 This type does not represent a single concrete value type, but any concrete type. It is used in places where the actual type does not matter, and could be even from other language running along Gear in the VM. 
@@ -900,7 +970,7 @@ With respect to overloading resolution (\sref{sec:value-conversions}), this type
 
 Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Any} is used as a class type (never a trait type).
 
-The \code{Any} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Lang} module, and therefore can be shadowed and aliased (e.g. to \code{Any_Object}). 
+The \code{Any} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Language} module, and therefore can be shadowed and aliased (e.g. to \code{Any_Object}). 
 
 The \code{Any} virtual type is the actual root of the type system of Gear, although explicit inheritance is not allowed from it. Other languages that integrate with Gear on the same VM may have \code{Any} as their root type as well, disobeying the rule that is set only for Gear. This way, Gear preserves its unified type system. 
 
@@ -908,32 +978,24 @@ The \code{Any} virtual type is the actual root of the type system of Gear, altho
 
 
 
-\section{Structural Inferred Auto Type}
+\section{Automatically Inferred Type}
 \label{sec:auto-type}
 
 \syntax\begin{lstlisting}[morekeywords={Auto}]
 Simple_Type ::= 'Auto'
-;; also:
-Simple_Type ::= 'Lang~[gear].Auto'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Auto'
 \end{lstlisting}
 
 This type does represent a single concrete value type: a compound type with usually just the refinement part. However, it does not explicitly state what the refinement is. Instead, the refinement is inferred from the context in which it is used. The inference algorithm is very different from local type inference (\sref{sec:local-type-inference}). 
 
 Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Auto} is used as a class type (never a trait type) and its parts of the inferred refinement are merged with any given refinement from the compound type. 
 
-The \code{Auto} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Lang} module, and therefore can be shadowed and aliased (e.g. to \code{Inferred}). 
+The \code{Auto} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Language} module, and therefore can be shadowed and aliased (e.g. to \code{Inferred}). 
 
-Elements that determines the inferred parts of the \code{Auto} type:
+If a type variable of the form ~\lstinline!'$x$! is not present in the type parameters list, then it is a placeholder for the \code{Auto} type with a name $x$, also generating type equality constraints, if used more than once across parameters or result type -- for every type parameter name $x_i$, an equivalent type has to be inferred for every occurrence of $x_i$. 
 
-% TBD: update this simple list with more concrete details as the inference is defined
-\begin{itemize}
-  \item Any methods that are invoked on the value that has this type assigned. These are parts of the refinement. 
-  \item Any classes or traits that are required of the value, except when there is a definitive \code{else}-style clause that allows the value to be of any other type as well. Those requirements are then presented in a union type, with the refinement being compound with each member of the union type. 
-  \item If the value is passed as an argument anywhere, where the expected type is determined to be not \code{Any} or locally type inferred, then the aforementioned handling applies as if the expected type was required of the value.
-  \item If a method is dynamically added to the value before being required, then it is not included in the refinement. 
-  \item The \code{Auto} type is also automatically generalized. If a method that uses it has already type parameters, then these are appended after them, in order of appearance, with method result type being the last one. 
-  \item If the value is passed as an argument, with an expected type to be locally type inferred, then it itself becomes typed with an unknown type and a type parameter is appended to the containing function.
-\end{itemize}
+See (\sref{sec:automatic-inference}) for details on (non-local) automatic type inference. 
 
 There is one important limitation: the \code{Auto} type must not cause circular references between functions. In that case, the type has to be specified in another way. This inference happens only during compilation, unlike local type inference, which takes place in runtime. 
 
@@ -998,8 +1060,8 @@ Note that \code{Auto} type inference does not track requirements of values from 
 
 \syntax\begin{lstlisting}[morekeywords={Dynamic}]
 Simple_Type ::= 'Dynamic'
-;; also:
-Simple_Type ::= 'Lang~[gear].Dynamic'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Dynamic'
 \end{lstlisting}
 
 This type does not represent a single concrete value type\footnote{This type is similar to what ~\lstinline[language={[Sharp]C}]!dynamic!~ is to C\#.}, but any concrete type, very much like \code{Any} or \code{Auto}. 
@@ -1027,8 +1089,8 @@ Using \code{Dynamic} type is one of possible ways to use multi-methods -- the ty
 
 \syntax\begin{lstlisting}[morekeywords={Dynamic}]
 Simple_Type ::= 'Variadic_Arguments'
-;; also:
-Simple_Type ::= 'Lang~[gear].Variadic_Arguments'
+(* also: *)
+Simple_Type ::= 'Gear/Language.Variadic_Arguments'
 \end{lstlisting}
 
 This type is recognized only as a parameter type (be it a function, constructor\ldots), and with a further constraint that it has to be applied to a solely parameter of a whole parameter list. Such parameter list must be the last parameter list of a definition or declaration, and there might be more parameter lists present preceding it. 
@@ -1046,7 +1108,7 @@ This type does not represent by itself any concrete value type, instead, it repr
 If no arguments are passed to a function that accepts this parameter type, a \code{Unit} value (\lstinline!()!) is used. The \code{Unit} value is also used for matched arguments list that carry no argument expressions. As a special case, when only one argument list is matched, the type is \code{Tuple_1}, a type that is generally avoided throughout Gear (e.g., ~\lstinline!($e$ as $T$)!~ is not of type ~\lstinline!Tuple_1[$T$]!, but just $T$), as its contents can be implicitly unwrapped, but here it is needed to keep the semantics consistent. 
 
 \paragraph{Note}
-This type is used e.g. within the \code{Lang.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Gear VM). 
+This type is used e.g. within the \code{Language.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Gear VM). 
 
 
 
@@ -1104,6 +1166,9 @@ Two type constructors (\sref{sec:type-constructors}) are equivalent, if they hav
 \item 
 Two unions (\sref{sec:unions}) are equivalent, if they have the same number of member types and those types are pairwise equivalent. 
 
+\item 
+Two intersection types (\sref{sec:intersection-types}) are equivalent, if they have the same number of member types and those types are pairwise equivalent. 
+
 \end{itemize}
 
 
@@ -1136,13 +1201,17 @@ The conformance relation $(\conforms)$ is the smallest transitive relation that 
 
   \item A unit of measure type $t$ conforms to another unit of measure type $u$ if and only if $t \equiv u$ or $t$ extends $u$, where $us$ is an abstract unit of measure type. 
 
-  \item  A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
+  \item A parameterized type ~\lstinline!$T$[$T_1 \commadots T_n$]!~ conforms to ~\lstinline!$T$[$U_1 \commadots U_n$]!~ if the following conditions hold for $i = 1 \commadots n$.
     \begin{itemize}
       \item If the $i^{\superth}$ type parameter of $T$ is declared covariant, then $T_i \conforms U_i$.
       \item If the $i^{\superth}$ type parameter of $T$ is declared contravariant, then $U_i \conforms T_i$.
       \item If the $i^{\superth}$ type parameter of $T$ is declared invariant (neither covariant nor contravariant), then $U_i \equiv T_i$.
       \item If the $i^{\superth}$ type parameter of $T$ is declared with a conformance restricting annotation, then that annotation of $T_i$ must conform to the corresponding annotation of $U_i$. 
     \end{itemize}
+    
+  \item A constant constructor $T$ of a variant type $U$ (\sref{sec:variant-types}) conforms to $U$. If $U$ is a parameterized variant type, $T$ still conforms to $U$, even though it itself is not parameterized. 
+  
+  \item A non-constant constructor $T$ of a variant type $U$ (\sref{sec:variant-types}) conforms to $U$. If $U$ is a parameterized variant type, then $T$ conforms to $U$ if $T$ seen as a parameterized type conforms to parameterized $U$\footnote{Quite obviously.}. 
 
   \item A unit of type $N$ conforms to unit of type $U$ if $N$ extends $U$ or if $N \equiv U$. 
 
@@ -1151,7 +1220,9 @@ The conformance relation $(\conforms)$ is the smallest transitive relation that 
       \item For the $i^{\superth}$ type parameter of $T$, $N_i \conforms U_i$.
     \end{itemize}
 
-  \item A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$, and to any compound type created as a combination of subsets of the components, excluding empty sets. 
+  \item A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$.
+  
+  \item Conformance of intersection types is defined in (\sref{sec:intersection-types}).
 
   \item A constrained type ~\lstinline!$T$ with constraint $b$!~ conforms to $T$. A type ~\lstinline!$T$ with constraint $b_1$!~ conforms to ~\lstinline!$T$ with constraint $b_2$!, if any value $e$ that conforms ~\lstinline!$T$ with constraint $b_1$!~ by being a member of $T$ and passing the test presented by $b_1$, also conforms to ~\lstinline!$T$ with constraint $b_2$!~ by passing the test presented by $b_2$.\footnote{This conformance is only tested based on actual values being tested, not the types themselves.}
 
@@ -1185,8 +1256,9 @@ if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ f
 
   \item Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
  
-  \item A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. 
+  \item A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. See also: (\sref{sec:unions}).
 
+  \item An overloaded type projection conforms to type of every overloaded alternative. 
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 
@@ -1205,6 +1277,25 @@ The least upper bound or the greatest lower bound of a set of types does not alw
 
 The least upper bound or the greatest lower bound might also not be unique. If there are several such bounds, Gear is free to pick up any of them. 
 
+
+
+
+\subsection{Least Upper Bound}
+\label{sec:least-upper-bound}
+
+The term {\em least upper bound} of a set of types (and the closely related term {\em weak least upper bound} of a set of types) have two possible representations. 
+
+\begin{itemize}
+  \item {\em Common supertype representation}. This approach selects one compound type that is a common supertype of all types in the set. 
+  \item {\em Union type representation}. This approach simply makes a union type (\sref{sec:unions}) out of all types in the set. 
+\end{itemize}
+
+Gear implicitly uses the union type representation for least upper bounds. The union type already presents quite a few simplifications of itself. This behaviour can be changed per-scope, per-file or even per-module, using a pragma:
+\begin{lstlisting}
+pragma least-upper-bound(.Union)  (* implicit *)
+pragma least-upper-bound(.Common) (* optionally *)
+\end{lstlisting}
+These pragmas are a part of Gear's \code{Language} module. % TBD: specify where these pragmas are exactly located
 
 
 
@@ -1259,7 +1350,7 @@ In Gear, there are a few types and their values that represent emptiness of some
   
   The \code{None} case object is primarily designed to be used with pattern matching, and also plays an important internal part in Gear's implementation of pattern matching. 
   
-  Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Predef} (\sref{sec:predef}), and results in \code{None}. 
+  Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Language.Predef}, and results in \code{None}. 
   
   \item The \code{Unit} type. It is basically a \code{Tuple_0} type. 
   
@@ -1272,42 +1363,42 @@ In Gear, there are a few types and their values that represent emptiness of some
 
 The following lines show some common relations between empty values. 
 \begin{lstlisting}
-nil = undefined  ;; yes
-nil == undefined ;; no
-nil = None       ;; no
-undefined = None ;; no
-() = undefined   ;; no
-() = nil         ;; no
+nil = undefined  (* yes *)
+nil == undefined (* no *)
+nil = None       (* no *)
+undefined = None (* no *)
+() = undefined   (* no *)
+() = nil         (* no *)
 
-Nothing === nil         ;; yes
-Nothing === undefined   ;; yes
-Nothing === ()          ;; no
-Undefined === nil       ;; no
-Undefined === undefined ;; yes
-Undefined === ()        ;; no
-Unit === nil            ;; no
-Unit === undefined      ;; no
-Unit === ()             ;; yes
+Nothing === nil         (* yes *)
+Nothing === undefined   (* yes *)
+Nothing === ()          (* no *)
+Undefined === nil       (* no *)
+Undefined === undefined (* yes *)
+Undefined === ()        (* no *)
+Unit === nil            (* no *)
+Unit === undefined      (* no *)
+Unit === ()             (* yes *)
 
 val nothing := nil
 match nothing {
-  when Some(x) then () ;; does not match
-  when None then ()    ;; matches
+  when Some(x) then () (* does not match *)
+  when None then ()    (* matches *)
 }
 
-val nothing := get_undefined ;; a function that returns `undefined'
+val nothing := get_undefined (* a function that returns `undefined' *)
 match nothing {
-  when Some(x) then () ;; does not match
-  when None then ()    ;; matches
+  when Some(x) then () (* does not match *)
+  when None then ()    (* matches *)
 }
 
 val unit = ()
 match unit {
-  when Some(x) then () ;; does not match, 
-                       ;; also compilation warning, because Unit 
-                       ;; is not compatible to Option[T]
-  when None then ()    ;; does not match, also not compatible
-  when Unit then ()    ;; matches
+  when Some(x) then () (* does not match, 
+                          also compilation warning, because Unit 
+                          is not compatible to Option[T] *)
+  when None then ()    (* does not match, also not compatible *)
+  when Unit then ()    (* matches *)
 }
 \end{lstlisting}
 

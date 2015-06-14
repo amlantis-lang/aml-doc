@@ -4,32 +4,18 @@
 \newcommand{\Unicode}[1]{\mbox{$\backslash$u{#1}}}
 \newcommand{\UnicodeRange}[2]{\mbox{$\backslash$u{#1}-$\backslash$u{#2}}}
 
-\chapter{Lexical Syntax}
+\chapter{Lexical Syntax \& Analysis}
+\label{sec:lexical-analysis}
 
-Gear programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Gear programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs might use may not support the full Unicode character set.
+\minitoc
+
+Gear programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Gear programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs and text editors might use may not support the full Unicode character set.
 
 Grammar of lexical tokens is given in the following sections. These tokens are then used as terminal symbols of the semantical grammar. 
 
-To construct tokens, characters are distinguished according to the following classes (Unicode general category given in parentheses):
-\begin{itemize}
-\item 
-Whitespace characters. \Unicode{0020} | \Unicode{0009} | \Unicode{000D} | \Unicode{000A} (space, tab character, carriage return, line feed)
+To construct tokens, characters are distinguished according to the rules defined in the following sections. Various combination of different Unicode character classes can also build up tokens, and later on, parts of different higher syntax forms. 
 
-\item
-Letters, which include lower case letters (Ll), upper case letters (Lu), title-case letters (Lt), other letters (Lo), letter numerals (Nl), modifier letters (Lm) and the three characters \Unicode{0024} `~\lstinline[mathescape=false]!$!~', \Unicode{00A7} `~§~' and \Unicode{005F} `~\lstinline!_!~', which both count as upper case letters. 
-
-\item
-Digits `\lstinline!0!' | \ldots \thinspace | `\lstinline!9!'. 
-
-\item
-Parentheses. `\lstinline!(!' | `\lstinline!)!' | `\lstinline![!' | `\lstinline!]!' | `\lstinline!{!' | `\lstinline!}!'
-
-\item
-Delimiter characters. `\lstinline!'!' | `\lstinline!"!' | `\lstinline!.!' | `\lstinline!;!' | '\lstinline!,!'
-
-\item
-Operator characters. These consist of all printable ASCII characters \UnicodeRange{0020}{007F} that are in none of the sets above, mathematical symbols (Sm) and other symbols (So). 
-\end{itemize}
+% Unicode overview with lists: http://www.fileformat.info/info/unicode/category/index.htm 
 
 \newpage
 
@@ -38,79 +24,125 @@ Operator characters. These consist of all printable ASCII characters \UnicodeRan
 
 
 
-\section{Identifiers}
+\section{Identifiers \& Keywords}
 \label{sec:identifiers}
+\label{sec:keywords}
 
-\syntax\begin{lstlisting}
-op_id    ::= opchar {opchar}
+\syntax\begin{lstlisting}[deletekeywords={of,and,class,for}]
+digit_char      ::= '0' $\ldots$ '9'
+letter_char     ::= ? Unicode char of classes Lu, Ll, Lt, Lo, 
+                    Lm and Nl ?
+connecting_char ::= ? Unicode char of class Pc ?
+combining_char  ::= ? Unicode char of classes Mn and Mc ?
+formatting_char ::= ? Unicode char of class Cf ?
+lower           ::= ? Unicode char of class Ll ?
+upper           ::= (letter_char - lower) 
+                  | ? Dollar sign ? | '§' | '_'
+
 var_id   ::= lower id_rest
 plain_id ::= upper id_rest
            | var_id
 id       ::= ['@' | '@@'] (plain_id
-             | '`' [(id_elem - '(') {id_elem}] '`')
-id_rest  ::= {letter | digit | '+' | '-' | '/' | '_'}
-             (letter | digit) [('?' | '!')]
-id_elem  ::= printable_char
+             | '`' plain_id '`'
+             | '``' {any_id}+ '``')
+           | '`' op_id '`'
+id_char  ::= letter_char
+           | digit_char
+           | connecting_char
+           | combining_char
+           | formatting_char
+           | '+' | '-' | '/' | '_'
+id_rest  ::= {id_char} ['?' | '!' | ''']
+any_id   ::= ? any Unicode char except for backquote: '`' ?
 \end{lstlisting}
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
 
-An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Gear keywords, and to allow to identify operators. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Gear keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
-Gear programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English names.
+Gear programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
 
 The ``\lstinline[mathescape=false]!$!'' character is reserved. 
 
-
-
-
-
-
-\section{Keywords}\label{sec:keywords}
-
 A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in some other languages, keywords are not being recognized inside of paths, except for a few specific cases.
 
-The following names are the reserved words.
+The following names are the reserved words. Identifiers that match any of the specified reserved word carry the extra property of being a possible keyword, which is used in syntactic grammar. 
 
-% constant: http://dlang.org/const3.html
-% +immutable, +immutable/transitive, +mutable
-% freezes self; freezes self and everything contained and not mutable; nothing
-% +attribute
-\begin{lstlisting}
+\syntax\begin{lstlisting}
+Identifier_Keyword ::= ? id, one of: ?
 abstract      advice        advice-execution            after
-alias         annotation    arguments     around        as
-aspect        assert        atomic        attribute     begin
-before        bitfield      break         broken        case
-catch         class         clone         cloned        constant
-constraint    constructor   declare       def           delta
-destructor    digits        dispatch      do            else
-elsif         end           ensure        enum          execution
-exhausted     extends       final         for           for-some
-foreign       function      get           goto          handler
-if            immutable     implements    implicit      in
-include       interface     invariant     invoke        is
+alias         and           annotation    arguments     around
+as            aspect        assert        atomic        attribute
+begin         before        bitfield      break         broken
+case          catch         class         clone         cloned
+constant      constraint    constructor   declare       def
+delta         destructor    digits        dispatch      do
+done          eager         else          elsif         end
+ensure        enum          execution     exhausted     extends
+final         for           for-some      foreign       function
+functor       get           goto          handler       if
+immutable     implements    implicit      in            include
+interface     intersection  invariant     invoke        is
 joinpoint     label         lazy          let           loop
-macro         match         memoize       message       method
-module        multi         mutable       native        next
-nil           no            not           object        of
-opaque        operator      optional      origin        otherwise
-out           override      per-self      per-target    pointcut
+macro         match         measure       member        memoize
+message       method        module        monitored     multi
+mutable       native        next          nil           no
+not           object        of            opaque        operator
+optional      or            origin        otherwise     outer
+override      parallel      per-self      per-target    pointcut
 pragma        prefer        prepend       private       property
-protected     protocol      public        raise         raising
-range         record        redo          refine        refinement
-release       rescue        retain        retry         return
-returning     requires      reverse       sealed        self
-set           skip          soft          step          super
-switch        target        then          this          throw
-throwing      to            trait         transparent   type
-undefined     unless        unowned       until         union
-unit-of-measure             upgrade       use           val
-var           yes           weak          when          while
-with          yield
+protected     protocol      public        pure          raise
+raiseable     raising       range         rec           recursive
+record        redo          ref           refine        refinement
+release       reraise       rescue        retain        rethrow
+retry         return        returning     requires      reverse
+sealed        self          set           seq           sig
+skip          soft          step          struct        super
+switch        synchronized  tailcall      target        then
+this          throw         throwable     throwing      to
+trait         transparent   type          undefined     unless
+unowned       until         union         upgrade       use
+val           var           variant       yes           weak
+when          while         with          xor           yield
+yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
 
+
+
+
+
+\section{Symbolic Keywords}
+\label{sec:symbolic-keywords}
+
+\syntax\begin{lstlisting}[deletekeywords={of}]
+Symbolic_Keyword ::= ? one of: ?
+let!  yield!  return!  as?  as!  is!  not!
+|  .  .?  .!  :  (  )  [  ]  <  >  >:  <:  :>
+%[|  |]  %[  %(  {  %{  }  %/  /
+'  #  ..  ..<  ...  :=  ==  /== ;  ;;  ->  
+=>  =>>  *  **  &
+_  @  <@  @>  <@@  @@>
+\end{lstlisting}
+
+Symbolic or partially symbolic character sequences can be treated as keywords, if a lexical or syntactic grammars specifies that. Some lexical grammars extend some of these sequences with ``flags''. 
+
+
+
+
+
+\section{Symbolic Operators}
+\label{sec:symbolic-operators}
+
+\syntax\begin{lstlisting}[deletekeywords={of,and}]
+op_id       ::= Symbolic_Op
+Symbolic_Op ::= {op_char}+
+              | '`' {op_char}+ '`'
+op_char     ::= ? Unicode char of classes Sm and So ?
+\end{lstlisting}
+
+Symbolic operators are sequences of characters as shown above, except where the sequence of characters is a symbolic keyword (\sref{sec:symbolic-keywords}) and is used by the corresponding grammar as such.\footnote{In another words, symbolic keywords have a precedence over symbolic operators, if a grammar would be otherwise ambiguous.}
 
 
 
@@ -120,72 +152,49 @@ Not every reserved word is a keyword in every context, this behavior will be fur
 \label{sec:newlinecharacters}
 
 \syntax\begin{lstlisting}
-semi ::= nl {nl} | ';'
+nl   ::= (* Line Feed, LF; Multics, Unix, Unix-like... *)
+         ? $\Unicode{000A}$ ? 
+         
+         (* Carriage Return, CR; Mac OS 9-, ZX Spectrum... *)
+       | ? $\Unicode{000D}$ ? 
+       
+         (* CR+LF; Windows, DOS, OS/2, Symbian OS... *)
+       | ? $\Unicode{000D}$ $\Unicode{000A}$ ?
+       
+         (* LF+CR; RISC OS... *)
+       | ? $\Unicode{000A}$ $\Unicode{000D}$ ?
+       
+         (* Unicode conformance *)
+       | ? $\Unicode{000B}$ ? (* Vertical Tab, VT *)
+       | ? $\Unicode{000C}$ ? (* Form Feed, FF *)
+       | ? $\Unicode{0085}$ ? (* NExt Line, NEL *)
+       | ? $\Unicode{2028}$ ? (* Line Separator, LS *)
+       | ? $\Unicode{2029}$ ? (* Paragraph Separator, PS *)
+       
+semi ::= {nl}+ | ';' {nl}
+tend ::= ';;'
 \end{lstlisting}
 
 Gear is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Gear source file is treated as the special separator token \lstinline@nl@ if the following criteria are satisfied:
 
 \begin{enumerate}
-  \item The tokens preceding the newline can form a syntactically complete expression.
+  \item The token immediately preceding the newline can terminate an expression.
+  \item The token immediately following the newline can begin a new expression. 
 \end{enumerate}
 
-Since Gear may be interpreted in a REPL\footnote{Read-Eval-Print Loop} fashion, there are no other suitable criteria. Such a token that can terminate an expression is, for instance, not a binary operator or a message sending operator, which both require further tokens to create an expression. Keywords that expect any following tokens also can not terminate expressions. Gear interpreters and compilers do not look-ahead beyond newlines.
+In interactive environment, top-level expressions are ended by entering the ``\code{;;}'' sequence of tokens (\code{tend}). 
 
 If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Gear still sees that as only a one significant newline, to prevent any confusion.
 
-Keywords that can terminate an expression are: \lstinline@break@, \lstinline@end@, \lstinline@opaque@, \lstinline@native@, \lstinline@next@, \lstinline@nil@, \lstinline@no@, \lstinline@redo@, \lstinline@retry@, \lstinline@return@, \lstinline@self@, \lstinline@skip@, \lstinline@super@, \lstinline@this@, \lstinline@transparent@, \lstinline@yes@, \lstinline@yield@.
-
-Since REPL can not foresee what the following line will hold, the second criterion can not be checked earlier than when the following line is entered. However, if the following line continues the previous expression, it is treated as such. The only exception is when the previous expression is of an assignment kind, in that case, there is a simple solution that need to be applied: enclose the right-hand side of the assignment in parentheses. That way the right-hand side expression is not ended sooner than before the closing parenthesis. Too keep syntax rules consistent across both REPL and pre-compiled programs, these rules apply to both. 
-
-\example Different treating of assignment expression in presence of newline tokens. 
-\begin{lstlisting}
-;; the expression:
-val a := b
-    .c
-;; is treated as:
-(val a := b).c
-
-;; but the expression:
-val a := (b
-    .c)
-;; is treated as:
-val a := b.c 
-\end{lstlisting}
-
-\example Different treating of $n$-ary expression in presence of newline tokens.
-\begin{lstlisting}
-;; the expression:
-val a := b
-    ? c
-    : d
-;; is treated as:
-(val a := b).`?`(c) ;; and continues with an error,
-                    ;; because `:` is not a legal operator
-
-;; but the expression:
-val a := (b
-    ? c
-    : d)
-;; is treated as:
-val a := b.`?`(c, d) 
-\end{lstlisting}
+The grammar rules contain productions where the optional newline (``\code{[nl]}'') is present, in which case it obviously does not end any expression. 
 
 
 
 
 
 
-\section{Operators}\label{sec:operators}
-A set of identifiers is reserved for language features, some of which may be overridden by user space implementations. Operators have language-defined precedence rules that are supposed to usually comply to user expectations (principle of least surprise), and another desired precedence may be obtained by putting expressions with operators inside of parenthesis pairs. 
-
-Binary (infix) operators have to be separated by whitespace or parentheses on both sides, unary operators by whitespace on left side -- the right side is what they are bound to. 
-
-
-
-
-
-
-\section{Literals}\label{sec:literals}
+\section{Literals}
+\label{sec:literals}
 
 There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
 
@@ -195,6 +204,8 @@ Literal ::= integer_literal
 	      | complex_literal
 	      | rational_literal
 	      | character_literal
+	      | boolean_literal
+	      | unit_literal
 	      | string_literal
 	      | symbol_literal
 	      | regular_expression_literal
@@ -352,12 +363,12 @@ rational_literal    ::= real_number_literal
                         ['/' rat_suffix_literal]
 \end{lstlisting}
 
-Rational number literals are of type \code{Number}, and have a container type \code{Number.Rational}, which has further methods of creating instances of itself. There are also methods in \code{Number}, such as \code{/-}, which results in a rational number. Rational numbers have sort of increased accuracy of operations, especially when component types are integral types. 
+Rational number literals are of type \code{Number}, and have a container type \code{Number.Rational}, which has further methods of creating instances of itself. There are also methods in \code{Number}, such as \code{//}, which results in a rational number. Rational numbers have sort of increased accuracy of operations, especially when component types are integral types. 
 
 \example Some literal notations and methods that result in rational numbers. 
 \begin{lstlisting}
 val a := 1 / 3r
-val b := 1 /- 3
+val b := 1 // 3
 val c := Rational(1, 3)
 \end{lstlisting}
 
@@ -400,7 +411,7 @@ uom_expr         ::= Unit_Conv {',' Unit_Conv}
 \example Some number literals annotated with units of measure:
 \begin{lstlisting}
 var min_motorway_speed := 90 [<km/hour>]
-;; in the end, same as:
+(* in the end, same as: *)
 var distance := 90 [<km>]
 var time := 1 [<hour>]
 min_motorway_speed := distance // time
@@ -444,12 +455,14 @@ char_escape_seq ::=
     | '\$n$' (* Byte value in octal *)
     | '\$nn$' (* Byte value in octal *)
     | '\$nnn$' (* Byte value in octal *)
-    | '\u$nnnn$' (* Unicode character U+$nnnn$ *)
-    | '\u$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$ *)
+    | '\u$nnnn$' (* Unicode character U+$nnnn$, hex digits *)
+    | '\U$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$, hex digits *)
     | '\' named_char ';' (* Named character entity *)
 \end{lstlisting}
 
 The named character reference (\code{named_char}) is defined by HTML5 (\url{http://www.w3.org/TR/html5/syntax.html#named-character-references});
+
+The octal byte values are consumed with the longest match. 
 
 
 
@@ -468,6 +481,18 @@ Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ litera
 
 
 
+\subsection{Unit Literal}
+\label{sec:unit-literal}
+
+\syntax\begin{lstlisting}
+unit_literal ::= '()'
+\end{lstlisting}
+
+Unit literal is of the type \code{Unit} (also known as \code{Gear/Language.Unit}, and has alias of \code{Gear/Language.Tuple_0}).
+
+
+
+
 
 \subsection{String Literals}
 \label{sec:stringliterals}
@@ -475,9 +500,11 @@ Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ litera
 \syntax\begin{lstlisting}
 string_literal      ::= int_string_literal
                       | raw_string_literal
+                      | verbatim_string
 int_string_literal  ::= '"' {int_string_element} '"'
                       | '%'  [str_flags] '"' {int_string_element} '"'
 raw_string_literal  ::= '%r' [str_flags] '"' {string_element} '"'
+verbatim_string     ::= '"""' {printable_char} '"""'
 string_element      ::= printable_char | char_escape_seq
 int_string_element  ::= string_element | interpolated_expr
 interpolated_expr   ::= '#{' Expr '}'
@@ -488,13 +515,16 @@ String literals are members of the type ~\lstinline@String@. Double quotes in in
 
 String literals appear in multiple forms:
 \begin{itemize}
-  \item {\em Raw strings} are of the form ~\lstinline!%r$f$"$s$"!. There are no interpolated expressions. If a sequence of string elements appears to be an interpolated expression, it is not, and is instead treated as a part of the raw string as it is. 
+  \item {\em Raw strings} are of the form ~\lstinline!%r$f$"$s$"!. There are no interpolated expressions. If a sequence of string elements appears to be an interpolated expression, it is not, and is instead treated as a part of the raw string as it is. Escape sequences are evaluated. 
   \item {\em Interpolable strings} are of the forms ~\lstinline!"$s$"!~ and ~\lstinline!%$f$"$s$"!. Interpolated expressions can appear there, if its introducing character is not escaped by an odd number of backslashes. Interpolated expressions are evaluated, converted to \code{String_Like} and their result inserted at each place in the string where they appear, safely. 
+  \item {\em Verbatim strings} are of the form ~\lstinline!"""$s$"""!. Escape sequences and interpolated expressions are not evaluated, also there is thus no way to escape the delimiter (\lstinline!"""!) inside it. Verbatim strings are immutable, and can be made mutable by use of appropriate methods. 
   \item {\em Immutable strings} are all strings that do not carry the flag \code{m} (\textbf{m}utable). The flag \code{i} (\textbf{i}mmutable) is redundant in this manner, and is only provided for completeness. 
   \item {\em Mutable strings} are only those strings that carry the flag \code{m}. Immutable strings may be converted to mutable strings and vice versa by use of appropriate methods. 
 \end{itemize}
 
 In each form, $s$ is the string content, and $f$ are string flags, as defined. 
+
+In each form, literal newlines do not need to be escaped. Newlines may still be inserted into single-line string literals. Having escaped newlines appearing in a multi-line string is suspicious. 
 
 
 
@@ -548,40 +578,50 @@ Collection_Literal ::= Tuple_Literal
 	                 | List_literal
 	                 | Dictionary_Literal
 	                 | Bag_Literal
+Collection_Flags   ::= printable_char {printable_char}
+CF                 ::= Collection_Flags
 Tuple_Literal      ::= '(' [Exprs] ')'
-List_Literal       ::= '%' Collection_Flags '[' [Exprs] ']'
-Dictionary_Literal ::= '%' Collection_Flags '{' [Dict_Exprs] '}'
-Bag_Literal        ::= '%' Collection_Flags '(' [Exprs] ')'
-Dict_Exprs         ::= Dict_Expr {',' Dict_Expr}
+Collection_Exprs   ::= Expr {semi Expr}
+List_Literal       ::= '%' [CF] '['  [Collection_Exprs]  ']'
+Array_Literal      ::= '%' [CF] '[|' [Collection_Exprs] '|]'
+Dictionary_Literal ::= '%' [CF] '{'  [Collection_Exprs]  '}'
+Bag_Literal        ::= '%' [CF] '('  [Collection_Exprs]  ')'
+Dict_Exprs         ::= Dict_Expr {semi Dict_Expr}
 Dict_Expr          ::= Simple_Expr1 '=>' Expr
 	                 | id ':' Expr
-Collection_Flags   ::= printable_char {printable_char}
 \end{lstlisting}
 
-Tuple literals are members of the \lstinline@Tuple@ type family. List literals are members of the \lstinline@List@ type, usually \lstinline@Array_List@ with alias of \lstinline@Array@. Dictionary literals are members of the \lstinline@Dictionary@ type with alias of \lstinline@Map@, usually \lstinline@Hash_Dictionary@ with alias of \lstinline@Hash_Map@. Bag literals are members of the \lstinline@Bag@ type, usually \lstinline@Hash_Bag@ or \lstinline@Hash_Set@. Collection flags may change the actual class of the literal, along with some other properties, described in the following text. 
+Tuple literals are members of the \lstinline@Tuple@ type family. List literals are members of the \lstinline@List_Like@ type, usually \lstinline!Linked_List! with alias of \lstinline@List@. Array literals are members of the \lstinline!Array_Like! type, usually \lstinline!Array!. Dictionary literals are members of the \lstinline@Dictionary@ type with alias of \lstinline@Map@, usually \lstinline@Hash_Dictionary@ with alias of \lstinline@Hash_Map@. Bag literals are members of the \lstinline@Bag@ type, usually \lstinline@Hash_Bag@ or \lstinline@Hash_Set@. Collection flags may change the actual class of the literal, along with some other properties, described in the following text. 
 
 List literal collection flags: 
 
 \begin{enumerate}
-\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the list frozen. 
-\item Flag \lstinline@l@ = \textbf{l}inked, makes the list a member of \lstinline@Linked_List@. 
-\item Flag \lstinline@w@ = \textbf{w}ords, the following expressions are treated as words, converted to strings for each word separated by whitespace. 
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the list frozen. 
+  \item Flag \lstinline@l@ = double \textbf{l}inked, makes the list a member of \lstinline@Double_Linked_List@. 
+  \item Flag \lstinline@w@ = \textbf{w}ords, the following expressions are treated as words, converted to strings for each word separated by whitespace.
+\end{enumerate}
+
+Array literal collection flags:
+
+\begin{enumerate}
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the array frozen.
+  \item Flag \lstinline@w@ = \textbf{w}ords, the following expressions are treated as words, converted to strings for each word separated by whitespace. 
 \end{enumerate}
 
 Dictionary literals collection flags:
 
 \begin{enumerate}
-\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the dictionary frozen. 
-\item Flag \lstinline@l@ = \textbf{l}inked, makes the dictionary a member of \lstinline@Linked_Hash_Dictionary@ (also has alias \lstinline@Linked_Hash_Map@).
-\item Flag \lstinline@m@ = \textbf{m}ulti-map, the dictionary items are then either the items themselves, if there is only one for a particular key, or a set of items, if there is more than one item for a particular key. The dictionary is then a member of \lstinline@Multi_Hash_Dictionary@ (alias \lstinline@Multi_Hash_Map@) or \lstinline@Linked_Multi_Hash_Dictionary@ (alias \lstinline@Linked_Multi_Hash_Map@). 
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the dictionary frozen. 
+  \item Flag \lstinline@l@ = \textbf{l}inked, makes the dictionary a member of \lstinline@Linked_Hash_Dictionary@ (also has alias \lstinline@Linked_Hash_Map@).
+  \item Flag \lstinline@m@ = \textbf{m}ulti-map, the dictionary items are then either the items themselves, if there is only one for a particular key, or a set of items, if there is more than one item for a particular key. The dictionary is then a member of \lstinline@Multi_Hash_Dictionary@ (alias \lstinline@Multi_Hash_Map@) or \lstinline@Linked_Multi_Hash_Dictionary@ (alias \lstinline@Linked_Multi_Hash_Map@). 
 \end{enumerate}
 
 Bag literal collection flags:
 
 \begin{enumerate}
-\item Flag \lstinline@i@ = \textbf{i}mmutable, makes the bag frozen. 
-\item Flag \lstinline@s@ = \textbf{s}et, the collection is a set instead of a bag (a specific bag, such that for each item, its tally is always $0$ or $1$, thus each item is in the collection up to once). 
-\item Flag \lstinline@l@ = \textbf{l}inked, makes the collection linked, so either a member of \lstinline@Linked_Hash_Bag@ in case of a regular bag, or \lstinline@Linked_Hash_Set@ in case of a set. 
+  \item Flag \lstinline@i@ = \textbf{i}mmutable, makes the bag frozen. 
+  \item Flag \lstinline@s@ = \textbf{s}et, the collection is a set instead of a bag (a specific bag, such that for each item, its tally is always $0$ or $1$, thus each item is in the collection up to once). 
+  \item Flag \lstinline@l@ = \textbf{l}inked, makes the collection linked, so either a member of \lstinline@Linked_Hash_Bag@ in case of a regular bag, or \lstinline@Linked_Hash_Set@ in case of a set. 
 \end{enumerate}
 
 Linked collections have a predictable iteration order in case of bags and dictionaries, or are simply stored differently in case of lists. 
@@ -596,17 +636,30 @@ The type of elements of a collection is inferred from combination of the expecte
 
 \example The following lines show how type inference works with collection literals. 
 \begin{lstlisting}
-val a: Array[String] := %[]  ;; Array[String]
-val b := %[][String]         ;; Array[String]
-val c := %["hello", "world"] ;; Array[String]
+/* Linked_List[String] */
+val a: List[String] := %[]
+val b := %[][String]
+val c := %["hello"; "world"]
 
-val d: Map[String, String] := %{} ;; Map[String, String]
-val e := %{}[String, String]      ;; Map[String, String]
-val f := %{"hello" => "world"}    ;; Map[String, String]
+/* Array[String] */
+val a: Array[String] := %[||]
+val b := %[||][String]
+val c := %[|"hello"; "world"|]
 
-val g: Bag[String] := %()    ;; Bag[String]
-val h := %()[String]         ;; Bag[String]
-val i := %("hello", "world") ;; Bag[String]
+/* Hash_Dictionary[String, String] */
+val d: Hash_Dictionary[String, String] := %{}
+val e := %{}[String, String]
+val f := %{"hello" => "world"}
+
+/* Hash_Dictionary[Symbol, String] */
+val d: Hash_Dictionary[Symbol, String] := %{}
+val e := %{}[Symbol, String]
+val f := %{hello: "world"}
+
+/* Hash_Bag[String] */
+val g: Bag[String] := %()
+val h := %()[String]
+val i := %("hello"; "world")
 \end{lstlisting}
 
 
@@ -614,20 +667,47 @@ val i := %("hello", "world") ;; Bag[String]
 
 
 
-\section{Whitespace \& Comments}\label{sec:whitespacecomments}
+\section{Whitespace \& Comments}
+\label{sec:whitespacecomments}
 
 Tokens may be separated by whitespace characters and/or comments. Comments come in two forms: 
 
-A multi-line comment is a sequence of characters between \lstinline@/* and */@. Multi-line comments may be nested. 
+A multi-line comment is a sequence of characters between \lstinline@(* and *)@. Multi-line comments may be nested. There is a whitespace (including newlines) required after \lstinline@(*@ and before \lstinline@*)@ in the outermost multi-line comment. 
 
-A single-line comment is a sequence of characters that starts with \lstinline@;;@ and extends to the end of the line. 
+A single-line comment in Gear is a multi-line comment, written all on one line. That's all. No special syntax for that. 
 
-Documentation comments are multi-line comments that start with \lstinline@/*!@. 
+Documentation comments are multi-line comments that start with \lstinline@(*!@. A whitespace is required after the opening token. 
 
 As a special case (not only) for UNIX-like systems that support the notation, the initial lines of source file that start with the sequence ``\lstinline@#!@'' are ignored. 
 
+Whitespace tokens and comments are not discarded during lexical analysis, but instead after lexical filtering, by rules described in (\sref{sec:lexical-filtering}).
 
 
+
+
+
+\section{Conditional Compilation}
+\label{sec:conditional-compilation}
+
+\syntax\begin{lstlisting}
+Pragma           ::= If_Directive 
+                   | Else_Directive 
+                   | End_If_Directive 
+If_Directive     ::= 'pragma' 'if' id {'.' id}
+Else_Directive   ::= 'pragma' 'else'
+End_If_Directive ::= 'pragma' 'end-if'
+\end{lstlisting}
+
+If an \code{If_Directive} token is matched during tokenization, text is recursively tokenized until a corresponding \code{Else_Directive} or \code{End_If_Directive}. If the compilation environment defines the associated identifier, the token stream includes the tokens between the \code{If_Directive} and the corresponding \code{Else_Directive} or \code{End_If_Directive}. Otherwise, the tokens are discarded. The converse applies to the tokens between a corresponding \code{Else_Directive} and \code{End_If_Directive}. These directives may be nested. 
+
+
+
+
+
+\section{Hidden Tokens}
+\label{sec:hidden-tokens}
+
+Some hidden tokens are inserted by lexical filtering (\sref{sec:lexical-filtering}), or are used to replace existing tokens. 
 
 
 

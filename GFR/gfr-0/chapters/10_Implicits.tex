@@ -4,6 +4,8 @@
 \chapter[Implicit Parameters, Views \& Multiple Dispatch]{Implicit Parameters, Views \\\& Multiple Dispatch}
 \label{sec:implicit-params-views}
 
+\minitoc
+
 
 
 
@@ -82,7 +84,7 @@ end
 
 The monoid in question is marked as an implicit parameter, and can therefore be inferred based on the type of the list. Consider e.g. the call
 \begin{lstlisting}
-sum %[1, 2, 3]
+sum %[1; 2; 3]
 \end{lstlisting}
 in a context where \code{String_Monoid} and \code{Int_Monoid} are visible. We know that the formal type parameter \code{A} of \code{sum} needs to be instantiated to \code{Integer}. The only eligible object which matches the implicit formal parameter type \code{Monoid[Integer]} is \code{Int_Monoid}, thus this object will be passed as implicit parameter. 
 
@@ -164,18 +166,48 @@ def f [T] (t: T)(implicit $w_1$: Function_1[T, String]) := $\ldots$
 \label{sec:multi-methods}
 
 \syntax\begin{lstlisting}
-Dcl ::= 'def' ['multi' | 'dispatch'] Fun_Dcl 'end' ['def']
-      | ['multi' | 'dispatch'] 'message' Fun_Dcl 'end' ['message']
-      | ['multi' | 'dispatch'] 'function' Fun_Dcl 'end' ['function']
-      | ['multi' | 'dispatch'] 'operator' Op_Dcl 'end' ['operator']
-Def ::= 'def' ['multi' | 'dispatch'] Fun_Def 'end' ['def']
-      | 'def' ['multi' | 'dispatch'] Fun_Alt_Def
-      | ['multi' | 'dispatch'] 'method' Fun_Def 'end' ['method']
-      | ['multi' | 'dispatch'] 'method' Fun_Alt_Def
-      | ['multi' | 'dispatch'] 'function' Fun_Def 'end' ['function']
-      | ['multi' | 'dispatch'] 'function' Fun_Alt_Def
-      | ['multi' | 'dispatch'] 'operator' Op_Def 'end' ['operator']
-      | ['multi' | 'dispatch'] 'operator' Op_Alt_Def
+Dcl               ::= Multi_Fun_Dcl
+                    | Multi_Op_Dcl
+                    | Multi_Message_Dcl
+                    | Multi_Att_Dcl
+Multi_Fun_Dcl     ::= 'def' 'dispatch' Fun_Sig Mul_Val 'end' ['def']
+                    | 'def' 'multi'    Fun_Sig         'end' ['def']
+Multi_Op_Dcl      ::= 'dispatch' 'operator' Op_Sig Mul_Val 'end' ['operator']
+                    | 'multi'    'operator' Op_Sig         'end' ['operator']
+Multi_Message_Dcl ::= 'dispatch' 'message' Fun_Sig Mul_Val 'end' ['message']
+                    | 'multi'    'message' Fun_Sig         'end' ['message']
+Multi_Att_Dcl     ::= 'dispatch' 'attribute' Att_Sig Mul_Val 'end' ['attribute']
+                    | 'multi'    'attribute' Att_Sig         'end' ['attribute']
+
+Def               ::= Multi_Fun_Def
+                    | Multi_Op_Def
+                    | Multi_Method_Def
+                    | Multi_Att_Def
+Multi_Fun_Def     ::= 'def' 'dispatch' Fun_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['def']
+                    | 'def' 'dispatch' Fun_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'def' 'multi' Fun_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['def']
+                    | 'def' 'multi' Fun_Sig ':=' [Fun_Dec2] Expr
+Multi_Op_Def      ::= 'dispatch' 'operator' Op_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['operator']
+                    | 'dispatch' 'operator' Op_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'multi' 'operator' Op_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['operator']
+                    | 'multi' 'operator' Op_Sig ':=' [Fun_Dec2] Expr
+Multi_Method_Def  ::= 'dispatch' 'method' Fun_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['method']
+                    | 'dispatch' 'method' Fun_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'multi' 'method' Fun_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['method']
+                    | 'multi' 'method' Fun_Sig ':=' [Fun_Dec2] Expr
+Multi_Att_Def     ::= 'dispatch' 'attribute' Att_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['attribute']
+                    | 'dispatch' 'attribute' Att_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'multi' 'attribute' Att_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['attribute']
+                    | 'multi' 'attribute' Att_Sig ':=' [Fun_Dec2] Expr 
+Mul_Val           ::= [':' 'val' Type]
 \end{lstlisting}
 
 Gear offers multiple ways to achieve multiple dispatch and the related multi-methods: 
@@ -268,7 +300,7 @@ object program {
   end method
   
   method run (*args: String): Unit
-    ;; ok:
+    (* ok: *)
     val r1: Matrix := multiply(
         (Matrix with {}).new, (Matrix with {}).new)
     val r2: Vector := multiply(
@@ -278,8 +310,8 @@ object program {
     val r4: Matrix := multiply(
         2, (Matrix with {}).new)
     
-    ;; error, no implicit value found for type
-    ;;   Mult_Dep[Matrix, Vector, Matrix]:
+    (* error, no implicit value found for type
+         Mult_Dep[Matrix, Vector, Matrix]: *)
     val r5: Matrix := multiply(
         (Matrix with {}).new, (Vector with {}).new)
   end method
@@ -297,7 +329,7 @@ The last approach taps into a whole new kind of methods.
 
 It uses two-phase dispatch:
 \begin{enumerate}
-  \item A dispatch function is defined with ~\lstinline!def dispatch $x\,\ldots$! (or any alternative syntax using the \code{dispatch} keyword). This function returns a value or a tuple of values, called the {\em dispatch value}, which determines the multi-method to use, but its result type is independent of this value. 
+  \item A dispatch function is defined with ~\lstinline!def dispatch $x\,\ldots$! (or any alternative syntax using the \code{dispatch} keyword). This function returns a value or a tuple of values, called the {\em dispatch value}, which determines the multi-method to use, but its result type is independent of this value -- the type of the dispatch value is specified with an element of the \code{Mul_Val} syntactic category, or automatically inferred if not given. 
   \item A multi-method is installed with ~\lstinline!def multi $x\,\ldots$! (or any alternative syntax using the \code{multi} keyword).
 \end{enumerate}
 
@@ -316,7 +348,9 @@ object program {
   class Asteroid extends Thing {}
   class Spaceship extends Thing {}
   
-  def dispatch collide_with (a: Thing, b: Thing): Unit
+  def dispatch collide_with (a: Thing, b: Thing)
+      : Unit 
+      : val (Class[Thing], Class[Thing])
     (a.type, b.type)
   end def
   
@@ -338,7 +372,7 @@ object program {
 \example Multiple dispatch with dynamic value dispatch, area of shapes. This example shows a possible direction of extensions to the multi-methods, by providing more implementations for different symbols. 
 \begin{lstlisting}
 object program {
-  def dispatch area (obj: Map[Symbol, Any]): Real
+  def dispatch area (obj: Map[Symbol, Any]): Real : val Symbol
     obj(:shape)
   end def
   
@@ -352,15 +386,15 @@ object program {
   
   def run (*args: String): Unit
     val rect := %{
-        :shape => :Rectangle,
-        :width => 4 [<cm>],
+        :shape => :Rectangle
+        :width => 4 [<cm>]
         :height => 13 [<cm>]}
     val circle := %{
-        :shape => :Circle,
+        :shape => :Circle
         :radius => 12 [<cm>]}
-    print_line area(rect) ;; 52 cm^2
-    print_line area(circle) ;; 452.38$\ldots$ cm^2
-    print_line area(%{}[Symbol, Any]) ;; error
+    print_line area(rect) (* 52 cm^2 *)
+    print_line area(circle) (* 452.38$\ldots$ cm^2 *)
+    print_line area(%{}[Symbol, Any]) (* error *)
   end def
 }
 \end{lstlisting}
