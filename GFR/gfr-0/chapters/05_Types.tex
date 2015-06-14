@@ -642,7 +642,8 @@ Unions are indeed virtually ``tagged'' with the actual type that they represent 
 The first syntax shows a named union type, while the second shows an anonymous union type (which may still be given a name later). If any of the types that are a part of a union type is a union type itself, the two types are merged. The syntax used for the anonymous version is correlating with infix type syntax, but this syntax gives it the meaning of a union type, which is preferred to infix type syntax. In fact, it might be implemented with an infix type that generates union types:
 
 \begin{lstlisting}
-type or [A, B] is Union[A, B]
+type or [A, B] is Union[A, B] 
+end type
 \end{lstlisting}
 
 Union types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
@@ -985,8 +986,6 @@ Simple_Type ::= 'Auto'
 (* also: *)
 Simple_Type ::= 'Gear/Language.Auto'
 \end{lstlisting}
-
-See ({\sref{sec:automatic-inference}}).
 
 This type does represent a single concrete value type: a compound type with usually just the refinement part. However, it does not explicitly state what the refinement is. Instead, the refinement is inferred from the context in which it is used. The inference algorithm is very different from local type inference (\sref{sec:local-type-inference}). 
 

@@ -22,11 +22,12 @@ The inputs to the Gear tools consist of:
 \begin{itemize}
   \item Source code files. 
     \begin{itemize}
-      \item Files with extension \code{.gear}, implementation files. 
-      \item Files with extension \code{.gearm}, implementation files with permanent macro definitions. 
-      \item Files with extension \code{.gearx}, script files. 
-      \item Files with name \lstinline[deletekeywords={module}]!module.gear!, module definition files. 
-      \item Files with name \lstinline[deletekeywords={signature}]!signature.gear!, module or submodule signature files. 
+      \item Files with extension \code{.gear}, implementation files, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with extension \code{.gearm}, implementation files with permanent macro definitions, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with extension \code{.gears}, implementation signature files, conforming to the grammar element \code{Signature_File}. 
+      \item Files with extension \code{.gearx}, script files, conforming to the grammar element \code{Script_File}. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.gear!, module definition files, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with name \lstinline[deletekeywords={signature}]!signature.gear!, module or submodule signature files, conforming to the grammar element \code{Signature_File}. 
     \end{itemize}
   \item Compiled files. 
     \begin{itemize}
@@ -35,11 +36,11 @@ The inputs to the Gear tools consist of:
     \end{itemize}
   \item Semi-source files. 
     \begin{itemize}
-      \item Files with extension \code{.gearp}, protocol files. 
-      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.gear!, module dependencies. 
+      \item Files with extension \code{.gearp}, protocol files, conforming to the grammar element \code{Signature_File}. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.gear!, module dependencies, conforming to the grammar element \code{Script_File}. 
       \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.lock!, locked module dependencies. 
     \end{itemize}
-  \item Script fragments, used in interactive environments. 
+  \item Script fragments, used in interactive environments, conforming to the grammar element \code{Script_Fragment}, where each script fragment can be separated by ``\code{;;}''\footnote{This simulates ``End Of File'' in regular script files.}, to trigger evaluation by the interactive environment. 
   \item Compilation and runtime parameters passed to the command line tools. 
   \item Pragma and annotation applications (\sref{sec:pragmas}) within source files and their compiled forms. 
 \end{itemize}

@@ -34,8 +34,7 @@ Value_Expr  ::= Simple_Expr
               | Cond_Expr
               | Match_Expr
               | New_Expr
-              | Def
-              | {Local_Modifier} Tmpl_Def
+              | Def_Expr
               | '(' Expr ')'
               | 'begin' Expr 'end'
               | Quasiquote_Expr
@@ -380,8 +379,8 @@ Workflow_Expr          ::= Expr ['do'] '{' Workflow_or_Range_Expr '}'
 Workflow_or_Range_Expr ::= Workflow | Short_Workflow | Range_Expr
 
 Workflow ::= 'let!' (Pattern2 | var_dcl) ':=' Expr semi Workflow
-           | Val_Def semi Workflow
-           | Var_Def semi Workflow
+           | Val_Def In_Sep Workflow ['end']
+           | Var_Def In_Sep Workflow ['end']
            | 'def' Fun_Def semi Workflow
            | 'type' Type_Def 'end' ['type'] semi Workflow
            | Tmpl_Def semi Workflow
@@ -2044,8 +2043,8 @@ f(i, j) := (e_1, e_2)        f.update(i, j)((e_1, e_2))
 
 \syntax\begin{lstlisting}
 Mul_Assign_Expr ::= Mul_Vars ':=' Mul_Exprs
-Mul_Vars        ::= [[val_ids ','] '*' id ','] val_ids
-                  | [val_ids ','] '*' id
+Mul_Vars        ::= [[id {',' id} ','] '*' id ','] id {',' id}
+                  | [id {',' id} ','] '*' id
 Mul_Exprs       ::= Mul_Expr {',' Mul_Expr}
 Mul_Expr        ::= ['*'] Expr | TT_Expr
 \end{lstlisting}
@@ -2091,12 +2090,25 @@ a, b, *c, d := e, *f
 
 
 
+
 \section{Definition Expressions}
 \label{sec:def-expressions}
 
 \syntax\begin{lstlisting}
-Expr ::= Val_Def In_Sep Expr ['end']
-       | Var_Def In_Sep Expr ['end']
+Expr ::= Def_Expr
+Def_Expr ::= ['implicit'] Val_Def In_Sep Expr ['end']
+           | ['implicit'] Var_Def In_Sep Expr ['end']
+           | ['implicit'] Val_Dcl In_Sep Expr ['end']
+           | ['implicit'] Var_Dcl In_Sep Expr ['end']
+           | ['implicit'] Fun_Dcl In_Sep Expr ['end']
+           | ['implicit'] Op_Dcl  In_Sep Expr ['end']
+           | ['implicit'] Fun_Def In_Sep Expr ['end']
+           | ['implicit'] Op_Def  In_Sep Expr ['end']
+           | ['implicit'] Multi_Fun_Dcl In_Sep Expr ['end']
+           | ['implicit'] Multi_Op_Dcl  In_Sep Expr ['end']
+           | ['implicit'] Multi_Fun_Def In_Sep Expr ['end']
+           | ['implicit'] Multi_Op_Def  In_Sep Expr ['end']
+           | {Local_Modifier} Tmpl_Def In_Sep Expr ['end']
 \end{lstlisting}
 
 
@@ -2154,6 +2166,21 @@ The typed expression ~\lstinline!$e$ as? $T$!~ has a result of type ~\lstinline!
 If an expression is typed to a dynamic path of a (syntactic) type, then the value referenced by such path is expected to be a type, and it is an error if it is not. 
 
 Typed expressions do not allow checks against target type expressions (\sref{sec:target-type-expressions}) and conversions to them, as such checks and conversions would make no sense at all. 
+
+
+
+
+
+\subsection{Type Reference Expressions}
+\label{sec:type-ref-expressions}
+
+\syntax\begin{lstlisting}
+Expr      ::= Type_Expr
+Type_Expr ::= '(' Type ')'
+            | Annot_Type - Nullable_Mod
+\end{lstlisting}
+
+A type reference expression is a way to refer to a type and use it as a first-class value, which it already is. 
 
 
 
@@ -2839,13 +2866,7 @@ The keyword ~\lstinline[language=Java]!try!~ is not available in Gear -- in Gear
 \label{sec:quasi-quotation}
 
 \syntax\begin{lstlisting}
-Quasiquote_Expr ::= '<@' Any_Expr '@>'
-Any_Expr        ::= Expr
-                  | Block_Stat {semi Block_Stat}
-                  | Template_Stat {semi Template_Stat}
-                  | Alias_Expr
-                  | Compilation_Unit
-                  | Top_Stat_Seq
+Quasiquote_Expr ::= '<@' Expr '@>'
 Splice_Expr     ::= '#{' Expr '}'
 \end{lstlisting}
 
@@ -2872,7 +2893,7 @@ An interpolating (splice or unquote) expression (like ``~\lstinline!#{ $e$ }!~''
 \label{sec:quotation}
 
 \syntax\begin{lstlisting}
-Quote_Expr      ::= '<@@' Any_Expr '@@>'
+Quote_Expr      ::= '<@@' Expr '@@>'
 \end{lstlisting}
 
 A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. 
@@ -2886,33 +2907,46 @@ A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, bu
 
 \syntax\begin{lstlisting}
 Block_Stat     ::= Use
-                 | {Annotation} ['implicit'] Def 
-                   [In_Sep Block_Stat ['end']]
-                 | {Annotation} {Local_Modifier} Tmpl_Def
                  | Expr
                  | Alias_Expr
                  | Capture_Usage
-                 | ()
-                 | 'open' Stable_Id
                  | 'assert' Expr
+                 | ()
 Template_Stat  ::= Use
-                 | {Annotation} {Modifier} Def
-                   [In_Sep Block_Stat ['end']]
+                   (* no 'implicit' directly in Def_Expr *)
+                 | {Annotation} {Modifier} (Def_Expr - 'implicit')
+                 | {Annotation} {Modifier} Val_Def
+                 | {Annotation} {Modifier} Var_Def
+                 | {Annotation} {Modifier} Fun_Def
+                 | {Annotation} {Modifier} Op_Def
+                 | {Annotation} {Modifier} Method_Def
+                 | {Annotation} {Modifier} Att_Def
+                 | {Annotation} {Modifier} Multi_Fun_Def
+                 | {Annotation} {Modifier} Multi_Op_Def
+                 | {Annotation} {Modifier} Multi_Method_Def
+                 | {Annotation} {Modifier} Multi_Att_Def
+                 | {Annotation} {Modifier} Multi_PCtor_Def
+                 | {Annotation} {Modifier} Ctor_Def
+                 | {Annotation} {Modifier} CCtor_Def
+                 | {Annotation} {Modifier} UCtor_Def
+                 | {Annotation} {Modifier} Dtor_Def
+                 | {Annotation} {Modifier} Struct_Def
                  | Tmpl_Member [In_Sep Block_Stat ['end']]
                  | Tmpl_Ifc_Impl
                  | Tmpl_Ifc_Dcl
                  | {Annotation} [Opt_Req] {Modifier} Dcl
+                 | {Annotation} {Modifier} Struct_Spec
                  | {Annotation} {Modifier} Prop_Dcl
                  | {Annotation} {Modifier} Prop_Def
                  | 'inherit' Stable_Id [Cond_Modifier]
                  | 'include' Stable_Id [Cond_Modifier]
-                 | ['inherit' 'as'] 'prepend' Stable_Id [Cond_Modifier]
+                 | ['inherit' 'and'] 'prepend' Stable_Id [Cond_Modifier]
                  | 'implements' Stable_Id [Cond_Modifier]
                  | Expr
                  | Alias_Expr
                  | ()
-                 | Opt_Req [val_ids | symbol_ids]
-                 | Access_Modifier [val_ids | symbol_ids]
+                 | Opt_Req [id {',' id} | symbol_ids]
+                 | Access_Modifier [id {',' id} | symbol_ids]
                  | {Annotation} {Modifier} Constraint_Dcl
                  | {Annotation} {Modifier} Constraint_Def
                  | {Annotation} 'invariant' Invariant_Def
@@ -2928,13 +2962,12 @@ Tmpl_Ifc_Impl  ::= 'interface' (Annot_Type - Nullable_Mod)
 Tmpl_Ifc_Dcl   ::= 'interface' (Annot_Type - Nullable_Mod) 
                    'end' ['interface']
 Fun_Dec_Expr   ::= {Annotation} Dcl
-                 | {Annotation} ['implicit'] Def
-                 | ('transparent'
-                   | 'opaque')
+                 | ('transparent' | 'opaque')
                  | 'pure'
                  | 'native' [Expr]
-                 | ('immutable'
-                   | 'mutable')
+                 | ('immutable' | 'mutable')
+                 | 'implicit' id
+                 | Expr
                  | ()
 Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
                  | 'alias' id 'is' id

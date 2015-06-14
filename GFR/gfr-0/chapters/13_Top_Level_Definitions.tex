@@ -5,6 +5,8 @@
 
 \minitoc
 
+\newpage
+
 \section{Compilation Units}
 \label{sec:compilation-units}
 
@@ -12,15 +14,32 @@
 \label{sec:modules}
 
 \syntax\begin{lstlisting}
-Compilation_Unit ::= {'module' Module_Path semi [Top_Stat_Seq]} 
-                     Top_Stat_Seq
-Top_Stat_Seq     ::= Top_Stat {semi Top_Stat}
-Top_Stat         ::= {Annotation} {Modifier} Tmpl_Def
-                   | Use
-                   | Packaging
-                   | Module_Object
-                   | Expr
-                   | ()
+Implementation_File      ::= Implementation_Packaging
+Signature_File           ::= Signature_Packaging
+Script_File              ::= Expr
+Script_Fragments         ::= Script_Fragment {';;' Script_Fragment}
+Script_Fragment          ::= Script_Stat
+Implementation_Packaging ::= 'module' Module_Path 
+                             (Impl_Packaging1 | Impl_Packaging2)
+Signature_Packaging      ::= 'module' 'signature' Module_Path
+                             (Sig_Packaging1 | Sig_Packaging2)
+                           | Sig_Packaging3
+Impl_Packaging1          ::= semi [Impl_Pkg_Seq] ['end' ['module']]
+Impl_Packaging2          ::= '{' [Impl_Pkg_Seq] '}'
+Impl_Pkg_Seq             ::= Impl_Pkg_Stat {semi Impl_Pkg_Stat}
+Impl_Pkg_Stat            ::= {Annotation} {Modifier} Tmpl_Def
+                           | Use
+                           | Module_Object
+                           | Expr
+                           | Struct_Def
+Sig_Packaging1           ::= semi [Sig_Pkg_Seq] ['end' ['module']]
+Sig_Packaging2           ::= '{' [Sig_Pkg_Seq] '}'
+Sig_Packaging3           ::= [Sig_Pkg_Seq]
+Sig_Pkg_Seq              ::= Sig_Pkg_Stat {semi Sig_Pkg_Stat}
+Sig_Pkg_Stat             ::= Struct_Spec
+                           | Use
+Script_Stat              ::= Impl_Pkg_Stat
+                           | Sig_Pkg_Stat
 \end{lstlisting}
 
 Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Gear's approach to modules solves these issues: 
@@ -29,7 +48,7 @@ Module definitions are objects that have one main purpose: to join related code 
   \item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just another identifier. 
 \end{itemize}
 
-A compilation unit (a single source file) consists of a sequence of packagings, import clauses, and class and object definitions, which may be preceded (and should be preceded) by a module clause. 
+An {\em implementation file} consists of a sequence of packagings, import clauses, and class and object definitions, which are preceded by a module clause. A {\em signature file} consists of a sequence of packagings, import clauses, and structure elements specifications, including interfaces and protocols. 
 
 A compilation unit 
 \begin{lstlisting}
@@ -70,12 +89,6 @@ The vendor specified in module's \code{src/module.gear} is inherited by every so
 
 
 \subsection{Packagings}
-
-\syntax\begin{lstlisting}
-Packaging  ::= 'module' Module_Path (Packaging1 | Packaging2)
-Packaging1 ::= semi Top_Stat_Seq 'end' ['module']
-Packaging2 ::= '{' Top_Stat_Seq '}'
-\end{lstlisting}
 
 A module is a special object which defines a set of member classes, objects and another modules. Like open templates (\sref{sec:open-templates}), modules are introduced by multiple definitions across multiple source files.  
 
@@ -119,14 +132,16 @@ Top-level definitions outside a packaging are assumed to be injected into the \c
 \subsection{Module Object}
 
 \syntax\begin{lstlisting}
-Module_Object ::= 'module' 'object' Trait_Tmpl_Env
+Module_Object ::= 'module' 'object' Object_Def
 \end{lstlisting}
 
-A module object ~\lstinline!module object $p$ extends $t$! can specify some properties of the module object, add new traits to it, and adds the members of the template $t$ to the module object $p$. There can be only one module object per module, but the module object definition is still an open template (\sref{sec:open-templates}). The module object has to have the leading template defined in a file named ~\lstinline!$p$.gear!~ in the module's root directory, otherwise the module object has an implied empty template. 
+A module object ~\lstinline!module object $p$ extends $t$! can specify some properties of the module object, add new traits to it, and adds the members of the template $t$ to the module object $p$. There can be only one module object per module. The module object has to be defined in a file named ~\lstinline[deletekeywords={module}]!module.gear!~ in the module's sources directory, otherwise the module object has an implied empty template with no annotations. 
 
 The module object should not define a member with the same name as one of the top-level objects or classes defined in module $p$. If there is a name conflict, it is an error. 
 
 The module object has also a special role in defining entry points of the module. An entry point is a method of the module object that can be invoked from the outside, to actually run the module as a program (\sref{sec:programs}). 
+
+Annotations and pragmas (\sref{sec:annotations}) specified for the module object\footnote{Annotations precede the object module directly, and pragmas are defined within the module object's template.} apply to the whole module object across source files. 
 
 
 

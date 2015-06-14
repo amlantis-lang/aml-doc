@@ -49,13 +49,12 @@ This is to keep up consistency with pattern matching, where the type will usuall
 \syntax\begin{lstlisting}
 Dcl          ::= Val_Dcl
 Val_Dcl      ::= [S_Modifier] 'val' id {',' id} ':' Type
-Expr         ::= (Val_Dcl | Val_Def) In_Sep Expr ['end']
 Val_Def      ::= [S_Modifier] ('val' | 'let') ['rec']
                  Let_Binding {'and' Let_Binding}
 Let_Binding  ::= Pattern ':=' Expr {',' Expr}
                | id [Type_Param_Clause] Param_Clauses [':' Type]
                  ':=' Expr
-               | id [Type_Param_Clause] Params2 ':=' Expr
+               | id [Type_Param_Clause] Params2 [':' Type] ':=' Expr
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -177,7 +176,6 @@ The following shorthands are recognized:
 \syntax\begin{lstlisting}
 Dcl         ::= Var_Dcl
 Var_Dcl     ::= [S_Modifier] 'var' id {',' id} ':' Type
-Expr        ::= Var_Def In_Sep Expr ['end']
 Var_Def     ::= [S_Modifier] 'var' Var_Binding
 Var_Binding ::= Let_Binding
               | id {',' id} ':' Type ':=' '_'
@@ -244,7 +242,7 @@ Prop_Impl  ::= ([Access_Modifier] 'get' Prop_Get_Impl)
              | ([Access_Modifier] 'set' Prop_Set_Impl)
              | ([Access_Modifier] 'val' ':=' Expr)
              | ([Access_Modifier] 'var' ':=' Expr)
-\end{lstlisting} % TBD: syntax of property implementations
+\end{lstlisting}
 
 A property declaration \lstinline@property $x$: $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
 
@@ -585,7 +583,8 @@ Now type of \code{x + 1} is required to be polymorphic. The type of the expressi
 \label{sec:locally-abstract-types}
 
 \syntax\begin{lstlisting}
-Param_Clause ::= '(' 'type' Stable_Id ')'
+Param_Clause     ::= LAT_Param_Clause
+LAT_Param_Clause ::= '(' 'type' id ')'
 \end{lstlisting}
 
 A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named $x$, which is considered abstract in the scope of the function or method it appears in, but then replaced by a fresh type variable of the form ~\lstinline!'$x$!~ outside the function or method, and which is unifiable by (\sref{sec:automatic-inference}).
@@ -613,32 +612,37 @@ The locally abstract type syntax form by itself does not make polymorphic the ty
 \label{sec:function-decls-defs}
 
 \syntax\begin{lstlisting}
-Dcl           ::= 'def' Fun_Dcl 'end' ['def']
-                | 'message' Fun_Dcl 'end' ['message']
-                | 'operator' Op_Dcl 'end' ['operator']
-                | 'attribute' Att_Dcl 'end' ['attribute']
-Fun_Dcl       ::= Fun_Sig ':' Type
-Att_Dcl       ::= Att_Sig ':' Type
-Op_Dcl        ::= Op_Sig ':' Type
-Def           ::= 'def' Fun_Def 'end' ['def']
-                | 'def' Fun_Alt_Def
-                | 'method' Fun_Def 'end' ['method']
-                | 'method' Fun_Alt_Def
-                | 'operator' Op_Def 'end' ['operator']
-                | 'operator' Op_Alt_Def 'end' ['operator']
-                | 'attribute' Att_Def 'end' ['attribute']
-                | 'attribute' Att_Alt_Def 'end' ['attribute']
-Fun_Def       ::= Fun_Sig [':' Type] [Fun_Dec] [semi Fun_Stats]
-Fun_Alt_Def   ::= Fun_Sig [':' Type] ':=' Expr
-Att_Def       ::= Att_Sig [':' Type] [Fun_Dec] [semi Fun_Stats]
-Att_Alt_Def   ::= Att_Sig [':' Type] ':=' Expr
-Op_Def        ::= Op_Sig [':' Type] [Fun_Dec] [semi Fun_Stats]
-Op_Alt_Def    ::= Op_Sig [':' Type] ':=' Expr
-Fun_Dec       ::= [semi] 'declare' Fun_Dec_Exprs [semi] 'begin'
+(* every *_Dcl here require the `':' Type` part inside *_Sig *)
+Dcl           ::= Fun_Dcl
+                | Op_Dcl
+                | Message_Dcl 
+                | Att_Dcl
+Fun_Dcl       ::= 'def' Fun_Sig 'end' ['def']
+Op_Dcl        ::= 'operator' Op_Sig 'end' ['operator']
+Message_Dcl   ::= 'message' Fun_Sig 'end' ['message']
+Att_Dcl       ::= 'attribute' Att_Sig 'end' ['attribute']
+
+Def           ::= Fun_Def
+                | Op_Def
+                | Method_Def
+                | Att_Def
+Fun_Def       ::= 'def' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['def']
+                | 'def' Fun_Sig ':=' [Fun_Dec2] Expr
+Op_Def        ::= 'operator' Op_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['operator']
+                | 'operator' Op_Sig ':=' [Fun_Dec2] Expr
+Method_Def    ::= 'method' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['method']
+                | 'method' Fun_Sig ':=' [Fun_Dec2] Expr
+Att_Def       ::= 'attribute' Att_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['attribute']
+                | 'attribute' Att_Sig ':=' [Fun_Dec2] Expr
+Fun_Dec       ::= [nl] 'declare' Fun_Dec_Exprs [semi] ('begin' | 'in')
+Fun_Dec2      ::= [nl] 'declare' Fun_Dec_Exprs [semi] 'in'
 Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
-Fun_Sig       ::= Function_Path [Type_Param_Clause] Param_Clauses
-Att_Sig       ::= Function_Path [Type_Param_Clause] Att_Clauses
-Op_Sig        ::= Op_Path [Type_Param_Clause] Param_Clauses
+Fun_Sig       ::= Function_Path [Type_Param_Clause] 
+                  (Param_Clauses | Params2) [':' Type]
+Op_Sig        ::= Op_Path [Type_Param_Clause] 
+                  (Param_Clauses | Params2) [':' Type]
+Att_Sig       ::= Function_Path [Type_Param_Clause] 
+                  Att_Clauses [':' Type]
 Function_Path ::= id
                 | 'self' '.' id
                 | id '.' id
@@ -647,13 +651,21 @@ Op_Path       ::= op_id
 Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
 Att_Clauses   ::= Param_Clause1 {Param_Clause} 
                   ['(' 'implicit' Params ')']
+                | Params2
 Param_Clause  ::= '(' [Params] ')'
+                | LAT_Param_Clause
 Param_Clause1 ::= '(' Param ')'
 Params        ::= Param {',' Param}
-Params2       ::= ['implicit'] Param {',' ['implicit'] Param}
+Params2       ::= Param2 {',' Param2}
+                  [',' '(' 'implicit' Params ')']
 Param         ::= {Annotation} [Param_Extra] id [id]
                   [':' Param_Type] [':=' Expr]
                 | Pattern2
+Param2        ::= {Annotation} [Param_Extra] id [id]
+                | '(' Param ')'
+                | Simple_Pattern
+                | '(' Pattern2 ')'
+                | LAT_Param_Clause
 Param_Extra   ::= ['lazy' | 'eager'] [M_Modifier] [Param_Rw] 
                   ['*' | '**' | '&' | '~' | '?']
 Param_Rw      ::= 'val' | 'var' | 'ref'
@@ -680,6 +692,8 @@ An optional type parameter clause $\tps$ introduces one or more type parameters,
 Multiple parameter clauses render curried functions. 
 
 Type parameters of the whole function are linked to each value parameter clause. If local type inference selects a type argument that does not appear in a previous value parameter clause, it is still used in the following value parameter clauses where it does appear. 
+
+A function definition that uses the \code{Params2} syntactic category to define its parameters has every \code{Param2} element treated as a separate parameter list. 
 
 
 
@@ -1255,15 +1269,15 @@ Preference declarations are inherited to subtypes, without regard of visibility.
 \label{sec:use-clauses}
 
 \syntax\begin{lstlisting}
-Use             ::= 'use' ['lazy'] (Type | Stable_Id) 
-                    '.' Import_Expr
-                  | 'open' (Type | Stable_Id)
-                  | 'open!' (Type | Stable_Id)
-Import_Expr     ::= Single_Import
-                  | '{' Import_Exprs '}'
-                  | '_'
-Import_Exprs    ::= Single_Import {',' Single_Import} [',' '_']
-Single_Import   ::= id ['as' [id | '_']]
+Use           ::= 'use' ['lazy'] (Type | Stable_Id) 
+                  '.' Import_Expr
+                | 'open' (Type | Stable_Id)
+                | 'open!' (Type | Stable_Id)
+Import_Expr   ::= Single_Import
+                | '{' Import_Exprs '}'
+                | '_'
+Import_Exprs  ::= Single_Import {',' Single_Import} [',' '_']
+Single_Import ::= id ['as' [id | '_']]
 \end{lstlisting}
 
 A use clause has the form ~\lstinline!use $p$.$I$!, where $p$ is a path to the containing type of the imported entity, and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}

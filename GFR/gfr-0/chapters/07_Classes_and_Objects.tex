@@ -79,21 +79,14 @@ object O extends Base with Mixin; $\ldots$ end
 
 Unlike in Java, Scala or any other language that does not feature open classes, and similar to Ruby's open classes or C\#'s partial classes, Gear has a feature of open templates. This means that a single template (be it a class or a trait) can have its definition spread across several source files. 
 
-An open template has a {\em main template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including a parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
+An open template has a {\em main template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including the parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
 
 Auxiliary templates do not need to be eager loaded. There are basically three major ways to make use of an auxiliary template:
 \begin{itemize}
-\item Eager loaded auxiliary template, using the construct ~\lstinline[deletekeywords={to}]!include 'path/to/file'!. This way the auxiliary template is loaded along with the leading template.
-\item Autoload (\sref{sec:autoloading}) of the auxiliary template. 
-\item On-demand load of the auxiliary template via independent ~\lstinline[deletekeywords={to}]!VM.load 'path/to/file'!, after the leading template is defined.  Gear
+  \item Eager loaded auxiliary template, using a file name scheme ~\lstinline!$t$.aux/$a$.gear!, where $t$ is the name of the template and $a$ is arbitrary auxiliary name. This way the auxiliary template is loaded along with the leading template, on-demand, without incrementing the template's version.
+  \item Autoload (\sref{sec:autoloading}) of the auxiliary template. 
+  \item On-demand load of the auxiliary template via independent ~\lstinline[deletekeywords={to}]!VM.load 'path/to/file'!, after the leading template is defined.
 \end{itemize}
-
-To declare a template as an open template, the following annotations are available. All templates are implicitly open, so the annotations are only useful to prevent implicit inheriting from \code{Object}, if the intended leading template inherits from a different base class. 
-\begin{lstlisting}
-@[open-template :main]
-@[open-template :auxiliary]
-\end{lstlisting}
-
 
 
 
@@ -105,12 +98,12 @@ To declare a template as an open template, the following annotations are availab
 Autoloading is a mechanism of putting code from different source files and source directories together in runtime. There are two kinds of autoloading.
 
 \paragraph{Implicit autoloading}
-This kind of autoloading is basically the expected layout of source files, source directories and terms inside of a directory. Given that a root directory represents a module sources root, each template definition is expected to appear in a file that directly appears in this directory, preferably with a name of the included template. If multiple templates appear in one source file, then the implicit autoloading uses the mechanism of template index to track location of these templates. However, if the name of the template is generated dynamically in runtime (i.e. not via template definition or a constant initialization), then it needs to be loaded using explicit autoloading. Also, if the source file is used as a script, every such term needs to be loaded using explicit autoloading, since the compiler does not know about anything that hasn't been yet loaded or otherwise defined and is not in the same source file. 
+This kind of autoloading is basically the expected layout of source files, source directories and terms inside of a directory. Given that a root directory represents a module sources root, each template definition is expected to appear in a file that directly appears in this directory, preferably with a name of the included template. If multiple templates appear in one source file, then the implicit autoloading uses the mechanism of template index to track location of these templates. However, if the name of the template is generated dynamically in runtime (i.e. not via template definition or a constant initialization), then it needs to be loaded using explicit autoloading. 
 
 \paragraph{Explicit autoloading}
 This kind of autoloading is basically a custom definition of the layout of source files, source directories and terms inside of a directory. Explicit autoloading happens every time a member is accessed in a template and it is not defined. Explicit autoloading is defined in means of using the \code{autoload} method, provided by the \code{Class} class, and therefore available inside of any template definition. The method has the following overloaded declarations: 
 \begin{lstlisting}
-type Autoloaded_Term is union of ( Symbol, Regexp )
+type Autoloaded_Term is Symbol or Regexp 
 end type
 def autoload (term: Autoloaded_Term, 
               path: String): Unit
@@ -1245,7 +1238,8 @@ Protocol references are preferred to traits to be used by library designers to d
 Interface_Definition ::= [Mutability] Ifc_Kind 'interface' Ifc_Def
 Ifc_Kind             ::= ['case'] 'class' 
                        | ['case'] 'object'
-                       | 'trait' 
+                       | 'trait'
+                       | 'refinement'
 Ifc_Def              ::= id [Type_Param_Clause]
                          [Class_Param_Clauses] Ifc_Tmpl_Env
 Ifc_Tmpl_Env         ::= Tmpl_Env_With_Pars ['interface']
@@ -1268,6 +1262,7 @@ Object_Def        ::= id Object_Tmpl_Env
 Object_Tmpl_Env   ::= Tmpl_Env_With_Pars ['object']
                     | Tmpl_Env_Brackets
                     | Tmpl_Env_No_Pars ['object']
+Expr              ::= [Mutability] 'object' Object_Tmpl_Env
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Gear/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Gear/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Gear/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Gear/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Gear has one scope for both types and terms. 

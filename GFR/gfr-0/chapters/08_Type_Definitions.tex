@@ -78,10 +78,10 @@ Aspect_Definition ::= 'aspect' [Aspect_Clause] Aspect_Def
 Aspect_Def        ::= id ['extends' Class_Parents] Aspect_Tmpl_Env
 Aspect_Tmpl_Env   ::= '{' Aspect_Body '}'
                     | 'begin' Aspect_Body 'end' ['aspect']
-Aspect_Body       ::= Template_Stat 
-                    | Aspect_Stat
+Aspect_Body       ::= Aspect_Stat {semi Aspect_Stat}
 Aspect_Stat       ::= Advice_Def
                     | Pointcut_Def
+                    | Template_Stat
 Pointcut_Def      ::= 'pointcut' id
                       ['(' [id [':' Type]] {',' [id [':' Type]]} ')']
                       'is' Pointcut_Type 'end' ['pointcut']
@@ -311,11 +311,14 @@ Struct_Spec       ::= 'val' id ':' Type
                     | 'throwable' Type_Constr_Dcl 'end' ['throwable']
                     | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
                     | Interface_Definition
+                    | Protocol_Definition
                     | 'structure' id ':' Struct_Type 'end' ['structure']
                     | 'signature' id [Is Struct_Type] 'end' ['signature']
                     | 'open' Struct_Path
                     | 'open!' Struct_Path
                     | 'include' Struct_Type
+                    | Use
+                    | {Annotation} Struct_Spec
 Def               ::= Struct_Def
 Struct_Expr       ::= Struct_Path
                     | 'struct' [Struct_Items] 'end' ['struct']
@@ -344,6 +347,8 @@ Struct_Def        ::= Val_Def
                     | 'open' Struct_Path
                     | 'open!' Struct_Path
                     | 'include' Struct_Expr
+                    | Use
+                    | {Annotation} Struct_Def
 Struct_Ascription ::= ':' | ':>'
 Struct_Constraint ::= 'type' id [Type_Param_Clause] Type_Equation
                     | 'type' id [Type_Param_Clause] ':=' Type
