@@ -17,9 +17,8 @@ Function_Args       ::= Infix_Type
 Function_Arg        ::= ['*' | '**' | '&' | ['~'] id ':'] Param_Type
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
-Existential_Dcl     ::= 'type' Type_Dcl
-                      | 'val' Val_Dcl
-                      | 'var' Var_Dcl
+Existential_Dcl     ::= Type_Definition
+                      | Val_Dcl
 Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type} 
                         ['with' ['refinement'] Refine_Stats]
                       | ['refinement'] Refine_Stats
@@ -487,8 +486,8 @@ def h (x: Integer, y: Integer, z: Integer) end
 Type                ::= Infix_Type Existential_Clauses
 Existential_Clauses ::= {'for-some' '{' Existential_Dcl
                         {semi Existential_Dcl} '}'}
-Existential_Dcl     ::= 'type' Type_Dcl
-                      | 'val' Val_Dcl
+Existential_Dcl     ::= Type_Definition
+                      | Val_Dcl
 \end{lstlisting}
 
 An existential type has the form ~\lstinline@$T$ for-some { $Q$ }@, where $Q$ is a sequence of type declarations (\sref{sec:type-decls-aliases}). Let ~\lstinline@$t_1$[$\tps_1$] >: $L_1$ <: $U_1\ \commadots\ t_n$[$\tps_n$] >: $L_n$ <: $U_n$@~ be the types declared in $Q$ (any of the type parameter sections ~\lstinline![$\tps_i$]!~ might be missing). The scope of each type $t_i$ includes the type $T$ and the existential clause $Q$. The type variables $t_i$ (occurring in the sequence $Q$) are said to be {\em bound} in the type ~\lstinline!$T$ for-some { $Q$ }!. Type variables that occur in a type $T$, but which are not bound in $T$, are said to be {\em free} in $T$. 

@@ -45,6 +45,7 @@ Simple_Pattern ::= '_'
                  | '%(' '*' (var_id | '_') {semi Pattern} ')'
                  | Pattern '&' Pattern
                  | Record_Pattern
+                 | Struct_Pattern
 Patterns       ::= Pattern {',' Pattern}
 Extractions    ::= Pos_Patterns {',' Named_Patterns} [Block_Pattern]
                  | Named_Patterns [Block_Pattern]
@@ -75,6 +76,7 @@ Record_Pattern ::= 'record' '{' Field_Patterns '}'
 Field_Patterns ::= Field_Pattern {semi Field_Pattern} [semi '_']
                  | '_'
 Field_Pattern  ::= Stable_Id '=>' Pattern
+Struct_Pattern ::= 'structure' Pkg_Type
 \end{lstlisting}
 
 
@@ -288,6 +290,19 @@ The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$
 
 
 
+\subsection{Structure Patterns}
+\label{sec:structure-patterns}
+
+\syntax\begin{lstlisting}
+Struct_Pattern ::= 'structure' Pkg_Type
+\end{lstlisting}
+
+A structure pattern ~\lstinline!structure $T$!~ matches a structure with type $T$. To bind the matched structure to a variable, the construct ~\lstinline!$s$ @ structure $T$!~ can be used, binding the structure to the name $s$. 
+
+% Currently, no decomposing of structures is possible. Could be added later, if it would make sense. 
+
+
+
 
 \subsection{Stable Identifier Patterns}
 \label{sec:stable-identifier-patterns}
@@ -364,6 +379,7 @@ If the primary constructor of a case class has any optional parameters (\sref{se
 
 \syntax\begin{lstlisting}
 Simple_Pattern ::= '(' [Patterns] ')'
+                 | '(' Extractions ')'
 \end{lstlisting}
 
 A tuple pattern ~\lstinline!($p_1 \commadots p_n$)!~ is an alias for the constructor pattern ~\lstinline!Tuple_$n$($p_1 \commadots p_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. Sub-patterns $p_1 \commadots p_n$ may be named, in which case mapping rules from (\sref{sec:pattern-sequences}) apply. 
@@ -565,25 +581,19 @@ Type_Pat ::= Type
 
 Type patterns consist of types, type variables and wildcards. A type pattern $T$ is of one of the following forms: 
 \begin{itemize}
-\item[]
-A reference to a class $C$, ~\lstinline!$p$.$C$!, ~\lstinline!$p$.type!~ or ~\lstinline!$T$#$C$!. This type pattern matches any non-\code{nil} instance of the given class (therefore, it does match the empty tuple ~\lstinline!()!~ with type \code{Unit}). Note that the prefix of the class, if it is given, is irrelevant for determining class instances, unlike in Scala. 
+  \item[] A reference to a class $C$, ~\lstinline!$p$.$C$!, ~\lstinline!$p$.type!~ or ~\lstinline!$T$#$C$!. This type pattern matches any non-\code{nil} instance of the given class (therefore, it does match the empty tuple ~\lstinline!()!~ with type \code{Unit}). Note that the prefix of the class, if it is given, is irrelevant for determining class instances, unlike in Scala. 
 
-The bottom type \code{Nothing} (with singleton instance \code{nil}) is the only type pattern that matches \code{nil} (only), but its preferable to match against ~\lstinline!Option[$T$]! with implicit conversion of \code{nil} to object \code{None}. 
+  The bottom type \code{Nothing} (with singleton instance \code{nil}) is the only type pattern that matches \code{nil} (only), but its preferable to match against ~\lstinline!Option[$T$]! with implicit conversion of \code{nil} to object \code{None}. 
 
-\item[]
-A singleton type ~\lstinline!$p$.type!. This type pattern matches only the value denoted by the path $p$ (only the single value denoted by the path $p$, since \code{nil} is not matched). 
+  \item[] A singleton type ~\lstinline!$p$.type!. This type pattern matches only the value denoted by the path $p$ (only the single value denoted by the path $p$, since \code{nil} is not matched). 
 
-\item[]
-A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$, <$u_1 \ldots u_m$>]!, where the $a_i$ are type variable patterns or wildcards ``\lstinline!_!'' and $u_i$ are unit of measure kinds. This type pattern matches all values which match $T$ for some arbitrary instantiation of the type variables and wildcards.  
+  \item[] A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$, <$u_1 \ldots u_m$>]!, where the $a_i$ are type variable patterns or wildcards ``\lstinline!_!'' and $u_i$ are unit of measure kinds. This type pattern matches all values which match $T$ for some arbitrary instantiation of the type variables and wildcards.  
 
-\item[]
-A compound type pattern ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, where each $T_i$ is a type pattern. This type pattern matches all values that are matched by each of the type patterns $T_i$, and in this sense it is equivalent to the pattern ~\lstinline!$T_1$ & $\ldots$ & $T_n$!. 
+  \item[] A compound type pattern ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, where each $T_i$ is a type pattern. This type pattern matches all values that are matched by each of the type patterns $T_i$, and in this sense it is equivalent to the pattern ~\lstinline!$T_1$ & $\ldots$ & $T_n$!. 
 
-\item[]
-A union type pattern ~\lstinline!($T_1$ or $\ldots$ or $T_n$)!, where each $T_i$ is a type pattern. The pattern has to be enclosed in parentheses, so that it does not get mistaken by the compiler for a pattern with the same syntax. This type pattern matches all values that are matched by at least one $T_i$. 
+  \item[] A union type pattern ~\lstinline!($T_1$ or $\ldots$ or $T_n$)!, where each $T_i$ is a type pattern. The pattern has to be enclosed in parentheses, so that it does not get mistaken by the compiler for a pattern with the same syntax. This type pattern matches all values that are matched by at least one $T_i$. 
 
-\item[]
-An intersection type pattern ~\lstinline!($T_1$ and $\ldots$ and $T_n$)!, where each $T_i$ is a type pattern. The pattern has to be enclosed in parentheses, so that it does not get mistaken by the compiler for a pattern with the same syntax. This type pattern matches all values that are matched by every $T_i$. 
+  \item[] An intersection type pattern ~\lstinline!($T_1$ and $\ldots$ and $T_n$)!, where each $T_i$ is a type pattern. The pattern has to be enclosed in parentheses, so that it does not get mistaken by the compiler for a pattern with the same syntax. This type pattern matches all values that are matched by every $T_i$. 
 \end{itemize}
 
 Types are not subject to any type erasure (\sref{sec:reified-types}), so it is basically safe to use any other type as type pattern, unlike in Scala. 
@@ -639,11 +649,26 @@ A when clause that is not the first appearing may be prefixed with \code{next} o
 
 \syntax\begin{lstlisting}
 Block_Expr ::= '{' When_Clauses '}'
+Anon_Fun   ::= 'function' When_Clauses 'end' ['function']
+             | 'function' '{' When_Clauses '}'
 \end{lstlisting}
 
-An anonymous function can be defined by a sequence of cases
+An anonymous pattern matching function can be defined by the form
 \begin{lstlisting}
-{ when $p_1$ then $b_1$ $\ldots$ when $p_k$ then $b_k$ else $b_{k+1}$ }
+function 
+  when $p_1$ then $b_1$ 
+  $\ldots$ 
+  when $p_k$ then $b_k$ 
+  else $b_{k+1}$
+end
+\end{lstlisting}
+
+An anonymous function can alternatively be defined by a sequence of cases
+\begin{lstlisting}
+{ when $p_1$ then $b_1$ 
+  $\ldots$ 
+  when $p_k$ then $b_k$ 
+  else $b_{k+1}$ }
 \end{lstlisting}
 which appears as an expression without a prior \code{match}. The expression is expected to be of a block type, unless it is expected to be a function type, in that case it is converted to ~\lstinline!Function_$k$[$S_1 \commadots S_k$, $T$]!~ automatically for $k \geq 1$, and for $k = 0$ the expression does not match the expected function type in function applications (\sref{sec:function-applications}).\footnote{This is due to Gear not knowing the expected types in advance, but this anonymous function expression is able to match any non-empty arguments list, which is simply passed into the implicit pattern matching expression.} 
 

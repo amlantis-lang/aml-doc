@@ -5,14 +5,16 @@
 
 \minitoc
 
+\newpage
+
 \syntax\begin{lstlisting}
 Tmpl_Def             ::= Class_Definition
                        | Object_Definition
                        | Trait_Definition
                        | Protocol_Definition
                        | Interface_Definition
-                       | 'refinement' Refinement_Def
-                       | 'aspect' Aspect_Def
+                       | Refinement_Definition
+                       | Aspect_Definition
                        | Type_Definition
 Class_Definition     ::= [Mutability] ['case'] 'class' Class_Def
 Object_Definition    ::= [Mutability] ['case'] 'object' Object_Def
@@ -532,7 +534,7 @@ It is an error if the inheritance closure of a class type consists of an infinit
 \syntax\begin{lstlisting}
 Early_Defs ::= '{' [Early_Def {semi Early_Def}] '}' 
                'with'
-Early_Def  ::= {Annotation} {Modifier} Pat_Var_Def
+Early_Def  ::= {Annotation} {Modifier} (Var_Def | Val_Def)
 \end{lstlisting}
 
 A template may start with an {\em early definition} clause, which serves to define certain field values before the supertype constructor is called. In a template

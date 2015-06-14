@@ -49,8 +49,7 @@ Simple_Expr ::= Block_Expr
               | Simple_Expr1
               | Method_Expr
               | TT_Expr
-Result_Expr ::= Anon_Params '->' Block 
-              | ['memoize'] Expr
+Result_Expr ::= ['memoize'] Expr
               | ['memoize'] 'tailcall' Argument_Exprs
 Exprs       ::= Expr {',' Expr}
 \end{lstlisting}
@@ -308,6 +307,12 @@ Object_Ivars_Init ::= Object_Ivar_Init {semi Object_Ivar_Init}
 Object_Ivar_Init  ::= id '=>' Expr
 \end{lstlisting}
 
+An expression of the form
+\begin{lstlisting}
+{< $i_1$ => $e_1$; $\ldots$; $i_n$ => $e_n$ >}
+\end{lstlisting}
+is an object clone expression. 
+
 
 
 
@@ -375,12 +380,9 @@ Workflow_Expr          ::= Expr ['do'] '{' Workflow_or_Range_Expr '}'
 Workflow_or_Range_Expr ::= Workflow | Short_Workflow | Range_Expr
 
 Workflow ::= 'let!' (Pattern2 | var_dcl) ':=' Expr semi Workflow
-           | Pat_Var_Def semi Workflow
+           | Val_Def semi Workflow
+           | Var_Def semi Workflow
            | 'def' Fun_Def semi Workflow
-           | 'method' Fun_Def 'end' ['method'] semi Workflow
-           | 'method' Fun_Alt_Def semi Workflow
-           | 'function' Fun_Def 'end' ['function'] semi Workflow
-           | 'function' Fun_Alt_Def semi Workflow
            | 'type' Type_Def 'end' ['type'] semi Workflow
            | Tmpl_Def semi Workflow
            | 'yield!' Expr
@@ -392,13 +394,14 @@ Workflow ::= 'let!' (Pattern2 | var_dcl) ':=' Expr semi Workflow
              {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
              Else Workflow 'end' ['if']
            | 'match' Simple_Expr1 semi Wf_When {semi Wf_When}
-             [semi Else Workflow] 'end' ['match']
+             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_When} 
+             'end' ['match']
            | 'match' Simple_Expr1 '{' Wf_When {semi Wf_When}
-             [semi Else Workflow] '}'
+             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_When} '}'
            | 'case' Simple_Expr1 semi Wf_Case {semi Wf_Case}
-             [semi Else Workflow] 'end' ['case']
+             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_Case} 'end' ['case']
            | 'case' Simple_Expr1 '{' Wf_Case {semi Wf_Case}
-             [semi Else Workflow] '}'
+             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_Case} '}'
            | 'switch' Simple_Expr semi Wf_Switch {semi Wf_Switch}
              [semi Else Workflow] 'end' ['switch']
            | 'switch' Simple_Expr '{' Wf_Switch {semi Wf_Switch}
@@ -748,6 +751,10 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 
 \syntax\begin{lstlisting}
 Anon_Fun        ::= Anon_Params '->' '{' Block '}'
+                  | 'def' Anon_Params '->' Expr
+                  | 'def' Params2 '->' Expr
+                  | 'function' When_Clauses 'end' ['function']
+                  | 'function' '{' When_Clauses '}'
 Result_Expr     ::= Anon_Params '->' Block 
 Anon_Params     ::= Bindings {'->' Bindings}
                   | Param_Clause
@@ -1525,9 +1532,7 @@ Block_Expr2     ::= 'do' [Block_Args] Block ('end' | 'done')
 Block_Args      ::= '|' [Params] [Block_Shadowing] '|' 
                     [':' Type [semi]]
 Block_Shadowing ::= ';' [nl] [Shad_Val_Dcl {',' Shad_Val_Dcl}]
-Shad_Val_Dcl    ::= 'val' Val_Dcl
-                  | 'var' Var_Dcl
-                  | 'def' Def_Dcl
+Shad_Val_Dcl    ::= Val_Dcl | Var_Dcl
 Block           ::= {Block_Stat semi} [Result_Expr]
 \end{lstlisting}
 
@@ -2090,7 +2095,8 @@ a, b, *c, d := e, *f
 \label{sec:def-expressions}
 
 \syntax\begin{lstlisting}
-Expr ::= Def
+Expr ::= Val_Def In_Sep Expr ['end']
+       | Var_Def In_Sep Expr ['end']
 \end{lstlisting}
 
 
@@ -2193,7 +2199,7 @@ Cond_Modifier    ::= Cond_Modifier1
 Cond_Modifier1   ::= ('if' | 'unless') Condition 
 Cond_Block       ::= Expr | Block
 Else             ::= 'else' | 'otherwise'
-Condition        ::= Simple_Expr1 | Pat_Var_Def
+Condition        ::= Simple_Expr1 | Val_Def | Var_Def
 \end{lstlisting}
 
 The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} and \code{undefined} objects convert always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
@@ -2230,7 +2236,7 @@ Unlike in some languages, conditional expressions do not require to place parent
 Gear provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
 
 \paragraph{Conditional Variable Definition}
-The conditional variable definition ~\lstinline!if $p$ := $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ := $e_1$!~ is a variable definition (see syntactic category \code{Pat_Var_Def}), works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no}, the condition is still met and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ := $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. 
+The conditional variable definition ~\lstinline!if $p$ := $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ := $e_1$!~ is a variable definition (see syntactic categories \code{Var_Def} \& \code{Val_Def}), works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no}, the condition is still met and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ := $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. 
 
 
 
@@ -2448,6 +2454,7 @@ Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {semi When_Clause} 
                    [semi Else Cond_Block]
+                   {semi ('rescue' | 'catch') When_Clause}
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
 Case_Expr      ::= 'case' Simple_Expr1 Case_Body
 Switch_Expr    ::= 'switch' Simple_Expr1 Switch_Body
@@ -2457,6 +2464,7 @@ Switch_Body    ::= semi Switch_Clauses 'end' ['switch']
                  | '{' Switch_Clauses '}'
 Case_Clauses   ::= Case_Clause {['next'] semi Case_Clause}
                    [['next'] semi Else Cond_Block]
+                   {semi ('rescue' | 'catch') Case_Clause}
 Switch_Clauses ::= Switch_Clause {['next'] semi Switch_Clause}
                    [['next'] semi Else Cond_Block]
 Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Cond_Block
@@ -2544,8 +2552,7 @@ Unconditional expressions change the flow of programs without a condition.
 Implicit return expression is always the value of the last expression in a code execution path. 
 
 \syntax\begin{lstlisting}
-Result_Expr ::= Anon_Params '->' Block 
-              | ['memoize'] Expr
+Result_Expr ::= ['memoize'] Expr
               | ['memoize'] 'tailcall' Argument_Exprs
 \end{lstlisting}
 

@@ -168,14 +168,11 @@ def f [T] (t: T)(implicit $w_1$: Function_1[T, String]) := $\ldots$
 \syntax\begin{lstlisting}
 Dcl ::= 'def' ['multi' | 'dispatch'] Fun_Dcl 'end' ['def']
       | ['multi' | 'dispatch'] 'message' Fun_Dcl 'end' ['message']
-      | ['multi' | 'dispatch'] 'function' Fun_Dcl 'end' ['function']
       | ['multi' | 'dispatch'] 'operator' Op_Dcl 'end' ['operator']
 Def ::= 'def' ['multi' | 'dispatch'] Fun_Def 'end' ['def']
       | 'def' ['multi' | 'dispatch'] Fun_Alt_Def
       | ['multi' | 'dispatch'] 'method' Fun_Def 'end' ['method']
       | ['multi' | 'dispatch'] 'method' Fun_Alt_Def
-      | ['multi' | 'dispatch'] 'function' Fun_Def 'end' ['function']
-      | ['multi' | 'dispatch'] 'function' Fun_Alt_Def
       | ['multi' | 'dispatch'] 'operator' Op_Def 'end' ['operator']
       | ['multi' | 'dispatch'] 'operator' Op_Alt_Def
 \end{lstlisting}

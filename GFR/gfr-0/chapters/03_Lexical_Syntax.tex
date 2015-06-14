@@ -45,6 +45,7 @@ plain_id ::= upper id_rest
 id       ::= ['@' | '@@'] (plain_id
              | '`' plain_id '`'
              | '``' {any_id}+ '``')
+           | '`' op_id '`'
 id_char  ::= letter_char
            | digit_char
            | connecting_char
@@ -122,7 +123,7 @@ let!  yield!  return!  as?  as!  is!  not!
 %[|  |]  %[  %(  {  %{  }  %/  /
 '  #  ..  ..<  ...  :=  ==  /== ;  ;;  ->  
 =>  =>>  *  **  &
-_  <@  @>  <@@  @@>
+_  @  <@  @>  <@@  @@>
 \end{lstlisting}
 
 Symbolic or partially symbolic character sequences can be treated as keywords, if a lexical or syntactic grammars specifies that. Some lexical grammars extend some of these sequences with ``flags''. 

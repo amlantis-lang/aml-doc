@@ -5,25 +5,13 @@
 
 \minitoc
 
+\newpage
+
 \syntax\begin{lstlisting}
 R_Modifier  ::= 'weak' | 'soft' | 'unowned'
 M_Modifier  ::= 'constant' | 'mutable' | 'immutable'
 S_Modifier  ::= M_Modifier [R_Modifier]
               | R_Modifier
-Dcl         ::= [S_Modifier] 'val' Val_Dcl
-              | [S_Modifier] 'var' Var_Dcl
-              | 'def' Def_Dcl
-              | 'message' Fun_Dcl 'end' ['message']
-              | 'function' Fun_Dcl 'end' ['function']
-              | 'type' Type_Dcl
-Def         ::= Pat_Var_Def
-              | 'def' Fun_Def
-              | 'method' Fun_Def 'end' ['method']
-              | 'method' Fun_Alt_Def
-              | 'function' Fun_Def 'end' ['function']
-              | 'function' Fun_Alt_Def
-              | Type_Def
-              | Tmpl_Def
 In_Sep      ::= [nl] 'in' [nl] | semi
 \end{lstlisting}
 
@@ -59,29 +47,18 @@ This is to keep up consistency with pattern matching, where the type will usuall
 \label{sec:value-dcl-def}
 
 \syntax\begin{lstlisting}
-L_Modifier   ::= S_Modifier - ('constant', 'mutable')
-Dcl          ::= [S_Modifier] 'val' Val_Dcl
-Val_Dcl      ::= val_ids ':' Type
-Pat_Var_Def  ::= [S_Modifier] 'val' Pat_Def
-               | [L_Modifier] 'let' ['rec'] Pat_Var_Nest 
-                 {nl 'and' Pat_Var_Nest}
-Pat_Var_Nest ::= (Pattern2 | var_dcl) ':=' 
-                 (Expr | Pat_Var_Def In_Sep Expr)
-Pat_Def      ::= Pattern2 {',' Pattern2} ':=' Exprs
-               | [[var_ids ','] '*' id [':' Type] ','] var_ids 
-                 ':=' Mul_Exprs
-               | [var_ids ','] '*' id [':' Type] 
-                 ':=' Mul_Exprs
-var_ids      ::= var_dcl {',' var_dcl}
-var_dcl      ::= var_bind | fun_bind
-var_bind     ::= id [':' Type]
-fun_bind     ::= id [Type_Param_Clause] Param_Clauses [':' Type]
-val_ids      ::= id {',' id}
+Dcl          ::= Val_Dcl
+Val_Dcl      ::= [S_Modifier] 'val' id {',' id} ':' Type
+Expr         ::= (Val_Dcl | Val_Def) In_Sep Expr ['end']
+Val_Def      ::= [S_Modifier] ('val' | 'let') ['rec']
+                 Let_Binding {'and' Let_Binding}
+Let_Binding  ::= Pattern ':=' Expr {',' Expr}
+               | id [Type_Param_Clause] Param_Clauses [':' Type]
+                 ':=' Expr
+               | id [Type_Param_Clause] Params2 ':=' Expr
 \end{lstlisting}
 
-% TBD: an idea for future versions: instead of id [Param_Clauses] for var_dcl, extend the parameters to allow a pattern, then the function body may use the extracted values
-
-A value declaration \lstinline@val $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
+A value declaration \lstinline@val $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
 
 A value definition \lstinline@val $x$: $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
 
@@ -100,21 +77,7 @@ A lazy value may only be defined, and a value of the same name (binding) may be 
 
 The effect of the value definition is to bind $x$ to the value of $e$ converted to type $T$. 
 
-A {\em constant value definition}, or a {\em let binding}, is of the form 
-\begin{quote}\begin{lstlisting}
-let $x$: $T$ := $e$
-\end{lstlisting}\end{quote}
-where $e$ is an expression that is supposed to be treated as constant in the same block from its occurrence on. Values defined with \code{let} have certain properties:
-
-\begin{enumerate}
-  \item The modifier \code{constant} is implicitly added, and can not be overwritten. Therefore, it would be redundant in the syntax. The \code{constant val} construct is somewhat similar\footnote{Somewhat only because of the differences between \code{let} bindings and \code{val} definitions.}.
-  \item They can't be used in a declaration, only in a definition. 
-  \item They allow for recursive definitions. Normally, the defined value or variable name is not available for recursive use inside of a defined function, unless it is pre-declared (or already overloaded on site, which is then both declared and defined), but using \code{let rec} does both and makes the name available for recursion. 
-  \item Mutual recursion is also possible using \code{let rec}, where the definitions are concatenated with ``\code{and}''. 
-  \item More value definitions can be nested inside the expression that defines the bound value. 
-\end{enumerate}
-
-The type $T$ may be omitted. 
+A value definition using the keyword \code{let} is equivalent to value definitions using the keyword \code{val}. Value declarations do not use the keyword \code{let}. 
 
 Value declarations \& definitions with the type $T$ omitted are of the form
 \begin{quote}\begin{lstlisting}
@@ -212,11 +175,12 @@ The following shorthands are recognized:
 \label{sec:variable-dcl-def}
 
 \syntax\begin{lstlisting}
-Dcl         ::= [S_Modifier] 'var' Var_Dcl
-Pat_Var_Def ::= [S_Modifier] 'var' Var_Def
-Var_Dcl     ::= var_ids ':' Type
-Var_Def     ::= Pat_Def
-              | var_ids ':' Type ':=' '_'
+Dcl         ::= Var_Dcl
+Var_Dcl     ::= [S_Modifier] 'var' id {',' id} ':' Type
+Expr        ::= Var_Def In_Sep Expr ['end']
+Var_Def     ::= [S_Modifier] 'var' Var_Binding
+Var_Binding ::= Let_Binding
+              | id {',' id} ':' Type ':=' '_'
 \end{lstlisting}
 
 A variable declaration \lstinline@var $x$: $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$: $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$: $T$+ introduces a mutable class instance variable of type $T$. 
@@ -651,7 +615,6 @@ The locally abstract type syntax form by itself does not make polymorphic the ty
 \syntax\begin{lstlisting}
 Dcl           ::= 'def' Fun_Dcl 'end' ['def']
                 | 'message' Fun_Dcl 'end' ['message']
-                | 'function' Fun_Dcl 'end' ['function']
                 | 'operator' Op_Dcl 'end' ['operator']
                 | 'attribute' Att_Dcl 'end' ['attribute']
 Fun_Dcl       ::= Fun_Sig ':' Type
@@ -661,8 +624,6 @@ Def           ::= 'def' Fun_Def 'end' ['def']
                 | 'def' Fun_Alt_Def
                 | 'method' Fun_Def 'end' ['method']
                 | 'method' Fun_Alt_Def
-                | 'function' Fun_Def 'end' ['function']
-                | 'function' Fun_Alt_Def
                 | 'operator' Op_Def 'end' ['operator']
                 | 'operator' Op_Alt_Def 'end' ['operator']
                 | 'attribute' Att_Def 'end' ['attribute']
@@ -689,11 +650,12 @@ Att_Clauses   ::= Param_Clause1 {Param_Clause}
 Param_Clause  ::= '(' [Params] ')'
 Param_Clause1 ::= '(' Param ')'
 Params        ::= Param {',' Param}
+Params2       ::= ['implicit'] Param {',' ['implicit'] Param}
 Param         ::= {Annotation} [Param_Extra] id [id]
                   [':' Param_Type] [':=' Expr]
                 | Pattern2
 Param_Extra   ::= ['lazy' | 'eager'] [M_Modifier] [Param_Rw] 
-                  ['*' | '**' | '&' | '~']
+                  ['*' | '**' | '&' | '~' | '?']
 Param_Rw      ::= 'val' | 'var' | 'ref'
 Param_Type    ::= ['=>' | '=>>'] (['optional'] Type | id | '_')
 \end{lstlisting}
@@ -996,6 +958,11 @@ var $x$: optional $T$ := $e$
 val $x$: optional $T$ := $e$
 $x$: => optional $T$ := $e$
 val $x$: => optional $T$ := $e$
+?$x$: $T$ := $e$
+var ?$x$: $T$ := $e$
+val ?$x$: $T$ := $e$
+?$x$: => $T$ := $e$
+val ?$x$: => $T$ := $e$
 \end{lstlisting}
 
 Optional parameters may not have any modifiers, except for by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have a {\em default value expressions} and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for repeated parameters. 
@@ -1004,8 +971,9 @@ Optional parameters add the annotation (\sref{sec:annotations}) \code{@[optional
 
 If a parameter has a nullable type $T$ (either by being a nullable type, or allowing otherwise \code{Nothing} with a union type), and appears where an optional parameter may appear, it is taken as an optional parameter with default value of \code{undefined} implicitly. 
 
-If the keyword \code{optional} is given before the parameter type, then the parameter type $T$ is wrapped in type ~\lstinline!Option[$T$]!, and instead of \code{undefined}, a missing argument is given as \code{None}, and a present argument $x$ is given wrapped in ~\lstinline!Some($x$)!. 
+If the keyword \code{optional} is given before the parameter type, or the external parameter name is prefixed with a ``\lstinline!?!'', then the parameter type $T$ is wrapped in type ~\lstinline!Option[$T$]!, and instead of \code{undefined}, a missing argument is given as \code{None}, and a present argument $x$ is given automatically wrapped in ~\lstinline!Some($x$)!, if it's not already.
 
+If the parameter type $T$ is in fact ~\lstinline!Option[$T$']!, where $T'$ is the effective parameter type\footnote{In the meaning of ``wrapped''.}, then the parameter is treated as optional. This applies to named and purely named parameters (\sref{sec:named-parameters}) as well. 
 
 
 
@@ -1085,6 +1053,11 @@ var ~$x$: optional $T$ := $e$
 val ~$x$: optional $T$ := $e$
 ~$x$: => optional $T$ := $e$
 val ~$x$: => optional $T$ := $e$
+~?$x$: $T$ := $e$
+var ~?$x$: $T$ := $e$
+val ~?$x$: $T$ := $e$
+~?$x$: => $T$ := $e$
+val ~?$x$: => $T$ := $e$
 \end{lstlisting}
 
 Capturing named parameter are of the form: 
@@ -1109,6 +1082,9 @@ If a captured named parameter is flagged with \code{val}, the parameter itself i
 If a capturing named parameter is supposed to capture arguments of multiple types, one can use union types (\sref{sec:unions}). This does not ensure any particular relation between the argument's key and value's type other than that provided by the union though.
 
 If a purely named parameter has a nullable type $T$ (either by being a nullable type, or allowing otherwise \code{Nothing} with a union type), it is taken as having default value of \code{nil} implicitly. 
+
+
+If the keyword \code{optional} is given before the parameter type, or the external parameter name is prefixed with a ``\lstinline!~?!'' instead of just ``\lstinline!~!'', then the parameter type $T$ is wrapped in type ~\lstinline!Option[$T$]!, and instead of \code{undefined}, a missing argument is given as \code{None}, and a present argument $x$ is given automatically wrapped in ~\lstinline!Some($x$)!, if it's not already. 
 
 
 
@@ -1220,7 +1196,6 @@ Overloaded members do not need to appear in the same scope, an overloading membe
 
 
 
-
 \section{Function \& Method Preference Declarations}
 \label{sec:func-method-preference-decl}
 
@@ -1229,8 +1204,6 @@ Dcl ::= 'def' 'prefer' Preference_Id 'with' Preference_Dcl
         'to' Preference_Dcls 'end' ['def']
       | 'prefer' 'message' Preference_Id 'with' Preference_Dcl 
         'to' Preference_Dcls 'end' ['message']
-      | 'prefer' 'function' Preference_Id 'with' Preference_Dcl 
-        'to' Preference_Dcls 'end' ['function']
       | 'prefer' 'operator' Preference_Op_Id 'with' Preference_Dcl 
         'to' Preference_Dcls 'end' ['operator']
 
