@@ -8,17 +8,24 @@
 
 \minitoc
 
+\newpage
+
 % TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits lik Function_n may use it in its type parameters to apply the parameter extras to the apply method
 
 \syntax\begin{lstlisting}
-Annotation     ::= '@[' Simple_Type [NB_Arg_Exprs] ']'
-NB_Arg_Exprs   ::= Parens_Args {Parens_Args}
-                 | Poetry_Args
-Annotation_Def ::= 'annotation' Class_Def
-Expr           ::= Pragma
-Pragma         ::= 'pragma' Simple_Type [NB_Arg_Exprs]
-Def            ::= 'def' 'macro' Fun_Def 'end' ['def']
-                 | 'def' 'macro' Fun_Alt_Def
+Annotation            ::= '@[' Simple_Type [NB_Arg_Exprs] ']'
+NB_Arg_Exprs          ::= Parens_Args {Parens_Args}
+                        | Poetry_Args
+Tmpl_Def              ::= Annotation_Definition
+Annotation_Definition ::= 'annotation' Class_Def
+Expr                  ::= Pragma
+Pragma                ::= 'pragma' Simple_Type [NB_Arg_Exprs]
+Dcl                   ::= Macro_Dcl
+Macro_Dcl             ::= 'def' 'macro' Fun_Sig 'end' ['def']
+Def                   ::= Macro_Def
+Macro_Def             ::= 'def' 'macro' Fun_Sig [Fun_Dec] 
+                          [semi Fun_Stats] 'end' ['def']
+                        | 'def' 'macro' Fun_Sig ':=' [Fun_Dec2] Expr
 \end{lstlisting}
 
 Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Gear, possibly affecting the resulting bytecode and abstract syntax trees. 
@@ -34,7 +41,7 @@ Annotations are classes that must conform to \code{Annotation}, and which can th
 Annotations always appear before element that they annotate, and if multiple annotations are applied, their order is preserved in respect of reflection, although the actual order may or may not matter. 
 
 % TBD: add reference of annotations as they become clear and well-defined
-% as now there are just a few mentioned throughout the CLS, but it's too few to properly categorize them
+% as now there are just a few mentioned throughout the GLS, but it's too few to properly categorize them
 
 
 

@@ -1214,12 +1214,15 @@ Overloaded members do not need to appear in the same scope, an overloading membe
 \label{sec:func-method-preference-decl}
 
 \syntax\begin{lstlisting}
-Dcl ::= 'def' 'prefer' Preference_Id 'with' Preference_Dcl 
-        'to' Preference_Dcls 'end' ['def']
-      | 'prefer' 'message' Preference_Id 'with' Preference_Dcl 
-        'to' Preference_Dcls 'end' ['message']
-      | 'prefer' 'operator' Preference_Op_Id 'with' Preference_Dcl 
-        'to' Preference_Dcls 'end' ['operator']
+Dcl            ::= Prefer_Fun
+                 | Prefer_Message
+                 | Prefer_Op
+Prefer_Fun     ::= 'def' 'prefer' Preference_Id 'with' Preference_Dcl 
+                   'to' Preference_Dcls 'end' ['def']
+Prefer_Message ::= 'prefer' 'message' Preference_Id 'with' Preference_Dcl 
+                   'to' Preference_Dcls 'end' ['message']
+Prefer_Op      ::= 'prefer' 'operator' Preference_Op_Id 'with' Preference_Dcl 
+                   'to' Preference_Dcls 'end' ['operator']
 
 Preference_Id      ::= id 
                      | '(' id {',' id} ')' 

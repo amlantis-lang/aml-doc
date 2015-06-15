@@ -330,18 +330,16 @@ Struct_Expr       ::= Struct_Path
                     | '(' 'val' Expr ['as' Pkg_Type] ')'
 Struct_Items      ::= Struct_Item {semi Struct_Item} 
 Struct_Item       ::= Struct_Def | Expr
-Struct_Def        ::= Val_Def
-                    | Type_Definition
-                    | 'throwable' Type_Constr_Dcl 'end' ['throwable']
-                    | 'throwable' id Is Stable_Id
-                    | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
-                    | 'raiseable' id Is Stable_Id
-                    | Class_Definition
-                    | Object_Definition
-                    | Trait_Definition
-                    | Refinement_Definition
-                    | Protocol_Definition
-                    | 'structure' id 
+Struct_Def        ::= [Access_Modifier] Val_Def
+                    | [Access_Modifier] Type_Definition
+                    | [Access_Modifier] 'throwable' Type_Constr_Dcl 
+                      'end' ['throwable']
+                    | [Access_Modifier] 'throwable' id Is Stable_Id
+                    | [Access_Modifier] 'raiseable' Type_Constr_Dcl 
+                      'end' ['raiseable']
+                    | [Access_Modifier] 'raiseable' id Is Stable_Id
+                    | {Modifier} Tmpl_Def
+                    | [Access_Modifier] 'structure' id 
                       [Struct_Ascription Struct_Type] 
                       Is Struct_Expr
                     | 'open' Struct_Path

@@ -378,12 +378,16 @@ a.value := 128
 Workflow_Expr          ::= Expr ['do'] '{' Workflow_or_Range_Expr '}'
 Workflow_or_Range_Expr ::= Workflow | Short_Workflow | Range_Expr
 
-Workflow ::= 'let!' (Pattern2 | var_dcl) ':=' Expr semi Workflow
+Workflow ::= 'let!' Let_Binding semi Workflow
            | Val_Def In_Sep Workflow ['end']
            | Var_Def In_Sep Workflow ['end']
-           | 'def' Fun_Def semi Workflow
+           | Fun_Def In_Sep Workflow ['end']
+           | Op_Def In_Sep Workflow ['end']
+           | Multi_Fun_Def In_Sep Workflow ['end']
+           | Multi_Op_Def In_Sep Workflow ['end']
            | 'type' Type_Def 'end' ['type'] semi Workflow
-           | Tmpl_Def semi Workflow
+           | Tmpl_Def In_Sep Workflow ['end']
+           | Struct_Def In_Sep Workflow ['end']
            | 'yield!' Expr
            | Yield_Expr
            | 'return!' Expr
@@ -2108,7 +2112,10 @@ Def_Expr ::= ['implicit'] Val_Def In_Sep Expr ['end']
            | ['implicit'] Multi_Op_Dcl  In_Sep Expr ['end']
            | ['implicit'] Multi_Fun_Def In_Sep Expr ['end']
            | ['implicit'] Multi_Op_Def  In_Sep Expr ['end']
+           | Macro_Dcl In_Sep Expr ['end']
+           | Macro_Def In_Sep Expr ['end']
            | {Local_Modifier} Tmpl_Def In_Sep Expr ['end']
+           | Struct_Def In_Sep Expr ['end']
 \end{lstlisting}
 
 
@@ -2925,12 +2932,13 @@ Template_Stat  ::= Use
                  | {Annotation} {Modifier} Multi_Op_Def
                  | {Annotation} {Modifier} Multi_Method_Def
                  | {Annotation} {Modifier} Multi_Att_Def
-                 | {Annotation} {Modifier} Multi_PCtor_Def
+                 | {Annotation} {Modifier - 'implicit'} Macro_Def
                  | {Annotation} {Modifier} Ctor_Def
+                 | {Annotation} {Modifier} PCtor_Def
                  | {Annotation} {Modifier} CCtor_Def
                  | {Annotation} {Modifier} UCtor_Def
                  | {Annotation} {Modifier} Dtor_Def
-                 | {Annotation} {Modifier} Struct_Def
+                 | {Annotation} {Modifier - Local_Modifier} Struct_Def
                  | Tmpl_Member [In_Sep Block_Stat ['end']]
                  | Tmpl_Ifc_Impl
                  | Tmpl_Ifc_Dcl
