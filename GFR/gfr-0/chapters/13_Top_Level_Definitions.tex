@@ -19,9 +19,9 @@ Signature_File           ::= Signature_Packaging
 Script_File              ::= Expr
 Script_Fragments         ::= Script_Fragment {';;' Script_Fragment}
 Script_Fragment          ::= Script_Stat
-Implementation_Packaging ::= 'module' Module_Path 
+Implementation_Packaging ::= {Pragma} 'module' Module_Path 
                              (Impl_Packaging1 | Impl_Packaging2)
-Signature_Packaging      ::= 'module' 'signature' Module_Path
+Signature_Packaging      ::= {Pragma} 'module' 'signature' Module_Path
                              (Sig_Packaging1 | Sig_Packaging2)
                            | Sig_Packaging3
 Impl_Packaging1          ::= semi [Impl_Pkg_Seq] ['end' ['module']]
@@ -132,7 +132,7 @@ Top-level definitions outside a packaging are assumed to be injected into the \c
 \subsection{Module Object}
 
 \syntax\begin{lstlisting}
-Module_Object ::= 'module' 'object' Object_Def
+Module_Object ::= {Annotation} 'module' 'object' Object_Def
 \end{lstlisting}
 
 A module object ~\lstinline!module object $p$ extends $t$! can specify some properties of the module object, add new traits to it, and adds the members of the template $t$ to the module object $p$. There can be only one module object per module. The module object has to be defined in a file named ~\lstinline[deletekeywords={module}]!module.gear!~ in the module's sources directory, otherwise the module object has an implied empty template with no annotations. 
