@@ -12,10 +12,8 @@
 \syntax\begin{lstlisting}
 Expr        ::= Value_Expr
               | Loop_Expr
-              | Rescue_Expr
               | Raise_Expr 
               | Throw_Expr
-              | Catch_Expr
               | Return_Expr
               | Assign_Expr
               | Update_Expr
@@ -41,6 +39,8 @@ Value_Expr  ::= Simple_Expr
               | Quote_Expr
               | Metaclass_Access
               | Workflow_Expr
+              | Rescue_Expr
+              | Catch_Expr
               | Type_Expr
 Type_Expr   ::= '(' Type ')'
               | Annot_Type - (Nullable_Mod, Type_Var)
@@ -549,6 +549,7 @@ Wf_When       ::= 'when' Pattern [Guard] ('then' | semi) Workflow
 Wf_Case       ::= 'when' Case_Patterns ('then' | semi) Workflow
 Wf_Switch     ::= 'when' Switches ('then' | semi) Workflow
 Wf_For_Loop   ::= 'loop' Wf_Loop_Block 'end' ['loop']
+                | 'do' Wf_Loop_Block 'done'
                 | '{' Wf_Loop_Block '}'
 Wf_Loop_Block ::= {Wf_Yield | Block_Stat | Loop_Ctrl_Expr}
 Wf_Yield      ::= Yield Expr
@@ -1741,7 +1742,13 @@ Infix_Expr   ::= Prefix_Expr
                | Range_Expr
 Simple_Expr1 ::= '(' op_id ')' Poetry_Args
                | '(' nary_op_id ')' Poetry_Args
-Infix_Op     ::= op_id | id
+Infix_Op     ::= op_id 
+               | id
+               | Nullable_Op
+               | 'and' 'also'
+               | 'or' 'else'
+Nullable_Op  ::= ['?_'] op_id '_?'
+               | '?_' op_id
 Prefix_Expr  ::= [op_id | 'not'] Simple_Expr1
 Range_Expr   ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
                  [FP_Delta [FP_Digits]]
@@ -1782,7 +1789,7 @@ Apart from standard function applications (\sref{sec:function-applications}) tha
 
 An infix operator can be an arbitrary identifier, usually an operator identifier. Infix operators have static {\em precedence}, {\em associativity} and {\em binding direction} defined as follows:
 
-Infix operators have to be separated from both sides by whitespace from the expressions that they connect. If the following whitespace is a newline character, then precedence rules can not be followed (due to line-by-line parsing and evaluation) and usual behaviour described in (\sref{sec:newlinecharacters}) is followed. 
+Infix operators have to be separated from both sides by whitespace from the expressions that they connect. If the following whitespace is a newline character, then precedence rules can not be followed (due to line-by-line parsing and evaluation) and usual behaviour described in (\sref{sec:newlinecharacters}) is followed. The only infix operator that can be separated either from both sides or from neither side by whitespace is ``\code{^}'' (power), and this exception is applied only to this particular operator, not to operators derived from it. 
 
 Infix operations and $n$-ary operations may alternatively appear in the form $(\op)\ e_1 \commadots e_n$, which is equivalent to a function application with poetry-style arguments passing (unless $e_1$ is a tuple expression with more than 1 elements, then it's regular-style arguments passing). 
 
@@ -1801,7 +1808,7 @@ $\mbox{\rm\sl(all other special characters)}$
 ^
 \end{lstlisting}
 
-That is, operators starting with ``\lstinline!|!'' have the lowest precedence, followed by operators starting with ``\lstinline!^!'', etc. 
+That is, operators starting with ``\lstinline!|!'' have the lowest precedence, followed by operators starting with ``\lstinline!&!'', etc. 
 
 There's one exception to this rule, which concerns {\em assignment operators} (\sref{sec:assignment-operations}). The precedence of an assignment operator is the same as the one of simple assignment (\lstinline!:=!). That is, it is lower than the precedence of any other operator. 
 
@@ -1866,10 +1873,35 @@ Infix operations can be grouped together. If there is an even number of expressi
 
 
 
+\paragraph{Nullable Operators}
+
+Nullable operators are operators that end with ``\code{_?}'', start with ``\code{?_}'', or both. If nullable operator is identified by what it starts with, it is quite obvious that the left-hand side of it might not be a useable value (i.e., it might be \code{nil} or \code{undefined}), thus any infix expression $e_0\ \op_?\ e_1$ is never seen as ~\lstinline!$e_0$.`$\op_?$`($e_1$)!, but rather always as $\op_?(e_0,\ e_1)$. For consistency, the same applies to operators that are identified as nullable by what they end with, and operators that have nullable identifiers on both sides. Parameters of such operators are always implicitly nullable on the side that contains the identifier. Nullable operators have binding direction identified by the operator with nullable identifiers trimmed from both sides. 
+
+\example An example use of a nullable operator within a workflow expression.
+\begin{lstlisting}
+query {
+  for row in db.Some_Table do
+    where row.Some_Data_Column ?_> 2
+    select row
+  done
+} 
+\end{lstlisting}
+
+
+
+
+
+\paragraph{Tuple Arguments}
+
+If the left hand side of an infix operator is of a tuple type, then an infix expression $(e_{01} \commadots e_{0n})\ \op\ (e_{11} \commadots e_{1n})$ is  always seen as $\op(e_{01} \commadots e_{0n})(e_{11} \commadots e_{1n})$. Two arguments lists are used to distinguish which arguments come from the left side and which from the right side. 
+
+
+
+
 
 \paragraph{Standard Operators}
 
-Always consult GFR-2 for complete reference. This is a short extract of the full set of standard operators. Not all classes implement these operators, e.g. \code{Object} implements none, not even \code{=}. 
+Always consult GFR-2 for complete reference. This is a short extract of the full set of standard operators. Not all classes implement these operators, e.g. \code{Object} implements none, not even ``\code{=}''. 
 
 Language-reserved operators:
 \begin{lstlisting}
@@ -1900,11 +1932,20 @@ a ^ b     (* power *)
 Standard comparison operators:
 \begin{lstlisting}
 a = b    (* equality *)
-a /= b   (* non-equality *)
-a < b    (* less than *)
-a <= b   (* less than or equal *)
+a /= b   (* non-equality; unordered, less than or greater than *)
 a > b    (* greater than *)
 a >= b   (* greater than or equal *)
+a < b    (* less than *)
+a <= b   (* less than or equal *)
+a <> b   (* less than or greater than *)
+a <>= b  (* less than, greater than or equal; ordered *)
+a /<>= b (* unordered *)
+a /<> b  (* unordered or equal *)
+a /<= b  (* unordered or greater than *)
+a /< b   (* unordered, equal or greater than *)
+a />= b  (* unordered or less than *)
+a />     (* unordered, less than or equal *)
+a <=>    (* compare *)
 \end{lstlisting}
 
 Extended comparison operators (arguments are a tuple on the right hand side of the operator):
@@ -1912,10 +1953,11 @@ Extended comparison operators (arguments are a tuple on the right hand side of t
 a = ($\ldots$)   (* `a` equal to all arguments *)
 a /= ($\ldots$)  (* `a` not equal to all arguments,
             but arguments may be equal to each other *)
-a < ($\ldots$)   (* `a` less than all arguments *)
-a <= ($\ldots$)  (* `a` less than or equal all arguments *)
 a > ($\ldots$)   (* `a` greater than all arguments *)
 a >= ($\ldots$)  (* `a` greater than or equal all arguments *)
+a < ($\ldots$)   (* `a` less than all arguments *)
+a <= ($\ldots$)  (* `a` less than or equal all arguments *)
+(* etc. *)
 \end{lstlisting}
 
 Standard bitwise operators: 
@@ -1983,8 +2025,8 @@ The expression is a representation of a range that has optional bounds, and if t
 
 An assignment operator is an operator symbol that ends in an ``equals'' character ``\lstinline!=!'', with the exception of operators for which one of the following conditions holds: 
 \begin{enumerate}
-\item the operator also starts with an equals character and has more than one character, or
-\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'', ``\lstinline!/<=!'', ``\lstinline!/>=!'', ``\lstinline!/=!'' or ``\lstinline!/==!''\footnote{This one effectively disqualifies ``\lstinline!$l$ /= $r$!'' from being treated as ``\lstinline!$l$ := $l$ / $r$!'', very intentionally: to prevent floating/fixed point division from being privileged to integral division, ``\code{div}''.}.
+  \item the operator also starts with an equals character and has more than one character, or
+  \item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'', ``\lstinline!/<=!'', ``\lstinline!/>=!'', ``\lstinline!/=!'', ``\lstinline!<>=!'', ``\lstinline!/<>=!'' or ``\lstinline!/==!''\footnote{This one effectively disqualifies ``\lstinline!$l$ /= $r$!'' from being treated as ``\lstinline!$l$ := $l$ / $r$!'', very intentionally: to prevent floating/fixed point division from being privileged to integral division, ``\code{div}''.}.
 \end{enumerate}
 
 Assignment operators are treated specially in that they can be expanded to assignments if no other interpretation is valid, as previously defined. Assignment operators can be defined as members of a type. 
@@ -2460,6 +2502,7 @@ For_Loop        ::= 'loop' Loop_Block_Expr 'end' ['loop']
                   | '{' Loop_Block_Expr '}'
 Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
 Val_Dcls        ::= Val_Dcl
+                  | Val_Dcl - 'val'
                   | Pattern1
 \end{lstlisting}
 
