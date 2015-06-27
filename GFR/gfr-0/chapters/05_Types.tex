@@ -24,7 +24,9 @@ Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type}
                       | ['refinement'] Refine_Stats
 Postfix_Type        ::= Compound_Type 
                         ['with' 'constraint' Constraint_Block]
-Infix_Type          ::= Postfix_Type {op_id [nl] Postfix_Type}
+Infix_Type          ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
+                      | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
+                        {':' Postfix_Type}
 Annot_Type          ::= {Annotation} Simple_Type [Nullable_Mod]
 Simple_Type         ::= Simple_Type [Type_Args]
                       | Simple_Type '#' id
@@ -82,12 +84,13 @@ Stable_Id        ::= [Path '.'] id
                    | [id '.'] 'super' [Class_Qualifier] '.' id
                    | 'outer' Class_Qualifier '.' id
                    | Module_Path '.' Stable_Id
-                   | ''' id
+                   | Type_Var
 Class_Qualifier  ::= '[' (id | Simple_Type) ']'
 Module_Path      ::= [Root] Module_Selector {'.' id}
 Module_Selector  ::= [Vendor] id
 Root             ::= '@Root' '.'
 Vendor           ::= id '/'
+Type_Var         ::= ''' id
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Gear's type system. 
@@ -109,10 +112,23 @@ A path is one of the following:
 
   \item \lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
 
-  \item \lstinline!'$x$!, where $x$ is a type variable name.\footnote{Not quite the same as type parameter nor type argument.}
+  \item \lstinline!'$x$!, where $x$ is a type variable name (\sref{sec:type-variables}).
 \end{itemize}
 
 Paths introduce also {\em path dependent types}, if the referenced member is a type. 
+
+
+
+
+
+\subsection{Type Variables}
+\label{sec:type-variables}
+
+A type \lstinline!'$x$! stands for a type variable named $x$. The associated type is \code{Gear/Language.Auto}, for use with automatic inference (\sref{sec:automatic-inference}).
+
+In type definitions, type variables are names for type parameters. As such, they are implicitly added to type parameters section, in order of appearance, unless specified in type parameters section explicitly otherwise. 
+
+In type constraints, type variables represent unspecified types that an be instantiated to any type to satisfy the type constraint. 
 
 
 
@@ -390,18 +406,18 @@ The \code{refinement} keyword may also be omitted from a compound type that cons
 
 
 
-
 \subsection{Infix Types}
 \label{sec:infix-types}
 
 \syntax\begin{lstlisting}
-Infix_Type ::= Postfix_Type {op_id [nl] Postfix_Type}
+Infix_Type ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
+             | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
+               {':' Postfix_Type}
 \end{lstlisting}
 
 An infix type $T_1\ \op\ T_2$ consists of an infix operator $\op$, which gets applied to two type operands $T_1$ and $T_2$. The type is equivalent to the type application ~\lstinline!$\op$[$T_1$, $T_2$]!. The infix operator $\op$ may be an arbitrary identifier, and is expected to represent a type constructor. 
 
 Infix type may also result from an infix expression (\sref{sec:prefix-infix-ops}), if such operator name is not found on the result type of the expression that it is applied to. In any case, precedence and associativity rules of operators apply here as well. 
-
 
 
 
@@ -958,7 +974,7 @@ The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding 
 \section{Any-Value Type}
 \label{sec:any-value-type}
 
-\syntax\begin{lstlisting}[morekeywords={Any}]
+\syntax\begin{lstlisting}[morekeywords={Any},deletekeywords={also}]
 Simple_Type ::= 'Any'
 (* also: *)
 Simple_Type ::= 'Gear/Language.Any'
@@ -981,7 +997,7 @@ The \code{Any} virtual type is the actual root of the type system of Gear, altho
 \section{Automatically Inferred Type}
 \label{sec:auto-type}
 
-\syntax\begin{lstlisting}[morekeywords={Auto}]
+\syntax\begin{lstlisting}[morekeywords={Auto},deletekeywords={also}]
 Simple_Type ::= 'Auto'
 (* also: *)
 Simple_Type ::= 'Gear/Language.Auto'
@@ -997,58 +1013,7 @@ If a type variable of the form ~\lstinline!'$x$! is not present in the type para
 
 See (\sref{sec:automatic-inference}) for details on (non-local) automatic type inference. 
 
-There is one important limitation: the \code{Auto} type must not cause circular references between functions. In that case, the type has to be specified in another way. This inference happens only during compilation, unlike local type inference, which takes place in runtime. 
-
-This kind of type inference is useful when a method only cares about actually used capabilities of it's parameters. In that way, it is similar to protocols, but only includes those capabilities that are actually used. Note that in runtime, test of structural types (refinements) is somewhat slower than simple type test, depending on the amount of members present in the refinement of the resulting compound type. This is common to compound types, where the test needs to check all components and not just one. 
-
-\example An automatically generalized swap function.
-\begin{lstlisting}
-def swap (x: Auto, y: Auto): Auto
-  (y, x)
-end
-\end{lstlisting}
-This is inferred and generalized into the following polymorphic function:
-\begin{lstlisting}
-def swap [A, B] (x: A, y: B): (B, A)
-  (y, x)
-end
-\end{lstlisting}
-This inference and generalization is possible, because no other requirements are imposed on the values \code{x} and \code{y} and the result type is unaffected either. 
-
-\example An automatically inferred function.
-\begin{lstlisting}
-def print (x: Auto): Unit
-  IO.console.print x.to_string
-end
-\end{lstlisting}
-This is inferred into the following function:
-\begin{lstlisting}
-def print (x: { def to_string (): String end }): Unit
-  IO.console.print x.to_string
-end
-\end{lstlisting}
-This happens because the only requirement on \code{x} is that it has a method \code{to_string} that accepts no arguments (could be variadic either), which is a requirement from the function body, and that method returns a \code{String}, which is a known requirement of parameter type of the \code{IO.console.print} function. Note that the refinement type is equivalent to:
-\begin{lstlisting}
-Any with refinement { def to_string (): String end }
-\end{lstlisting}
-
-\example Another automatically inferred function.
-\begin{lstlisting}
-def print (x: Auto): Unit
-  IO.console.print x
-end
-\end{lstlisting}
-This is inferred into the following function:
-\begin{lstlisting}
-def print (x: String): Unit
-  IO.console.print x
-end
-\end{lstlisting}
-Here, the only requirement on the value \code{x} comes from a known requirement of parameter type of the \code{IO.console.print} function. In fact, if \code{IO.console.print} had several overloaded variants, then the type of \code{x} would be inferred to be a union type of all the overloaded variants' requirements on it. 
-
 By default, when a type annotation is missing in a function declaration, then it is either inherited (based on overriding), or taken to be \code{Auto}. A pragma (\sref{sec:pragmas}) exists to modify this default behaviour: to use other type in place of missing type annotation, use ~\lstinline!pragma missing_type $T$!, where $T$ can be also \code{Any}, or any other type, like \code{Object} and even \code{Dynamic} (\sref{sec:dynamic-type}). 
-
-Note that \code{Auto} type inference does not track requirements of values from their usage within other methods.
 
 
 
@@ -1058,7 +1023,7 @@ Note that \code{Auto} type inference does not track requirements of values from 
 \section{Dynamic Type}
 \label{sec:dynamic-type}
 
-\syntax\begin{lstlisting}[morekeywords={Dynamic}]
+\syntax\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
 Simple_Type ::= 'Dynamic'
 (* also: *)
 Simple_Type ::= 'Gear/Language.Dynamic'
@@ -1087,7 +1052,7 @@ Using \code{Dynamic} type is one of possible ways to use multi-methods -- the ty
 \section{Variadic Arguments Type}
 \label{sec:varargs-type}
 
-\syntax\begin{lstlisting}[morekeywords={Dynamic}]
+\syntax\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
 Simple_Type ::= 'Variadic_Arguments'
 (* also: *)
 Simple_Type ::= 'Gear/Language.Variadic_Arguments'
@@ -1362,7 +1327,7 @@ In Gear, there are a few types and their values that represent emptiness of some
 \end{enumerate}
 
 The following lines show some common relations between empty values. 
-\begin{lstlisting}
+\begin{lstlisting}[deletekeywords={also}]
 nil = undefined  (* yes *)
 nil == undefined (* no *)
 nil = None       (* no *)

@@ -43,7 +43,7 @@ Value_Expr  ::= Simple_Expr
               | Workflow_Expr
               | Type_Expr
 Type_Expr   ::= '(' Type ')'
-              | Annot_Type - Nullable_Mod
+              | Annot_Type - (Nullable_Mod, Type_Var)
 Simple_Expr ::= Block_Expr
               | Simple_Expr1
               | Method_Expr
@@ -89,14 +89,14 @@ What we call ``statement'', in context of Gear is in fact yet another kind of an
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= integer_literal
-               | floating_point_literal
+               | fp_literal
                | complex_literal
                | rational_literal
                | character_literal
                | boolean_literal
                | string_literal
                | symbol_literal
-               | regular_expression_literal
+               | regexp_literal
 \end{lstlisting}
 
 Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate. 
@@ -135,7 +135,6 @@ The \code{undefined} represents also ``no object'', being itself represented by 
 Defined values and variables may not be undefined by assigning them with the \code{undefined} object directly by user code, but it is important to note that this may happen on special occasions indirectly, most notably during hot code loading, e.g. if the definition of an instance variable goes missing from the new code version. 
 
 See (\sref{sec:emptiness}) for more details on ``nothing'' values. 
-
 
 
 
@@ -253,6 +252,18 @@ An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expres
 
 
 
+\subsection{Polymorphic Variant Expressions}
+\label{sec:polymorphic-variant-expressions}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= '`' id Expr
+\end{lstlisting}
+
+The expression ~\lstinline!`$\id$ $e$! evaluates to the polymorphic variant value whose tag is $\id$, and whose argument is the value of evaluated expression $e$. 
+
+
+
+
 
 \subsection{Record Expressions}
 \label{sec:record-expressions}
@@ -347,7 +358,7 @@ Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
 Gear/Language.Reference_Cell.new($e$)
 \end{lstlisting}
 
-The \code{Gear/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@'', or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{value_=}'' message. 
+The \code{Gear/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{value_=}'' message. 
 
 Reference cells are lightweight instances that can be used to simulate output parameters at low costs, in both CPU cycles and the language design.
 
@@ -818,7 +829,7 @@ _ -> { 5 }
 \label{sec:placeholder-functions}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= '%' digit {digit}
+Simple_Expr1 ::= impl_par
 \end{lstlisting}
 
 An expression (\code{Expr}) may contain embedded percent symbols ``\lstinline!%!'' followed by a number at places where identifiers are legal. Such an expression represents an anonymous function, where each numbered percent symbol denotes the corresponding positional parameter, and the zero-numbered symbol denotes the anonymous function itself.\footnote{This is different from Scala where the parameters are referenced with an underscore and not numbered -- they are successive.}
@@ -1490,6 +1501,8 @@ New_Expr ::= 'new' [Early_Defs] Class_Parents
            | 'new' [Early_Defs] Class_Parents 
              ['{' Template_Body '}']
            | 'new' '{' Template_Body '}'
+           | 'new' [Early_Defs] Class_Parents 
+             Record_Extensions
 \end{lstlisting}
 
 Unlike languages like Java, Scala, C\# and similar, Gear does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline[deletekeywords={new}]!Class#new!~ method (not to be confused with ``static'' ~\lstinline[deletekeywords={new}]@Class.new@, which is for dynamic creation of ad-hoc classes), which passes all the arguments to the appropriate constructor (and is defined using \code{Variadic_Arguments}). 
@@ -1702,7 +1715,9 @@ There's one exception to this rule, which concerns {\em assignment operators} (\
 A number of left-associative alphanumeric operators with different precedence exist:
 \begin{itemize}
   \item \code{and}, with precedence of ~\lstinline!&!. 
+  \item \code{and also}, with precedence of ~\lstinline!&!. 
   \item \code{or}, with precedence of ~\lstinline!|!.  
+  \item \code{or else}, with precedence of ~\lstinline!|!.  
   \item \code{xor}, with precedence of ~\lstinline!|!.  
   \item \code{rem}, with precedence of ~\lstinline!%!. 
   \item \code{mod}, with precedence of ~\lstinline!%!. 
@@ -1758,15 +1773,16 @@ Infix operations can be grouped together. If there is an even number of expressi
 
 
 
+
 \paragraph{Standard Operators}
 
 Always consult GFR-2 for complete reference. This is a short extract of the full set of standard operators. Not all classes implement these operators, e.g. \code{Object} implements none, not even \code{=}. 
 
 Language-reserved operators:
 \begin{lstlisting}
-a == b       (* value identity *)
-a /== b      (* not identical *)
-not (a == b) (* quite the same as `not identical' *)
+a == b       (* value physical identity *)
+a /== b      (* not physically identical *)
+not (a == b) (* quite the same as `not physically identical' *)
 \end{lstlisting}
 
 Standard arithmetic operators:
@@ -1822,17 +1838,25 @@ a &&& b  (* bitwise and *)
 a or b   (* bitwise or (when applied to numbers) *)
 a ||| b  (* bitwise or *)
 a xor b  (* bitwise xor (when applied to numbers) *)
+a ^^^ b  (* bitwise xor *)
+---a     (* bitwise not (prefix, unary) *)
 not a    (* bitwise not (prefix, unary; when applied to numbers) *)
 \end{lstlisting}
 
 Standard boolean (logical) operators:
 \begin{lstlisting}
-a && b   (* boolean and *)
-a and b  (* boolean and *)
-a || b   (* boolean or *)
-a or b   (* boolean or *)
-a xor b  (* boolean xor *)
-not a    (* boolean not (prefix, unary; when applied to booleans) *)
+(* short circuited: *)
+a & b        (* boolean and *)
+a and b      (* boolean and *)
+a | b        (* boolean or *)
+a or b       (* boolean or *)
+(* non short circuited: *)
+a && b       (* boolean and *)
+a and also b (* boolean and *)
+a || b       (* boolean or *)
+a or else b  (* boolean or *)
+a xor b      (* boolean xor *)
+not a        (* boolean not (prefix, unary; when applied to booleans) *)
 \end{lstlisting}
 
 % Standard fuzzy logic operators:
@@ -1867,7 +1891,7 @@ The expression is a representation of a range that has optional bounds, and if t
 An assignment operator is an operator symbol that ends in an ``equals'' character ``\lstinline!=!'', with the exception of operators for which one of the following conditions holds: 
 \begin{enumerate}
 \item the operator also starts with an equals character and has more than one character, or
-\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'', ``\lstinline!/<=!'', ``\lstinline!/>=!'' or ``\lstinline!/=!''\footnote{This one effectively disqualifies ``\lstinline!$l$ /= $r$!'' from being treated as ``\lstinline!$l$ := $l$ / $r$!'', very intentionally: to prevent floating/fixed point division from being privileged to integral division, ``\code{div}''.}.
+\item the operator is one of ``\lstinline!<=!'', ``\lstinline!>=!'', ``\lstinline!/<=!'', ``\lstinline!/>=!'', ``\lstinline!/=!'' or ``\lstinline!/==!''\footnote{This one effectively disqualifies ``\lstinline!$l$ /= $r$!'' from being treated as ``\lstinline!$l$ := $l$ / $r$!'', very intentionally: to prevent floating/fixed point division from being privileged to integral division, ``\code{div}''.}.
 \end{enumerate}
 
 Assignment operators are treated specially in that they can be expanded to assignments if no other interpretation is valid, as previously defined. Assignment operators can be defined as members of a type. 
@@ -1901,7 +1925,7 @@ a := (b := c)
 (* is equivalent to *)
 a := b; a := c
 
-(* this also works *)
+(* this works as well *)
 a := let b := c
 (* as *)
 a := (let b := c)
@@ -1974,6 +1998,12 @@ val e := b ?: d (* which is equal to `b ? b : d` *)
 \subsubsection{Operator Name Resolution}
 
 In any operator-related expression (prefix, infix, $n$-ary), the operator name is first searched in the receiver. Then, if not found, the name scope in which the operator expression appears, is searched for an operator of the given name and arity of arguments count incremented with 1 (for the original receiver). After that, implicit conversions are applied to the receiver, to a type that contains operator with the given name. 
+
+If the found operator does not accept $n$ arguments, but instead has $n$ type parameters, then:
+\begin{itemize} 
+  \item If the operator references a type, the infix expression is equivalent to an infix type (\sref{sec:infix-types}), and has to be a part of a type reference expression (\sref{sec:type-ref-expressions}). 
+  \item If the operator does not reference any type, then the infix expression is equivalent to a type application (\sref{sec:type-applications}). 
+\end{itemize}
 
 
 
@@ -2184,7 +2214,7 @@ Typed expressions do not allow checks against target type expressions (\sref{sec
 \syntax\begin{lstlisting}
 Expr      ::= Type_Expr
 Type_Expr ::= '(' Type ')'
-            | Annot_Type - Nullable_Mod
+            | Annot_Type - (Nullable_Mod, Type_Var)
 \end{lstlisting}
 
 A type reference expression is a way to refer to a type and use it as a first-class value, which it already is. 
@@ -2240,7 +2270,7 @@ The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses 
 
 The conditional expression is evaluated by evaluating first $e_1$. If this evaluates to \code{true}, the result of evaluating $e_2$ is returned, otherwise the result of evaluating $e_3$ is returned. 
 
-The evaluation of $e_1$ utilizes the so-called {\em short-circuit evaluation}. The expression $e_1$ is split by binary boolean operators. Then every first argument is evaluated, but the second argument is evaluated only if the evaluation of the first argument does not suffice to determine the value of the expression. When the first argument of ``\lstinline!&&!'' evaluates to \code{no}, the overall value must be \code{no} and the result of evaluating the second argument does not change that. When the first argument of ``\lstinline!||!'' evaluates to \code{yes}, the overall value must be \code{yes}. These boolean operators are in fact short-circuited source-code-wide, not only as part of conditional expressions. Word equivalents of these operators are also short-circuited (``\code{and}'' and ``\code{or}'' respectively). To prevent short-circuited behavior, one has to use the operator identifier in a function application (\sref{sec:function-applications}).
+The evaluation of $e_1$ utilizes the so-called {\em short-circuit evaluation}. The expression $e_1$ is split by binary boolean operators. Then every first argument is evaluated, but the second argument is evaluated only if the evaluation of the first argument does not suffice to determine the value of the expression. When the first argument of ``\lstinline!&!'' evaluates to \code{no}, the overall value must be \code{no} and the result of evaluating the second argument does not change that. When the first argument of ``\lstinline!|!'' evaluates to \code{yes}, the overall value must be \code{yes}. These boolean operators are in fact short-circuited source-code-wide, not only as part of conditional expressions. Word equivalents of these operators are also short-circuited (``\code{and}'' and ``\code{or}'' respectively). To prevent short-circuited behavior, one has to use a non short circuiting version of the operator (``\code{and also}'' and ``\code{or else}'', or ``\code{&&}'' and ``\code{||}'').\footnote{This is different from SML, where the short circuiting behaviour is the other way around with ``\code{and also}'' and ``\code{or else}''. The reason is that Gear prefers the ``lazy'' behaviour of short circuiting these infix expressions, so it also requires less typing.}
 
 \example The following examples show how short-circuit evaluation behaves. Let's mark the short-circuited ``\lstinline!&&!'' as ``\lstinline!sand!'' and the short-circuited ``\lstinline!||!'' as ``\lstinline!sor!''. On the right side are the equivalent conditional expressions. 
 \begin{lstlisting}
@@ -2269,8 +2299,8 @@ Unlike in some languages, conditional expressions do not require to place parent
 \paragraph{Note}
 Gear provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
 
-\paragraph{Conditional Variable Definition}
-The conditional variable definition ~\lstinline!if $p$ := $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ := $e_1$!~ is a variable definition (see syntactic categories \code{Var_Def} \& \code{Val_Def}), works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no}, the condition is still met and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ := $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. 
+\paragraph{Conditional Variable Binding}
+The conditional variable definition ~\lstinline!if $p$ := $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ := $e_1$!~ is a variable binding (see syntactic categories \code{Var_Def} \& \code{Val_Def}), works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil}\footnote{Or \code{undefined}, which is an equal case.} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no} (literally), the condition is still met (because \code{no} is not \code{nil} neither \code{()}) and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ := $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. In case the \code{unless} keyword is used instead of \code{if}, then the variable binding is effective in $e_3$ (and possible other \code{elsif} branches), but not in $e_2$.
 
 
 

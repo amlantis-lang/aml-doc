@@ -306,7 +306,7 @@ Struct_Type       ::= Struct_Type_Path
                       {'and' Struct_Constraint}
                     | '(' Struct_Type ')'
                     | 'signature' 'of' Struct_Expr
-Struct_Spec       ::= 'val' id ':' Type
+Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
                     | Type_Definition
                     | 'throwable' Type_Constr_Dcl 'end' ['throwable']
                     | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
@@ -327,6 +327,7 @@ Struct_Expr       ::= Struct_Path
                     | Struct_Expr '(' Struct_Expr ')'
                     | '(' Struct_Expr ')'
                     | '(' Struct_Expr 'as' Struct_Type ')'
+                    | '(' Struct_Expr Struct_Ascription Struct_Type ')'
                     | '(' 'val' Expr ['as' Pkg_Type] ')'
 Struct_Items      ::= Struct_Item {semi Struct_Item} 
 Struct_Item       ::= Struct_Def | Expr
@@ -348,8 +349,8 @@ Struct_Def        ::= [Access_Modifier] Val_Def
                     | Use
                     | {Annotation} Struct_Def
 Struct_Ascription ::= ':' | ':>'
-Struct_Constraint ::= 'type' id [Type_Param_Clause] Type_Equation
-                    | 'type' id [Type_Param_Clause] ':=' Type
+Struct_Constraint ::= 'type' Type_Path [Type_Param_Clause] Type_Equation
+                    | 'type' Type_Path [Type_Param_Clause] ':=' Type
                     | 'struct' Struct_Path '=' Extended_Struct_Path
                     | 'struct' Struct_Path ':=' Extended_Struct_Path
 Type              ::= 'structure' Pkg_Type
@@ -361,6 +362,143 @@ Struct_Path          ::= Module_Path
 Extended_Struct_Path ::= Extended_Struct_Name {'.' Extended_Struct_Name}
 Extended_Struct_Name ::= id {'(' Extended_Struct_Path {',' Extended_Struct_Path} ')'}
 Type_Path            ::= [Extended_Struct_Path '.'] id
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Structures}
+
+The motivation for structures is to package together related definitions, such as data type definitions and associated operations over that types, and to avoid running out of names. Such a package is called a {\em structure} and is introduced by the ~\lstinline!struct $\ldots$ end struct!~ construct, which contains an arbitrary sequence of definitions (their order is insignificant). A structure is also introduced by the ~\lstinline!module $\ldots$ end module!~ construct, unifying modules with structures. 
+
+Components of a structure can be overloaded and polymorphic. 
+
+A structure is usually given a name with the \code{structure} or \code{module} binding. 
+
+\example A structure packaging together a type of priority queues and their operations:
+\begin{lstlisting}
+structure Priority_Queue is
+struct
+  type Priority := Number.Integer end type
+  type Queue['A] is variant 
+    Empty
+    Node of Priority * 'A * Queue['A] * Queue['A]
+  end type
+  let empty := Empty
+  let rec insert queue, priority, element :=
+    match queue
+    when Empty then Node(priority, element, Empty, Empty)
+    when Node(p, e, left, right)
+      if priority <= p
+      then Node(priority, element, (insert right, p, e), left)
+      else Node(p, e, (insert right, priority, element), left)
+      end if
+    end match
+  raiseable Queue_is_Empty end raiseable
+  let rec remove_top := function
+    when Empty then raise Queue_is_Empty
+    when Node(_, _, left, Empty) then left
+    when Node(_, _, Empty, right) then right
+    when Node(_, _, left @ Node(l_prio, l_elt, _, _), 
+                    right @ Node(r_prio, r_elt, _, _)) then
+      if l_prio <= r_prio
+      then Node(l_prio, l_elt, remove_top left, right)
+      else Node(r_prio, r_elt, left, remove_top right)
+      end if
+    end function
+  let extract := function
+    when Empty then raise Queue_is_Empty
+    when queue @ Node(priority, element, _, _) then
+      (priority, element, remove_top queue)
+    end function
+end struct
+\end{lstlisting}
+
+Outside the structure, its components can be accessed as object properties\footnote{Since everything in Gear is an object, structures are also objects.}. 
+
+\example Accessing structure components.
+\begin{lstlisting}
+Priority_Queue.insert Priority_Queue.empty, 1, "hello"
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Signatures}
+
+Signatures are interfaces of structures. A signature specifies which components of a structure are accessible from outside of the structure, and with which type. They can be used to hide some components of a structure, like local function definitions. 
+
+\example A signature that specifies three priority queue operations \code{empty}, \code{insert} and \code{extract}, but hides the function \code{remove_top}. Moreover, it makes the \code{Queue} type abstract, by not providing any actual representation as a concrete type. 
+\begin{lstlisting}
+signature A_Priority_Queue is
+sig
+  type Priority := Number.Integer end type (* concrete type *)
+  type Queue['A] end type                  (* abstract type *)
+  val empty: Queue['A]
+  val insert: Queue['A] -> Number.Integer -> 'A -> Queue['A]
+  val extract: Queue['A] -> Number.Integer * 'A * Queue['A]
+  raiseable Queue_is_Empty end raiseable
+end sig
+\end{lstlisting}
+Restricting the \code{Priority_Queue} structure by this signature results in another view of the \code{Priority_Queue}, where the \code{remove_top} function is not accessible and the actual representation of priority queues is hidden, using opaque ascription ``\lstinline!:>!'', where transparent ascription ``\lstinline!:!'' would not hide anything from the structure, including actual concrete type representations. 
+\begin{lstlisting}
+structure Abstract_Priority_Queue is (Priority_Queue :> A_Priority_Queue)
+\end{lstlisting}
+The same restriction could also be performed during the original definition of the structure:
+\begin{lstlisting}
+structure Priority_Queue :> A_Priority_Queue is
+struct 
+  $\ldots$
+end struct
+\end{lstlisting}
+
+
+
+
+
+\subsection{Functors}
+
+Functors are functions from structures to structures. They are used to express parameterized structures: a structure $A$ is parameterized by structures $B_1 \ldots\ B_n$ is a functor $F$ with formal parameters $B_1 \ldots\ B_n$, along with the expected signatures for each $B_i$. The functor $F$ can be applied to many possible implementations of each $B_i$. 
+
+\example A structure implementing sets as sorted lists, parameterized by a structure providing the type of the set elements and an ordering function over this type, to keep the sets sorted:
+\begin{lstlisting}
+type Comparison_Result is variant Less; Equal; Greater end type
+
+signature Ordered_Type is
+sig
+  type T end type
+  val compare: T -> T -> Comparison_Result
+end sig
+
+structure Set_Functor is
+functor (Element_Type: Ordered_Type) ->
+  struct
+    type Element := Element_Type.T end type
+    type Set := List[Element] end type
+    let empty := %[]
+    let rec add x, s := match s
+      when %[] then %[x]
+      when %[head, *tail] then 
+        match Element_Type.compare x, head
+        when Equal then s
+        when Less then x :: s
+        when Greater then head :: add x, tail
+        end match
+      end match
+    let rec is_member? x, s := match s
+      when %[] then no
+      when %[head, *tail] then 
+        match Element_Type.compare x, head
+        when Equal then yes
+        when Less then no
+        when Greater then is_member? x, tail
+        end match
+      end match
+  end struct
 \end{lstlisting}
 
 

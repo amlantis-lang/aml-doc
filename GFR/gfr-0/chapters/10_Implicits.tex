@@ -6,6 +6,8 @@
 
 \minitoc
 
+\newpage
+
 
 
 
@@ -170,12 +172,12 @@ Dcl               ::= Multi_Fun_Dcl
                     | Multi_Op_Dcl
                     | Multi_Message_Dcl
                     | Multi_Att_Dcl
-Multi_Fun_Dcl     ::= 'def' 'dispatch' Fun_Sig Mul_Val 'end' ['def']
-                    | 'def' 'multi'    Fun_Sig         'end' ['def']
-Multi_Op_Dcl      ::= 'dispatch' 'operator' Op_Sig Mul_Val 'end' ['operator']
-                    | 'multi'    'operator' Op_Sig         'end' ['operator']
-Multi_Message_Dcl ::= 'dispatch' 'message' Fun_Sig Mul_Val 'end' ['message']
-                    | 'multi'    'message' Fun_Sig         'end' ['message']
+Multi_Fun_Dcl     ::= 'def'      'dispatch'  Fun_Sig Mul_Val 'end' ['def']
+                    | 'def'      'multi'     Fun_Sig         'end' ['def']
+Multi_Op_Dcl      ::= 'dispatch' 'operator'  Op_Sig  Mul_Val 'end' ['operator']
+                    | 'multi'    'operator'  Op_Sig          'end' ['operator']
+Multi_Message_Dcl ::= 'dispatch' 'message'   Fun_Sig Mul_Val 'end' ['message']
+                    | 'multi'    'message'   Fun_Sig         'end' ['message']
 Multi_Att_Dcl     ::= 'dispatch' 'attribute' Att_Sig Mul_Val 'end' ['attribute']
                     | 'multi'    'attribute' Att_Sig         'end' ['attribute']
 
@@ -285,14 +287,16 @@ object program {
   trait Mult_Dep[A, B, C] {
     message apply (a: A, b: B): C end
   }
-  implicit object mmm 
-      extends Mult_Dep[Matrix, Matrix, Matrix] {$\ldots$}
-  implicit object mvv 
-      extends Mult_Dep[Matrix, Vector, Vector] {$\ldots$}
-  implicit object mim 
-      extends Mult_Dep[Matrix, Integer, Matrix] {$\ldots$}
-  implicit object imm 
-      extends Mult_Dep[Integer, Matrix, Matrix] {$\ldots$}
+  object Mult_Dep {
+    implicit object mmm 
+        extends Mult_Dep[Matrix, Matrix, Matrix] {$\ldots$}
+    implicit object mvv 
+        extends Mult_Dep[Matrix, Vector, Vector] {$\ldots$}
+    implicit object mim 
+        extends Mult_Dep[Matrix, Integer, Matrix] {$\ldots$}
+    implicit object imm 
+        extends Mult_Dep[Integer, Matrix, Matrix] {$\ldots$}
+  }
   
   method multiply [A, B, C]
       (a: A, b: B)(implicit dep: Mult_Dep[A, B, C]): C
