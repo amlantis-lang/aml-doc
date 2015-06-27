@@ -177,7 +177,25 @@ List_Flags   ::= [['i' | (* immutable *)
 
 An expression of the form ~\lstinline!%[$e_1$; $\ldots$; $e_n$]! is a list expression. 
 
-% TBD: elaborate on the forms and types
+\begin{itemize}
+  \item Expression of the form ~\lstinline!%[$e_1$; $\ldots$; $e_n$]!
+    has type of \code{Linked_List[$T$]}. 
+  \item Expression of the form ~\lstinline!%i[$e_1$; $\ldots$; $e_n$]!
+    has also type of \code{Linked_List[$T$]}. 
+  \item Expression of the form ~\lstinline!%m[$e_1$; $\ldots$; $e_n$]!
+    has type of \code{Mutable_Linked_List[$T$]}. 
+  \item Expression of the form ~\lstinline!%l[$e_1$; $\ldots$; $e_n$]!
+    has type of \code{Double_Linked_List[$T$]}. 
+  \item Expression of the form ~\lstinline!%il[$e_1$; $\ldots$; $e_n$]!
+    has also type of \code{Double_Linked_List[$T$]}. 
+  \item Expression of the form ~\lstinline!%ml[$e_1$; $\ldots$; $e_n$]!
+    has type of \code{Mutable_Double_Linked_List[$T$]}. 
+  \item Expression of the form ~\lstinline!%w[word word2 wordx]!
+    has type of \code{Linked_List[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Gear/Language.String}). 
+\end{itemize}
+
+The ``\code{i}'' and ``\code{m}'' flags can be inferred from the expected type, based on \code{immutable} and \code{mutable} modifier (\sref{sec:mutable-immutable-storage}) respectively (or the related type annotations). This is also true for array expressions (\sref{sec:array-expressions}), dictionary expressions (\sref{sec:dict-expressions}), multimap expressions (\sref{sec:multimap-expressions}) and bag expressions (\sref{sec:bag-expressions}). It is an error if there is a mutability flag in the expression that is incompatible to the mutability required by the expected type. 
+
 
 
 
@@ -194,6 +212,18 @@ Array_Flags  ::= [['i' | (* immutable *)
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]! is an array expression. 
+
+\begin{itemize}
+  \item Expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]!
+    has type of \code{Mutable_Array[$T$]}. 
+  \item Expression of the form ~\lstinline!%i[|$e_1$; $\ldots$; $e_n$|]!
+    has type of \code{Array[$T$]}. 
+  \item Expression of the form ~\lstinline!%m[|$e_1$; $\ldots$; $e_n$|]!
+    has type of \code{Mutable_Array[$T$]}.
+  \item Expression of the form ~\lstinline!%w[|word word2 wordx|]!
+    has type of \code{Mutable_Array[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Gear/Language.String}). 
+\end{itemize}
+
 
 
 
@@ -215,6 +245,25 @@ Dict_Flags      ::= [['i' | (* immutable *)
 
 An expression of the form ~\lstinline!%{$e_1$; $\ldots$; $e_n$}! is a dictionary expression. 
 
+\begin{itemize}
+  \item Expression of the form ~\lstinline!%{$e_1$; $\ldots$; $e_n$}!
+    has type of \code{Hash_Dictionary[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%i{$e_1$; $\ldots$; $e_n$}!
+    has also type of \code{Hash_Dictionary[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%m{$e_1$; $\ldots$; $e_n$}!
+    has type of \code{Mutable_Hash_Dictionary[$K$, $T$]}.
+  \item Expression of the form ~\lstinline!%l{$e_1$; $\ldots$; $e_n$}!
+    has type of \code{Linked_Hash_Dictionary[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%il{$e_1$; $\ldots$; $e_n$}!
+    has type of \code{Linked_Hash_Dictionary[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%ml{$e_1$; $\ldots$; $e_n$}!
+    has also type of \code{Linked_Hash_Dictionary[$K$, $T$]}.
+  \item Expression of the form ~\lstinline!%ml{$e_1$; $\ldots$; $e_n$}!
+    has type of \code{Mutable_Linked_Hash_Dictionary[$K$, $T$]}.
+  \item Dictionary expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Gear/Language.Symbol}). 
+\end{itemize}
+
+
 
 
 
@@ -228,6 +277,22 @@ Multimap_Expr ::= '%' Dict_Flags '{{' [Dict_Mapping1 {semi Dict_Mapping1}] '}}'
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}! is a multimap expression. 
+
+\begin{itemize}
+  \item Expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}!
+    has type of \code{Hash_Multimap[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%i{{$e_1$; $\ldots$; $e_n$}}!
+    has also type of \code{Hash_Multimap[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%m{{$e_1$; $\ldots$; $e_n$}}!
+    has type of \code{Mutable_Hash_Multimap[$K$, $T$]}.
+  \item Expression of the form ~\lstinline!%l{{$e_1$; $\ldots$; $e_n$}}!
+    has type of \code{Linked_Hash_Multimap[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%il{{$e_1$; $\ldots$; $e_n$}}!
+    has also type of \code{Linked_Hash_Multimap[$K$, $T$]}. 
+  \item Expression of the form ~\lstinline!%ml{{$e_1$; $\ldots$; $e_n$}}!
+    has type of \code{Mutable_Linked_Hash_Multimap[$K$, $T$]}.
+  \item Multimap expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Gear/Language.Symbol}). 
+\end{itemize}
 
 
 
@@ -248,6 +313,34 @@ Bag_Flags    ::= [['i' | (* immutable *)
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expression. 
+
+\begin{itemize}
+  \item Expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Hash_Bag[$T$]}. 
+  \item Expression of the form ~\lstinline!%i($e_1$; $\ldots$; $e_n$)!
+    has also type of \code{Hash_Bag[$T$]}. 
+  \item Expression of the form ~\lstinline!%m($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Mutable_Hash_Bag[$T$]}.
+  \item Expression of the form ~\lstinline!%l($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Linked_Hash_Bag[$T$]}. 
+  \item Expression of the form ~\lstinline!%il($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Linked_Hash_Bag[$T$]}. 
+  \item Expression of the form ~\lstinline!%ml($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Mutable_Linked_Hash_Bag[$T$]}.
+  \item Expression of the form ~\lstinline!%s($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Hash_Set[$T$]}. 
+  \item Expression of the form ~\lstinline[deletekeywords={is}]!%is($e_1$; $\ldots$; $e_n$)!
+    has also type of \code{Hash_Set[$T$]}. 
+  \item Expression of the form ~\lstinline!%ms($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Mutable_Hash_Set[$T$]}.
+  \item Expression of the form ~\lstinline!%ls($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Linked_Hash_Set[$T$]}. 
+  \item Expression of the form ~\lstinline!%ils($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Linked_Hash_Set[$T$]}. 
+  \item Expression of the form ~\lstinline!%mls($e_1$; $\ldots$; $e_n$)!
+    has type of \code{Mutable_Linked_Hash_Set[$T$]}.
+\end{itemize}
+
 
 
 
