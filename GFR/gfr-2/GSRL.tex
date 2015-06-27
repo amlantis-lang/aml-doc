@@ -22,19 +22,19 @@ Some particular components defined in this GFR are only optional, as specified, 
 
 
 
-\chapter{The Lang Module}
+\chapter{The Language Module}
 \label{sec:lang}
 
-The ~\lstinline!Lang~[gear]!~ module is implicitly imported into every Gear source, and there is no way to opt-out of this behaviour. 
+The ~\lstinline!Gear/Language!~ module is implicitly imported into every Gear source, and there is no way to opt-out of this behaviour. 
 
-For brevity, we will omit the ``\lstinline!~[gear]!'' in this and every following chapter, and unless specified otherwise, it will be implicitly added to every occurrence of any CSL module as vendor specifier. 
+For brevity, we will omit the ``\lstinline!Gear/!'' in this and every following chapter, and unless specified otherwise, it will be implicitly added to every occurrence of any CSL module as vendor specifier. 
 
 Every Gear source can be viewed as starting with the following code:
 \begin{lstlisting}
-use Lang~[gear].{_}
+use Gear/Language.{_}
 \end{lstlisting}
 
-The \code{Lang} module is designed to be as much not intrusive as possible, e.g. the \code{Lang.Object} does not define any instance methods.\footnote{This is very much unlike e.g. Java, whose ~\lstinline!java.lang.Object!~ is pre-flooded with methods.} To allow users to use some typical methods querying \code{Object} instances, Gear offers attribute syntax along with those methods predefined in the \code{Lang.Predef} object (\sref{sec:lang-predef}). 
+The \code{Language} module is designed to be as much not intrusive as possible, e.g. the \code{Language.Object} does not define any instance methods.\footnote{This is very much unlike e.g. Java, whose ~\lstinline!java.lang.Object!~ is pre-flooded with methods.} To allow users to use some typical methods querying \code{Object} instances, Gear offers attribute syntax along with those methods predefined in the \code{Language.Predef} object (\sref{sec:lang-predef}). 
 
 
 
@@ -43,7 +43,7 @@ The \code{Lang} module is designed to be as much not intrusive as possible, e.g.
 \label{sec:lang-any}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 type Any := ;; implementation-defined, blank slate
 \end{lstlisting}
@@ -58,7 +58,7 @@ type Any := ;; implementation-defined, blank slate
 
 % TODO: add annotation to new() to make it accept anything
 \begin{lstlisting}
-module Lang
+module Language
 
 class Object extends Any 
 end class
@@ -86,7 +86,7 @@ end object
 \label{sec:lang-undefined}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 immutable sealed class Nothing extends /* every type */
 end class
@@ -104,7 +104,7 @@ end class
 \label{sec:lang-unit}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 immutable sealed class Unit extends Object
 end class
@@ -119,7 +119,7 @@ end class
 \label{sec:lang-type}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 abstract class Type [T] extends Object
 end class
@@ -139,7 +139,7 @@ end object
 \label{sec:lang-class}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 class Class [T] extends Type[T]
 end class
@@ -161,7 +161,7 @@ end object
 \label{sec:lang-metaclass}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 class Metaclass [T <: Class[T]] extends Type[T]
 end class
@@ -180,7 +180,7 @@ end object
 \label{sec:lang-magnitude}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 abstract class Magnitude extends Object
 end class
@@ -199,7 +199,7 @@ end object
 \label{sec:lang-number}
 
 \begin{lstlisting}
-module Lang
+module Language
 
 trait Number_Like extends Magnitude
   constraint value as Number_Like 
@@ -254,7 +254,8 @@ begin
   operator <=   (other: Number_Like) end operator
   operator <>   (other: Number_Like) end operator
   operator <=>  (other: Number_Like) end operator
-  operator /<=> (other: Number_Like) end operator
+  operator <>=  (other: Number_Like) end operator
+  operator /<>= (other: Number_Like) end operator
   operator /<>  (other: Number_Like) end operator
   operator /<=  (other: Number_Like) end operator
   operator /<   (other: Number_Like) end operator
@@ -279,8 +280,8 @@ The following table shows a matrix of comparison operators on \code{Number}. ``U
     \code{<} & \code{no} & \code{yes} & \code{no} & \code{no} & \code{yes} & less \\
     \code{<=} & \code{no} & \code{yes} & \code{yes} & \code{no} & \code{yes} & less, or equal \\
     \code{<>} & \code{yes} & \code{yes} & \code{no} & \code{no} & \code{yes} & less, or greater \\
-    \code{<=>} & \code{yes} & \code{yes} & \code{yes} & \code{no} & \code{yes} & less, equal, or greater \\
-    \code{/<=>} & \code{no} & \code{no} & \code{no} & \code{yes} & \code{no} & unordered \\
+    \code{<>=} & \code{yes} & \code{yes} & \code{yes} & \code{no} & \code{yes} & less, greater, or equal \\
+    \code{/<>=} & \code{no} & \code{no} & \code{no} & \code{yes} & \code{no} & unordered \\
     \code{/<>} & \code{no} & \code{no} & \code{yes} & \code{yes} & \code{no} & unordered, or equal \\
     \code{/<=} & \code{yes} & \code{no} & \code{no} & \code{yes} & \code{no} & unordered, or greater \\
     \code{/<} & \code{yes} & \code{no} & \code{yes} & \code{yes} & \code{no} & unordered, equal, or greater \\
@@ -297,7 +298,7 @@ The following table shows a matrix of comparison operators on \code{Number}. ``U
 
 
 
-\section{The Lang.Predef Object}
+\section{The Language.Predef Object}
 \label{sec:lang-predef}
 
 
