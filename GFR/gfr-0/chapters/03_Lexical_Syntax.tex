@@ -261,11 +261,12 @@ integer_literal ::= sign (
                     decimal_numeral
                   | hex_numeral
                   | octal_numeral
-                  | binary_numeral)
+                  | binary_numeral) [int_suffix]
 decimal_numeral ::= digit {['_'] digit}
 hex_numeral     ::= hex_prefix | hex_digit {['_'] hex_digit}
 digit           ::= '0' | $\cdots$ | '9'
-hex_digit       ::= '0' | $\cdots$ | '9' | 'a' | $\cdots$ | 'f'
+hex_digit       ::= '0' | $\cdots$ | '9' 
+                  | 'a' | $\cdots$ | 'f'
                   | 'A' | $\cdots$ | 'F'
 octal_numeral   ::= oct_prefix oct_digit {'_' oct_digit}
 oct_digit       ::= '0' | $\cdots$ | '7'
@@ -275,6 +276,7 @@ hex_prefix      ::= '0x'
 bin_prefix      ::= '0b'
 oct_prefix      ::= '0o'
 sign            ::= ['+' | '-'] | ()
+int_suffix      ::= ('G' | 'I' | 'M' | 'N' | 'Q' | 'R' | 'Z') {digit}
 \end{lstlisting}
 
 Integers are usually of type \lstinline@Number@, which is a class cluster of all types that can represent numbers. Unlike Java, Gear supports both signed and unsigned integral types directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@, but this is implementation-defined. Math operations on numbers are handled internally in such a way that the user doesn't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type, or maybe even in a smaller container if fit. Expected type is always respected in any case. 
@@ -353,10 +355,16 @@ exponent_part_e ::= int_exp sign decimal_numeral
 exponent_part_p ::= hex_exp sign decimal_numeral
 int_exp         ::= 'e'
 hex_exp         ::= 'p'
-float_type      ::= 'h' | 'f' | 'd' | 'q' | 'df'
+float_type      ::= 'h' (* Half float precision *)
+                  | 'f' (* Single float precision *)
+                  | 'd' (* Double float precision *)
+                  | 'q' (* Quadruple float precision *)
+                  | 'm' (* Decimal precision *)
 \end{lstlisting}
 
-Floating point and fixed point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. Literals that have \lstinline@float_type@ of ``\code{df}'' are ({\em d}ecimal) {\em f}ixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly inferred to be fixed point literals, unless specifically converted to a floating point type or using a \code{float_type} of \code{h}, \code{f} or \code{d}. From \code{Number}'s user perspective, this is only an implementation detail, and the VM is not required to store floating or fixed point values in any specific representation other than that with the required precision and properties. 
+Floating point and fixed point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. If \lstinline@float_type@ part is not present, then the expressions' expected type is used, and if expected type is unable to determine the floating/fixed point type, then a fixed point type is used, with precision set precise enough to store all given significant digits without loss. 
+
+Literals that have \lstinline@float_type@ of ``\code{m}'' are (deci{\bf m}al) fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly inferred to be fixed point literals, unless specifically converted to a floating point type or using a \code{float_type} of \code{h}, \code{f} or \code{d}. From \code{Number}'s user perspective, this is only an implementation detail, and the VM is not required to store floating or fixed point values in any specific representation other than that with the required precision and properties. 
 
 \begin{enumerate}
 
@@ -374,7 +382,7 @@ Floating point and fixed point literals are of type \lstinline@Number@ as well a
 
 \end{enumerate}
 
-Letters in the exponent type, hexadecimal numbers and float type literals have to be lower-case in Gear sources, but functions that parse floating point numbers do support them being upper-case for compatibility. 
+Letters in the exponent type, hexadecimal numbers and float type literals should be lower-case in Gear sources, but functions that parse floating point numbers have to support them being upper-case for compatibility. 
 
 
 

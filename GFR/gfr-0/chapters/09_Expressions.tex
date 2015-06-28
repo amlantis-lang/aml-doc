@@ -3147,6 +3147,7 @@ Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
                  | 'alias' id 'is' id
 Capture_Usage  ::= 'use' id {',' id} 
                    'as' R_Modifier
+                   In_Sep Block_Stat ['end']
 Constraint_Dcl ::= 'constraint' id ['as' Type] 'end' ['constraint']
 Constraint_Def ::= 'constraint' 
                    (id ['as' Type] [':='] Constraint_Block 

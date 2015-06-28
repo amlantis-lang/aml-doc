@@ -3,4 +3,52 @@
 
 \chapter{Introduction}
 
+\minitoc
+
+\newpage
+
 % TBD: add an introduction
+
+
+
+
+
+\section{Notational Conventions}
+
+All lexical and grammar syntax definitions use a customized form of EBNF. 
+
+\begin{itemize}
+  \item \lstinline![element]! \newline
+    Option, one or zero occurrences of \code{element}. 
+  \item \lstinline!{element}! \newline
+    Optional repetition, zero, one or more occurrences of \code{element}.
+  \item \lstinline!{element}+! \newline
+    Repetition, one or more occurrences of \code{element}.
+  \item \lstinline!? text ?! \newline
+    Special sequence, textual description of an element. The following lines could contain additional data, if so described.
+  \item \lstinline!element1 | element2! \newline
+    Alternation, either \code{element1} or \code{element2} applies, but not both. 
+  \item \lstinline!(element)! \newline
+    Grouping. 
+  \item \lstinline!element1, element2! \newline
+    Concatenation, used only for exceptions to enlist elements rather than sequence them. 
+  \item \lstinline!element1 element2! \newline
+    Sequence of elements.
+  \item \lstinline!'data'! \newline
+    Terminal string, literal appearance of the given Unicode characters. 
+  \item \lstinline!| $\cdots$ |! \newline
+    Signals a range from the previous alternative to the following alternative. 
+  \item \lstinline!element - except! \newline
+    Exception, an anonymous element that contains all of \code{element}, except for elements defined by \code{except} (which can be a grouping). 
+  \item \lstinline!category ::= element! \newline
+    Used for definitions; signals that \code{category} is made of \code{element}, as in EBNF. The same \code{category} could appear on the left side multiple times for \code{element$_1$} \ldots\ \code{element$_n$}, in that case, it is taken that \lstinline!category ::= element$_1$ | $\ldots$ | element$_n$!.
+  \item \lstinline!(* comment *)! \newline
+    An additional information about the given syntax element, could contain additional restrictions described textually. 
+\end{itemize}
+
+
+
+
+
+
+
