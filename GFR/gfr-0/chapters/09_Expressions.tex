@@ -349,7 +349,7 @@ An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expres
 \label{sec:polymorphic-variant-expressions}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= '`' id Expr
+Simple_Expr1 ::= Tag_Name Expr
 \end{lstlisting}
 
 The expression ~\lstinline!`$\id$ $e$! evaluates to the polymorphic variant value whose tag is $\id$, and whose argument is the value of evaluated expression $e$. 

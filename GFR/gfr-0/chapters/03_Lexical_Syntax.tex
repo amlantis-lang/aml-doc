@@ -276,7 +276,7 @@ hex_prefix      ::= '0x'
 bin_prefix      ::= '0b'
 oct_prefix      ::= '0o'
 sign            ::= ['+' | '-'] | ()
-int_suffix      ::= ('G' | 'I' | 'M' | 'N' | 'Q' | 'R' | 'Z') {digit}
+int_suffix      ::= ('G' | 'I' | 'M' | 'N' | 'T' | 'Q' | 'R' | 'Z') {digit}
 \end{lstlisting}
 
 Integers are usually of type \lstinline@Number@, which is a class cluster of all types that can represent numbers. Unlike Java, Gear supports both signed and unsigned integral types directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@, but this is implementation-defined. Math operations on numbers are handled internally in such a way that the user doesn't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type, or maybe even in a smaller container if fit. Expected type is always respected in any case. 

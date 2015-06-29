@@ -29,12 +29,14 @@ Infix_Type          ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
                         {':' Postfix_Type}
 Annot_Type          ::= {Annotation} Simple_Type [Nullable_Mod]
 Simple_Type         ::= Simple_Type [Type_Args]
+                      | Postfix_Simple_Type
                       | Simple_Type '#' id
                       | Stable_Id
                       | Path '.' 'type'
                       | Literal ['.' 'type']
                       | '(' [Types] ')'
                       | Foreign_Type
+Postfix_Simple_Type ::= Type Stable_Id
 Types               ::= Named_Subtype {',' Named_Subtype}
 Named_Subtype       ::= [['~'] id ':'] Type
 Type_Equation       ::= '=' Type
@@ -271,12 +273,14 @@ class A_Class {
 \label{sec:parameterized-types}
 
 \syntax\begin{lstlisting}
-Simple_Type ::= Simple_Type [Type_Args]
-Type_Args   ::= '[' Types ']'
-Types       ::= Type_Arg {',' Type_Arg}
-Type_Arg    ::= [['~'] id ':'] Type 
-              | '<' uom_expr '>'
-              | ['*'] '_'
+Simple_Type         ::= Simple_Type [Type_Args]
+                      | Postfix_Simple_Type
+Postfix_Simple_Type ::= Type Stable_Id
+Type_Args           ::= '[' Types ']'
+Types               ::= Type_Arg {',' Type_Arg}
+Type_Arg            ::= [['~'] id ':'] Type 
+                      | '<' uom_expr '>'
+                      | ['*'] '_'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
@@ -298,7 +302,7 @@ class F[M[_], X] $\ldots$ end
 class S[K <: String] $\ldots$ end
 class G[M[Z <: I], I] $\ldots$ end
 
-trait Function_1[T, R]; end
+trait Function_1[-T, +R]; end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
@@ -323,7 +327,7 @@ Given the type definitions of the previous example, the following types are malf
 Tree_Map[I]               (* wrong number of parameters *)
 Tree_Map[List[I], Number] (* type parameter List not within bound *)
 
-F[Number, Boolean]        (* Number is not a type constructor
+F[Number, Boolean]        (* Number is not a type constructor *)
 F[Tree_Map, Number]       (* Tree_Map takes two parameters, 
                              F expects a type constructor taking one *)
 
@@ -332,6 +336,49 @@ G[S, Number]              (* type S constrains its parameter to
                              G expects type constructor with a parameter
                              that conforms to Number *)
 \end{lstlisting}
+
+\example Alternative syntax; given the type definitions above, the following parameterized types are also well-formed:
+
+\begin{lstlisting}
+(I, String) Tree_Map (* equivalent to Tree_Map[I, String] *)
+I List               (* equivalent to List[I] *)
+'I List              (* equivalent to List['I] *)
+String List          (* equivalent to List[String] *)
+Boolean List List    (* equivalent to List[List[Boolean]] *)
+
+(* equivalent to Function_1[List[String], String] *)
+(named: List[String], String) Function_1
+\end{lstlisting}
+
+
+
+
+
+\subsection{Polymorphic Variant Types}
+\label{sec:polymorphic-variant-types}
+
+\syntax\begin{lstlisting}
+Simple_Type              ::= Polymorphic_Variant_Type
+Polymorphic_Variant_Type ::= '[[' Tag_Spec {semi Tag_Spec} ']]'
+                           | '[[>' [Tag_Spec {semi Tag_Spec}] ']]'
+                           | '[[<' Tag_Spec {semi Tag_Spec}
+                                   [semi '>' {Tag_Name}+] ']]'
+Tag_Spec                 ::= Tag_Name ['of' Type]
+                           | Type
+Tag_Name                 ::= '`' id
+\end{lstlisting}
+
+Polymorphic variant types describe the values a polymorphic variant may take. 
+
+The first case (\lstinline![[ ts$_1$; $\ldots$; ts$_n$ ]]!) is an {\em exact polymorphic variant type}: all possible tags are known, with their associated types, and they can all be present in values; its structure is fully known. 
+
+The second case (\lstinline![[> ts$_1$; $\ldots$; ts$_n$ ]]!) is an {\em open polymorphic variant type}, describing a polymorphic variant value: it givs the list of all tags the value could take, with their associate types, and this type is still compatible with a polymorphic variant type containing more tags. A special case is the unknown type (\lstinline![[> ]]!), which does not define any tag, and therefore is compatible with any polymorphic variant type. 
+
+The third case (\lstinline![[< ts$_1$; $\ldots$; ts$_m$; > `Tag$_n\ \ldots$ `Tag$_o$ ]]!) is a {\em closed polymorphic variant type}. It gives information on all the possible tags and their associated types, along with which tags are known to potentially appear in values. The exact variant type from the first case is equivalent to a closed variant type where all possible tags are also potentially present in values. 
+
+In all cases, tags may be either specified directly in the ~\lstinline!`Tag!~ and ~\lstinline!`Tag of $T$!~ forms, or indirectly through a type, which must expand to an exact polymorphic variant type, whose tag specifications are inserted in place. 
+
+Intersection-like types may be given in closed polymorphic variant types, likely generated by automatic type inference. Such type may be conjunctive, include multiple incompatible class types, and therefore inherently unsatisfiable. Such a constraint signals an error condition. 
 
 
 
@@ -887,7 +934,6 @@ union : [A >: Nothing <: Comparable[A]] (Set[A],
 \label{sec:type-constructors}
 
 A type constructor is in turn represented internally much like a polymorphic method type. \lstinline@[$\pm a_1$ >: $L_1$ <: $U_1 \commadots \pm a_n$ >: $L_n$ <: $U_n$] $\mapsto T$@ represents a type that is expected by a type constructor parameter. The difference is that the represented internal entity is not a method, but a type, creating higher-kinded types. 
-
 
 
 
