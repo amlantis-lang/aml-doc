@@ -985,9 +985,9 @@ Optional parameters add the annotation (\sref{sec:annotations}) \code{@[optional
 
 If a parameter has a nullable type $T$ (either by being a nullable type, or allowing otherwise \code{Nothing} with a union type), and appears where an optional parameter may appear, it is taken as an optional parameter with default value of \code{undefined} implicitly. 
 
-If the keyword \code{optional} is given before the parameter type, or the external parameter name is prefixed with a ``\lstinline!?!'', then the parameter type $T$ is wrapped in type ~\lstinline!Option[$T$]!, and instead of \code{undefined}, a missing argument is given as \code{None}, and a present argument $x$ is given automatically wrapped in ~\lstinline!Some($x$)!, if it's not already.
+If the keyword \code{optional} is given before the parameter type, or the external parameter name is prefixed with a ``\lstinline!?!'', then the parameter type $T$ is wrapped in type ~\lstinline!Option[$T$]!, and instead of \code{undefined}, a missing argument is given as \code{None}, and a present argument $x$ is given automatically wrapped in ~\lstinline!Some($x$)!, if the argument is not prefixed with a ``\lstinline!?!'' -- then it is passed as is, and its type must be \code{Option[$T'$]}. If \code{None} is finally passed an an argument, then it is important whether a default value for the parameter is present or not -- if it is, then the default value is wrapped in \code{Some($x$)}, if it is not, then it stays \code{None}. 
 
-If the parameter type $T$ is in fact ~\lstinline!Option[$T$']!, where $T'$ is the effective parameter type\footnote{In the meaning of ``wrapped''.}, then the parameter is treated as optional. This applies to named and purely named parameters (\sref{sec:named-parameters}) as well. 
+If the parameter type $T$ is in fact ~\lstinline!Option[$T'$]!, where $T'$ is the effective parameter type\footnote{In the meaning of ``wrapped''.}, then the parameter is treated as optional. This applies to named and purely named parameters (\sref{sec:named-parameters}) as well. 
 
 
 

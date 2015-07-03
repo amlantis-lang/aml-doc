@@ -29,6 +29,7 @@ Expr        ::= Value_Expr
               | Anon_Class
               | Expr semi Expr
 Value_Expr  ::= Simple_Expr
+              | App_Expr
               | Cond_Expr
               | Match_Expr
               | New_Expr
@@ -144,8 +145,8 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 \label{sec:tuples}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= '(' [Named_Exprs] ')'
-Named_Exprs  ::= Named_Expr {',' Named_Expr}
+Value_Expr   ::= Tuple_Exprs
+Tuple_Exprs  ::= Named_Expr {',' Named_Expr}
 Named_Expr   ::= [['~'] id ':'] Expr
 \end{lstlisting}
 
@@ -1245,33 +1246,31 @@ Use expressions of the form ~\lstinline!use refinement $T$!~ enable the specifie
 \label{sec:function-applications}
 
 \syntax\begin{lstlisting}[mathescape=false]
-Simple_Expr1   ::= (Simple_Expr1 - Poetry_Args) Argument_Exprs 
-Argument_Exprs ::= ['.'] Parens_Args {Parens_Args} [Block_Arg] 
-                 | Poetry_Args [Block_Expr2]
-                 | Block_Arg
-
-Parens_Args ::= '(' [Args_Expr] ')'
-Poetry_Args ::= Args_Expr
-Args_Expr   ::= (Pos_Args [',' Named_Args])
+Value_Expr  ::= App_Expr
+App_Expr    ::= Value_Expr '(' [Arguments] ')' [Block_Arg]
+              | Value_Expr '.' '(' [Arguments] ')' [Block_Arg]
+              | Value_Expr Arguments [Block_Expr2 | Method_Expr]
+              | Value_Expr Block_Arg
+Arguments   ::= Pos_Args [Named_Args]
               | Named_Args
-Pos_Args    ::= Pos_Arg {',' Pos_Arg}
-Pos_Arg     ::= ['*'] Expr 
+Pos_Args    ::= {Pos_Arg}+
+Pos_Arg     ::= ['*' | '?'] Value_Expr 
               | '$' 
               | TT_Expr
               | Slice_Expr
-Named_Args  ::= Named_Arg {',' Named_Arg} {',' '**' Expr}
-              | '**' Expr {',' '**' Expr}
-Named_Arg   ::= ['~'] id ':' (Expr | TT_Expr | Slice_Expr)
-              | ['~'] id ':' '$'
-              | '~' id
+Named_Args  ::= {Named_Arg}+ {'**' Value_Expr}
+              | {'**' Value_Expr}+
+Named_Arg   ::= ['~' | '?'] id ':' (Value_Expr | TT_Expr | Slice_Expr)
+              | ['~' | '?'] id ':' '$'
+              | ('~' | '?') id
 Block_Arg   ::= Block_Expr 
               | Method_Expr
 \end{lstlisting}
 
-% TODO: describe last block arg
-% TODO: describe arg prefixed with a dot (e.g. .Red)
+% TBD: describe last block arg
+% TBD: describe arg prefixed with a dot (e.g. .Red)
 
-A function application ~\lstinline!$f$($e_1 \commadots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \commadots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
+A function application ~\lstinline!$f$($e_1 \ldots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \ldots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
 
 If none of $e_i$ is purely a named argument, and $f$ accepts a single parameter of \code{Any}, \code{Object} or \code{Tuple_$n$} type (where $n = m$), then the function application is taken as ~\lstinline!$f$(($e_1 \commadots e_m$))!. With respect to overloading resolution (\sref{sec:overloading-resolution}), a member that requires argument expressions to tuple conversion is always less specific than a member that does not require such conversion. 
 
@@ -1529,14 +1528,15 @@ Parameters of memoization\footnote{Parameters include things like: cache policy,
 
 
 
+
 \subsubsection{Application Shortcut}
 \label{sec:function-application-shortcut}
 
-A function application ~\lstinline!$f$.($e_1 \commadots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($f$())($e_1 \commadots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$f$().apply($e_1 \commadots e_m$) $b$!, as appropriate.\footnote{E.g. curried functions do not need any explicit \code{.apply()} applications, as these are implied, but would work anyway, therefore the second expanded form is equivalent to the first expanded form.}
+A function application ~\lstinline!$f$.($e_1 \ldots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($f$())($e_1 \ldots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$f$().apply($e_1 \ldots e_m$) $b$!, as appropriate.\footnote{E.g. curried functions do not need any explicit \code{.apply()} applications, as these are implied, but would work anyway, therefore the second expanded form is equivalent to the first expanded form.}
 
 This is especially useful for situations where a prefix appears to the function application and $f$ denotes a member that evaluates to a function, or maybe to a collection, but does not itself accept any arguments. 
 
-A function application ~\lstinline!$p$.$f$.($e_1 \commadots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($p$.$f$)($e_1 \commadots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$p$.$f$().apply($e_1 \commadots e_m$) $b$!, where $p$ is some prefix expression. 
+A function application ~\lstinline!$p$.$f$.($e_1 \ldots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($p$.$f$)($e_1 \ldots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$p$.$f$().apply($e_1 \ldots e_m$) $b$!, where $p$ is some prefix expression. 
 
 
 
@@ -2348,7 +2348,7 @@ Typed expressions do not allow checks against target type expressions (\sref{sec
 
 \syntax\begin{lstlisting}
 Expr      ::= Type_Expr
-Type_Expr ::= '(' Type ')'
+Type_Expr ::= 'type' '{' Type '}'
             | Annot_Type - (Nullable_Mod, Type_Var)
 \end{lstlisting}
 
@@ -2363,7 +2363,7 @@ A type reference expression is a way to refer to a type and use it as a first-cl
 \label{sec:annotated-exprs}
 
 \syntax\begin{lstlisting}
-Annot_Expr ::= Annotation {Annotation} Infix_Expr
+Annot_Expr ::= {Annotation}+ Infix_Expr
 \end{lstlisting}
 
 An annotated expression $a_1\ \ldots\ a_n\ e$ attaches annotations $a_1\ \ldots\ a_n$ to the expression $e$ (\sref{sec:annotations}). 

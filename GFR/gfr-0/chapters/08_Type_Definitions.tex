@@ -143,7 +143,7 @@ Type_Representation ::= Is ['bitfield']
                         | Enum_Field {semi Enum_Field})
                         [Record_Extensions]
 Enum_Field          ::= id ':=' scalar_literal
-                      | id 'of' Named_Exprs
+                      | id 'of' Tuple_Exprs
                       | id
 \end{lstlisting}
 
@@ -293,8 +293,6 @@ Record extension members, if given, are added to the type object, unless they ar
 \section{Structure, Signature \& Functor Type Definitions}
 \label{sec:struct-types}
 
-% TBD: finish
-% TBD: replace Dcl and Def by something more sensible, also (in) Tmpl_things, sync with top-level definitions, separate interfaces from implementations
 \syntax\begin{lstlisting}
 Dcl               ::= Struct_Spec
 Struct_Type       ::= Struct_Type_Path
@@ -500,6 +498,7 @@ functor (Element_Type: Ordered_Type) ->
       end match
   end struct
 \end{lstlisting}
+% TBD: more examples, descriptions
 
 
 
