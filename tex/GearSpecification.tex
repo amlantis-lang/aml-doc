@@ -1,0 +1,36 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[12pt,a4paper,twoside,titlepage]{book}
+\usepackage[english]{babel}
+\usepackage[section]{placeins}
+
+\usepackage{geardoc}
+
+\begin{document}
+
+\frontmatter
+\title{GFR-0\\ \large The Gear System Specification}
+\renewcommand{\docversion}{0.3}
+\author{Markéta Lisová}
+\maketitle
+\clearemptydoublepage
+\dominitoc
+\tableofcontents
+
+\mainmatter
+\sloppy
+
+\input{parts/introduction}
+\input{parts/language}
+\input{parts/library}
+\input{parts/tools}
+\input{parts/runtime}
+\input{parts/extensions}
+
+\appendix
+\part{Appendix}
+\input{SyntaxSummary}
+\input{Changelog}
+
+\end{document}

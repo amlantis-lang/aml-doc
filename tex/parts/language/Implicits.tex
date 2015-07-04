@@ -1,0 +1,419 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter[Implicit Parameters, Views \& Multiple Dispatch]{Implicit Parameters, Views \\\& Multiple Dispatch}
+\label{sec:implicit-params-views}
+
+\minitoc
+
+\newpage
+
+
+
+
+
+\section{The Implicit Modifier}
+\label{sec:implicit-modifier}
+
+\syntax\begin{lstlisting}
+Local_Modifier ::= 'implicit'
+Param_Clauses  ::= {Param_Clause} '(' 'implicit' Params ')'
+\end{lstlisting}
+
+Template members and parameters labeled with \code{implicit} modifier can be passed to implicit parameters (\sref{sec:implicit-parameters}) and can be used as implicit conversions called views (\sref{sec:views}). 
+
+If the member marked with \code{implicit} is a class, it makes the primary constructor of the class available for implicit conversions as a function. Such primary constructor may take exactly one non-implicit argument in its first parameter list. 
+
+\example\label{ex:impl-monoid} The following code defined an abstract class of monoids and two concrete implementations, \code{String_Monoid} and \code{Int_Monoid}. The two implementations are marked implicit and will be used throughout the following discussions. 
+\begin{lstlisting}
+abstract class Monoid [A] extends Semi_Group [A] {
+  def unit: A end
+  def add (x: A, y: A): A end
+}
+object Monoids {
+  implicit object String_Monoid extends Monoid[String] {
+    def unit: String := ""
+    def add (x: String, y: String): String := x + y
+  }
+  implicit object Int_Monoid extends Monoid[Integer] {
+    def unit: Integer := 0
+    def add (x: Integer, y: Integer): Integer := x + y
+  }
+}
+\end{lstlisting}
+
+
+
+
+
+
+\section{Implicit Parameters}
+\label{sec:implicit-parameters}
+
+An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a method marks the parameters $p_1 \commadots p_n$ as implicit. A method or constructor can have at most one implicit parameter list, and it must be the last parameter list given. 
+
+A method with implicit parameters can be applied to arguments just like normal method. In this case the \code{implicit} label has no effect. However, if such a method misses arguments for its implicit parameters (determined by a missing consecutive function application -- \sref{sec:partial-applications}), such arguments will be automatically provided, if possible. 
+
+The actual arguments that are eligible to be passed to an implicit parameter of type $T$ fall into two categories.
+\begin{itemize}
+\item First, eligible are all identifiers $x$ that can be accessed at the point of the method call without a prefix and that denote an implicit definition (\sref{sec:implicit-modifier}) or an implicit parameter. An eligible identifier may thus be a local name, or a member of an enclosing template, or it may have been made accessible without a prefix through a use clause (\sref{sec:use-clauses}). 
+\item If there are no eligible identifiers under the previous rule, then, second, eligible are also all \code{implicit} members of some object that belongs to the implicit scope of the implicit parameter's type, $T$. 
+\end{itemize}
+
+% TBD: base classes
+The {\em implicit scope} of a type $T$ consists of the type $T$ itself and all classes and class objects that are associated with the type $T$. Here, we say a class $C$ is {\em associated} with a type $T$, if it is a base class of some part of $T$. The {\em parts} of a type $T$ are:
+\begin{itemize}
+\item If $T$ is a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, the union of the parts of $T_1 \commadots T_n$, as well as $T$ itself.
+\item If $T$ is a parameterized type ~\lstinline!$S$[$T_1 \commadots T_n$]!, the union of the parts of $S$ and $T_1 \commadots T_n$. 
+\item If $T$ is a singleton type \code{$p$.type}, the parts of the type of $p$. 
+\item If $T$ is a type projection ~\lstinline!$S$#$U$!, the parts of $S$ as well as $T$ itself.
+\item If $T$ is a union type ~\lstinline!union of ($T_1$; $\ldots$; $T_n$)!, the union of all types $T_1 \commadots T_n$. 
+\item In all other cases, just $T$ itself. 
+\end{itemize}
+
+If there are several eligible arguments which match the implicit parameter's type, a most specific one will be chosen using the rules of overloading resolution without any application (\sref{sec:overloading-resolution}). If the parameter has a default argument and no implicit argument can be found, the default argument is used. 
+
+\example Assuming the classes from \ref{ex:impl-monoid}, here is a method which computes the sum of a list of elements using the monoid's \code{add} and \code{unit} operations.
+\begin{lstlisting}
+def sum [A] (xs: List[A])(implicit m: Monoid[A]): A 
+  if xs.is_empty?
+    m.unit
+  else
+    m.add xs.head, sum xs.tail
+  end
+end
+\end{lstlisting}
+
+The monoid in question is marked as an implicit parameter, and can therefore be inferred based on the type of the list. Consider e.g. the call
+\begin{lstlisting}
+sum %[1; 2; 3]
+\end{lstlisting}
+in a context where \code{String_Monoid} and \code{Int_Monoid} are visible. We know that the formal type parameter \code{A} of \code{sum} needs to be instantiated to \code{Integer}. The only eligible object which matches the implicit formal parameter type \code{Monoid[Integer]} is \code{Int_Monoid}, thus this object will be passed as implicit parameter. 
+
+
+
+
+
+
+\section{Views}
+\label{sec:views}
+
+Implicit parameters and method can also define implicit conversions called {\em views}. A {\em view} from type $S$ to type $T$ is defined by an implicit value, which has function type ~\lstinline!$S$ -> $T$!, or ~\lstinline!(() -> $S$) -> $T$!, or by a method convertible to a value of one of those function types. 
+
+Views are applied in the following situations.
+\begin{enumerate}
+\item If an expression $e$ is of a type $T$, and $T$ does not conform to the expression's expected type $\exptype$. In this case an implicit $v$ is searched, which is applicable to $e$ and whose result type conforms to $\exptype$, and this process makes $T$ compatible with $\exptype$. The search proceeds as in the case of implicit parameters, where the implicit scopes are the scope of $T$ followed by the scope of $\exptype$, searched in this order. If such a view is found, the expression $e$ is converted to \code{$v$($e$)}. 
+
+\item In a selection \code{$e$.$m$} with $e$ of a type $T$, if the selector $m$ does not denote an accessible member of $T$, including restrictions imposed by access modifiers, i.e. the member $m$ may actually exist in $T$. In this case, a view $v$ is searched which is applicable to $e$ and whose result contains an accessible member named $m$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If there are several eligible views, the most specific one is chosen according to overloading resolution with an expected type inherited from the original selection. If such a view is found, the selection \code{$e$.$m$} is converted to \code{$v$($e$).$m$}. 
+
+\item In a selection \code{$e$.$m$($\args$)} with $e$ of a type $T$, if the selector $m$ denotes some members of $T$, but none of these members is applicable to the arguments $\args$. In this case a view $v$ is searched, which is applicable to $e$ and whose result contains a member $m$, which is applicable to $\args$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If there are several eligible views, the most specific one is chosen according to overloading resolution with an expected type inherited from the original selection. If such a view is found, the selection \code{$e$.$m$($\args$)} is converted to \code{$v$($e$).$m$($\args$)}. 
+\end{enumerate}
+
+The implicit view, if it is found, can accept its argument $e$ as a a call-by-value based or call-by-name based parameter, and no precedence is imposed on the views. It is an error if there are multiple equally specific views that differ only in the parameter evaluation strategy. 
+
+As for implicit parameters, overloading resolution (\sref{sec:overloading-resolution}) is applied if there are several possible candidates.\footnote{The overloading resolution here is for the case of function applications, and the shape takes into account just one argument and corresponding parameter pair.}
+
+If there are multiple implicit scopes searched in order, we mean that the following implicit scope is searched if:
+\begin{itemize}
+  \item The previous scope did not contain any eligible implicit value.
+  \item The previous scope did contain multiple eligible implicit values, but overloading resolution could not select a unique most specific one. 
+\end{itemize}
+
+
+
+
+
+\section{View \& Context Bounds}
+\label{sec:view-bounds}
+\label{sec:context-bounds}
+
+\syntax\begin{lstlisting}
+Type_Param ::= (id | '_') [Type_Param_Clause]
+               ['>:' Type] ['<:' Type]
+               {'<%' Type} {':' Type}
+             | '<' (id | '_') '>' ['<:' id]
+\end{lstlisting}
+
+A type parameter $A$ of a method or a non-trait class may have one or more view bounds ~\lstinline!$A$ <% $T$!. In this case, the type parameter may be instantiated to any type $S$, which is convertible by an application of a view to the bound $T$.
+
+A type parameter $A$ of a method or a non-trait class may have one or more view bounds ~\lstinline!$A$ : $T$!. In this case, the type parameter may be instantiated to any type $S$ for which {\em evidence} exists at the instantiation point that $S$ satisfies the bound $T$. Such evidence consists of an implicit value with type \code{$T$[$S$]}. 
+
+A method or class containing type parameters with view or context bounds is treated as being equivalent to a method with implicit parameters, and if it already contains explicitly some implicit parameters, those are added right after the section of any positional parameters and before the section of any named parameters. Consider the case of a single parameter with a view and/or context bounds, such as: 
+\begin{lstlisting}
+def $f$ [$A$ <% $T_1$ $\ldots$ <% $T_m$ : $U_1$ : $U_n$] ($\ps$): $R$ := $\ldots$
+\end{lstlisting}
+
+Then the method definition above is equivalent to
+\begin{lstlisting}
+def $f$ [$A$] ($\ps$)(implicit $v_1$: $A$ -> $T_1 \commadots v_m$: $A$ -> $T_m$,
+                        $w_1$: $U_1$[$A$]$\commadots w_n$: $U_n$[$A$]): $R$ := $\ldots$
+\end{lstlisting}
+where the $v_i$ and $w_j$ are fresh names for the newly introduced implicit parameters. These parameters are called {\em evidence parameters}. 
+
+If a class or method has several view- or context-bounded type parameters, each such type parameter is expanded into evidence parameters in the order they appear and all the resulting evidence parameters are concatenated in one implicit parameter section. Since traits do not have constructor parameters, such translation is impossible for them. 
+
+If the type of a context-bound parameter uses the type parameter in its definition, then the translation is simple -- it stays the same and the type argument is still possibly inferred. Such type is then called a {\em partially applied type}, although all type arguments are necessarily provided in the end. It is an error if the type is a parameterized type and it does not use the type parameter that it is context-bound with. Thus, a context bound ~\lstinline!$A$ : $T$!~ is in fact a shortcut for ~\lstinline!$A$ : $T$[$A$]!. 
+
+\example The following example shows a method with a context-bound parameter using a partially applied type, and the resulting translation below it. 
+\begin{lstlisting}
+def f [T : T -> String](t: T) := $\ldots$
+def f [T] (t: T)(implicit $w_1$: Function_1[T, String]) := $\ldots$
+\end{lstlisting}
+
+
+
+
+
+\section{Multi-Methods \& Multiple Dispatch}
+\label{sec:multi-methods}
+
+\syntax\begin{lstlisting}
+Dcl               ::= Multi_Fun_Dcl
+                    | Multi_Op_Dcl
+                    | Multi_Message_Dcl
+                    | Multi_Att_Dcl
+Multi_Fun_Dcl     ::= 'def'      'dispatch'  Fun_Sig Mul_Val 'end' ['def']
+                    | 'def'      'multi'     Fun_Sig         'end' ['def']
+Multi_Op_Dcl      ::= 'dispatch' 'operator'  Op_Sig  Mul_Val 'end' ['operator']
+                    | 'multi'    'operator'  Op_Sig          'end' ['operator']
+Multi_Message_Dcl ::= 'dispatch' 'message'   Fun_Sig Mul_Val 'end' ['message']
+                    | 'multi'    'message'   Fun_Sig         'end' ['message']
+Multi_Att_Dcl     ::= 'dispatch' 'attribute' Att_Sig Mul_Val 'end' ['attribute']
+                    | 'multi'    'attribute' Att_Sig         'end' ['attribute']
+
+Def               ::= Multi_Fun_Def
+                    | Multi_Op_Def
+                    | Multi_Method_Def
+                    | Multi_Att_Def
+Multi_Fun_Def     ::= 'def' 'dispatch' Fun_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['def']
+                    | 'def' 'dispatch' Fun_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'def' 'multi' Fun_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['def']
+                    | 'def' 'multi' Fun_Sig ':=' [Fun_Dec2] Expr
+Multi_Op_Def      ::= 'dispatch' 'operator' Op_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['operator']
+                    | 'dispatch' 'operator' Op_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'multi' 'operator' Op_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['operator']
+                    | 'multi' 'operator' Op_Sig ':=' [Fun_Dec2] Expr
+Multi_Method_Def  ::= 'dispatch' 'method' Fun_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['method']
+                    | 'dispatch' 'method' Fun_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'multi' 'method' Fun_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['method']
+                    | 'multi' 'method' Fun_Sig ':=' [Fun_Dec2] Expr
+Multi_Att_Def     ::= 'dispatch' 'attribute' Att_Sig Mul_Val [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['attribute']
+                    | 'dispatch' 'attribute' Att_Sig Mul_Val ':=' [Fun_Dec2] Expr
+                    | 'multi' 'attribute' Att_Sig [Fun_Dec] 
+                      [semi Fun_Stats] 'end' ['attribute']
+                    | 'multi' 'attribute' Att_Sig ':=' [Fun_Dec2] Expr 
+Mul_Val           ::= [':' 'val' Type]
+\end{lstlisting}
+
+Gear offers multiple ways to achieve multiple dispatch and the related multi-methods: 
+
+\begin{enumerate}
+  \item Application to values that are typed \code{Dynamic}.
+  \item Type classes. 
+  \item Dynamic value dispatch (\sref{sec:dynamic-value-dispatch}). 
+\end{enumerate}
+
+
+
+
+\subsection{Application to Dynamic type}
+
+This is the easiest way to achieve multiple dispatch, where the overloaded function is selected based on not only the receiver, but also on any other argument. Those arguments that are typed with \code{Dynamic} (\sref{sec:dynamic-type}) affect the resolved overloaded alternative.\footnote{This is similar to what C\# since its version 4.0 does.}
+
+\example Multiple dispatch with \code{Dynamic} type, Asteroids colliding with Spaceships.  
+\begin{lstlisting}[morekeywords={Dynamic}]
+object program {
+  abstract class Thing extends Object {}
+  class Asteroid extends Thing {}
+  class Spaceship extends Thing {}
+  
+  method collide_with_impl (x: Asteroid, y: Asteroid): Unit
+    print_line "Asteroid hits an Asteroid"
+  end method
+  
+  method collide_with_impl (x: Asteroid, y: Spaceship): Unit
+    print_line "Asteroid hits a Spaceship"
+  end method
+  
+  method collide_with_impl (x: Spaceship, y: Asteroid): Unit
+    print_line "Spaceship hits an Asteroid"
+  end method
+  
+  method collide_with_impl (x: Spaceship, y: Spaceship): Unit
+    print_line "Spaceship hits a Spaceship"
+  end method
+  
+  method collide_with (x: Thing, y: Thing): Unit
+    val a: Dynamic := x
+    val b: Dynamic := y
+    collide_with_impl(a, b)
+  end method
+  
+  method run (*args: String): Unit
+    val asteroid := Asteroid.new
+    val spaceship := Spaceship.new
+    collide_with(asteroid, spaceship)
+    collide_with(spaceship, spaceship)
+  end method
+}
+\end{lstlisting}
+This code upon running \code{program.run} prints the following to the console:
+\begin{lstlisting}
+Asteroid hits a Spaceship
+Spaceship hits a Spaceship
+\end{lstlisting}
+
+
+
+
+
+\subsection{Type Classes}
+
+Another approach to multiple dispatch involves implicit parameters and type classes. This is probably the most verbose approach. 
+
+\example Multiple dispatch with type classes, matrices and vectors. 
+\begin{lstlisting}
+object program {
+  class Matrix extends Object {}
+  class Vector extends Object {}
+  
+  trait Mult_Dep[A, B, C] {
+    message apply (a: A, b: B): C end
+  }
+  object Mult_Dep {
+    implicit object mmm 
+        extends Mult_Dep[Matrix, Matrix, Matrix] {$\ldots$}
+    implicit object mvv 
+        extends Mult_Dep[Matrix, Vector, Vector] {$\ldots$}
+    implicit object mim 
+        extends Mult_Dep[Matrix, Integer, Matrix] {$\ldots$}
+    implicit object imm 
+        extends Mult_Dep[Integer, Matrix, Matrix] {$\ldots$}
+  }
+  
+  method multiply [A, B, C]
+      (a: A, b: B)(implicit dep: Mult_Dep[A, B, C]): C
+    dep.apply(a, b)
+  end method
+  
+  method run (*args: String): Unit
+    (* ok: *)
+    val r1: Matrix := multiply(
+        (Matrix with {}).new, (Matrix with {}).new)
+    val r2: Vector := multiply(
+        (Matrix with {}).new, (Vector with {}).new)
+    val r3: Vector := multiply(
+        (Matrix with {}).new, 2)
+    val r4: Matrix := multiply(
+        2, (Matrix with {}).new)
+    
+    (* error, no implicit value found for type
+         Mult_Dep[Matrix, Vector, Matrix]: *)
+    val r5: Matrix := multiply(
+        (Matrix with {}).new, (Vector with {}).new)
+  end method
+}
+\end{lstlisting}
+
+
+
+
+
+\subsection{Dynamic Value Dispatch}
+\label{sec:dynamic-value-dispatch}
+
+The last approach taps into a whole new kind of methods. 
+
+It uses two-phase dispatch:
+\begin{enumerate}
+  \item A dispatch function is defined with ~\lstinline!def dispatch $x\,\ldots$! (or any alternative syntax using the \code{dispatch} keyword). This function returns a value or a tuple of values, called the {\em dispatch value}, which determines the multi-method to use, but its result type is independent of this value -- the type of the dispatch value is specified with an element of the \code{Mul_Val} syntactic category, or automatically inferred if not given. 
+  \item A multi-method is installed with ~\lstinline!def multi $x\,\ldots$! (or any alternative syntax using the \code{multi} keyword).
+\end{enumerate}
+
+Dynamic value dispatch functions and methods are different from regular functions and methods: their overloading depends not on the argument expressions only, but most importantly, on the dispatch value returned by the dispatch function. Even their internal representation in the VM is different. The dispatch function maps the argument expressions to a single value, or a tuple value, based on which a multi-method is selected, using regular overloading resolution, utilizing only the first parameter list. 
+
+The result type of a dispatch function (or method) is determined based on the dispatch value by the result type of the corresponding installed multi-method, therefore, it may trigger early argument expressions evaluation during overloading resolution (and indeed evaluation of the dispatch function itself),\footnote{Yet the dispatch function may opt-in for lazy argument evaluation, but still, the argument expression may still be evaluated, and very likely it will be.} pretty much like constrained types do. The dispatch function may constrain the types that multi-methods are allowed to result into by its own result type, thus the result types of the multi-methods must be covariant with the result type of the dispatch function. 
+
+The dispatch function can itself be overloaded on its parameter lists and result value, by other regular functions and methods, or even other dispatch functions, in which case the multi-methods are shared for each dispatch function. 
+
+Multi-methods expect only values in their first parameter list, therefore, the syntax in them never generates parameter names, which is different from regular methods; therefore, the first parameter list contains only explicit parameters. The types of parameters\footnote{Including extra properties, e.g. ``by-name'' status.} in the following parameter lists are inferred from the dispatch function, which passes the arguments to multi-methods as they are, and it is in fact an error if the multi-method specifies any other types for those parameters. 
+
+\example Multiple dispatch with dynamic value dispatch, Asteroids colliding with Spaceships.
+\begin{lstlisting}
+object program {
+  abstract class Thing extends Object {}
+  class Asteroid extends Thing {}
+  class Spaceship extends Thing {}
+  
+  def dispatch collide_with (a: Thing, b: Thing)
+      : Unit 
+      : val (Class[Thing], Class[Thing])
+    (a.type, b.type)
+  end def
+  
+  def multi collide_with (Asteroid, Asteroid)(a, b)
+    print_line "Asteroid hits an Asteroid"
+  end def
+  
+  $\ldots$
+  
+  method run (*args: String): Unit
+    val asteroid := Asteroid.new
+    val spaceship := Spaceship.new
+    collide_with(asteroid, spaceship)
+    collide_with(spaceship, spaceship)
+  end method
+}
+\end{lstlisting}
+
+\example Multiple dispatch with dynamic value dispatch, area of shapes. This example shows a possible direction of extensions to the multi-methods, by providing more implementations for different symbols. 
+\begin{lstlisting}
+object program {
+  def dispatch area (obj: Map[Symbol, Any]): Real : val Symbol
+    obj(:shape)
+  end def
+  
+  def multi area (:Rectangle)(obj)
+    obj(:width) * obj(:height)
+  end def
+  
+  def multi area (:Circle)(obj)
+    Math.$\pi$ * obj(:radius) ^ 2
+  end def
+  
+  def run (*args: String): Unit
+    val rect := %{
+        :shape => :Rectangle
+        :width => 4 [<cm>]
+        :height => 13 [<cm>]}
+    val circle := %{
+        :shape => :Circle
+        :radius => 12 [<cm>]}
+    print_line area(rect) (* 52 cm^2 *)
+    print_line area(circle) (* 452.38$\ldots$ cm^2 *)
+    print_line area(%{}[Symbol, Any]) (* error *)
+  end def
+}
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

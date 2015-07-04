@@ -1,0 +1,230 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Top-Level Definitions}
+
+\minitoc
+
+\newpage
+
+\section{Compilation Units}
+\label{sec:compilation-units}
+
+\subsection{Modules}
+\label{sec:modules}
+
+\syntax\begin{lstlisting}
+Implementation_File      ::= Implementation_Packaging
+Signature_File           ::= Signature_Packaging
+Script_File              ::= Expr
+Script_Fragments         ::= Script_Fragment {';;' Script_Fragment}
+Script_Fragment          ::= Script_Stat
+Implementation_Packaging ::= {Pragma} 'module' Module_Path 
+                             (Impl_Packaging1 | Impl_Packaging2)
+Signature_Packaging      ::= {Pragma} 'module' 'signature' Module_Path
+                             (Sig_Packaging1 | Sig_Packaging2)
+                           | Sig_Packaging3
+Impl_Packaging1          ::= semi [Impl_Pkg_Seq] ['end' ['module']]
+Impl_Packaging2          ::= '{' [Impl_Pkg_Seq] '}'
+Impl_Pkg_Seq             ::= Impl_Pkg_Stat {semi Impl_Pkg_Stat}
+Impl_Pkg_Stat            ::= {Annotation} {Modifier} Tmpl_Def
+                           | Use
+                           | Module_Object
+                           | Expr
+                           | Struct_Def
+Sig_Packaging1           ::= semi [Sig_Pkg_Seq] ['end' ['module']]
+Sig_Packaging2           ::= '{' [Sig_Pkg_Seq] '}'
+Sig_Packaging3           ::= [Sig_Pkg_Seq]
+Sig_Pkg_Seq              ::= Sig_Pkg_Stat {semi Sig_Pkg_Stat}
+Sig_Pkg_Stat             ::= Struct_Spec
+                           | Use
+Script_Stat              ::= Impl_Pkg_Stat
+                           | Sig_Pkg_Stat
+\end{lstlisting}
+
+Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Gear's approach to modules solves these issues: 
+\begin{itemize}
+  \item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
+  \item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just another identifier. 
+\end{itemize}
+
+An {\em implementation file} consists of a sequence of packagings, import clauses, and class and object definitions, which are preceded by a module clause. A {\em signature file} consists of a sequence of packagings, import clauses, and structure elements specifications, including interfaces and protocols. 
+
+A compilation unit 
+\begin{lstlisting}
+module $p_1$
+$\ldots$
+module $p_n$
+$\stats$
+\end{lstlisting}
+starting with one or more module clauses is equivalent to a compilation unit consisting of the packaging
+\begin{lstlisting}
+module $p_1$
+  $\ldots$
+  module $p_n$
+    $\stats$
+  end module
+end module
+\end{lstlisting}
+
+Implicitly imported into every compilation unit are, in that order: 
+\begin{enumerate}
+\item the module ~\lstinline!Gear/Language! 
+\item the object ~\lstinline!Gear/Language.Predef!
+\end{enumerate} 
+Members of a later import in that order hide members of an earlier import. 
+
+% TBD: notice that the implicit import may be overridden by a pragma at the beginning of a compilation unit
+
+The implicitly added code looks like the following code listing, with all its implications:\footnote{The \code{@Root} is actually redundant, as explained in (\sref{sec:module-refs}).}
+\begin{lstlisting}
+use @Root.Gear/Language.{_}
+use @Root.Gear/Language.Predef.{_}
+\end{lstlisting}
+
+The vendor specified in module's \code{src/module.gear} is inherited by every source file in the same module and it's submodules (unless explicitly overwritten). Modules imported from within the module object defined in \code{src/module.gear} also make those modules available without fully qualifying their name in other source files of the same module. 
+
+
+
+
+
+\subsection{Packagings}
+
+A module is a special object which defines a set of member classes, objects and another modules. Like open templates (\sref{sec:open-templates}), modules are introduced by multiple definitions across multiple source files.  
+
+A packaging ~\lstinline!module $p$ { $\stats$ }!~ or ~\lstinline!module $v$/$p$ $\stats$ end!~ injects all definitions in $\stats$ as members into the module whose qualified name is $p$. Members of a module are called {\em top-level} definitions. If a definition in $\stats$ is labeled \code{private}, it is visible only for other members in the same module. 
+
+Inside the packaging, all members of package $p$ are visible under their simple names. This rule extends to members of the enclosing modules of $p$ (that are of the same {\em vendor}). However, every other module needs to either import the members with a use clause (\sref{sec:use-clauses}), or refer to it via its fully qualified name. 
+
+The special {\em vendor-less} \code{@Root} ``module'' can only be specified as the first element of each packaging name. 
+
+\example Given the packagings
+\begin{lstlisting}
+module An_Org/A {
+  module B {
+    $\ldots$
+  }
+}
+module An_Org/C {}
+module Another_Org/D {}
+\end{lstlisting}
+all members of the module ~\lstinline!An_Org/A.B!~ are visible under their simple names to the modules ~\lstinline!An_Org/A.B!~ and ~\lstinline!An_Org/A!, but not the others: module \code{An_Org/C} has the same vendor, but is located outside of the packaging of module ~\lstinline!An_Org/A.B!, and module \code{Another_Org/D} is completely out of the packaging game.\footnote{The packaging game is too strong for the module \code{D}.} 
+
+The fully qualified names of these modules are as follows: 
+\begin{itemize}
+\item \lstinline!An_Org/A!
+\item \lstinline!An_Org/A.B! (\sref{sec:module-refs})
+\item \lstinline!An_Org/C!
+\item \lstinline!Another_Org/D!
+\end{itemize}
+
+Notice how these fully qualified names do not use the ``\lstinline!@Root.!'' path prefix, explained in (\sref{sec:module-refs}).
+
+Selections ~\lstinline!$p$.$m$!~ from $p$ as well as imports from $p$ work as for objects. Moreover, unlike in Scala, modules may be used as values, instances of \code{Module} class, which shares some behavior with \code{Class} class. It is illegal to have a module with the same fully qualified name (minus the vendor parts) as a class or a trait. 
+
+Top-level definitions outside a packaging are assumed to be injected into the \code{Object} class directly, and therefore visible to each other without qualification. However, as \code{Object} is actually a simple name for the fully qualified name ~\lstinline!@Root.Gear/Language.Object!, no member is ever defined outside of packaging -- it may only seem to be so: the type of \code{self} pseudo-variable in ``global'' context (outside of any packagings) is ~\lstinline!@Root.Gear/Language.Object!---a special instance of \code{Object} dedicated to handling ``global'' space---unless the source file is loaded in context of another instance, used with DSLs. This should however be only used in script files, not inside modules, where all code has to be packaged. 
+
+
+
+
+
+
+\subsection{Module Object}
+
+\syntax\begin{lstlisting}
+Module_Object ::= {Annotation} 'module' 'object' Object_Def
+\end{lstlisting}
+
+A module object ~\lstinline!module object $p$ extends $t$! can specify some properties of the module object, add new traits to it, and adds the members of the template $t$ to the module object $p$. There can be only one module object per module. The module object has to be defined in a file named ~\lstinline[deletekeywords={module}]!module.gear!~ in the module's sources directory, otherwise the module object has an implied empty template with no annotations. 
+
+The module object should not define a member with the same name as one of the top-level objects or classes defined in module $p$. If there is a name conflict, it is an error. 
+
+The module object has also a special role in defining entry points of the module. An entry point is a method of the module object that can be invoked from the outside, to actually run the module as a program (\sref{sec:programs}). 
+
+Annotations and pragmas (\sref{sec:annotations}) specified for the module object\footnote{Annotations precede the object module directly, and pragmas are defined within the module object's template.} apply to the whole module object across source files. 
+
+
+
+
+
+
+\subsection{Module References}
+\label{sec:module-refs}
+
+\syntax\begin{lstlisting}
+Path ::= Module_Path
+\end{lstlisting}
+
+A reference to a module takes the form of a qualified identifier. Like all other references, module references are relative, i.e., a module reference starting in a name $p$ will be looked up in the closest enclosing scope that defines a member named $p$, and continue with the next closest enclosing scope, as long as the modules share the exact same vendor. 
+
+The special predefined name \code{@Root} (which is vendor-less) refers to the outermost ``root module'', which contains all top-level modules. 
+
+A nested module inherits the vendor from its directly enclosing module, unless there is no enclosing module, or the vendor is specified explicitly. If a module inherits the vendor, then it doesn't need to specify it again in its fully qualified identifier, as it is implied that nested modules will have the same vendor. 
+
+\example Consider the following program:
+\begin{lstlisting}
+module B {
+  class C {}
+}
+module A.B {
+  class D {
+    val x := @Root.B.C.new
+  }
+}
+\end{lstlisting}
+Here, the reference ~\lstinline!@Root.B.C! refers to class \code{B} in the top-level module \code{B}. If the ~\lstinline!@Root~! prefix had been omitted, the name \code{B} would instead resolve to the module \code{A.B}, and, provided that the module does not also contain a class \code{C}, a runtime error would result (constant not found). 
+\begin{lstlisting}
+module B {
+  class C {}
+}
+module A.B {
+  class D {
+    use @Root.B.{C as D} (* another way to solve it *)
+    val x := D.new
+  }
+}
+\end{lstlisting}
+
+
+
+
+
+\subsection{Module Units}
+\label{sec:module-units}
+
+Units are portions of modules that are compiled into separate bytecode files. Usually, there is one unit per module named \code{default}, however, with a \code{pragma Module_Unit :$n$}, where $n$ is an identifier, all definitions from the source file from that pragma on are a part of a unit named $n$. 
+
+A module with only one unit has usage no different from a module with multiple units, the only difference is in the compilation output.\footnote{Therefore, hot code loading may select just a part of a module to be updated at runtime.}
+
+
+
+
+
+\section{Programs}
+\label{sec:programs}
+
+A {\em program} is a module that has 1 or more entry points. An entry point is a method of the module object that can be invoked from the outside, to actually run the module as a program. To mark a method as an explicit entry point, use the \code{entry} pseudo-modifier\footnote{Actually, it is implemented as a method of the class \code{Module}, therefore not a keyword, but IDEs may opt-in to highlight it as such, due to its importance.} before the method definition or declaration. An implicit entry point is a method with a name \code{main} and a method type ~\lstinline!(Sequence[String]) $\mapsto$ Unit!. A module does not need to have any entry points at all -- that renders it a ``library-only'' module. 
+
+\example The following example will create a hello world program by defining a module entry point in module \code{Test}. 
+
+\syntax\begin{lstlisting}[morekeywords={entry}]
+module Example/Test
+module object {
+  entry def main (args: Sequence[String]) := {
+    Console.print_line "Hello world!"
+  }
+}
+\end{lstlisting}
+
+This program can be started by the command
+\begin{lstlisting}
+% gear Test
+\end{lstlisting}
+
+
+
+
+
+
+
+

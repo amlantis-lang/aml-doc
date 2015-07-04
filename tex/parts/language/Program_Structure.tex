@@ -1,0 +1,66 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Program Structure}
+\label{sec:program-structure}
+
+The Gear Programming Language System consists of a couple of command line tools: 
+\begin{itemize}
+  \item \code{gear}, runs Gear interactively in a read-eval-print loop.
+  \item \code{gearc}, compiles Gear modules or scripts.
+  \item \code{gearopt}, compiles native optimized Gear modules or scripts.
+  \item \code{gearrun}, runs Gear modules or scripts.
+  \item \code{geardoc}, generates documentation for Gear modules. 
+  \item \code{geardbg}, debugger for Gear modules or scripts. 
+  \item \code{gearp}, inspects compiled Gear modules or scripts.
+  \item \code{gearf}, Gear module bundler and builder.
+  \item \code{gearprof}, Gear module or script profiler.
+\end{itemize}
+
+The inputs to the Gear tools consist of: 
+\begin{itemize}
+  \item Source code files. 
+    \begin{itemize}
+      \item Files with extension \code{.gear}, implementation files, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with extension \code{.gearm}, implementation files with permanent macro definitions, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with extension \code{.gears}, implementation signature files, conforming to the grammar element \code{Signature_File}. 
+      \item Files with extension \code{.gearx}, script files, conforming to the grammar element \code{Script_File}. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.gear!, module definition files, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with name \lstinline[deletekeywords={signature}]!signature.gear!, module or submodule signature files, conforming to the grammar element \code{Signature_File}. 
+    \end{itemize}
+  \item Compiled files. 
+    \begin{itemize}
+      \item Files with extension \code{.gearb}, bytecode function files. 
+      \item Files with extension \code{.gearpsi}, bytecode PSI files. 
+    \end{itemize}
+  \item Semi-source files. 
+    \begin{itemize}
+      \item Files with extension \code{.gearp}, protocol files, conforming to the grammar element \code{Signature_File}. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.gear!, module dependencies, conforming to the grammar element \code{Script_File}. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.lock!, locked module dependencies. 
+    \end{itemize}
+  \item Script fragments, used in interactive environments, conforming to the grammar element \code{Script_Fragment}, where each script fragment can be separated by ``\code{;;}''\footnote{This simulates ``End Of File'' in regular script files.}, to trigger evaluation by the interactive environment. 
+  \item Compilation and runtime parameters passed to the command line tools. 
+  \item Pragma and annotation applications (\sref{sec:pragmas}) within source files and their compiled forms. 
+\end{itemize}
+
+The \code{Gear/Language.VM} class shall offer methods for querying the compilation environment -- methods \code{is_compiled?} and \code{is_interactive?}.
+
+Processing of the source code portions of these inputs consists of the following steps: 
+\begin{enumerate}
+  \item {\em Decoding}. Each file and source code fragment is decoded into a stream of Unicode characters. UTF-8 is recommended as the source encoding and the default one, but different encodings may be used, if specified in the command line tool's parameters. 
+  \item {\em Tokenization}. The stream of Unicode characters is broken into a token stream by lexical analysis, described in (\sref{sec:lexical-analysis}).
+  \item {\em Lexical filtering}. The token stream is filtered by rules described in (\sref{sec:lexical-filtering}). These rules describe how additional (virtual) tokens are inserted or removed from the token stream, and how some existing tokens are split into multiple tokens or replaced by others to generate an augmented token stream. 
+  \item {\em Parsing}. The augmented token stream is parsed according to the grammar rules from this document. The result is an AST. 
+  \item {\em Importing}. Modules referenced from \code{module.dependencies.lock} are linked into the AST. 
+  \item {\em Checking}. The results of parsing are checked. This includes type checking and variable checking. 
+  \item {\em Elaboration}. The checked AST is pre-cached. This includes pre-filling of local method caches, and type arguments, all dependent on the initial version of each PSI\footnote{Program Structure Information, basically a repository of all types that a program uses.} element that plays a part. Elaborated AST and PSI can be saved in a more permanent form, like bytecode files. Each source file is represented by an implicit function\footnote{Therefore, DSLs are really easy -- since a file is basically a function, it can be used as such, although indirectly.}, but whether these functions are stored in one bytecode file, or multiple bytecode files, or even one bytecode file per each source file, is of no importance -- the PSI has to manage mappings of these source files to their actual compiled location. 
+  \item {\em Evaluation}. Elaborated ASTs are evaluated against the elaborated PSI, according to the commands and parameters the command line tools received. 
+\end{enumerate}
+
+
+
+
+
+
+

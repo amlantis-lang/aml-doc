@@ -1,0 +1,100 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Introduction}
+
+\minitoc
+
+\newpage
+
+% TBD: add a proper introduction
+
+\section{About The Gear Language}
+
+Gear is a scalable, reasonably verbose, type-safe and type-inferred multi-paradigm language. These paradigms are:
+\begin{itemize}
+  \item Object-oriented, both class-based and prototype-based
+  \item Functional. 
+  \item Imperative. 
+  \item Concurrent. 
+  \item Metaprogramming. 
+  \item Reflective. 
+\end{itemize}
+
+Gear is a hybrid language in two significant properties. First, the language itself is inherently dynamic, but focuses on minimizing impact of the dynamic changes. Second, it uses hybrid typing discipline, where most types are statically defined and selected types may opt-in for dynamic typing. 
+
+It aims to be a good modern high-level self-optimizing language with a scent of retro that programmers will just love. 
+
+
+
+
+
+
+\section{Influences}
+
+\paragraph{Ada}
+Ada influenced the base of Gear's syntax, and also had an impact on floating and fixed point types, which are very distinct in Gear. 
+
+Gear uses heavily keyword program parentheses in Ada fashion. There are \lstinline!class $\ldots$ end class!, \lstinline!def $\ldots$ end def!, \lstinline!do $\ldots$ end!, \lstinline!loop $\ldots$ end loop! etc.
+
+\paragraph{Ruby}
+Ruby was the original inspiration in early stages of Gear's development. It still has some visible marks left throughout Gear's syntax, e.g. the metaclass access, and it itself being influenced by Ada, the syntaxes are also similar. Gear also admires Ruby's dynamic features and metaprogramming capabilities and wants to be as little obstacle in creating custom DSLs\footnote{Domain-Specific Languages} as it can be. 
+
+\paragraph{Scala}
+Scala influenced the type system of Gear. The most visible effect that it has left here is the syntax for type arguments and type parameters, which are enclosed in square brackets, instead of the kind of more usual and troubled angle brackets. 
+
+\paragraph{OCaml \& F\#}
+These two languages (which themselves are related) influenced Gear so remarkably, that one may almost consider Gear to be a distant relative of the ML family of programming languages. Function application syntax, function compositions, functional algebraic datatypes, currying, automatic type inference and much more. 
+
+\paragraph{Clojure}
+While Clojure as a member of the Lisp language family does not have much of a direct effect on the syntax of Gear, it influences Gear more conceptually. 
+
+\paragraph{ATS}
+ATS convinced Gear to give dependent types a try. 
+
+\paragraph{Personal experiences}
+Gear is kind of an opinionated language. It makes some subtle or also significant choices that may seem odd at the first sight, but they make more sense over the time (or are bugs). These include decisions like whitespace being required around most infix operators. However, its intentions are friendly -- Gear prefers readability even one year from now to having the code written and compiled a little bit faster. 
+
+
+
+
+
+\section{Notational Conventions}
+
+All lexical and grammar syntax definitions use a customized form of EBNF. 
+
+\begin{itemize}
+  \item \lstinline![element]! \newline
+    Option, one or zero occurrences of \code{element}. 
+  \item \lstinline!{element}! \newline
+    Optional repetition, zero, one or more occurrences of \code{element}.
+  \item \lstinline!{element}+! \newline
+    Repetition, one or more occurrences of \code{element}.
+  \item \lstinline!? text ?! \newline
+    Special sequence, textual description of an element. The following lines could contain additional data, if so described.
+  \item \lstinline!element1 | element2! \newline
+    Alternation, either \code{element1} or \code{element2} applies, but not both. 
+  \item \lstinline!(element)! \newline
+    Grouping. 
+  \item \lstinline!element1, element2! \newline
+    Concatenation, used only for exceptions to enlist elements rather than sequence them. 
+  \item \lstinline!element1 element2! \newline
+    Sequence of elements.
+  \item \lstinline!'data'! \newline
+    Terminal string, literal appearance of the given Unicode characters. 
+  \item \lstinline!| $\cdots$ |! \newline
+    Signals a range from the previous alternative to the following alternative. 
+  \item \lstinline!element - except! \newline
+    Exception, an anonymous element that contains all of \code{element}, except for elements defined by \code{except} (which can be a grouping). 
+  \item \lstinline!category ::= element! \newline
+    Used for definitions; signals that \code{category} is made of \code{element}, as in EBNF. The same \code{category} could appear on the left side multiple times for \code{element$_1$} \ldots\ \code{element$_n$}, in that case, it is taken that \lstinline!category ::= element$_1$ | $\ldots$ | element$_n$!.
+  \item \lstinline!(* comment *)! \newline
+    An additional information about the given syntax element, could contain additional restrictions described textually. 
+\end{itemize}
+
+
+
+
+
+
+

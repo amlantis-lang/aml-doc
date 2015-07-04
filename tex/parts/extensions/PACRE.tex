@@ -1,0 +1,76 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter[Perl Almost-Compatible Regular Expressions]{Perl Almost-Compatible\\ Regular Expressions}
+\label{sec:pacre}
+
+\minitoc
+
+\newpage
+
+
+
+
+
+{\em Perl-Almost-Compatible Regular Expressions} (PACRE) are a subsystem of Gear. 
+
+Right from the start, it is important to note that Gear is in no way Perl, and thus the regular expressions as integrated in it will {\em never} be 100\% compatible to what regular expressions and regexes are in Perl (both versions 5 and 6). 
+
+Gear aims to implement the most important features from Perl 6's Regexes (\url{http://doc.perl6.org/language/regexes}), adding some features of its own and discarding or not being able to implement others. When possible, differences in both ways from Perl 6 will be noted in this document. 
+
+
+
+
+
+\section{Syntax of Regular Expressions} 
+\label{sec:syntax-of-regexps}
+
+%\minitoc
+
+%\newpage
+
+
+
+
+
+\subsection{Gear Literals for Regular Expressions}
+\label{sec:literals-for-regexps}
+
+\syntax\begin{lstlisting}
+regexp_literal     ::= matching_regexp_p5
+                     | matching_regexp_p6
+                     | subst_regexp_p5
+                     | subst_regexp_p6
+matching_regexp_p5 ::= '%/' {int_string_element} '/' [regexp_flags]
+subst_regexp_p5    ::= '%s/' {int_string_element} '/' 
+                       {int_string_element} '/' [regexp_flags]
+matching_regexp_p6 ::= '%rx/' {int_string_element} '/'
+	                   | '%rx#' {int_string_element - int_expr1} '#'
+	                   | '%rx~' {int_string_element} '~'
+	                   | '%rx[' {int_string_element} ']'
+	                   | '%rx{' {int_string_element} '}'
+	                   | '%rx(' {int_string_element} ')'
+subst_regexp       ::= '%srx/' {int_string_element} '/'
+                       {int_string_element} '/'
+	                   | '%srx#' {int_string_element - int_expr1} '#'
+	                     {int_string_element - int_expr1} '#'
+	                   | '%srx~' {int_string_element} '~'
+	                     {int_string_element} '~'
+regexp_content_int ::= regexp_element_int {regexp_element_int}
+regexp_element_int ::= string_element | int_string_element
+regexp_content     ::= string_element {string_element}
+regexp_flags       ::= letter_char {letter_char}
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+
+
+
