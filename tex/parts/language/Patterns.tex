@@ -14,70 +14,96 @@
 \section{Patterns}
 \label{sec:patterns}
 
-\syntax\begin{lstlisting}
-Pattern        ::= Pattern1 {'|' Pattern1}
-Pattern1       ::= ['implicit'] var_id ':' Type_Pat
-                 | '_' ':' Type_Pat
-                 | ['implicit'] var_id ['@' Pattern3]
-                 | Pattern3
-Pattern2       ::= var_id ['@' Pattern3]
-                 | Pattern3
-Pattern3       ::= Simple_Pattern {id Simple_Pattern}
-Simple_Pattern ::= '_'
-                 | var_id
-                 | Literal - Collection_Literal
-                 | ['.'] Stable_Id
-                 | ['.'] Stable_Id '(' [Extractions] ')' 
-                 | '(' Extractions ')'
-                 | '(' [Patterns] ')'
-                 | '%[' Pattern {semi Pattern} [semi '*' (var_id | '_')] 
-                   {semi Pattern} ']'
-                 | '%[' '*' (var_id | '_') {semi Pattern} ']'
-                 | '%[|' Pattern {semi Pattern} [semi '*' (var_id | '_')] 
-                   {semi Pattern} '|]'
-                 | '%[|' '*' (var_id | '_') {semi Pattern} '|]'
-                 | '%{' Dict_Key '=>' Pattern 
-                   {semi Dict_Key '=>' Pattern}
-                   [semi '**' (var_id | '_') [':' Type]] '}'
-                 | '%{' '**' (var_id | '_') [':' Type] '}'
-                 | '%(' Pattern {semi Pattern} [semi '*' (var_id | '_')] 
-                   {semi Pattern} ')'
-                 | '%(' '*' (var_id | '_') {semi Pattern} ')'
-                 | Pattern '&' Pattern
-                 | Record_Pattern
-                 | Struct_Pattern
-Patterns       ::= Pattern {',' Pattern}
-Extractions    ::= Pos_Patterns {',' Named_Patterns} [Block_Pattern]
-                 | Named_Patterns [Block_Pattern]
-                 | Block_Pattern
-Pos_Patterns   ::= Pos_Pattern {',' Pos_Pattern} [',' Rest_Pattern 
-                   {',' Pos_Pattern}]
-                 | Rest_Pattern {',' Pos_Pattern}
-Pos_Pattern    ::= Pattern
-Rest_Pattern   ::= '*' var_id [':' Type_Pat]
-                 | '*' '_' [':' Type_Pat]
-Named_Patterns ::= Named_Pattern {',' Named_Pattern} [',' Capt_Pattern]
-                 | Capt_Pattern
-Named_Pattern  ::= NPattern1 {'|' NPattern1}
-NPattern1      ::= ['implicit'] ['~'] var_id var_id ':' Type_Pat
-                 | ['implicit'] '~' var_id ':' Type_Pat
-                 | var_id '_' ':' Type_Pat
-                 | ['implicit'] var_id ['@' NPattern2]
-NPattern2      ::= ['~'] var_id Simple_Pattern {id Simple_Pattern}
-                 | '~' var_id
-Capt_Pattern   ::= '**' var_id [':' Type_Pat]
-                 | '**' '_' [':' Type_Pat]
-Block_Pattern  ::= '&' var_id [':' Function_Type]
-                 | '&' ':' Function_Type
-Dict_Key       ::= Simple_Expr1
-                 | (Literal - Collection_Literal)
-                 | '_'
-Record_Pattern ::= 'record' '{' Field_Patterns '}'
-Field_Patterns ::= Field_Pattern {semi Field_Pattern} [semi '_']
-                 | '_'
-Field_Pattern  ::= Stable_Id '=>' Pattern
-Struct_Pattern ::= 'structure' Pkg_Type
+\syntax\begin{lstlisting}[deletekeywords={as,with}]
+Pattern             ::= Var_Pattern
+                      | Bound_Pattern
+                      | Typed_Pattern
+                      | Wildcard_Pattern
+                      | Literal_Pattern
+                      | Grouped_Pattern
+                      | Or_Pattern
+                      | And_Pattern
+                      | Variant_Pattern
+                      | Tag_Pattern
+                      | Tuple_Pattern
+                      | List_Pattern
+                      | Array_Pattern
+                      | Dict_Pattern
+                      | Multimap_Pattern
+                      | Bag_Pattern
+                      | Record_Pattern
+                      | Struct_Pattern
+                      | Annotated_Pattern
+Var_Pattern         ::= ['implicit'] ['val' | 'var'] var_id
+Bound_Pattern       ::= Var_Pattern '@' Pattern
+Wildcard_Pattern    ::= '_'
+Literal_Pattern     ::= Literal
+Typed_Pattern       ::= '(' Type_Bound_Pattern ')'
+Type_Bound_Pattern  ::= Pattern ':' Type
+Grouped_Pattern     ::= '(' Pattern ')'
+Or_Pattern          ::= Pattern '|' Pattern
+And_Pattern         ::= Pattern '&' Pattern
+Variant_Pattern     ::= ['.'] Stable_Id ['(' [Variant_Extractions] ')']
+Tag_Pattern         ::= Tag_Name Pattern
+Tuple_Pattern       ::= Pattern {',' Pattern}+
+                      | Extractions
+List_Pattern        ::= '%[' Seq_Extractions ']'
+Array_Pattern       ::= '%[|' Seq_Extractions '|]'
+Dict_Pattern        ::= '%{' Dict_Extractions '}'
+Multimap_Pattern    ::= '%{{' Dict_Extractions '}}'
+Bag_Pattern         ::= '(' Sequential_Extractions ')'
+Annotated_Pattern   ::= {Annotation}+ Pattern
+Extractions         ::= Pattern 
+                      | Positional_Extracts {',' Labelled_Extracts}
+                      | Labelled_Extracts
+Variant_Extractions ::= Extractions
+                      | ? Pattern with Type_Bound_Pattern as Pattern as well ?
+                      | Positional_Extracts {',' Labelled_Extracts}
+                      | Labelled_Extracts
+Positional_Extracts ::= Pattern {',' Pattern} 
+                        [',' Rest_Extracts {',' Pattern}]
+                      | Rest_Extracts {',' Pattern}
+Rest_Extracts ::= Optional_Extract {',' Optional_Extract} [',' Rest_Extract]
+                      | Rest_Extract
+Optional_Extract    ::= '?' Pattern
+                      | '?' ['val' | 'var'] var_id ':' Type
+                      | '?' '_' ':' Type
+                      | '?(' Pattern ':=' Value_Expr ')'
+Rest_Extract        ::= '*' var_id [':' Type]
+                      | '*' '_' [':' Type]
+Labelled_Extracts   ::= Labelled_Pattern {',' Labelled_Pattern} 
+                        [',' Capture_Extract]
+Labelled_Pattern    ::= '~' id 
+                      | '~(' id [':' Type] ')'
+                      | '~' id ':' Pattern
+                      | '~?' id
+                      | '~?(' id [':' Type] [':=' Value_Expr] ')'
+                      | '~?' id ':' Pattern
+                      | '~?' id ':' 
+                        '(' Pattern [':' Type] [':=' Value_Expr] ')'
+Capture_Extract     ::= '**' var_id [':' Type]
+                      | '**' '_' [':' Type]
+Seq_Extractions     ::= Pattern {semi Pattern} [semi Seq_Rest_Extracts] 
+                        {semi Pattern}
+                      | Seq_Rest_Extracts {semi Pattern}
+Seq_Rest_Extracts   ::= Optional_Extract {semi Optional_Extract} 
+                        [semi Rest_Extract]
+                      | Rest_Extract
+Dict_Extractions    ::= Dict_Extraction {semi Dict_Extraction}
+                        [semi Capture_Extract]
+                      | Capture_Extract
+                      | Seq_Extractions
+Dict_Extraction     ::= Dict_Key '=>' Pattern
+Dict_Key            ::= Literal
+                      | '_'
+                      | Value_Expr
+Record_Pattern      ::= 'record' '{' Field_Patterns '}'
+Field_Patterns      ::= Field_Pattern {semi Field_Pattern} [semi '_']
+                      | '_'
+Field_Pattern       ::= Stable_Id '=>' Pattern
+Struct_Pattern      ::= 'structure' Pkg_Type
 \end{lstlisting}
+
 
 
 
