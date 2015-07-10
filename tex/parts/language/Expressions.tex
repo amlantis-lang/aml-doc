@@ -951,33 +951,61 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 
 
 
-\subsubsection{Method Values \& Partial Applications}
+\subsubsection{Method Values \& Explicit Partial Applications}
 \label{sec:method-values}
 
 \syntax\begin{lstlisting}
-Method_Expr       ::= '&' Simple_Expr2
-                    | '&(' Simple_Expr3 ')'
-                    | '&(' op_id ')' [Papply_Poetry1 | Papply_Parens1]
-                    | '&(' nary_op_id ')' [Papply_Poetry1 | Papply_Parens1]
-Simple_Expr2      ::= (Simple_Expr1 - Poetry_Args) [Papply_Parens]
-Simple_Expr3      ::= (Simple_Expr1 - Poetry_Args) 
-                      [Papply_Poetry | Papply_Parens]
-Papply_Parens     ::= Papply_Parens1 [Block_Arg | '&_' ['as' Type]]
-                    | Block_Arg 
-                    | '&_' ['as' Type]
-Papply_Parens1    ::= {'(' [Papply_Args_Expr] ')'}+ 
-Papply_Poetry     ::= Papply_Poetry1 
-                      [Block_Expr2 | ',' '&_' ['as' Type]]
-Papply_Poetry1    ::= Papply_Args_Expr
-Papply_Args_Expr  ::= (Papply_Pos_Args [',' Papply_Named_Args])
-                    | Papply_Named_Args
-Papply_Pos_Args   ::= Papply_Pos_Arg {',' Papply_Pos_Arg}
-Papply_Pos_Arg    ::= Pos_Arg | '_' ['as' Type]
-Papply_Named_Args ::= Papply_Named_Arg {',' Papply_Named_Arg}
-                      {',' '**' Expr}
-                    | '**' Expr {',' '**' Expr}
-Papply_Named_Arg  ::= Named_Arg
-                    | ['~'] id ':' '_' ['as' Type]
+Method_Expr ::= '&' Value_Expr ['(' Partially_Applied_Arguments ')']
+                [Partially_Applied_Block_Argument]
+              | '&(' Value_Expr ['(' Partially_Applied_Arguments ')']
+                [Partially_Applied_Block_Argument] ')'
+              | '&(' Value_Expr Partially_Applied_Arguments
+                [Partially_Applied_Block_Argument2] ')'
+              | '&(' op_id ')' ['(' Partially_Applied_Arguments ')']
+              | '&(' nary_op_id ')' ['(' Partially_Applied_Arguments ')']
+              | '(' op_id ')'
+              | '(~' op_id ')' (* requires space after `(~` *)
+Partially_Applied_Arguments
+            ::= {Partially_Applied_Argument} 
+Partially_Applied_Argument
+            ::= Argument
+              | Positional_Unapplied_Argument
+              | Labelled_Unapplied_Argument
+Positional_Unapplied_Argument
+            ::= '_' ['as' Type]
+              | Partially_Applied_Tuple_Argument
+              | '(' Partially_Applied_Tuple_Argument ')'
+Labelled_Unapplied_Argument
+            ::= ['~' | '~?'] id ':' '_' ['as' Type]
+              | ['~' | '~?'] id ':' Partial_Slice_Expr
+              | ['~' | '~?'] id ':' Partially_Applied_Tuple_Argument
+              | ['~' | '~?'] id ':' '(' [Partially_Applied_Tuple_Argument] ')'
+Partially_Applied_Tuple_Argument
+            ::= Positional_Partially_Applied_Tuple_Arguments 
+                [',' Named_Partially_Applied_Tuple_Arguments]
+              | Named_Partially_Applied_Tuple_Arguments
+Positional_Partially_Applied_Tuple_Arguments 
+            ::= Positional_Partially_Applied_Tuple_Argument
+                {',' Positional_Partially_Applied_Tuple_Argument}
+Positional_Partially_Applied_Tuple_Argument
+            ::= Positional_Tuple_Argument
+              | Positional_Unapplied_Argument
+Named_Partially_Applied_Tuple_Arguments
+            ::= Named_Partially_Applied_Tuple_Argument 
+                {',' Named_Partially_Applied_Tuple_Argument}
+Named_Partially_Applied_Tuple_Argument
+            ::= Named_Tuple_Argument
+              | Labelled_Unapplied_Argument
+Partially_Applied_Block_Argument
+            ::= Block_Argument
+              | '&_' ['as' Type]
+Partially_Applied_Block_Argument
+            ::= Block_Expr2
+              | Method_Expr
+              | '&_' ['as' Type]
+Partial_Slice_Expr
+            ::= '_' ['as' Type] ('..' | '...' | '..<') ['_' ['as' Type]]
+              | ('..' | '...' | '..<') '_' ['as' Type]
 \end{lstlisting}
 
 The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
@@ -986,8 +1014,6 @@ The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well
 \begin{lstlisting}[deletekeywords={range}]
 &(Math.sin)             x -> { Math.sin(x) }
 &(Array.range)          (x1, x2) -> { Array.range(x1, x2) }
-&(List.map_2)           (x1, x2) -> x3 -> { List.map_2(x1, x2)(x3) }
-&(List.map_2(xs, ys))   x -> { List.map_2(xs, xy)(x) }
 &(42.`*`)               x -> { 42 * x }
 val vs := 1 .. 9; &(vs.fold)
                         x1 -> x2 -> { vs.fold(x1)(x2) }
@@ -1004,90 +1030,6 @@ Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T
 If $e$ resolves to an overloaded member, then the type of the expression is a type projection to that member, constrained to the matching alternatives. 
 
 If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_ as $T$!'', called {\em argument placeholders}, then the method value contains only those overloaded alternatives that are applicable to the given sub-expressions, including the argument placeholders. Such an expression is then partially applied and resolves to an anonymous function, where the argument placeholders become parameters of the anonymous function. 
-
-\paragraph{Joined parameters}
-
-A partial application generates an anonymous function, in which all skipped parameters are joined into a single fresh parameter list, containing all the skipped parameters, with preserved order and typing. Such an anonymous function may again be a subject to further partial application, if so desired.\footnote{A proper IDE should show all the possible fresh parameter lists per each overloaded alternative.} 
-
-Parameters appearing in parameter lists that were not provided any arguments are not considered skipped, and due to the behaviour of automatic currying, are only a regular part of the result value of the anonymous function. 
-
-Parameters that are optional, variadic, or purely named with default values, are never considered as skipped, and thus do not make it into the fresh new parameter list. 
-
-\paragraph{Implicit partial application}
-
-A function application (\sref{sec:function-applications}) using poetry-style argument passing is implicitly partially applied per each argument given. 
-
-The runtime is allowed to optimize such serial partial applications to fit as many arguments given as possible into a single argument list of any overloaded alternative. If the following conditions are all met, then the partial application is also fully applied:
-\begin{enumerate}
-  \item Function application has all arguments needed for a single overloaded alternative, so that it can be applied to the arguments. 
-  \item An implicit parameter list can be provided automatically with arguments, if any is present in the alternative. This is different from regular function applications, in the sense that regular function application signals an error if the implicit arguments can't be assembled. 
-  \item The result type is compatible to the expected type. If the expected type is \code{Gear/Language.Auto}, then it is always compatible. 
-  \item It is not in a method value, which prevents full application not just in case of implicit partial applications.
-\end{enumerate}
-
-This rule practically means that methods with more parameters in a single parameter list are preferred to methods with fewer parameters in a single parameter list, when it comes to poetry-style argument passing. However, it is possible to split poetry-style argument passing with parentheses, to delimit separate applications in consecutive function applications. 
-
-If poetry-style arguments include {\em named arguments}, and any overloaded alternative or non-overloaded member has the same external parameter name across multiple parameter lists, then their order of appearance in those parameter lists is preserved in the order of named arguments. Moreover, it is possible to create a partial application that skips not just parameters, but even whole parameter lists, and the order and typing of missing arguments is preserved in parameters of the generated anonymous function. 
-
-% TBD: write a GFR that shows examples of this in further details
-
-\example Basic examples of implicit partial applications using poetry-style arguments passing. 
-\begin{lstlisting}
-def papplied (a, b, c): Number := a + b + c
-
-(* resolves to partially applied `papplied`, 
-   `a` reified to `1` *)
-let papplied_1 (b, c) := papplied 1
-
-(* resolves to partially applied `papplied_1`, 
-   `b` reified to `2` *)
-let papplied_2 (c) := papplied_1 2
-
-(* finally applies `papplied`, 
-   resolves to evaluated `1 + 2 + 3` *)
-let fully_applied := papplied_2 3
-
-(* resolves to partially applied `papplied`, 
-   `a` reified to `1` and `b` reified to `2` *)
-let papplied_3 (c) := papplied 1, 2
-\end{lstlisting}
-
-\example Examples of implicit partial applications in face of overloaded members. 
-\begin{lstlisting}
-def papplied (a, b, c): Number := a + b + c
-def papplied (a): Number := a + 3
-
-(* resolves to partially applied `papplied`, 
-   `a` reified to `1` *)
-let papplied_1 (b, c) := papplied 1
-
-(* resolves to partially applied `papplied`, 
-   `a` reified to `1` *)
-let papplied_2 () := papplied 1
-(* full application *)
-let papplied_full := papplied_2() 
-
-(* finally applies `papplied`, 
-   resolves to evaluated `1 + 3` *)
-let papplied_3 := papplied 1
-
-(* finally applies `papplied`, 
-   resolves to evaluated `1 + 2 + 3` *)
-let papplied_4 := papplied 1, 2, 3
-\end{lstlisting}
-
-\example Example of skipping parameters and parameter lists. 
-\begin{lstlisting}
-def papplied (a, b)(c): Number := a + b + c
-
-(* resolves to partially applied `papplied`, 
-   skipping first parameter list *)
-let papplied_1 (a, b) := papplied ~c: 3
-
-(* resolves to partially applied `papplied`, 
-   skipping `a` in its first parameter list *)
-let papplied_2 (a)(c) := papplied ~b: 2
-\end{lstlisting}
 
 
 
@@ -1126,10 +1068,15 @@ Optionally, the anonymous class may define its own primary constructor parameter
 \label{sec:designators}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= Path
-               | '(' Anon_Class ')' '.' Selection
-               | Value_Expr '.' Selection
-Selection    ::= ['?'] (id | digit {digit})
+Simple_Expr1       ::= Path
+                     | '(' Anon_Class ')' '.' Selection
+                     | Value_Expr '.' Selection
+Selection          ::= Simple_Selection
+                     | Tuple_Selection
+                     | Optional_Selection
+Simple_Selection   ::= id
+Tuple_Selection    ::= digit {digit}
+Optional_Selection ::= '?' (Simple_Selection | Tuple_Selection)
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
@@ -1160,12 +1107,14 @@ A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is usef
 \label{sec:attribute-selection}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= Simple_Expr ''' Selection
+Simple_Expr1 ::= Value_Expr ''' Simple_Selection
 \end{lstlisting}
 
 An attribute is a special function that has at least one parameter list with a single parameter, and optionally more regular parameter lists following the first one. 
 
 An attribute selection ~\lstinline!$x$'$a$!~ is then viewed as function application ~\lstinline!$a$($x$)!. An attribute selection ~\lstinline!$x$'$a$($\args$)!~ is then viewed as function application ~\lstinline!$a$($x$)($\args$)!~ etc. (\sref{sec:function-applications}).
+
+Since simple identifiers that may make up the \code{Value_Expr} can contain trailing apostrophes, the last apostrophe is considered a part of the attribute selection expression and not the identifier itself. 
 
 
 
@@ -1241,23 +1190,41 @@ Use expressions of the form ~\lstinline!use refinement $T$!~ enable the specifie
 
 \syntax\begin{lstlisting}[mathescape=false]
 Value_Expr  ::= App_Expr
-App_Expr    ::= Value_Expr '(' [Arguments] ')' [Block_Arg]
-              | Value_Expr '.' '(' [Arguments] ')' [Block_Arg]
+App_Expr    ::= Value_Expr '(' [Arguments] ')' [Block_Argument]
+              | Value_Expr '.' '(' [Arguments] ')' [Block_Argument]
               | Value_Expr Arguments [Block_Expr2 | Method_Expr]
-              | Value_Expr Block_Arg
-Arguments   ::= Pos_Args [Named_Args]
-              | Named_Args
-Pos_Args    ::= {Pos_Arg}+
-Pos_Arg     ::= ['*' | '?'] Value_Expr 
-              | '$' 
-              | TT_Expr
-              | Slice_Expr
-Named_Args  ::= {Named_Arg}+ {'**' Value_Expr}
-              | {'**' Value_Expr}+
-Named_Arg   ::= ['~' | '?'] id ':' (Value_Expr | TT_Expr | Slice_Expr)
-              | ['~' | '?'] id ':' '$'
-              | ('~' | '?') id
-Block_Arg   ::= Block_Expr 
+              | Value_Expr Block_Argument
+Arguments   ::= {Argument}+
+Argument    ::= Positional_Argument
+              | Labelled_Argument
+Positional_Argument 
+            ::= ['?'] Value_Expr
+              | '$'
+              | Tuple_Argument
+              | '(' Tuple_Argument ')'
+Labelled_Argument
+            ::= ['~' | '~?'] id ':' Value_Expr
+              | ['~' | '~?'] id ':' TT_Expr
+              | ['~' | '~?'] id ':' Slice_Expr
+              | ['~' | '~?'] id ':' '$'
+              | ['~' | '~?'] id ':' Tuple_Argument
+              | ['~' | '~?'] id ':' '(' Tuple_Argument ')'
+              | ('~' | '~?') id
+Tuple_Argument 
+            ::= Positional_Tuple_Arguments [',' Named_Tuple_Arguments]
+              | Named_Tuple_Arguments
+Positional_Tuple_Arguments 
+            ::= Positional_Tuple_Argument {',' Positional_Tuple_Argument}
+Positional_Tuple_Argument 
+            ::= Positional_Argument
+              | '*' Value_Expr
+Named_Tuple_Arguments
+            ::= Named_Tuple_Argument {',' Named_Tuple_Argument}
+Named_Tuple_Argument
+            ::= Labelled_Argument
+              | '**' Value_Expr
+Block_Argument
+            ::= Block_Expr 
               | Method_Expr
 \end{lstlisting}
 
