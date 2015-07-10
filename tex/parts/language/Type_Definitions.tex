@@ -14,6 +14,7 @@
 Def              ::= Type_Definition
 Type_Definition  ::= 'type' Typedef {'and' Typedef} 'end' ['type']
 Typedef          ::= id [Type_Param_Clause] [Type_Information]
+                   | Type_Param_Clause2 id [Type_Information]
 Type_Information ::= [ Type_Equation 
                      | Type_Abstract 
                      | Type_Representation] {semi Type_Constraint}
@@ -142,21 +143,29 @@ Type_Representation ::= Is ['bitfield']
                         'enum' ('{' Enum_Field {semi Enum_Field} '}'
                         | Enum_Field {semi Enum_Field})
                         [Record_Extensions]
-Enum_Field          ::= id ':=' scalar_literal
-                      | id 'of' Tuple_Exprs
+Enum_Field          ::= id ':=' Literal
+                      | id ':=' Value_Expr
                       | id
+                      | id 'of' Types
 \end{lstlisting}
 
-Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class. 
+Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class, or a case class nested in the enum class. 
 
-An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in four forms: 
+An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in four forms -- the first three of them are called {\em constant enum constructors}, the last is called {\em non-constant enum constructor}. 
 \begin{itemize}
-  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear. The signature of the enum must extend a scalar type, and is the only one that allows for the \code{bitfield} keyword to be used with it.
+  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear.
   \item Initialized with nothing, then each enum constant is by itself the ordering, no implicit literal value is added. The comparison operators are automatically added and their implementations reflect the order in which the enum constants appear. 
   \item Initialized with custom expression. The argument expression can be extracted with pattern matching as a contained single value, or if the argument expression is a tuple, as a tuple. It is highly recommended for every enum constant to be immutable, but it is not mandatory. This form can't extend any parent class and has the same implicit ordering as the previous form. 
+  \item Initialized in-place with custom expression, according to the specified types, whose members may be extracted with pattern matching (\sref{sec:named-patterns}). Those enums are similar to variant types (\sref{sec:variant-types}), but the enumerated members are nested in the enum class and thus have to be prefixed, or imported explicitly into scope. 
 \end{itemize}
 
-Unlike variant types (\sref{sec:variant-types}), enumeration types do not represent classes of values, but instead enumerate a limited set of concrete values. 
+
+
+
+
+\subsection{Bitfield Enumeration Type Definitions}
+
+If an enum type is specified with the \code{bitfield} modifier, then the contained values can be only positive integral numbers, and those fields that are not given an explicit value are given a value that is the immediately following power of two, or \code{1} for the first field. 
 
 
 
@@ -199,21 +208,21 @@ type B-tree[T] is case enum
   Empty
   Node of T * B-tree[T] * B-tree[T]
 }
-with def is_member? (x, b-tree) :=
+with def is_member? x b-tree :=
   match b-tree
   when Empty then no
-  when Node(y, left, right) then
+  when Node y, left, right then
     if x = y then yes
-    elsif x < y then is_member? x, left
-    else is_member? x, right
+    elsif x < y then is_member? x left
+    else is_member? x right
     end if
   end match
-and def insert (x, b-tree) := 
+and def insert x b-tree := 
   match b-tree
   when Empty then Node x, Empty, Empty
-  when Node(y, left, right) then
-    if x <= y then Node y, (insert x, left), right
-    else Node y, left, (insert x, right)
+  when Node y, left, right then
+    if x <= y then Node y, (insert x left), right
+    else Node y, left, (insert x right)
     end if
   end match
 end type
@@ -380,18 +389,18 @@ A structure is usually given a name with the \code{structure} or \code{module} b
 structure Priority_Queue is
 struct
   type Priority := Number.Integer end type
-  type Queue['A] is variant 
+  type 'A Queue is variant 
     Empty
-    Node of Priority * 'A * Queue['A] * Queue['A]
+    Node of Priority * 'A * 'A Queue * 'A Queue
   end type
   let empty := Empty
-  let rec insert queue, priority, element :=
+  let rec insert queue priority element :=
     match queue
     when Empty then Node(priority, element, Empty, Empty)
-    when Node(p, e, left, right)
+    when Node(p, e, left, right) then
       if priority <= p
-      then Node(priority, element, (insert right, p, e), left)
-      else Node(p, e, (insert right, priority, element), left)
+      then Node(priority, element, (insert right p e), left)
+      else Node(p, e, (insert right priority element), left)
       end if
     end match
   raiseable Queue_is_Empty end raiseable
@@ -402,8 +411,8 @@ struct
     when Node(_, _, left @ Node(l_prio, l_elt, _, _), 
                     right @ Node(r_prio, r_elt, _, _)) then
       if l_prio <= r_prio
-      then Node(l_prio, l_elt, remove_top left, right)
-      else Node(r_prio, r_elt, left, remove_top right)
+      then Node(l_prio, l_elt, (remove_top left), right)
+      else Node(r_prio, r_elt, left, (remove_top right))
       end if
     end function
   let extract := function
@@ -418,7 +427,7 @@ Outside the structure, its components can be accessed as object properties\footn
 
 \example Accessing structure components.
 \begin{lstlisting}
-Priority_Queue.insert Priority_Queue.empty, 1, "hello"
+Priority_Queue.insert Priority_Queue.empty 1 "hello"
 \end{lstlisting}
 
 
@@ -435,10 +444,10 @@ Signatures are interfaces of structures. A signature specifies which components 
 signature A_Priority_Queue is
 sig
   type Priority := Number.Integer end type (* concrete type *)
-  type Queue['A] end type                  (* abstract type *)
-  val empty: Queue['A]
-  val insert: Queue['A] -> Number.Integer -> 'A -> Queue['A]
-  val extract: Queue['A] -> Number.Integer * 'A * Queue['A]
+  type 'A Queue end type                  (* abstract type *)
+  val empty: 'A Queue
+  val insert: 'A Queue -> Number.Integer -> 'A -> 'A Queue
+  val extract: 'A Queue -> Number.Integer * 'A * 'A Queue
   raiseable Queue_is_Empty end raiseable
 end sig
 \end{lstlisting}
@@ -476,24 +485,24 @@ structure Set_Functor is
 functor (Element_Type: Ordered_Type) ->
   struct
     type Element := Element_Type.T end type
-    type Set := List[Element] end type
+    type Set := Element List end type
     let empty := %[]
-    let rec add x, s := match s
+    let rec add x s := match s
       when %[] then %[x]
       when %[head, *tail] then 
-        match Element_Type.compare x, head
+        match Element_Type.compare x head
         when Equal then s
         when Less then x :: s
-        when Greater then head :: add x, tail
+        when Greater then head :: add x tail
         end match
       end match
-    let rec is_member? x, s := match s
+    let rec is_member? x s := match s
       when %[] then no
       when %[head, *tail] then 
-        match Element_Type.compare x, head
+        match Element_Type.compare x head
         when Equal then yes
         when Less then no
-        when Greater then is_member? x, tail
+        when Greater then is_member? x tail
         end match
       end match
   end struct

@@ -18,12 +18,14 @@
 Pattern             ::= Var_Pattern
                       | Bound_Pattern
                       | Typed_Pattern
+                      | Type_Pattern
                       | Wildcard_Pattern
-                      | Literal_Pattern
+                      | Constant_Pattern
                       | Grouped_Pattern
+                      | Infix_Pattern
                       | Or_Pattern
                       | And_Pattern
-                      | Variant_Pattern
+                      | Named_Pattern
                       | Tag_Pattern
                       | Tuple_Pattern
                       | List_Pattern
@@ -31,19 +33,23 @@ Pattern             ::= Var_Pattern
                       | Dict_Pattern
                       | Multimap_Pattern
                       | Bag_Pattern
+                      | Cons_Pattern
                       | Record_Pattern
                       | Struct_Pattern
                       | Annotated_Pattern
 Var_Pattern         ::= ['implicit'] ['val' | 'var'] var_id
 Bound_Pattern       ::= Var_Pattern '@' Pattern
 Wildcard_Pattern    ::= '_'
-Literal_Pattern     ::= Literal
+Constant_Pattern    ::= Constant
 Typed_Pattern       ::= '(' Type_Bound_Pattern ')'
+Type_Pattern        ::= ['type' ['is'] | ':?'] Type
 Type_Bound_Pattern  ::= Pattern ':' Type
 Grouped_Pattern     ::= '(' Pattern ')'
+Infix_Pattern       ::= Pattern (id | op_id) Pattern
 Or_Pattern          ::= Pattern '|' Pattern
 And_Pattern         ::= Pattern '&' Pattern
-Variant_Pattern     ::= ['.'] Stable_Id ['(' [Variant_Extractions] ')']
+Named_Pattern       ::= Stable_Id [Pattern_Param] [Extractions]
+                      | '.' Stable_Id [Extractions]
 Tag_Pattern         ::= Tag_Name Pattern
 Tuple_Pattern       ::= Pattern {',' Pattern}+
                       | Extractions
@@ -52,6 +58,7 @@ Array_Pattern       ::= '%[|' Seq_Extractions '|]'
 Dict_Pattern        ::= '%{' Dict_Extractions '}'
 Multimap_Pattern    ::= '%{{' Dict_Extractions '}}'
 Bag_Pattern         ::= '(' Sequential_Extractions ')'
+Cons_Pattern        ::= Pattern '::' Pattern
 Annotated_Pattern   ::= {Annotation}+ Pattern
 Extractions         ::= Pattern 
                       | Positional_Extracts {',' Labelled_Extracts}
@@ -60,6 +67,7 @@ Variant_Extractions ::= Extractions
                       | ? Pattern with Type_Bound_Pattern as Pattern as well ?
                       | Positional_Extracts {',' Labelled_Extracts}
                       | Labelled_Extracts
+                      | '(' Extractions ')'
 Positional_Extracts ::= Pattern {',' Pattern} 
                         [',' Rest_Extracts {',' Pattern}]
                       | Rest_Extracts {',' Pattern}
@@ -102,9 +110,57 @@ Field_Patterns      ::= Field_Pattern {semi Field_Pattern} [semi '_']
                       | '_'
 Field_Pattern       ::= Stable_Id '=>' Pattern
 Struct_Pattern      ::= 'structure' Pkg_Type
+Pattern_Param       ::= Literal_Pattern
+                      | Stable_Id
+                      | '%[' Pattern_Param {semi Pattern_Param} ']'
+                      | '%[|' Pattern_Param {semi Pattern_Param} '|]'
+                      | '%(' Pattern_Param {semi Pattern_Param} ')'
+                      | '(' Pattern_Param {',' Pattern_Param} ')'
+                      | Pattern_Param ':' Type
+                      | Quasiquote_Expr
+                      | Quote_Expr
+                      | 'nil'
 \end{lstlisting}
 
+\begin{table}[h!]
+  \caption{The relative precedences and associativity of operators and non-closed pattern constructs, in decreasing precedence order.}
+\begin{center}
+\begin{tabular}{l l}
+  Operator or construct & Associativity \\ \hline \hline
+  Infix pattern (\sref{sec:infix-patterns}) & operator-based \\ \hline
+  Named pattern, tag application\ \  & right \\ \hline
+  \code{::} & right \\ \hline
+  \code{=>} & - \\ \hline
+  \code{,} & left \\ \hline
+  \lstinline!&! & left \\ \hline
+  \code{|} & left \\ \hline
+  \lstinline!@! & - \\ \hline
+\end{tabular}
+\end{center}
+\label{table:pattern-matching-op-precedences}
+\end{table}%
 
+
+
+
+
+\subsection{Constant Patterns}
+\label{sec:constant-patterns}
+
+\syntax\begin{lstlisting}
+Constant_Pattern ::= Constant
+\end{lstlisting}
+
+A constant pattern $L$ matches any value that is structurally equal (defined by the \code{Equatable} trait, ``\code{=}'' operator returning ``\code{yes}'') to the constant value $L$. The type of $L$ must conform to the expected type of the matched value. 
+
+\example An example of a constant pattern. 
+\begin{lstlisting}
+let rotate_3 := function
+  when 0 then "two"
+  when 1 then "zero"
+  when 2 then "one"
+end function
+\end{lstlisting}
 
 
 
@@ -114,26 +170,116 @@ Struct_Pattern      ::= 'structure' Pkg_Type
 \label{sec:variable-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= '_'
-                 | var_id
+Var_Pattern      ::= ['implicit'] ['val' | 'var'] var_id
 \end{lstlisting}
 
-A variable pattern $x$ is a simple identifier which starts with a lower case letter. It matches any value and binds the variable name to that value. The type of $x$ is the expected type of the pattern as given from the outside. A special case is the wild-card pattern ``\lstinline!_!'', which is treated as if it was a fresh variable on each occurence, and which does not bind itself to the value, i.e., it is alone equivalent to the \code{else} clause of \code{When_Clauses}. 
+A variable pattern $x$ is a simple identifier which starts with a lower case letter. It matches any value and binds the variable name to that value. The type of $x$ is the expected type of the pattern as given from the outside. 
 
 A variable pattern contributes the implicit type of a variable to type of parameter, when used in function parameter list. It is by default \code{Auto}. 
 
+A variable pattern is implicitly prefixed with \code{val}, and thus the bound variable is immutable, and prefixing it explicitly is redundant. A variable pattern may also be prefixed with \code{var} instead, then the bound variable is mutable. 
+
+A variable pattern prefixed with \code{implicit} is made eligible to be passed as implicit argument (\sref{sec:implicit-parameters}). The value that is eligible is however the current value at the instant of function application with implicit arguments -- therefore if the variable is mutable, it might be a different value than the one bound from the pattern match. 
 
 
 
 
 
-\subsection{Typed Patterns}
+\subsection{Wildcard Patterns}
+\label{sec:wildcard-patterns}
+
+\syntax\begin{lstlisting}
+Wildcard_Pattern ::= '_'
+\end{lstlisting}
+
+The pattern ``\code{_}'' is a wildcard pattern that matches any input and does not bind any value to any variable. 
+
+\example In this example, if \code{x} is 0, the match returns 1, if \code{x} has any other value, the match returns 0. The second definition is equivalent. 
+\begin{lstlisting}
+let categorize := function
+  when 1 then 0
+  when 0 then 1
+  when _ then 0
+end function
+
+let categorize_alternative := function
+  when 1 then 0
+  when 0 then 1
+  otherwise 0
+end function
+\end{lstlisting}
+
+Wildcard patterns may also be used in extractions to ignore the input at the given site. 
+
+
+
+
+
+\subsection{Named Patterns}
+\label{sec:named-patterns}
+
+\syntax\begin{lstlisting}
+Named_Pattern ::= Stable_Id [Pattern_Param] [Extractions]
+                | '.' Stable_Id [Extractions]
+\end{lstlisting}
+
+In a named pattern, the \code{Stable_Id} part must not start with a lowercase letter as defined in \code{var_id}, otherwise it would be interpreted as a variable pattern. 
+
+Due to the syntactic overlap regarding variable patterns, Gear offers a simple solution to interpret an identifier starting with a lowercase letter as a value instead of a variable pattern, and that is to enclose the identifier in backquotes, so that ``\code{id}'' is ``\code{`id`}''. Such an identifier is never considered to be a variable pattern. 
+
+If that condition is met, then the \code{Stable_Id} part may resolve into the following elements:
+\begin{itemize}
+  \item An enumeration element. 
+  \item A variant type case. 
+  \item A case class or case object. 
+  \item A generalized algebraic datatype. 
+  \item An open variant type case. 
+  \item A throwable or raiseable type case. 
+  \item An active pattern case name. 
+  \item A (likely constant) value implementing \code{Equatable}.\footnote{The runtime should issue a warning if the value is not constant, since that condition would make the pattern match possibly behave differently at different execution times.}
+  \item A type (see \sref{sec:type-patterns}).
+\end{itemize}
+
+After the \code{Stable_Id} is resolved, the named pattern is treated according to the following subsections. 
+
+
+
+
+
+\subsubsection{Enumeration Patterns}
+\label{sec:enumeration-patterns}
+
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an enumeration element, the pattern is an enumeration pattern. Such pattern then matches inputs that are equal to the enumeration element. The form \code{Stable_Id} is used if the corresponding enumeration element takes no arguments or if arguments are to be ignored, and the form \code{Stable_Id Extractions} is used if it takes arguments, which are then matched according to the \code{Extractions} (\sref{sec:extractions-in-patterns}). 
+
+Shortcuts are provided for enumeration elements, which are relative to the enumeration type: \code{.Stable_Id} and \code{.Stable_Id Extractions}. The \code{Stable_Id} is then searched in the enumeration type instead of the current scope. 
+
+\example An example of an enumeration pattern with extractions:
+\begin{lstlisting}
+type Data is enum
+  Kind_1 of Number * Number
+  Kind_2 of String * String
+end type
+
+let some_data := Data.Kind_1(4, 2)
+
+let result := match some_data
+  when .Kind_1(a, b) then a + b
+  when .Kind_2(s1, s2) then s1.length + s2.length
+end match
+\end{lstlisting}
+Which gives \code{result} a value of \code{6}. 
+
+
+
+
+
+\subsection{Patterns with Type Constraint}
 \label{sec:typed-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= '_' ':' Type_Pat
-                 | var_id ':' Type_Pat
-Type_Pat       ::= Type
+Typed_Pattern      ::= '(' Type_Bound_Pattern ')'
+Type_Bound_Pattern ::= Pattern ':' Type
+Type_Pat           ::= Type
 \end{lstlisting}
 
 A typed pattern ~\lstinline!$x$: $T$!~ consists of a pattern variable $x$ and a type pattern $T$. The type of $x$ is the type $T$, where each type variable and wildcard is replaced by a fresh, unknown type. This pattern matches any value matched by the type pattern $T$ (\sref{sec:type-patterns}), and it binds the variable name to that value (unless the variable name is ``\lstinline!_!''). 
@@ -170,7 +316,6 @@ end match
 
 
 \subsection{Literal Patterns}
-\label{sec:literal-patterns}
 
 \syntax\begin{lstlisting}
 Simple_Pattern ::= Literal - Collection_Literal

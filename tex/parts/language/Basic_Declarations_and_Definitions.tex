@@ -52,9 +52,9 @@ Val_Dcl      ::= [S_Modifier] 'val' id {',' id} ':' Type
 Val_Def      ::= [S_Modifier] ('val' | 'let') ['rec']
                  Let_Binding {'and' Let_Binding}
 Let_Binding  ::= Pattern ':=' Expr {',' Expr}
-               | id [Type_Param_Clause] Param_Clauses [':' Type]
+               | fun_id [Type_Param_Clause] Param_Clauses [':' Type]
                  ':=' Expr
-               | id [Type_Param_Clause] Params2 [':' Type] ':=' Expr
+               | fun_id [Type_Param_Clause] Params2 [':' Type] ':=' Expr
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -415,9 +415,12 @@ Gear/Language.Soft_Reference.is_supported?
 \syntax\begin{lstlisting}
 Type_Param_Clause  ::= '[' Variant_Type_Param 
                        {',' Variant_Type_Param} ']'
+Type_Param_Clause2 ::= Variant_Type_Param
+                     | '(' Variant_Type_Param 
+                       {',' Variant_Type_Param} ')'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
                      | '<' (id | '_') ['<:' id] '>'
-Type_Param         ::= (['*'] id | '_') [Type_Param_Clause]
+Type_Param         ::= (['*'] ['''] id | '_') [Type_Param_Clause]
                        ['>:' Type] ['<:' Type]
                        {'<%' Type} {':' Type}
 \end{lstlisting}
@@ -643,11 +646,12 @@ Op_Sig        ::= Op_Path [Type_Param_Clause]
                   (Param_Clauses | Params2) [':' Type]
 Att_Sig       ::= Function_Path [Type_Param_Clause] 
                   Att_Clauses [':' Type]
-Function_Path ::= id
-                | 'self' '.' id
-                | id '.' id
+Function_Path ::= fun_id
+                | 'self' '.' fun_id
+                | Stable_Id '.' fun_id
 Op_Path       ::= op_id
                 | 'self' '.' op_id
+                | Stable_Id '.' op_id
 Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
 Att_Clauses   ::= Param_Clause1 {Param_Clause} 
                   ['(' 'implicit' Params ')']

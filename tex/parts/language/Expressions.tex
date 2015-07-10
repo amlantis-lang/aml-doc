@@ -43,8 +43,8 @@ Value_Expr  ::= Simple_Expr
               | Rescue_Expr
               | Catch_Expr
               | Type_Expr
-Type_Expr   ::= '(' Type ')'
-              | Annot_Type - (Nullable_Mod, Type_Var)
+Type_Expr   ::= 'type' '{' Type '}s'
+              | Annot_Type - (Nullable_Mod, Type_Var, Postfix_Simple_Type)
 Simple_Expr ::= Block_Expr
               | Simple_Expr1
               | Method_Expr
@@ -89,15 +89,8 @@ What we call ``statement'', in context of Gear is in fact yet another kind of an
 \label{sec:literal-expr}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= integer_literal
-               | fp_literal
-               | complex_literal
-               | rational_literal
-               | character_literal
-               | boolean_literal
-               | string_literal
-               | symbol_literal
-               | regexp_literal
+Simple_Expr1 ::= Constant
+Constant     ::= Literal
 \end{lstlisting}
 
 Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate. 
@@ -113,8 +106,8 @@ Gear guarantees that methods of numeric literals (the class \code{Number}) alway
 \subsection{The Nil and Undefined Values}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= 'nil'
-               | 'undefined'
+Constant ::= 'nil'
+           | 'undefined'
 \end{lstlisting}
 
 The \code{nil} value is of type \code{Nothing}, and is thus compatible with every type that is nullable (\sref{sec:nullable-types}).
@@ -148,6 +141,7 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 Value_Expr   ::= Tuple_Exprs
 Tuple_Exprs  ::= Named_Expr {',' Named_Expr}
 Named_Expr   ::= [['~'] id ':'] Expr
+Constant     ::= '()'
 \end{lstlisting}
 
 A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple. Also ~\lstinline!Tuple_1!~ is a special type (pretty much like \code{Any} or \code{Auto}), which helps to make this possible even in dynamic use cases. 
@@ -2349,7 +2343,7 @@ Typed expressions do not allow checks against target type expressions (\sref{sec
 \syntax\begin{lstlisting}
 Expr      ::= Type_Expr
 Type_Expr ::= 'type' '{' Type '}'
-            | Annot_Type - (Nullable_Mod, Type_Var)
+            | Annot_Type - (Nullable_Mod, Type_Var, Postfix_Simple_Type)
 \end{lstlisting}
 
 A type reference expression is a way to refer to a type and use it as a first-class value, which it already is. 

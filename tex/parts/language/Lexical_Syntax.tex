@@ -113,6 +113,20 @@ Not every reserved word is a keyword in every context, this behavior will be fur
 
 
 
+\section{Function Identifiers}
+\label{sec:function-identifiers}
+
+\syntax\begin{lstlisting}
+fun_id ::= id
+         | '(' op_id ')'
+         | Active_Pattern_Ids
+\end{lstlisting}
+
+Function identifiers specify how a function can be named. Usually, it will be the first case. The second case is provided for specifying functions that are in fact operators, and is practically equivalent to the form of \code{op_id} enclosed in backquotes. The third case is for active patterns (\sref{sec:active-patterns}) in pattern matching (\sref{sec:pattern-matching}). 
+
+
+
+
 
 \section{Symbolic Keywords}
 \label{sec:symbolic-keywords}
