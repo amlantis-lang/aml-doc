@@ -35,9 +35,10 @@ letter_char     ::= ? Unicode char of classes Lu, Ll, Lt, Lo,
 connecting_char ::= ? Unicode char of class Pc ?
 combining_char  ::= ? Unicode char of classes Mn and Mc ?
 formatting_char ::= ? Unicode char of class Cf ?
-lower           ::= ? Unicode char of class Ll ?
+lower           ::= ? Unicode char of class Ll ? 
+                  | '_'
 upper           ::= (letter_char - lower) 
-                  | ? Dollar sign ? | '§' | '_'
+                  | '$\Dollar$' | '§'
 
 var_id   ::= lower id_rest
 plain_id ::= upper id_rest
@@ -54,7 +55,7 @@ id_char  ::= letter_char
            | formatting_char
            | '+' | '-' | '/' | '_'
 id_rest  ::= {id_char} ['?' | '!' | {'''}+]
-any_id   ::= ? any Unicode char except for backquote: '`' ?
+any_id   ::= ? any Unicode chars except for two backquotes: '``' ?
 \end{lstlisting}
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 

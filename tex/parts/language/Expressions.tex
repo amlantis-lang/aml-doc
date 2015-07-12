@@ -951,7 +951,7 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 
 
 
-\subsubsection{Method Values \& Explicit Partial Applications}
+\subsection{Method Values \& Explicit Partial Applications}
 \label{sec:method-values}
 
 \syntax\begin{lstlisting}
@@ -1004,7 +1004,8 @@ Partially_Applied_Block_Argument2
               | Method_Expr
               | '&_' ['as' Type]
 Partial_Slice_Expr
-            ::= '_' ['as' Type] ('..' | '...' | '..<') ['_' ['as' Type]]
+            ::= Slice_Expr
+              | '_' ['as' Type] ('..' | '...' | '..<') ['_' ['as' Type]]
               | ('..' | '...' | '..<') '_' ['as' Type]
 \end{lstlisting}
 

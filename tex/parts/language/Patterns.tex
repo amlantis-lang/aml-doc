@@ -48,7 +48,7 @@ Grouped_Pattern     ::= '(' Pattern ')'
 Infix_Pattern       ::= Pattern (id | op_id) Pattern
 Or_Pattern          ::= Pattern '|' Pattern
 And_Pattern         ::= Pattern '&' Pattern
-Named_Pattern       ::= Stable_Id [Pattern_Param] [Extractions]
+Named_Pattern       ::= Stable_Id {Pattern_Param} [Extractions]
                       | '.' Stable_Id [Extractions]
 Tag_Pattern         ::= Tag_Name Pattern
 Tuple_Pattern       ::= Pattern {',' Pattern}+
@@ -110,16 +110,7 @@ Field_Patterns      ::= Field_Pattern {semi Field_Pattern} [semi '_']
                       | '_'
 Field_Pattern       ::= Stable_Id '=>' Pattern
 Struct_Pattern      ::= 'structure' Pkg_Type
-Pattern_Param       ::= Literal_Pattern
-                      | Stable_Id
-                      | '%[' Pattern_Param {semi Pattern_Param} ']'
-                      | '%[|' Pattern_Param {semi Pattern_Param} '|]'
-                      | '%(' Pattern_Param {semi Pattern_Param} ')'
-                      | '(' Pattern_Param {',' Pattern_Param} ')'
-                      | Pattern_Param ':' Type
-                      | Quasiquote_Expr
-                      | Quote_Expr
-                      | 'nil'
+Pattern_Param       ::= Value_Expr
 \end{lstlisting}
 
 \begin{table}[h!]
@@ -219,7 +210,7 @@ Wildcard patterns may also be used in extractions to ignore the input at the giv
 \label{sec:named-patterns}
 
 \syntax\begin{lstlisting}
-Named_Pattern ::= Stable_Id [Pattern_Param] [Extractions]
+Named_Pattern ::= Stable_Id {Pattern_Param} [Extractions]
                 | '.' Stable_Id [Extractions]
 \end{lstlisting}
 
@@ -268,6 +259,85 @@ let result := match some_data
 end match
 \end{lstlisting}
 Which gives \code{result} a value of \code{6}. 
+
+
+
+
+
+\subsubsection{Active Patterns}
+\label{sec:active-patterns}
+
+\syntax\begin{lstlisting}
+Active_Pattern_Ids ::= '(|' id {'|' id} ['|' '_'] '|)'
+\end{lstlisting}
+
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an {\em active pattern case name} $C_i$, then the pattern is an active pattern. $C_i$ is associated with an {\em active pattern function} $f$ in one of the following forms:
+\begin{itemize}
+  \item \lstinline!(|$C$|) input! \\
+    Single case. The function accepts one argument (the value being matched) and can return any type. 
+  \item \lstinline!(|$C$|_|) input! \\
+    Partial. The function accepts one argument and must return a value of type \code{Option[$T$]}, where $T$ is any type. 
+  \item \lstinline!(|$C_1$|$\ldots$|$C_n$|) input! \\
+    Multi-case. The function accepts one argument and must return a value of type ~\lstinline!Choice[$T_1\commadots T_n$]!. 
+  \item \lstinline!(|$C_1$|$\ldots$|$C_n$|_|) input! \\
+    Multi-case partial. The function accepts one argument and must return a value of type ~\lstinline!Option[Choice[$T_1\commadots T_n$]]!. 
+  \item \lstinline!(|$C_1$|) arg$_1 \ldots$ arg$_n$ input! \\
+    Single case with parameters. The function accepts $n+1$ arguments, where the last argument (\code{input}) is the value to match, and can return any type. 
+  \item \lstinline!(|$C_1$|_|) arg$_1 \ldots$ arg$_n$ input! \\
+    Partial with parameters. The function accepts $n+1$ arguments, where the last argument (\code{input}) is the value to match, and must return a value of type \code{Option[$T$]}. 
+  \item \lstinline!(|$C_1$|$\ldots$|$C_n$|_|) input! \\
+    Multi-case partial with parameters. The function accepts $n+1$ arguments, where the last argument (\code{input}) is the value to match, and must return a value of type ~\lstinline!Option[Choice[$T_1\commadots T_n$]]!.
+\end{itemize}
+
+When an active pattern function accepts more than 1 argument, the \code{Pattern_Param}s are interpreted as expressions that are passed to the active pattern function. 
+
+The active pattern function $f$ is applied at runtime to the pattern input, along with any arguments. The pattern matches if the active pattern function returns $v$, ~\lstinline!Choice_$k$_of_$n$($v$)!, \code{Some($v$)}, or ~\lstinline!Some(Choice_$k$_of_$n$ $v$)! when applied to the pattern input. If the pattern argument \code{Extractions} is present, then it is matched against $v$. If this does not match, the whole active pattern does not match. 
+
+\example This example shows how to define and use a partial active pattern function:
+\begin{lstlisting}
+let (|Positive|_|) input := if input > 0 then Some input else None end
+let (|Negative|_|) input := if input < 0 then Some -input else None end
+
+match 3
+when Positive n then "positive, n = #{n}"
+when Negative n then "negative, n = #{n}"
+otherwise "zero"
+end match
+\end{lstlisting}
+
+\example This example then shows how to define and use a multi-case active pattern function:
+\begin{lstlisting}
+let (|A|B|C|) input := 
+  if input < 0
+  then A
+  elsif input = 0 
+  then B
+  else C
+  end if
+  
+match 3
+when A then "negative"
+when B then "zero"
+when C then "positive"
+end match
+\end{lstlisting}
+Notice in this example that the expressions like \code{A} are elaborated to \code{A(())}, and as the non-constant constructor of \code{Choice} types accepts one argument, the type of that argument is \code{Unit}, as well as the corresponding type argument. 
+
+\example An example of a parameterized active pattern function:
+\begin{lstlisting}[deletekeywords={not,of}]
+let (|Is_Multiple_Of|_|) n input := 
+  if input mod n = 0
+  then Some input / n
+  else None
+  end if
+  
+match 16
+when Is_Multiple_Of 4 m then printfn "x = 4 * %d" % n
+else printfn "not a multiple of 4"
+end match
+\end{lstlisting}
+
+An active pattern function may be executed multiple times against the same pattern input during resolution of a single complete pattern match. The precise number is left to implementations, but it should be as close as possible to 1. Implementations of active pattern functions should be referentially transparent. 
 
 
 
