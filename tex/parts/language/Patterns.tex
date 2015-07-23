@@ -153,6 +153,9 @@ let rotate_3 := function
 end function
 \end{lstlisting}
 
+A constant pattern contributes the type of the constant to type of parameter, when used in function parameter list. 
+
+
 
 
 
@@ -172,6 +175,9 @@ A variable pattern is implicitly prefixed with \code{val}, and thus the bound va
 
 A variable pattern prefixed with \code{implicit} is made eligible to be passed as implicit argument (\sref{sec:implicit-parameters}). The value that is eligible is however the current value at the instant of function application with implicit arguments -- therefore if the variable is mutable, it might be a different value than the one bound from the pattern match. 
 
+A variable pattern contributes the type \code{Gear/Language.Any} to type of parameter, when used in function parameter list. 
+
+
 
 
 
@@ -184,6 +190,8 @@ Wildcard_Pattern ::= '_'
 \end{lstlisting}
 
 The pattern ``\code{_}'' is a wildcard pattern that matches any input and does not bind any value to any variable. 
+
+A wildcard pattern contributes the type \code{Gear/Language.Any} to type of parameter, when used in function parameter list. 
 
 \example In this example, if \code{x} is 0, the match returns 1, if \code{x} has any other value, the match returns 0. The second definition is equivalent. 
 \begin{lstlisting}
@@ -243,6 +251,8 @@ After the \code{Stable_Id} is resolved, the named pattern is treated according t
 If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an enumeration element, the pattern is an enumeration pattern. Such pattern then matches inputs that are equal to the enumeration element. The form \code{Stable_Id} is used if the corresponding enumeration element takes no arguments or if arguments are to be ignored, and the form \code{Stable_Id Extractions} is used if it takes arguments, which are then matched according to the \code{Extractions} (\sref{sec:extractions-in-patterns}). 
 
 Shortcuts are provided for enumeration elements, which are relative to the enumeration type: \code{.Stable_Id} and \code{.Stable_Id Extractions}. The \code{Stable_Id} is then searched in the enumeration type instead of the current scope. 
+
+An enumeration pattern contributes the enumeration type to type of parameter, when used in function parameter list. 
 
 \example An example of an enumeration pattern with extractions:
 \begin{lstlisting}
@@ -308,10 +318,8 @@ end match
 \example This example then shows how to define and use a multi-case active pattern function:
 \begin{lstlisting}
 let (|A|B|C|) input := 
-  if input < 0
-  then A
-  elsif input = 0 
-  then B
+  if input < 0 then A
+  elsif input = 0 then B
   else C
   end if
   
@@ -339,23 +347,7 @@ end match
 
 An active pattern function may be executed multiple times against the same pattern input during resolution of a single complete pattern match. The precise number is left to implementations, but it should be as close as possible to 1. Implementations of active pattern functions should be referentially transparent. 
 
-
-
-
-
-\subsection{Patterns with Type Constraint}
-\label{sec:typed-patterns}
-
-\syntax\begin{lstlisting}
-Typed_Pattern      ::= '(' Type_Bound_Pattern ')'
-Type_Bound_Pattern ::= Pattern ':' Type
-Type_Pat           ::= Type
-\end{lstlisting}
-
-A typed pattern ~\lstinline!$x$: $T$!~ consists of a pattern variable $x$ and a type pattern $T$. The type of $x$ is the type $T$, where each type variable and wildcard is replaced by a fresh, unknown type. This pattern matches any value matched by the type pattern $T$ (\sref{sec:type-patterns}), and it binds the variable name to that value (unless the variable name is ``\lstinline!_!''). 
-
-A typed pattern contributes the type $T$ to type of parameter, when used in function parameter list. 
-
+An active pattern contributes the type of \code{input} to type of parameter, when used in function parameter list. 
 
 
 
@@ -365,17 +357,17 @@ A typed pattern contributes the type $T$ to type of parameter, when used in func
 \label{sec:pattern-binders}
 
 \syntax\begin{lstlisting}
-Pattern2 ::= var_id '@' Pattern3
+Bound_Pattern ::= Var_Pattern '@' Pattern
 \end{lstlisting}
 
-A pattern binder ~\lstinline!$x$ @ $p$!~ consists of a pattern variable $x$ and a pattern $p$. The type of the variable $x$ is the type $T$ resulting from the pattern $p$. This pattern matches any value $v$ matched by the pattern $p$, provided the type of $v$ is also an instance of $T$, and it binds the variable name to that value. 
+A pattern binder ~\lstinline!$x$ @ $p$!~ consists of a variable pattern $x$ (\sref{sec:variable-patterns}) and a pattern $p$. The type of the variable $x$ is the type $T$ resulting from the pattern $p$. This pattern matches any value $v$ matched by the pattern $p$, provided the type of $v$ is also an instance of $T$, and it binds the variable name to that value. 
 
-A pattern binder contributes the type of the pattern $p$ to type of parameter, when used in function parameter list. 
+A pattern binder contributes the type contributed by the pattern $p$ to type of parameter, when used in function parameter list. 
 
 \example In the following example, \code{person} binds to the whole \code{Person} object. 
 \begin{lstlisting}
 def f (someone: Person) := match someone
-  when person @ Person('John Galt', _, _) then $\ldots$
+  when person @ Person("John Galt", _, _) then $\ldots$
 end match
 \end{lstlisting}
 
@@ -383,17 +375,62 @@ end match
 
 
 
-
-
-\subsection{Literal Patterns}
+\subsection{Disjunctive ``Or'' Patterns}
+\label{sec:disjunctive-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= Literal - Collection_Literal
+Or_Pattern ::= Pattern '|' Pattern
 \end{lstlisting}
 
-A literal pattern $L$ matches any value that is equal (in terms of ~\lstinline!=!) to the literal $L$. The type of $L$ must conform to the expected type of the pattern. Literal kinds that are considered legal with this pattern are all non-collection literals. 
+A disjunctive pattern matches an input value against one of two patterns: ~\lstinline!pattern1 | pattern2!. 
 
-A dictionary pattern contributes the type of the literal to type of parameter, when used in function parameter list. 
+At runtime, the pattern input is matched against the first pattern, and if that fails, the pattern input is matched against the second pattern. If any of the sub-patterns binds variables (\sref{sec:pattern-binders}), then both sub-patterns must bind the same set of variables of the same types, but variables are only bound by the pattern that did not fail the match (if any). 
+
+Matching this pattern is short-circuited -- if the first sub-pattern matches the input, then the second sub-pattern is not matched at all. 
+
+
+
+
+
+\subsection{Conjunctive ``And'' Patterns}
+\label{sec:conjunctive-patterns}
+
+\syntax\begin{lstlisting}
+And_Pattern ::= Pattern '&' Pattern
+\end{lstlisting}
+
+A conjunctive pattern matches an input value against two patterns sequentially: ~\lstinline!pattern1 & pattern2!. 
+
+At runtime, the pattern input is matched against the first pattern. If that does not fail, then the input is matched against the second pattern in environment enriched by variables bound by the first pattern (if such bindings were defined in the first pattern, obviously). If the input matches the second pattern, the pattern matches the input. 
+
+Matching this pattern is short-circuited -- if the first sub-pattern does not match the input, then the second sub-pattern is not matched at all. 
+
+
+
+
+
+
+\subsection{Typed Patterns}
+\label{sec:typed-patterns}
+
+\syntax\begin{lstlisting}
+Typed_Pattern      ::= '(' Type_Bound_Pattern ')'
+Type_Bound_Pattern ::= Pattern ':' Type
+Type_Pattern       ::= ['type' ['is'] | ':?'] Type
+\end{lstlisting}
+
+A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!type $T$!, ~\lstinline!type is $T$!~ and
+~\lstinline!:? $T$!, all of which are equivalent. 
+
+Gear does not distinguish type-annotated patterns from dynamic type-test patterns -- all such patterns are dynamic type-test patterns, with implications from a type-annotated pattern. 
+
+At runtime, the pattern input is matched, if the input value's type is known to be a subtype (or equivalent) to the type $T$, or if it dynamically is of such a subtype (the input is evaluated either way). 
+
+If a pattern $p$ is present in the pattern's form, then the pattern matches the input if it matches $p$, where $p$ is typed with $T$. If $p$ is a variable pattern (\sref{sec:variable-patterns}) or a wildcard pattern (\sref{sec:wildcard-patterns}), then $p$ matches only if the input value's type is a subtype of $T$, as otherwise, the binding would not type-check (in case of variable pattern), or the pattern would be rendered useless (in case of wildcard pattern). 
+
+As a special case, if the pattern $p$ is a variable pattern, then the bound variable is typed with $T$. 
+
+A typed pattern contributes the type $T$ to type of parameter, when used in function parameter list. 
 
 
 
@@ -545,71 +582,6 @@ A structure pattern ~\lstinline!structure $T$!~ matches a structure with type $T
 
 
 
-\subsection{Stable Identifier Patterns}
-\label{sec:stable-identifier-patterns}
-
-\syntax\begin{lstlisting}
-Simple_Pattern ::= ['.'] Stable_Id
-\end{lstlisting}
-
-A stable identifier pattern is a stable identifier $r$ (\sref{sec:type-paths}). The type of $r$ must conform to the expected type of the pattern. The pattern matches any value $v$, such that ~\lstinline!$r$ = $v$!.
-
-To resolve the syntactic overlap with a variable pattern (\sref{sec:variable-patterns}), a stable identifier pattern may not be a simple name starting with a lower case letter. However, it is possible to enclose such a variable or method name in backquotes, then it is treated as a stable identifier pattern. 
-
-A stable identifier pattern and the following extractor patterns contributes the type of the stable identifier to type of parameter, when used in function parameter list. 
-
-\example Consider the following function definition:
-\begin{lstlisting}
-def f (x: Integer, y: Integer) := match x
-  when y then $\ldots$
-end match
-\end{lstlisting}
-Here, \code{y} is a variable pattern, which matches any value, namely here it would bind simply to \code{x}. If we wanted to turn the pattern into a stable identifier pattern, this can be achieved as follows:
-\begin{lstlisting}
-def f (x: Integer, y: Integer) := match x
-  when `y` then $\ldots$
-end match
-\end{lstlisting}
-Now, the pattern matches the \code{y} parameter of the enclosing function \code{f}. That is, the match succeeds only if the \code{x} argument and the \code{y} argument of \code{f} are equal. 
-
-
-
-
-
-\subsection{Target Type Patterns}
-\label{sec:target-type-patterns}
-
-\syntax\begin{lstlisting}
-Simple_Pattern ::= '.' Stable_Id
-                 | '.' Stable_Id '(' [Extractions] ')'
-\end{lstlisting}
-
-Target type patterns are not patterns by themselves, but rather render a subset of possible patterns. 
-
-The key difference is the dot ``\code{.}'' that introduces the stable id -- it signals the compiler that the stable identifier that follows is to be searched not in the scope, but rather in the type of the value that the pattern is being matched against. 
-
-A target type pattern can't contribute to type of parameter, when used in function parameter list, because there would be no target type to base the stable identifier search in. When used in a let binding in a workflow, the translated version uses the statically known target type from the binding, thus it must be known during compilation. 
-
-\paragraph{Note}
-Due to dynamic behaviour of Gear, the stable id might not refer to a statically-known entity in the type of the matched value, in which case the runtime has to find the referenced entity itself. During compilation, the entity is bound at compile time to the version of the value's type known at compile time, so if that version changes, runtime has to switch to the dynamic behaviour, and cache the result as appropriate. 
-
-
-
-
-
-\subsection{Constructor Patterns}
-\label{sec:constructor-patterns}
-
-\syntax\begin{lstlisting}
-Simple_Pattern ::= ['.'] Stable_Id '(' [Extractions] ')'
-\end{lstlisting}
-
-A constructor pattern is of the form ~\lstinline!$c$($p_1 \commadots p_n$)!, for $n \geq 0$. It consists of a stable identifier $c$, followed by element patterns $p_1 \commadots p_n$. The constructor $c$ is a simple or qualified name which denotes a case class (\sref{sec:case-classes}). If the case class is monomorphic, then it must conform to the expected type of the pattern, and the formal parameter types of $c$'s primary constructor (\sref{sec:constructor-destructor-def}) are taken as the expected types of the element patterns $p_1 \commadots p_n$. If the case class is polymorphic, then its type parameters are instantiated so that the instantiation of $c$ conforms to the expected type of the pattern, unless the type arguments are already given. These types of the formal parameter types of $c$'s primary constructor are then taken as the expected types of the component patterns $p_1 \commadots p_n$. The pattern matches all objects created from constructor invocations ~\lstinline!$c$($p_1 \commadots p_n$)!, where each element pattern $p_i$ matches the corresponding value $v_i$. Any extra parameter sections of $c$'s primary constructor do not affect this behavior. The pattern matching is done using the same approach as the extractor pattern (\sref{sec:extractor-patterns}), since case classes have the same \code{unapply} methods as used in it. 
-
-A special case arises when $c$'s formal parameter types contain a variadic parameter, or when $c$'s formal parameter types contain a purely named parameter. This is further discussed in (\sref{sec:extractor-patterns}) for the corresponding \code{unapply}-family of methods, and (\sref{sec:pattern-sequences}) for the pattern matching behaviour. 
-
-If the primary constructor of a case class has any optional parameters (\sref{sec:optional-parameters}), then those may be skipped using a wildcard pattern ``\code{_}''. The same ``trick'' can be used in extractor patterns for any unwanted extracted values. 
-
 
 
 
@@ -739,34 +711,6 @@ Pattern3 ::= Simple_Pattern {id Simple_Pattern}
 An infix operation pattern ~\lstinline!$p$ $\op$ $q$!~ is a syntax sugar for the constructor or extractor pattern ~\lstinline!$\op$($p$, $q$)!. The precedence, associativity and binding direction of operators in patterns is the same as in expressions (\sref{sec:prefix-infix-ops}).
 
 An infix operation pattern ~\lstinline!$p$ $\op$ ($q_1 \commadots q_n$)!~ is a shorthand for the constructor or extractor pattern ~\lstinline!$\op$($p, q_1 \commadots q_n$)!.
-
-
-
-
-
-\subsection{Conjunction Patterns}
-\label{sec:conjunction-patterns}
-
-\syntax\begin{lstlisting}
-Simple_Pattern ::= Pattern '&' Pattern
-\end{lstlisting}
-
-A conjunction pattern ({\em {\normalfont ``and''} pattern}) matches only if both patterns match. Moreover, only the first pattern in a sequence of conjunction patterns may bind variable names, but variables from the other patterns have their scope extended to the following patterns. This behavior is unlike in pattern alternatives, which aren't allowed to bind variable names at all, due to the fact that each alternative may match a completely different structure, whereas a conjunction pattern matches on the same structure. 
-
-
-
-
-
-\subsection{Pattern Alternatives}
-\label{sec:pattern-alternatives}
-
-\syntax\begin{lstlisting}
-Pattern ::= Pattern {'|' Pattern}
-\end{lstlisting}
-
-A pattern alternative ~\lstinline!$p_1$ | $\ldots$ | $p_n$!, where $n \geq 2$, consists of a number of alternative patterns $p_i$. All alternative patterns are type checked with the expected type of the pattern. They may not bind variable names other than wildcards (which are discarded). The alternative pattern matches a value $v$ if at least one of its alternatives matches $v$. Consequently, if a first such match is successful, the remaining patterns are not tested.
-
-{\em Non-normatively:} Usually, each pattern alternative is a literal pattern, and therefore binding a variable name makes no sense, since the value that the pattern matching expression matches against is the already bound variable. Still, if needed, the pattern alternatives may be used together with a pattern binder (\sref{sec:pattern-binders}), which can be useful when the structure that is being matched contains union types. 
 
 
 
