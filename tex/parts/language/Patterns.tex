@@ -53,11 +53,11 @@ Named_Pattern       ::= Stable_Id {Pattern_Param} [Extractions]
 Tag_Pattern         ::= Tag_Name Pattern
 Tuple_Pattern       ::= Pattern {',' Pattern}+
                       | Extractions
-List_Pattern        ::= '%[' Seq_Extractions ']'
-Array_Pattern       ::= '%[|' Seq_Extractions '|]'
-Dict_Pattern        ::= '%{' Dict_Extractions '}'
-Multimap_Pattern    ::= '%{{' Dict_Extractions '}}'
-Bag_Pattern         ::= '(' Sequential_Extractions ')'
+List_Pattern        ::= '%[' [Seq_Extractions] ']'
+Array_Pattern       ::= '%[|' [Seq_Extractions] '|]'
+Dict_Pattern        ::= '%{' [Dict_Extractions] '}'
+Multimap_Pattern    ::= '%{{' [Dict_Extractions] '}}'
+Bag_Pattern         ::= '%(' [Seq_Extractions] ')'
 Cons_Pattern        ::= Pattern '::' Pattern
 Annotated_Pattern   ::= {Annotation}+ Pattern
 Extractions         ::= Pattern 
@@ -71,7 +71,7 @@ Variant_Extractions ::= Extractions
 Positional_Extracts ::= Pattern {',' Pattern} 
                         [',' Rest_Extracts {',' Pattern}]
                       | Rest_Extracts {',' Pattern}
-Rest_Extracts ::= Optional_Extract {',' Optional_Extract} [',' Rest_Extract]
+Rest_Extracts       ::= Optional_Extract {',' Optional_Extract} [',' Rest_Extract]
                       | Rest_Extract
 Optional_Extract    ::= '?' Pattern
                       | '?' ['val' | 'var'] var_id ':' Type
@@ -384,7 +384,11 @@ Or_Pattern ::= Pattern '|' Pattern
 
 A disjunctive pattern matches an input value against one of two patterns: ~\lstinline!pattern1 | pattern2!. 
 
-At runtime, the pattern input is matched against the first pattern, and if that fails, the pattern input is matched against the second pattern. If any of the sub-patterns binds variables (\sref{sec:pattern-binders}), then both sub-patterns must bind the same set of variables of the same types, but variables are only bound by the pattern that did not fail the match (if any). 
+At runtime, the pattern input is matched against the first pattern, and if that fails, the pattern input is matched against the second pattern. 
+
+If any of the sub-patterns binds variables (\sref{sec:pattern-binders}), then both sub-patterns must bind the same set of variables of the same types, but variables are only bound by the pattern that did not fail the match (if any). 
+
+As a convenience, a variable binding that is present in any of the two patterns with a defined type (\sref{sec:typed-patterns}) does not need to repeat the same defined type in its second occurrence, it is automatically inferred. If that is not the case, the inferred type for both binding occurrences\footnote{For the same bound name.} must be the same, as defined earlier. 
 
 Matching this pattern is short-circuited -- if the first sub-pattern matches the input, then the second sub-pattern is not matched at all. 
 
@@ -440,16 +444,36 @@ A typed pattern contributes the type $T$ to type of parameter, when used in func
 \label{sec:list-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= '%[' Pattern {semi Pattern} [semi '*' (var_id | '_')] 
-                   {semi Pattern} ']'
-                 | '%[' '*' (var_id | '_') {semi Pattern} ']'
+List_Pattern ::= '%[' [Seq_Extractions] ']'
 \end{lstlisting}
 
-Remember from (\sref{sec:literal-patterns}) how we said that collection literals are not allowed as patterns? Well, we lied, sort of. Collection literals, or at least the syntax that uses their boundary tokens, is used for list patterns (here), array patterns (\sref{sec:array-patterns}), dictionary patterns (\sref{sec:dict-patterns}) and bag patterns (\sref{sec:bag-patterns}). 
+List patterns use \code{Seq_Extractions}, shared among multiple pattern kinds, but described in this section. 
 
-The list pattern enables values of \code{List_Like} type to be decomposed into a number of elements. The list pattern itself always matches only lists of a specific number of elements, and may match lists of variable number of elements, where all the extra elements are extracted into a new sub-list into a variable that is prefixed with \code{*} inside the pattern (provided that it has a name -- in case of name ``\code{_}'', the sub-list is not created, but discarded). 
+Simplest list pattern is the {\em empty list pattern}, which is of the form ~\lstinline!%[]!, and matches empty lists (or sequences -- will be using that from now on), including the constant empty list \code{List.Nil}. 
 
-A list pattern contributes \code{List_Like[$T$]} to type of parameter, when used in function parameter list, where $T$ is inferred from its sub-patterns automatically, or \code{Any}. 
+More elaborate forms of list patterns include sequential extractions (\sref{Seq_Extractions}), which are sub-patterns. There are three principal kinds of extractions:
+\begin{enumerate}
+  \item {\em Mandatory extractions}. These render the minimal length of a sequence - the count of mandatory extractions is the minimal length of a sequence. Mandatory extractions are any patterns. 
+  \item {\em Optional extractions}. These add to the maximal length of a sequence - the count of optional extractions added to the count of mandatory extractions is the maximal length of a sequence. Optional extractions (\code{Optional_Extract}) come in 4 forms:
+    \begin{enumerate}
+      \item ~\lstinline!?$p$!, which may bind variables only if there is a variable pattern bound to the matched value. The type of such variable pattern is \code{Option[$T$]}, and if a value $v$ is present for the extraction, \code{Some($v$)} is bound to the variable, \code{None} otherwise. 
+      \item ~\lstinline!?$x$: $T$!, ~\lstinline!? val $x$: $T$!, ~\lstinline!? var $x$: $T$!, which are specific forms of the first form, where the variable pattern is $x$, combined with a typed pattern (\sref{sec:typed-patterns}). 
+      \item ~\lstinline!?_: $T$!, which is a specific form of the first form, where the variable pattern is a wildcard pattern, combined with a typed pattern (\sref{sec:typed-patterns}). 
+      \item ~\lstinline!?($p$ := $e$)!, which is different from the previous forms. Moreover, $p$ is required to bind the input value to a variable, but when there is no value to match it with, the expression $e$ is evaluated and bound to the variable pattern from $p$. Thus, \code{None} would never be bound, and the type of the bound variable is not wrapped in \code{Option[$T$]}.\footnote{If $p$ uses wildcard pattern instead of variable pattern to bind the input value to a variable, $e$ might be evaluated for side-effects.} 
+    \end{enumerate}
+  \item {\em Rest extraction}. There may be only up to one rest extraction. When a rest extraction is present, the maximal length of a sequence is virtually infinite, overriding any other finite maximal length. 
+  % TBD: describe the forms
+\end{enumerate}
+
+These extractions may appear only in the following order:
+\begin{enumerate}
+  \item Any number of mandatory extractions. Those are matched to elements from the beginning of a sequence. 
+  \item Any number of optional extractions. Those are matched from unmatched elements following the previous. 
+  \item Zero or one rest extraction. This matches all unmatched elements. 
+  \item Any number of mandatory extractions. Those are matched to elements from the end of a sequence and must not overlap with already matched elements. After these mandatory extractions are matched, the previous two kinds of extractions may be matched. 
+\end{enumerate}
+
+A list pattern contributes \code{Sequence[$T$]}\footnote{Usually \code{Linear_Sequence[$T$]}, but in fact is abstract over any sequence, including indexed sequences like arrays.} to type of parameter, when used in function parameter list, where $T$ is inferred from its sub-patterns. 
 
 \example An example of a list pattern.
 \begin{lstlisting}
@@ -462,7 +486,7 @@ let list_size (list) :=
   otherwise list.size
   end match
 \end{lstlisting}
-Note that in the example, the type that would be inferred for \code{list} is \code{List_Like[Any]}. 
+Note that in the example, the type that would be inferred for \code{list} is \code{Sequence[Any]}. 
 
 
 
@@ -479,7 +503,7 @@ Simple_Pattern ::= '%[|' Pattern {semi Pattern}
 
 The array pattern enables values of \code{Array_Like} type to be decomposed into a number of elements. The array pattern itself always matches only arrays of a specific number of elements, and may match arrays of variable number of elements, where all the extra elements are extracted into a new sub-array into a variable that is prefixed with \code{*} inside the pattern (provided that it has a name -- in case of name ``\code{_}'', the sub-array is not created, but discarded). 
 
-An array pattern contributes \code{Array_Like[$T$]} to type of parameter, when used in function parameter list, where $T$ is inferred from its sub-patterns automatically, or \code{Any}. 
+An array pattern contributes \code{Indexed_Sequence[$T$]} to type of parameter, when used in function parameter list, where $T$ is inferred from its sub-patterns. 
 
 \example An example of an array pattern.
 \begin{lstlisting}[deletekeywords={of}]
