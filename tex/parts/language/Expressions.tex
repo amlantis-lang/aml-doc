@@ -1702,8 +1702,8 @@ Infix_Expr   ::= Prefix_Expr
                | Infix_Expr [Infix_Op Infix_expr]
                | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
                | Range_Expr
-Simple_Expr1 ::= '(' op_id ')' Poetry_Args
-               | '(' nary_op_id ')' Poetry_Args
+Simple_Expr1 ::= '(' op_id ')' Arguments
+               | '(' nary_op_id ')' Argument Arguments
 Infix_Op     ::= op_id 
                | id
                | Nullable_Op
@@ -3000,9 +3000,11 @@ The keyword ~\lstinline[language=Java]!try!~ is not available in Gear -- in Gear
 \subsection{Quasi-quotation}
 \label{sec:quasi-quotation}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[mathescape=false]
 Quasiquote_Expr ::= '<@' Expr '@>'
 Splice_Expr     ::= '#{' Expr '}'
+                  | '${' Expr '}'
+                  | '%%' Simple_Expr1 (* as prefix operator *)
 \end{lstlisting}
 
 Quasi-quote expression ``~\lstinline!<@ $e$ @>!~'' is basically a well-formed piece of Gear source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.

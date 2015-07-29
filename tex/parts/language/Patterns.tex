@@ -48,8 +48,8 @@ Grouped_Pattern     ::= '(' Pattern ')'
 Infix_Pattern       ::= Pattern (id | op_id) Pattern
 Or_Pattern          ::= Pattern '|' Pattern
 And_Pattern         ::= Pattern '&' Pattern
-Named_Pattern       ::= Stable_Id {Pattern_Param} [Extractions]
-                      | '.' Stable_Id [Extractions]
+Named_Pattern       ::= Stable_Id {Pattern_Param} [Variant_Extractions]
+                      | '.' Stable_Id [Variant_Extractions]
 Tag_Pattern         ::= Tag_Name Pattern
 Tuple_Pattern       ::= Pattern {',' Pattern}+
                       | Extractions
@@ -64,20 +64,21 @@ Extractions         ::= Pattern
                       | Positional_Extracts {',' Labelled_Extracts}
                       | Labelled_Extracts
 Variant_Extractions ::= Extractions
-                      | ? Pattern with Type_Bound_Pattern as Pattern as well ?
-                      | Positional_Extracts {',' Labelled_Extracts}
-                      | Labelled_Extracts
+                      | '(' 
+                        ? Pattern with Type_Bound_Pattern as Pattern as well ? 
+                        ')'
                       | '(' Extractions ')'
 Positional_Extracts ::= Pattern {',' Pattern} 
                         [',' Rest_Extracts {',' Pattern}]
                       | Rest_Extracts {',' Pattern}
-Rest_Extracts       ::= Optional_Extract {',' Optional_Extract} [',' Rest_Extract]
+Rest_Extracts       ::= Optional_Extract {',' Optional_Extract} 
+                        [',' Rest_Extract]
                       | Rest_Extract
 Optional_Extract    ::= '?' Pattern
                       | '?' ['val' | 'var'] var_id ':' Type
                       | '?' '_' ':' Type
                       | '?(' Pattern ':=' Value_Expr ')'
-Rest_Extract        ::= '*' var_id [':' Type]
+Rest_Extract        ::= '*' ['val' | 'var'] var_id [':' Type]
                       | '*' '_' [':' Type]
 Labelled_Extracts   ::= Labelled_Pattern {',' Labelled_Pattern} 
                         [',' Capture_Extract]
@@ -218,8 +219,8 @@ Wildcard patterns may also be used in extractions to ignore the input at the giv
 \label{sec:named-patterns}
 
 \syntax\begin{lstlisting}
-Named_Pattern ::= Stable_Id {Pattern_Param} [Extractions]
-                | '.' Stable_Id [Extractions]
+Named_Pattern ::= Stable_Id {Pattern_Param} [Variant_Extractions]
+                | '.' Stable_Id [Variant_Extractions]
 \end{lstlisting}
 
 In a named pattern, the \code{Stable_Id} part must not start with a lowercase letter as defined in \code{var_id}, otherwise it would be interpreted as a variable pattern. 
@@ -451,7 +452,7 @@ List patterns use \code{Seq_Extractions}, shared among multiple pattern kinds, b
 
 Simplest list pattern is the {\em empty list pattern}, which is of the form ~\lstinline!%[]!, and matches empty lists (or sequences -- will be using that from now on), including the constant empty list \code{List.Nil}. 
 
-More elaborate forms of list patterns include sequential extractions (\sref{Seq_Extractions}), which are sub-patterns. There are three principal kinds of extractions:
+More elaborate forms of list patterns include sequential extractions (\code{Seq_Extractions}), which are sub-patterns. There are three principal kinds of extractions:
 \begin{enumerate}
   \item {\em Mandatory extractions}. These render the minimal length of a sequence - the count of mandatory extractions is the minimal length of a sequence. Mandatory extractions are any patterns. 
   \item {\em Optional extractions}. These add to the maximal length of a sequence - the count of optional extractions added to the count of mandatory extractions is the maximal length of a sequence. Optional extractions (\code{Optional_Extract}) come in 4 forms:
@@ -461,8 +462,11 @@ More elaborate forms of list patterns include sequential extractions (\sref{Seq_
       \item ~\lstinline!?_: $T$!, which is a specific form of the first form, where the variable pattern is a wildcard pattern, combined with a typed pattern (\sref{sec:typed-patterns}). 
       \item ~\lstinline!?($p$ := $e$)!, which is different from the previous forms. Moreover, $p$ is required to bind the input value to a variable, but when there is no value to match it with, the expression $e$ is evaluated and bound to the variable pattern from $p$. Thus, \code{None} would never be bound, and the type of the bound variable is not wrapped in \code{Option[$T$]}.\footnote{If $p$ uses wildcard pattern instead of variable pattern to bind the input value to a variable, $e$ might be evaluated for side-effects.} 
     \end{enumerate}
-  \item {\em Rest extraction}. There may be only up to one rest extraction. When a rest extraction is present, the maximal length of a sequence is virtually infinite, overriding any other finite maximal length. 
-  % TBD: describe the forms
+  \item {\em Rest extraction}. There may be only up to one rest extraction. When a rest extraction is present, the maximal length of a sequence is virtually infinite, overriding any other finite maximal length. Rest extractions come in just 2 forms:
+    \begin{enumerate}
+      \item ~\lstinline!*_!~ \& ~\lstinline!*_: $T$!, which do not bind any elements, but optionally require the elements to be of the given type $T$. This form is only useful to match lists whose elements that are matched by this form are of no importance, and also to generally match lists of length $n$ and more without binding the extra elements. 
+      \item ~\lstinline!*$x$!, ~\lstinline!*$x$: $T$!, ~\lstinline!*var $x$!, ~\lstinline!*var $x$: $T$!, ~\lstinline!*val $x$!~ \& ~\lstinline!*val $x$: $T$!, which bind the matched elements into a new sublist\footnote{Using a \code{slice} operation on the full list.}, which is bound to the variable $x$. 
+    \end{enumerate}
 \end{enumerate}
 
 These extractions may appear only in the following order:
