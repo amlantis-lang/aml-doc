@@ -450,7 +450,7 @@ List_Pattern ::= '%[' [Seq_Extractions] ']'
 
 List patterns use \code{Seq_Extractions}, shared among multiple pattern kinds, but described in this section. 
 
-Simplest list pattern is the {\em empty list pattern}, which is of the form ~\lstinline!%[]!, and matches empty lists (or sequences -- will be using that from now on), including the constant empty list \code{List.Nil}. 
+The simplest list pattern is the {\em empty list pattern}, which is of the form ~\lstinline!%[]!, and matches empty lists (or sequences -- will be using that from now on), including the constant empty list \code{List.Nil}. 
 
 More elaborate forms of list patterns include sequential extractions (\code{Seq_Extractions}), which are sub-patterns. There are three principal kinds of extractions:
 \begin{enumerate}
@@ -548,27 +548,42 @@ Note that in the example, the type that would be inferred for \code{vector} is \
 \label{sec:dict-patterns}
 
 \syntax\begin{lstlisting}
-Dict_Key       ::= Simple_Expr1
-                 | (Literal - Collection_Literal)
-                 | '_'
-Simple_Pattern ::= '%{' Dict_Key '=>' Pattern 
-                   {semi Dict_Key '=>' Pattern}
-                   [semi '**' (var_id | '_') [':' Type]] '}'
-                 | '%{' '**' (var_id | '_') [':' Type] '}'
+Dict_Pattern ::= '%{' [Dict_Extractions] '}'
 \end{lstlisting}
 
-The dictionary pattern enables values of \code{Dictionary} type to be decomposed into a number of elements. The dictionary pattern itself always matches only dictionaries of a specific number of elements, and may match dictionaries of variable number of elements, where all the extra elements are extracted into a new sub-dictionary into a variable that is prefixed with \code{**} inside the pattern (provided that it has a name -- in case of name ``\code{_}'', the sub-dictionary is not created, but discarded). 
+Dictionary patterns use \code{Dict_Extractions}, shared with multimap patterns (\sref{sec:multimap-patterns}), but described only here. 
 
-The matching is defined as follows: 
-\begin{itemize}
-  \item An element from the matched dictionary matches if its key is equal to the key required by the sub-pattern, and the value matches the value pattern of the sub-pattern. 
-  \item The sub-pattern form ~\lstinline!$k$ => $p$!~ requires the element's key to be equal to $k$, and the value to be matched by $p$. The pattern $p$ may bind some variables using pattern binders. 
-  \item The sub-pattern form ~\lstinline!_ => $p$!~ ignores the element's key, and the value is required to be matched by $p$. Again, $p$ may bind some variables using pattern binders. 
-  \item The sub-pattern form ~\lstinline!** $n$!~ matches all remaining elements of the dictionary in a sub-dictionary parameterized with the types of the remaining keys and values. This sub-pattern may optionally contain a type pattern, constraining the match on values that are of the given type (not the keys). 
-  \item More sub-pattern forms may be added in the future versions as needed. % TBD: e.g. a pattern on the key, using regular expression or something. 
-\end{itemize}
+The simplest dictionary pattern is the {\em empty dictionary pattern}, which is of the form ~\lstinline!%{}!, and matches empty dictionaries. 
+
+More elaborate forms include dictionary extractions (\code{Dict_Extractions}), which are sub-patterns. There are two principal kinds of dictionary extractions:
+\begin{enumerate}
+  \item Key-based extractions (using \code{Dict_Extraction} \& optionally followed by or solely a \code{Capture_Extract}). 
+  \item Sequence-based extractions (reusing \code{Seq_Extractions}). 
+\end{enumerate}
+
+Key-based extractions are of these forms:
+\begin{enumerate}
+  \item Specific key extraction: \lstinline!$k$ => $p$!, where $k$ is either a literal value, or a value expression. Such a sub-pattern retrieves an element from the input dictionary that is mapped by the given key, and matches it against the pattern $p$. 
+  \item Key-wildcard extraction: \lstinline!_ => $p$!, where such sub-pattern matches the first not yet matched value from the dictionary, which matches $p$ at the same time (thus values that do not match the pattern are ignored and matched in the following sub-patterns, if any). If the input dictionary preserves some ordering of elements, then this kind of sub-pattern match is also deterministic. 
+  \item Capturing extraction: \lstinline!**$v$!, ~\lstinline!**$v$: $T$!, ~\lstinline!**_!~ \& ~\lstinline!**_: $T$!. Such sub-pattern matches all remaining elements from the input dictionary, and if $v$ is present in it, binds a sub-dictionary to the variable $v$. If the type $T$ is also given, all remaining elements in the input dictionary have to be compatible with that type. Such sub-pattern may only be present once in a dictionary pattern, and allows input dictionaries to contain more keys than just the explicitly required (or wildcarded) ones. 
+\end{enumerate}
+
+Dictionaries may also be matched as sequences with sequential extractions, where input dictionaries should preserve some ordering of elements. Dictionary patterns may also be used to match sequences, provided that all keys of the pattern are integral numbers. 
 
 A dictionary pattern contributes \code{Dictionary[$K$, $T$]} to type of parameter, when used in function parameter list, where $K$ and $T$ are inferred from its sub-patterns automatically, or \code{Any}. 
+
+
+
+
+
+\subsection{Multimap Patterns}
+\label{sec:multimap-patterns}
+
+\syntax\begin{lstlisting}
+Multimap_Pattern ::= '%{{' [Dict_Extractions] '}}'
+\end{lstlisting}
+
+Multimap patterns are very much like dictionary patterns (\sref{sec:dict-patterns}), but the elements that are mapped to keys are always sequences and not (almost arbitrary) values. 
 
 
 
@@ -578,14 +593,12 @@ A dictionary pattern contributes \code{Dictionary[$K$, $T$]} to type of paramete
 \label{sec:bag-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= '%(' Pattern {semi Pattern} [semi '*' (var_id | '_')] 
-                   {semi Pattern} ')'
-                 | '%(' '*' (var_id | '_') {semi Pattern} ')'
+Bag_Pattern ::= '%(' [Seq_Extractions] ')'
 \end{lstlisting}
 
-The bag pattern enables values of \code{Bag} type to be decomposed into a number of elements. The bag pattern itself always matches only bags of a specific number of elements, and may match bags of variable number of elements, where all the extra elements are extracted into a new sub-bag into a variable that is prefixed with \code{*} inside the pattern (provided that it has a name -- in case of name ``\code{_}'', the sub-bag is not created, but discarded). 
+A bag pattern is similar to list patterns (\sref{sec:list-patterns}), except that it matches elements of the input bag in non-deterministic order, unless the input bag actually preserves some ordering of elements. 
 
-An important thing to know about bag patterns is that the order in which elements are matched is irrelevant, therefore the pattern matching needs to match all unmatched elements left in the bag with each next sub-pattern. Iff the matched bag is sorted\footnote{This guarantee has to be made by the actual type of the matched bag.}, only then the order in which elements are possibly matched is determinable. Otherwise, it could be any order, even orders that make no apparent logical sense. And also -- searching the bag over and over for a matching element increases the complexity of the pattern match, which is short-circuited only when the matched bag has less than the number of needed elements. 
+A bag pattern does not distinguish between its two major forms, bags and sets. Each element's tally can still be obtained from the input bag. 
 
 A bag pattern contributes \code{Bag[$T$]} to type of parameter, when used in function parameter list, where $T$ is inferred from its sub-patterns automatically, or \code{Any}. 
 
