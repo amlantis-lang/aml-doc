@@ -1067,7 +1067,7 @@ The formal parameters are handled differently from regular classes. The formal p
 \item[] Second, a \code{val} prefix is implicitly added to such a parameter, unless the parameter already carries a \code{val} or \code{var} modifier. Hence, an accessor definition for the parameter is generated (\sref{sec:class-definitions}). 
 \end{itemize}
 
-A case class definition of \lstinline!$c$[$\tps$]($\ps_1$)$\ldots$($\ps_n$)! with type parameters $\tps$, and value parameters $\ps$ implicitly adds some methods to the corresponding class object, making it suitable as an extractor object (\sref{sec:extractor-patterns}), and are defined as follows:
+A case class definition of \lstinline!$c$[$\tps$]($\ps_1$)$\ldots$($\ps_n$)! with type parameters $\tps$, and value parameters $\ps$ implicitly adds some methods to the corresponding class object, making it suitable as an extractor object (\sref{sec:case-class-patterns}), and are defined as follows:
 \begin{lstlisting}
 object $c$ {
   def apply[$\tps$]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
@@ -1298,7 +1298,7 @@ Object_Definition ::= [Mutability] 'case' 'object' Object_Def
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
 
-A case object definition implicitly adds some methods to the object instance, making it suitable as an extractor object (\sref{sec:extractor-patterns}), and are defined as follows:
+A case object definition implicitly adds some methods to the object instance, making it suitable as an extractor object (\sref{sec:case-object-patterns}), and are defined as follows:
 \begin{lstlisting}
 object $c$ {
   def unapply($x$: $c$.type?): Boolean := ($x$ == self)

@@ -48,11 +48,11 @@ Grouped_Pattern     ::= '(' Pattern ')'
 Infix_Pattern       ::= Pattern (id | op_id) Pattern
 Or_Pattern          ::= Pattern '|' Pattern
 And_Pattern         ::= Pattern '&' Pattern
-Named_Pattern       ::= Stable_Id {Pattern_Param} [Variant_Extractions]
-                      | '.' Stable_Id [Variant_Extractions]
+Named_Pattern       ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
+                      | '.' Stable_Id [Tuple_Extractions]
 Tag_Pattern         ::= Tag_Name Pattern
 Tuple_Pattern       ::= Pattern {',' Pattern}+
-                      | Extractions
+                      | Tuple_Extractions
 List_Pattern        ::= '%[' [Seq_Extractions] ']'
 Array_Pattern       ::= '%[|' [Seq_Extractions] '|]'
 Dict_Pattern        ::= '%{' [Dict_Extractions] '}'
@@ -63,7 +63,7 @@ Annotated_Pattern   ::= {Annotation}+ Pattern
 Extractions         ::= Pattern 
                       | Positional_Extracts {',' Labelled_Extracts}
                       | Labelled_Extracts
-Variant_Extractions ::= Extractions
+Tuple_Extractions   ::= Extractions
                       | '(' 
                         ? Pattern with Type_Bound_Pattern as Pattern as well ? 
                         ')'
@@ -219,8 +219,8 @@ Wildcard patterns may also be used in extractions to ignore the input at the giv
 \label{sec:named-patterns}
 
 \syntax\begin{lstlisting}
-Named_Pattern ::= Stable_Id {Pattern_Param} [Variant_Extractions]
-                | '.' Stable_Id [Variant_Extractions]
+Named_Pattern ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
+                | '.' Stable_Id [Tuple_Extractions]
 \end{lstlisting}
 
 In a named pattern, the \code{Stable_Id} part must not start with a lowercase letter as defined in \code{var_id}, otherwise it would be interpreted as a variable pattern. 
@@ -249,9 +249,9 @@ After the \code{Stable_Id} is resolved, the named pattern is treated according t
 \subsubsection{Enumeration Patterns}
 \label{sec:enumeration-patterns}
 
-If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an enumeration element, the pattern is an enumeration pattern. Such pattern then matches inputs that are equal to the enumeration element. The form \code{Stable_Id} is used if the corresponding enumeration element takes no arguments or if arguments are to be ignored, and the form \code{Stable_Id Extractions} is used if it takes arguments, which are then matched according to the \code{Extractions} (\sref{sec:extractions-in-patterns}). 
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an enumeration element, the pattern is an enumeration pattern. Such pattern then matches inputs that are equal to the enumeration element. The form \code{Stable_Id} is used if the corresponding enumeration element takes no arguments or if arguments are to be ignored, and the form \code{Stable_Id Tuple_Extractions} is used if it takes arguments, which are then matched according to the \code{Tuple_Extractions} (\sref{sec:extractions-in-patterns}). 
 
-Shortcuts are provided for enumeration elements, which are relative to the enumeration type: \code{.Stable_Id} and \code{.Stable_Id Extractions}. The \code{Stable_Id} is then searched in the enumeration type instead of the current scope. 
+Shortcuts are provided for enumeration elements, which are relative to the enumeration type: \code{.Stable_Id} and \code{.Stable_Id Tuple_Extractions}. The \code{Stable_Id} is then searched in the enumeration type instead of the current scope. 
 
 An enumeration pattern contributes the enumeration type to type of parameter, when used in function parameter list. 
 
@@ -270,6 +270,29 @@ let result := match some_data
 end match
 \end{lstlisting}
 Which gives \code{result} a value of \code{6}. 
+
+
+
+
+\subsubsection{Variant Type Case Patterns}
+\label{sec:variant-patterns}
+
+\subsubsection{Generalized Algebraic Datatype Patterns}
+\label{sec:gadt-patterns}
+
+\subsubsection{Open Variant Type Case Patterns}
+\label{sec:open-variant-patterns}
+
+\subsubsection{Throwable \& Raiseable Type Case Patterns}
+\label{sec:throwable-patterns}
+
+
+
+
+
+\subsubsection{Case Class \& Case Object Patterns}
+\label{sec:case-class-patterns}
+\label{sec:case-object-patterns}
 
 
 
@@ -302,7 +325,7 @@ If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an {\em active 
 
 When an active pattern function accepts more than 1 argument, the \code{Pattern_Param}s are interpreted as expressions that are passed to the active pattern function. 
 
-The active pattern function $f$ is applied at runtime to the pattern input, along with any arguments. The pattern matches if the active pattern function returns $v$, ~\lstinline!Choice_$k$_of_$n$($v$)!, \code{Some($v$)}, or ~\lstinline!Some(Choice_$k$_of_$n$ $v$)! when applied to the pattern input. If the pattern argument \code{Extractions} is present, then it is matched against $v$. If this does not match, the whole active pattern does not match. 
+The active pattern function $f$ is applied at runtime to the pattern input, along with any arguments. The pattern matches if the active pattern function returns $v$, ~\lstinline!Choice_$k$_of_$n$($v$)!, \code{Some($v$)}, or ~\lstinline!Some(Choice_$k$_of_$n$ $v$)! when applied to the pattern input. If the pattern argument \code{Tuple_Extractions} is present, then it is matched against $v$. If this does not match, the whole active pattern does not match. 
 
 \example This example shows how to define and use a partial active pattern function:
 \begin{lstlisting}
@@ -349,6 +372,14 @@ end match
 An active pattern function may be executed multiple times against the same pattern input during resolution of a single complete pattern match. The precise number is left to implementations, but it should be as close as possible to 1. Implementations of active pattern functions should be referentially transparent. 
 
 An active pattern contributes the type of \code{input} to type of parameter, when used in function parameter list. 
+
+
+
+
+
+\subsubsection{Equatable Value Patterns}
+\label{sec:equatable-patterns}
+
 
 
 
@@ -537,7 +568,9 @@ let vector_length (vector) :=
   otherwise raise "Unsupported size of %d." % vector.size
   end match
 \end{lstlisting}
-Note that in the example, the type that would be inferred for \code{vector} is \code{Array_Like[Number_Like]}, but it could go even further: ~\lstinline!Array_Like[Number_Like] with constraint { size >= 1 and size <= 3 }!. 
+Note that in the example, the type that would be inferred for \code{vector} is \code{Array_Like[Number_Like]}, but it could go even further: 
+\begin{lstlisting}Array_Like[Number_Like] with constraint { size >= 1 and size <= 3 }
+\end{lstlisting}
 
 
 
@@ -565,7 +598,7 @@ Key-based extractions are of these forms:
 \begin{enumerate}
   \item Specific key extraction: \lstinline!$k$ => $p$!, where $k$ is either a literal value, or a value expression. Such a sub-pattern retrieves an element from the input dictionary that is mapped by the given key, and matches it against the pattern $p$. 
   \item Key-wildcard extraction: \lstinline!_ => $p$!, where such sub-pattern matches the first not yet matched value from the dictionary, which matches $p$ at the same time (thus values that do not match the pattern are ignored and matched in the following sub-patterns, if any). If the input dictionary preserves some ordering of elements, then this kind of sub-pattern match is also deterministic. 
-  \item Capturing extraction: \lstinline!**$v$!, ~\lstinline!**$v$: $T$!, ~\lstinline!**_!~ \& ~\lstinline!**_: $T$!. Such sub-pattern matches all remaining elements from the input dictionary, and if $v$ is present in it, binds a sub-dictionary to the variable $v$. If the type $T$ is also given, all remaining elements in the input dictionary have to be compatible with that type. Such sub-pattern may only be present once in a dictionary pattern, and allows input dictionaries to contain more keys than just the explicitly required (or wildcarded) ones. 
+  \item Capturing extraction: \lstinline!**$v$!, ~\lstinline!**$v$: $T$!, ~\lstinline!**_!~ \& ~\lstinline!**_: $T$!. Such sub-pattern matches all remaining elements from the input dictionary, and if $v$ is present in it, binds a sub-dictionary to the variable $v$. If the type $T$ is also given, all remaining elements in the input dictionary have to conform to that type. Such sub-pattern may only be present once in a dictionary pattern, and allows input dictionaries to contain more keys than just the explicitly required (or wildcarded) ones. 
 \end{enumerate}
 
 Dictionaries may also be matched as sequences with sequential extractions, where input dictionaries should preserve some ordering of elements. Dictionary patterns may also be used to match sequences, provided that all keys of the pattern are integral numbers. 
@@ -610,11 +643,7 @@ A bag pattern contributes \code{Bag[$T$]} to type of parameter, when used in fun
 \label{sec:record-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= Record_Pattern
 Record_Pattern ::= 'record' '{' Field_Patterns '}'
-Field_Patterns ::= Field_Pattern {semi Field_Pattern} [semi '_']
-                 | '_'
-Field_Pattern  ::= Stable_Id '=>' Pattern
 \end{lstlisting}
 
 A record pattern enables values of record types to be decomposed into a number of record fields. 
@@ -650,21 +679,46 @@ A structure pattern ~\lstinline!structure $T$!~ matches a structure with type $T
 \label{sec:tuple-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= '(' [Patterns] ')'
-                 | '(' Extractions ')'
+Tuple_Pattern ::= Pattern {',' Pattern}+
+                | Tuple_Extractions
 \end{lstlisting}
 
-A tuple pattern ~\lstinline!($p_1 \commadots p_n$)!~ is an alias for the constructor pattern ~\lstinline!Tuple_$n$($p_1 \commadots p_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. Sub-patterns $p_1 \commadots p_n$ may be named, in which case mapping rules from (\sref{sec:pattern-sequences}) apply. 
+A {\em tuple pattern} has multiple forms, simplest of which is a sequence of 2 or more sub-patterns, which directly influence the required parity of any input tuple, not allowing any optional elements. Elements of the tuple are matched by their position in the tuple, which corresponds to position of each sub-pattern. 
 
-\paragraph{Note}
-A ``tuple pattern'' containing just one sub-pattern is not a tuple pattern, but a grouped pattern (\sref{sec:grouped-patterns}).
+More elaborate form uses tuple extractions (\code{Tuple_Extractions}), described in (\sref{sec:extractions-in-patterns}). Input tuples for such patterns may be of multiple parities, and also those tuples can have their elements extracted by the elements' labels, instead of position, as in the first form. 
+
+A tuple pattern contributes a tuple type to type of parameter, when used in function parameter list. The concrete tuple type uses annotations to mark all optional elements of the required argument as well as labels of those elements, as per sub-patterns. 
+
+
+
+
+
+\subsection{Extractions in Patterns}
+\label{sec:extractions-in-patterns}
+
+Extractions are of the syntactic form \code{Tuple_Extractions}, as they are primarily designed to extract data from tuples and reused by other kinds of patterns. 
+
+Tuple extractions combine two approaches to extractions: positional and labelled. 
+
+Positional extractions are very much like sequential extractions, delimited by a comma ``\code{,}'' instead of a newline or semicolon. After all positional extractions are evaluated against the input tuple, labelled extractions are used to extract any remaining elements, by their given labels. 
+
+% TBD: use portions of labelled extractions in dictionary extractions, as those are quite similar
+
+Labelled extractions (\code{Labelled_Pattern}) are similar to dictionary extractions, where the keys are of type \code{Symbol} and represented in the syntactic form with the \code{id} element. Capture extraction is shared with dictionary patterns (\sref{sec:dict-patterns}), where the type of keys in the sub-dictionary is \code{Symbol}, and all remaining elements are bound into it, preserving their labels in the keys. There are multiple kinds of labelled extractions: 
+\begin{enumerate}
+  \item The forms ~\lstinline!~$v$!~ and ~\lstinline!~($v$ $[$: $T$$]$)!~ are shorthands for respectively ~\lstinline!~$v$: $v$!~ and ~\lstinline!~$v$: ($v$ $[$: $T$$]$)!. 
+  \item The form ~\lstinline!~$v$: $p$!, which matches an input value labelled $v$, and matches the value against the pattern $p$. This form subsumes the form ~\lstinline!~$v$: $v$!, which is using a variable pattern $v$ to bind the input value, and also the form ~\lstinline!~$v$: ($v$ $[$: $T$$]$)!, which uses a typed pattern instead of a simple variable pattern, but needs grouping parentheses. 
+  \item The form ~\lstinline!~?$v$!~ is a shorthand for the form ~\lstinline!~?$v$: $v$!. 
+  \item The form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!~ is a shorthand for the form ~\lstinline!~?$v$: ($v$ $[$: $T$$]$ $[$:= $e$$]$)!. 
+  \item The form ~\lstinline!~?$v$: ($p$ $[$: $T$$]$ $[$:= $e$$]$)!, which subsumes the form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!, matches an input value labelled $v$, and if such value is not present in the input tuple, then the result bound to a variable by $p$ depends on whether $e$ is present: if it is, the result of its evaluation is bound directly, otherwise \code{Option[$T$]} wrapper is used instead, very much like with optional extractions in sequence extractions. 
+\end{enumerate}
 
 
 
 
 
 \subsection{Infix Operation Patterns}
-\label{sec:infix-operation-patterns}
+\label{sec:infix-patterns}
 
 \syntax\begin{lstlisting}
 Pattern3 ::= Simple_Pattern {id Simple_Pattern}
@@ -682,8 +736,7 @@ An infix operation pattern ~\lstinline!$p$ $\op$ ($q_1 \commadots q_n$)!~ is a s
 \label{sec:grouped-patterns}
 
 \syntax\begin{lstlisting}
-Simple_Pattern ::= '(' Pattern ')'
-(* sub-syntax of: Simple_Pattern ::= '(' [Patterns] ')' *)
+Grouped_Pattern ::= '(' Pattern ')'
 \end{lstlisting}
 
 Patterns can be grouped together to achieve the desired associativity. 
