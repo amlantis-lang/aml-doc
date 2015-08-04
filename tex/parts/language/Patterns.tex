@@ -743,10 +743,10 @@ Positional extractions are very much like sequential extractions, delimited by a
 
 Labelled extractions (\code{Labelled_Pattern}) are similar to dictionary extractions, where the keys are of type \code{Symbol} and represented in the syntactic form with the \code{id} element. Capture extraction is shared with dictionary patterns (\sref{sec:dict-patterns}), where the type of keys in the sub-dictionary is \code{Symbol}, and all remaining elements are bound into it, preserving their labels in the keys. There are multiple kinds of labelled extractions: 
 \begin{enumerate}
-  \item The forms ~\lstinline!~$v$!~ and ~\lstinline!~($v$ $[$: $T$$]$)!~ are shorthands for respectively ~\lstinline!~$v$: $v$!~ and ~\lstinline!~$v$: ($v$ $[$: $T$$]$)!. 
-  \item The form ~\lstinline!~$v$: $p$!, which matches an input value labelled $v$, and matches the value against the pattern $p$. This form subsumes the form ~\lstinline!~$v$: $v$!, which is using a variable pattern $v$ to bind the input value, and also the form ~\lstinline!~$v$: ($v$ $[$: $T$$]$)!, which uses a typed pattern instead of a simple variable pattern, but needs grouping parentheses. 
-  \item The form ~\lstinline!~?$v$!~ is a shorthand for the form ~\lstinline!~?$v$: $v$!. 
-  \item The form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!~ is a shorthand for the form ~\lstinline!~?$v$: ($v$ $[$: $T$$]$ $[$:= $e$$]$)!. 
+  \item The forms ~\lstinline!~$v$!~ and ~\lstinline!~($v$ $[$: $T$$]$)!~ are shorthands for respectively ~\lstinline!~$v$: val $v$!~ and ~\lstinline!~$v$: (val $v$ $[$: $T$$]$)!. 
+  \item The form ~\lstinline!~$v$: $p$!, which matches an input value labelled $v$, and matches the value against the pattern $p$. This form subsumes the form ~\lstinline!~$v$: val $v$!, which is using a variable pattern $v$ to bind the input value, and also the form ~\lstinline!~$v$: (val $v$ $[$: $T$$]$)!, which uses a typed pattern instead of a simple variable pattern, but needs grouping parentheses. 
+  \item The form ~\lstinline!~?$v$!~ is a shorthand for the form ~\lstinline!~?$v$: val $v$!. 
+  \item The form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!~ is a shorthand for the form ~\lstinline!~?$v$: (val $v$ $[$: $T$$]$ $[$:= $e$$]$)!. 
   \item The form ~\lstinline!~?$v$: ($p$ $[$: $T$$]$ $[$:= $e$$]$)!, which subsumes the form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!, matches an input value labelled $v$, and if such value is not present in the input tuple, then the result bound to a variable by $p$ depends on whether $e$ is present: if it is, the result of its evaluation is bound directly, otherwise \code{Option[$T$]} wrapper is used instead, very much like with optional extractions in sequence extractions. 
 \end{enumerate}
 
