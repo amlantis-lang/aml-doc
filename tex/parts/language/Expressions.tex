@@ -544,7 +544,7 @@ Wf_When       ::= 'when' Pattern [Guard] ('then' | semi) Workflow
 Wf_Case       ::= 'when' Case_Patterns ('then' | semi) Workflow
 Wf_Switch     ::= 'when' Switches ('then' | semi) Workflow
 Wf_For_Loop   ::= 'loop' Wf_Loop_Block 'end' ['loop']
-                | 'do' Wf_Loop_Block 'done'
+                | 'do' Wf_Loop_Block Done
                 | '{' Wf_Loop_Block '}'
 Wf_Loop_Block ::= {Wf_Yield | Block_Stat | Loop_Ctrl_Expr}
 Wf_Yield      ::= Yield Expr
@@ -1168,9 +1168,9 @@ Use_Expr       ::= Use_Expr_As
                  | Use_Aspect
                  | Use_Refinement
 Use_Expr_As    ::= 'use' Simple_Expr ('as' | 'as!' | 'as?')
-                   [id ':'] Type [Block_Expr]
-Use_Aspect     ::= 'use' 'aspect' Stable_Id [Block_Expr]
-Use_Refinement ::= 'use' 'refinement' Stable_Id [Block_Expr]
+                   [id ':'] Type [Do_Block]
+Use_Aspect     ::= 'use' 'aspect' Stable_Id [Do_Block]
+Use_Refinement ::= 'use' 'refinement' Stable_Id [Do_Block]
 \end{lstlisting}
 
 Use expressions of the form ~\lstinline!use $e$ as $a$: $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
@@ -1600,12 +1600,15 @@ where $a$ is a freshly created name.
 \syntax\begin{lstlisting}
 Block_Expr      ::= Block_Expr1 | Block_Expr2
 Block_Expr1     ::= '{' [Block_Args] Block '}'
-Block_Expr2     ::= 'do' [Block_Args] Block ('end' | 'done')
+Block_Expr2     ::= 'do' [Block_Args] Block Done
 Block_Args      ::= '|' [Params] [Block_Shadowing] '|' 
                     [':' Type [semi]]
 Block_Shadowing ::= ';' [nl] [Shad_Val_Dcl {',' Shad_Val_Dcl}]
 Shad_Val_Dcl    ::= Val_Dcl | Var_Dcl
 Block           ::= {Block_Stat semi} [Result_Expr]
+Do_Block        ::= '{' Block '}' 
+                  | 'do' Block Done
+Done            ::= 'end' | 'done'
 \end{lstlisting}
 
 A block expression ~\lstinline!{ $s_1$; $\ldots$; $s_n$; $e$ }!~ is constructed from a sequence of block statements $s_1 \commadots s_n$ and a final expression $e$. The statement sequence may not contain two definitions or declarations that bind the same name in the same namespace, except for local function definitions, which then create overloaded local function definitions (behaving pretty much like regular overloaded functions). The final expression may be omitted, in which case the unit value ~\lstinline!()!~ is assumed. 
@@ -2428,8 +2431,8 @@ Break_Expr     ::= 'break' [label_name] [Cond_Modifier1]
 Skip_Expr      ::= 'skip' [integer_literal] [Cond_Modifier1]
 Next_Expr      ::= 'next' [label_name] [Cond_Modifier1]
 Redo_Expr      ::= 'redo' [label_name] [Cond_Modifier1]
-Exhausted_Expr ::= 'exhausted' Block_Expr
-Broken_Expr    ::= 'broken' Block_Expr
+Exhausted_Expr ::= 'exhausted' Do_Block
+Broken_Expr    ::= 'broken' Do_Block
 \end{lstlisting}
 
 Loop control expressions are made available inside of loop expressions to allow control of the enclosing loops.
@@ -2461,12 +2464,12 @@ The standard library provides loop-like methods, where these loop control struct
 Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
                     ['step' Expr] For_Loop
 For_Loop        ::= 'loop' Loop_Block_Expr 'end' ['loop']
-                  | 'do' Loop_Block_Expr 'done'
+                  | 'do' Loop_Block_Expr Done
                   | '{' Loop_Block_Expr '}'
 Loop_Block_Expr ::= {Block_Stat | Loop_Ctrl_Expr}
-Val_Dcls        ::= Val_Dcl
-                  | Val_Dcl - 'val'
-                  | Pattern1
+Val_Dcls        ::= id {',' id}
+                  | id ':' Type
+                  | Pattern
 \end{lstlisting}
 
 The {\em iterable expression} is typed as \code{Unit}, so there is no point in using its value. 
