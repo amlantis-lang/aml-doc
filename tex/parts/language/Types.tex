@@ -585,6 +585,7 @@ As a syntactic convenience, the bindings clause in an existential type may also 
 
 
 \paragraph{Placeholder syntax for existential types}
+\label{par:placeholder-existential-types}
 Gear supports a placeholder syntax for existential types. A {\em wildcard type} is of the form ~\lstinline!_ >: $L$ <: $U$!. Both bound clauses may be omitted. If a lower bound clause ~\lstinline!_ >: $L$!~ is omitted, ~\lstinline!_ >: Nothing!~ is assumed. If an upper bound clause ~\lstinline!_ <: $U$!~ is omitted, ~\lstinline!_ >: Object!~ is assumed. A wildcard type is a shorthand for an existentially quantified type variable, where the existential quantification is implicit. 
 
 A wildcard type must appear as a type argument of a parameterized type. Let ~\lstinline!$T$ := $p$.$c$[$\targs$, $T$, $\targs'$]!~ be a parameterized type, where $\targs$, $\targs'$ may be empty and $T$ is a wildcard type ~\lstinline!_ >: $L$ <: $U$!. Then $T$ is equivalent to the existential type

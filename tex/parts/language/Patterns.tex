@@ -253,7 +253,8 @@ If that condition is met, then the \code{Stable_Id} part may resolve into the fo
   \item A throwable or raiseable type case (\sref{sec:throwable-patterns}). 
   \item A case class or case object (\sref{sec:case-class-patterns}). 
   \item An active pattern case name (\sref{sec:active-patterns}). 
-  \item A (likely constant) value, possibly implementing \code{Equatable} (\sref{sec:constant-value-patterns}).\footnote{The runtime should issue a warning if the value is not constant, since that condition would make the pattern match possibly behave differently at different execution times.}
+  \item A (likely constant) value implementing \code{Equatable} (\sref{sec:equatable-patterns}).\footnote{The runtime should issue a warning if the value is not constant, since that condition would make the pattern match possibly behave differently at different execution times.}
+  \item A class object (\sref{sec:metaclasses}) of a class that defines a primary constructor with one or more parameters (\sref{sec:constructor-patterns}).
   \item A type (see \sref{sec:type-patterns}).
 \end{itemize}
 
@@ -291,6 +292,7 @@ Which gives \code{result} a value of \code{6}.
 
 
 
+
 \subsubsection{Variant Type Case Patterns}
 \label{sec:variant-patterns}
 
@@ -305,14 +307,25 @@ A variant type case pattern contributes type of the variant type case to type of
 \subsubsection{Generalized Algebraic Datatype Patterns}
 \label{sec:gadt-patterns}
 
+Generalized algebraic datatype patterns are equivalent to variant type case patterns (\sref{sec:variant-patterns}), only their type inference is a bit more challenging.
+
+
+
+
+
 \subsubsection{Open Variant Type Case Patterns}
 \label{sec:open-variant-patterns}
 
 Open variant type case patterns are by all means equivalent to variant type case patterns (\sref{sec:variant-patterns}), except that they work with open variant types instead of (closed) variant types. 
 
 
+
+
+
 \subsubsection{Throwable \& Raiseable Type Case Patterns}
 \label{sec:throwable-patterns}
+
+Throwable and raiseable type case patterns are equivalent to open variant patterns (\sref{sec:open-variant-patterns}).
 
 
 
@@ -321,6 +334,17 @@ Open variant type case patterns are by all means equivalent to variant type case
 \subsubsection{Case Class \& Case Object Patterns}
 \label{sec:case-class-patterns}
 \label{sec:case-object-patterns}
+
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that is a case class object or a case object, then the pattern is a {\em case class pattern} or a {\em case object pattern} respectively. 
+
+To match a case class/object pattern, the object's \code{unapply} (which is always present, unlike with constructor patterns -- \sref{sec:constructor-patterns}) is applied to the input value:
+\begin{itemize}
+  \item If the result value is of type \code{Option[$T_1 \commadots T_n$]}, and is not \code{None}, then the pattern matches if the extractions matches the wrapped tuple. 
+  \item If the result value is of type \code{Option[$T$]}, and is not \code{None}, then the pattern matches if the extractions matches the wrapped value. 
+  \item If the result value is of type \code{Boolean}, then the pattern matches if the value is \code{yes}. 
+\end{itemize} 
+
+A case class pattern contributes the class associated with the class object to type of parameter, when used in function parameter list. A case object pattern contributes type of the case object. 
 
 
 
@@ -405,16 +429,33 @@ An active pattern contributes the type of \code{input} to type of parameter, whe
 
 
 
-\subsubsection{Constant Value Patterns}
-\label{sec:constant-value-patterns}
+\subsubsection{Equatable Patterns}
+\label{sec:equatable-patterns}
 
-If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that does not have any other meaning for pattern matching as defined by this chapter, then the behaviour of the pattern depends on its form:
-\begin{enumerate}
-  \item \code{Stable_Id} form requires the value to implement \code{Equatable}, and the pattern matches its input, if the two values are structurally equal (not necessarily physically equal). 
-  \item \code{Stable_Id Tuple_Extractions} form requires the value to be a value implementing the method \code{unapply} (usually a class object), on whose results extractions are then matched, as with case classes/objects (\sref{sec:case-class-patterns}). The pattern matches if the input value conforms to the type required by the value and if extractions were successfully matched as well. The type required by the value depends on what kind of a value is resolved by \code{Stable_Id}: if a class object or trait object, then the type is the class or trait respectively, if a prototype object, then the type is the eigenclass of that prototype object. 
-\end{enumerate}
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that is not a class object or otherwise special for pattern matching, and the value is of a class that implements \code{Equatable}, the pattern matches its input, if the two values are structurally equal as defined by \code{Equatable} (not necessarily physically equal).
 
 It is highly suspicious if the resolved value is not a constant value, and a warning should be issued. 
+
+An equatable pattern contributes the type \code{Equatable} to type of parameter, when used in function parameter list. Note however that the value has to pre-exist, so the only possible sources are constant values defined in outer scopes, or one of the parameters.
+
+
+
+
+
+\subsubsection{Constructor Patterns}
+\label{sec:constructor-patterns}
+
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that is a class object, then the pattern is a {\em constructor pattern}. 
+
+To match a constructor pattern, the class object's \code{unapply} is applied to the input value:
+\begin{itemize}
+  \item If the result value is of type \code{Option[$T_1 \commadots T_n$]}, and is not \code{None}, then the pattern matches if the extractions matches the wrapped tuple. 
+  \item If the result value is of type \code{Option[$T$]}, and is not \code{None}, then the pattern matches if the extractions matches the wrapped value. 
+  \item If the result value is of type \code{Boolean}, then the pattern matches if the value is \code{yes}. 
+  \item If the class object does not respond to \code{unapply}, but the associated class has a primary constructor with one or more parameters, the argument that is used for the first parameter is used as result of \code{unapply} instead, unwrapped from \code{Option[$T$]} (and it may be a tuple) -- as if the class was a case class. 
+\end{itemize} 
+
+A constructor pattern contributes the class associated with the class object to type of parameter, when used in function parameter list. 
 
 
 
@@ -763,7 +804,7 @@ Infix_Pattern ::= Pattern (id | op_id) Pattern
 
 An infix operation pattern ~\lstinline!$p_1$ $\op$ $p_2$!~ is a syntax sugar for the named pattern (\sref{sec:named-patterns}) ~\lstinline!$\op$($p_1$, $p_2$)!. The precedence, associativity and binding direction of operators in patterns is the same as in expressions (\sref{sec:prefix-infix-ops}).
 
-An infix operation pattern ~\lstinline!$p$ $\op$ ($q_1 \commadots q_n$)!~ is a shorthand for the constructor or extractor pattern ~\lstinline!$\op$($p, q_1 \commadots q_n$)!.
+An infix operation pattern ~\lstinline!$p$ $\op$ ($q_1 \commadots q_n$)!~ is a shorthand for the named pattern ~\lstinline!$\op$($p,\,q_1 \commadots q_n$)!.
 
 
 
@@ -838,9 +879,9 @@ Type patterns consist of types, type variables and wildcards. A type pattern $T$
 
 Types are not subject to any type erasure (\sref{sec:reified-types}), so it is basically safe to use any other type as type pattern, unlike in Scala. 
 
-A {\em type variable pattern} is a simple identifier which starts with a lower case letter. 
+A {\em type variable pattern} is a simple identifier which starts with a lower case letter, or with a single quote: \code{'$x$}. Such type variable patterns are bound to the types extracted from the reified input type's type arguments by their position. The form with a leading single quote must not resolve to a name already existing in the outer scope, for it to be a type variable pattern. 
 
-
+A type pattern contributes the type itself to type of parameter, when used in function parameters list, where all type variable patterns are replaced by wildcard placeholders from existential types (\sref{par:placeholder-existential-types}).
 
 
 
@@ -849,7 +890,7 @@ A {\em type variable pattern} is a simple identifier which starts with a lower c
 
 \syntax\begin{lstlisting}
 Match_Expr     ::= Pat_Match_Expr
-Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
+Pat_Match_Expr ::= 'match' Value_Expr Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {semi When_Clause} 

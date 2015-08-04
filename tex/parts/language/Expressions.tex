@@ -1696,7 +1696,7 @@ A yield expression ~\lstinline!$T$.yield $a_1 \commadots a_n$!~ is a specialized
 \subsection{Prefix \& Infix Operations}
 \label{sec:prefix-infix-ops}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[mathescape=false]
 nary_op_id   ::= '?' {op_char}
 Infix_Expr   ::= Prefix_Expr
                | Infix_Expr [Infix_Op Infix_expr]
@@ -1716,6 +1716,7 @@ Range_Expr   ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
                  [FP_Delta [FP_Digits]]
 Slice_Expr   ::= Infix_Expr ('..' | '...' | '..<') [Infix_Expr]
                | ('..' | '...' | '..<') Infix_Expr
+               | [Infix_Expr] ('..' | '...' | '..<') '$'
 \end{lstlisting}
 
 Expressions can be constructed from operands and operators. 
