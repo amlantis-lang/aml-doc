@@ -50,7 +50,7 @@ Or_Pattern          ::= Pattern '|' Pattern
 And_Pattern         ::= Pattern '&' Pattern
 Named_Pattern       ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
                       | '.' Stable_Id [Tuple_Extractions]
-Tag_Pattern         ::= Tag_Name Pattern
+Tag_Pattern         ::= Tag_Name [Tuple_Extractions]
 Tuple_Pattern       ::= Pattern {',' Pattern}+
                       | Tuple_Extractions
 List_Pattern        ::= '%[' [Seq_Extractions] ']'
@@ -456,6 +456,20 @@ To match a constructor pattern, the class object's \code{unapply} is applied to 
 \end{itemize} 
 
 A constructor pattern contributes the class associated with the class object to type of parameter, when used in function parameter list. 
+
+
+
+
+
+\subsection{Polymorphic Variant Patterns}
+\label{sec:polymorphic-variant-patterns}
+
+\syntax\begin{lstlisting}
+Tag_Pattern ::= Tag_Name [Tuple_Extractions]
+\end{lstlisting}
+
+Polymorphic variant type case patterns ~\lstinline!`$t$ $p$! matches all polymorphic variants whose tag is equal to $t$, and whose arguments can be extracted by tuple extractions $p$, if $p$ is present. 
+
 
 
 
