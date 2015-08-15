@@ -54,7 +54,6 @@ Val_Def      ::= [S_Modifier] ('val' | 'let') ['rec']
 Let_Binding  ::= Pattern ':=' Expr {',' Expr}
                | fun_id [Type_Param_Clause] Param_Clauses [':' Type]
                  ':=' Expr
-               | fun_id [Type_Param_Clause] Params2 [':' Type] ':=' Expr
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -471,8 +470,7 @@ If variance annotation is present with a variadic type parameter, place a space 
 
 
 
-
-\section{Variance of Type Parameters}
+\subsection{Variance of Type Parameters}
 \label{sec:variance-of-type-parameters}
 
 Variance annotations indicate how instances of parameterized types relate with respect to subtyping (\sref{sec:conformance}). A ``\lstinline!+!'' variance indicates a covariant dependency, a ``\lstinline!-!'' variance indicates a contravariant dependency, and an empty variance indicates an invariant dependency. 
@@ -610,6 +608,7 @@ The locally abstract type syntax form by itself does not make polymorphic the ty
 
 
 
+\newpage
 
 \section{Function Declarations \& Definitions}
 \label{sec:function-decls-defs}
@@ -631,52 +630,102 @@ Def           ::= Fun_Def
                 | Att_Def
 Fun_Def       ::= 'def' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['def']
                 | 'def' Fun_Sig ':=' [Fun_Dec2] Expr
-Op_Def        ::= 'operator' Op_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['operator']
+Op_Def        ::= 'operator' Op_Sig [Fun_Dec] [semi Fun_Stats] 'end' 
+                  ['operator']
                 | 'operator' Op_Sig ':=' [Fun_Dec2] Expr
-Method_Def    ::= 'method' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['method']
+Method_Def    ::= 'method' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' 
+                  ['method']
                 | 'method' Fun_Sig ':=' [Fun_Dec2] Expr
-Att_Def       ::= 'attribute' Att_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['attribute']
+Att_Def       ::= 'attribute' Att_Sig [Fun_Dec] [semi Fun_Stats] 'end' 
+                  ['attribute']
                 | 'attribute' Att_Sig ':=' [Fun_Dec2] Expr
 Fun_Dec       ::= [nl] 'declare' Fun_Dec_Exprs [semi] ('begin' | 'in')
 Fun_Dec2      ::= [nl] 'declare' Fun_Dec_Exprs [semi] 'in'
 Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
 Fun_Sig       ::= Function_Path [Type_Param_Clause] 
-                  (Param_Clauses | Params2) [':' Type]
+                  Param_Clauses [':' Type]
 Op_Sig        ::= Op_Path [Type_Param_Clause] 
-                  (Param_Clauses | Params2) [':' Type]
+                  Param_Clauses [':' Type]
 Att_Sig       ::= Function_Path [Type_Param_Clause] 
-                  Att_Clauses [':' Type]
+                  Param_Clause Param_Clauses [':' Type]
+                  (* it is an error if the first param clause
+                     only accepts Unit *)
 Function_Path ::= fun_id
                 | 'self' '.' fun_id
                 | Stable_Id '.' fun_id
 Op_Path       ::= op_id
                 | 'self' '.' op_id
                 | Stable_Id '.' op_id
-Param_Clauses ::= {Param_Clause} ['(' 'implicit' Params ')']
-Att_Clauses   ::= Param_Clause1 {Param_Clause} 
-                  ['(' 'implicit' Params ')']
-                | Params2
-Param_Clause  ::= '(' [Params] ')'
-                | LAT_Param_Clause
-Param_Clause1 ::= '(' Param ')'
-Params        ::= Param {',' Param}
-Params2       ::= Param2 {',' Param2}
-                  [',' '(' 'implicit' Params ')']
-Param         ::= {Annotation} [Param_Extra] id [id]
+Param_Clauses ::= {Param_Clause} [Variadic_Param]
+                  [Block_Capture_Param] [Implicit_Params]
+Param_Clause  ::= Atomic_Pattern
+                | '~' Param_Extra id
+                | '~(' Param_Extra id [':' Type] ')'
+                | '~' Param_Extra id ':' Atomic_Pattern
+                | '~' Param_Extra id ':' 
+                  '(' Pattern [':' Type] ')'
+                | '~?' Param_Extra id
+                | '~?(' Param_Extra id [':' Param_Type] [':=' Value_Expr] ')'
+                | '~?' Param_Extra id ':' Atomic_Pattern
+                | '~?' Param_Extra id ':' 
+                  '(' Pattern [':' Type] [':=' Value_Expr] ')'
+                | '(' [Params] ')'
+                | LAT_Param_Clause (* locally abstract type *)
+Implicit_Params 
+              ::= 'implicit' ':' Atomic_Pattern
+                | '(' 'implicit' ':' (Atomic_Pattern | Params) ')'
+Block_Capture_Param
+              ::= '&' ['val' | 'var'] id
+                | '&(' ['val' | 'var'] id [':' Type] ')'
+                | '~&' id ':' Type ['as' Var_Pattern]
+                | '~&' id ':' 
+                  '(' Type ['as' Var_Pattern] [':=' Value_Expr] ')'
+Variadic_Param 
+              ::= Positional_Variadic_Param [Capture_Variadic_Param]
+                | Capture_Variadic_Param
+Positional_Variadic_Param
+              ::= '*(' [M_Modifier] ['val' | 'var'] var_id [':' Type] ')'
+                | '*' [M_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
+Capture_Variadic_Param
+              ::= '**(' [M_Modifier] ['val' | 'var'] var_id [':' Type] ')'
+                | '**' [M_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
+Params        ::= Positional_Params {',' Labelled_Params}
+                | Labelled_Params
+Positional_Params
+              ::= Positional_Param {',' Positional_Param}
+                  [',' Rest_Params {',' Positional_Param}]
+                | Rest_Params {',' Positional_Param}
+Positional_Param
+              ::= Pattern
+                | Param_Extra id [':' Param_Type]
+Rest_Params   ::= Optional_Param {',' Optional_Param}
+                  [',' Rest_Extract]
+                | Rest_Extract
+Optional_Param 
+              ::= Optional_Extract
+                | '?' Param_Extra id [':' Param_Type]
+              ::= Param_Extra var_id
                   [':' Param_Type] [':=' Expr]
-                | Pattern2
-Param2        ::= {Annotation} [Param_Extra] id [id]
-                | '(' Param ')'
-                | Simple_Pattern
-                | '(' Pattern2 ')'
-                | LAT_Param_Clause
-Param_Extra   ::= ['lazy' | 'eager'] [M_Modifier] [Param_Rw] 
-                  ['*' | '**' | '&' | '~' | '?']
+Labelled_Params 
+              ::= Labelled_Param {',' Labelled_Param}
+                  [',' Capture_Extract]
+                | Capture_Extract
+Labelled_Param 
+              ::= Labelled_Extract
+                | '~' Param_Extra id 
+                | '~(' Param_Extra id [':' Param_Type] ')'
+                | '~' Param_Extra id ':' Pattern
+                | '~?' Param_Extra id
+                | '~?(' Param_Extra id [':' Param_Type] [':=' Value_Expr] ')'
+                | '~?' Param_Extra id ':' Pattern
+                | '~?' Param_Extra id ':' 
+                  '(' Pattern [':' Param_Type] [':=' Value_Expr] ')'
+Param_Extra   ::= ['lazy' | 'eager'] [M_Modifier] [Param_Rw]
 Param_Rw      ::= 'val' | 'var' | 'ref'
-Param_Type    ::= ['=>' | '=>>'] (['optional'] Type | id | '_')
+Param_Type    ::= ['=>' | '=>>'] Type
 \end{lstlisting}
 
-A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's name, $\psig$ is its parameter signature and $T$ is its result type. 
+A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's path, $\psig$ is its parameter signature and $T$ is its result type. 
 
 A function definition \lstinline@def $f$ $\psig$: $T$ := $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$\tps$]@, followed by zero or more value parameter clauses \lstinline@($\ps_1$)$\ldots$($\ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and result types are as given. 
 
@@ -686,19 +735,29 @@ If the function's result type is given as one of ``\lstinline!()!'' or \code{Uni
 
 An optional type parameter clause $\tps$ introduces one or more type parameters, possibly with bounds. The scope of a type parameter includes the whole signature, including any of the type parameter bounds as well as the function body, if present. 
 
+An operator declaration/definition is also a function declaration/definition, only it does not require backticks around the operator's name. 
 
 
 
 
 
-\subsection{Curried Function Definitions}
+\subsection{Function Path}
 
-Multiple parameter clauses render curried functions. 
+A {\em function path} is a reference to the function being declared or defined. It can appear in these forms:
 
-Type parameters of the whole function are linked to each value parameter clause. If local type inference selects a type argument that does not appear in a previous value parameter clause, it is still used in the following value parameter clauses where it does appear. 
+\begin{enumerate}
+  \item Function identifier (\code{fun_id}), which references a name in the directly enclosing scope.\footnote{Such scope is usually in a (class) template body, or nested in another function's body.}
+  \item Self function identifier (\code{self.fun_id}), which references a name in the metaclass of whatever \code{self} references in the scope.\footnote{E.g., in a class template definition, it references a class object function name.} 
+  \item Free function identifier (\code{Stable_Id.fun_id}), which references a name in the metaclass of any object referenced by the \code{Stable_Id} part.
+\end{enumerate}
 
-A function definition that uses the \code{Params2} syntactic category to define its parameters has every \code{Param2} element treated as a separate parameter list. 
 
+
+
+
+\subsection{Automatically Curried Function Definitions}
+
+In Gear, every function may be seen as a function from one parameter to a result value. Thus, functions that define multiple parameters can be seen as functions that return another function of the second parameter and so on. However, Gear also allows overloading of functions, and therefore the actual number of declared parameters is important for function applications (\sref{sec:function-applications}).
 
 
 
@@ -706,83 +765,21 @@ A function definition that uses the \code{Params2} syntactic category to define 
 
 \subsection{Function Parameters}
 
-A value parameter clause $ps$ consists of zero or more formal parameter bindings, such as \lstinline@$x$: $T$@ or \lstinline@$x$: $T$ := $e$@, which bind value parameters and associate them with their types. Each value parameter declaration may optionally define a default value expression. The value expression is represented internally by an invisible function, which gets called when the function matched the function call and an explicit value for the parameter was not provided.
+A value parameter clause $ps$ consists of zero or more formal parameter bindings, which bind value parameters and associate them with their types. 
 
-An operator declaration/definition is also a function declaration/definition, only it does not require backticks around the operator's name. 
-
-Value parameters within a single parameter list (a parameter list is a parameter clause) are divided into three virtual sections, each of which may be empty:
+Value parameters are of these forms:
 \begin{enumerate}
-  \item Positional parameters (\sref{sec:positional-parameters}): mandatory parameters (\sref{sec:mandatory-parameters}), optional parameters (\sref{sec:optional-parameters}), variadic parameters (\sref{sec:variadic-parameters}). 
-  \item Purely named parameters (\sref{sec:named-parameters}). 
-  \item Block capturing parameter. 
+  \item Positional parameters (\sref{sec:positional-parameters}). 
+  \item Labelled parameters (\sref{sec:labelled-parameters}). 
+  \item Optional parameters (\sref{sec:optional-parameters}). 
+  \item Variadic parameters (\sref{sec:variadic-parameters}).
+  \item Block capture parameter (\sref{sec:block-capture-parameter}).
+  \item Implicit parameter (\sref{sec:implicit-parameter}).
 \end{enumerate}
 
+Value parameter kinds may be freely reordered to the extent allowed by the \code{Param_Clauses} grammar element: positional, labelled and optional parameters may appear in any order, followed by variadic, block capture and implicit parameters, in that order. 
 
-
-
-The order in which different kinds of value parameters may appear is as follows:
-\begin{enumerate}
-  \item Positional parameters:
-    \begin {enumerate}
-      \item $n$ mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
-
-      \item $n$ optional positional parameters (\sref{sec:optional-parameters}): \lstinline@$x$: $T$ := $e$@, where $n \ge 0$. 
-
-      \item $n$ variadic parameters (\sref{sec:variadic-parameters}): \lstinline@*$x$: $T$@, where $0 \le n \le 1$. 
-
-      \item $n$ post mandatory positional parameters (\sref{sec:positional-parameters}): \lstinline@$x$: $T$@, where $n \ge 0$.
-      
-    \end{enumerate}
-  
-  \item Purely named parameters:
-    \begin{itemize}
-      \item $n$ named parameters (\sref{sec:named-parameters}): ~\lstinline@~$x$: $T$@ and/or ~\lstinline@~$x$: $T$ := $e$@, where $n \ge 0$. 
-
-      \item $n$ capturing named parameter (\sref{sec:capturing-named-parameter}): \lstinline@**$x$: $T$@, where $0 \le n \le 1$. 
-      
-    \end{itemize}
-
-  \item $n$ captured block parameters (\sref{sec:captured-block-parameter}): \lstinline@&$x$: $T$@, where $0 \le n \le 1$.
-\end{enumerate}
-
-For every parameter $p_{i,j}$ with a default value expression, a function named 
-\begin{lstlisting}[escapechar=`]
-default`\$`$n$
-\end{lstlisting}
-is generated inside the function, inaccessible for user programs. Here, $n$ denotes the parameter's position in the method declaration. These methods are parameterized by the type parameter clause \lstinline@[$\tps$]@ and all value parameter clauses \lstinline@($ps_1$)$\ldots$($ps_{i-1}$)@ preceeding $p_{i,j}$.
-
-The scope of a formal value parameter name $x$ comprises all subsequent parameter clauses, as well as the method result type and the function body, if they are given.
-
-\example In the method
-\begin{lstlisting}
-def compare[T](a: T := 0)(b: T := a) := (a = b)
-\end{lstlisting}
-the default expression \code{0} is type-checked with an undefined expected type. When applying \lstinline@compare()@\footnote{Without any explicit arguments.}, the default value \code{0} is inserted and \code{T} is instantiated to \code{Number}. The functions computing the default arguments have the forms\footnote{See, at the moment \lstinline[mathescape=false]!default$2! is called, the parameter \code{a} is already computed and passed as an argument to it.}:
-\begin{lstlisting}[escapechar=`]
-def default`\$`1[T]: Number := 0
-def default`\$`2[T](a: T): T := a
-\end{lstlisting}
-
-Parameters may be optionally flagged with \code{var} and \code{val} keywords, modifying their mutability inside the method. Some combinations are disallowed, as explained in the following sections. All parameters are implicitly \code{val}-flagged, unless the parameter kind implies a \code{var} flag.
-
-
-
-
-
-\subsection{External \& Internal Parameter Names}
-\label{sec:external-internal-parameter-names}
-
-\syntax\begin{lstlisting}
-Param ::= $\ldots$ id [id] $\ldots$
-\end{lstlisting}
-
-The {\em external parameter name} is the one which may be used in function applications (\sref{sec:function-applications}) to specify the target parameter. The {\em internal parameter name} is the one that the function body uses. If the parameter name appears as ``\lstinline!$a$ $b$!'', then $a$ is the external parameter name and $b$ is the internal parameter name. If the parameter name appears as $a$, it is both the external and the internal parameter name. If the parameter name is prefixed with a tilde ``\lstinline!~!'', then such a parameter may only be specified by its external name in function applications, and is said to be a purely named parameter (\sref{sec:named-parameters}). 
-
-If a function applies itself as a part of its own definition, then again, the external parameter name is effective, never the internal parameter name. 
-
-Each internal parameter name may appear only once across every parameter list. Each external parameter name may only appear once in each parameter list, but may generally appear across multiple parameter lists multiple times, provided that its internal parameter name does not. 
-
-If an external parameter name is specified to be just an underscore ``\code{_}'' (the only acceptable form of such parameter name is then ``\lstinline!_ $b$!'', where $b$ is the internal parameter name), then no named argument will ever correspond to it. It is an error if this is combined with a purely named parameter, since there would be no way to create a corresponding argument to it. The other implication of this is that such external parameter names may only be used as the first parameters in each parameter list, never appearing after parameters with external names, and also arguments expressions must include as many positional arguments as there are parameters without external name for the function to be applicable. Such parameters are effectively {\em purely positional}. 
+Locally abstract types (the \code{LAT_Param_Clause} grammar element, \sref{sec:locally-abstract-types}) are not real parameters and do not play such role in function applications (\sref{sec:function-applications}), but instead, they influence the typing of the other parameters. 
 
 
 
@@ -793,7 +790,9 @@ If an external parameter name is specified to be just an underscore ``\code{_}''
 
 Note: This section applies (from the other side of the wall) to function applications (\sref{sec:function-applications}) as well, but it's pointless to have it duplicated over there. 
 
-Gear utilizes five parameter (resp. argument) evaluation strategies. Every strategy defers evaluation of argument values until the function application is resolved, using only arguments' expected types -- see (\sref{sec:overloading-resolution}). 
+Gear utilizes five argument evaluation strategies. Every strategy defers evaluation of argument values until the function application is resolved, using only arguments' expected types -- see (\sref{sec:overloading-resolution}). 
+
+Evaluations strategies are only applied to arguments as whole, not to any possible sub-expressions or nested data. 
 
 \paragraph{Call-by-value, strict}
 Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. This includes explicit parameter values (\sref{sec:explicit-parameters}).
@@ -817,10 +816,6 @@ This is a rather experimental feature of Gear, depending on whether the Gear VM 
 \subsubsection{By-Reference Parameters}
 \label{sec:by-ref-parameters}
 
-\syntax\begin{lstlisting}
-Param_Rw ::= 'ref'
-\end{lstlisting}
-
 The name of a parameter may be prefixed with a ``\code{ref}'' keyword, in which case the parameter's type $T$ is boxed into ~\lstinline!Reference_Cell[$T$]!. See (\sref{sec:ref-expressions}) for more details on reference cells. 
 
 
@@ -830,17 +825,9 @@ The name of a parameter may be prefixed with a ``\code{ref}'' keyword, in which 
 \subsubsection{By-Name Parameters}
 \label{sec:by-name-parameters}
 
-\syntax\begin{lstlisting}
-Param_Extra ::= ['lazy'] ['val']
-                ['*' | '~']
-Param_Type  ::= '=>' (Type | id | '_')
-\end{lstlisting}
-
 The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function.
 
 The by-name modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}). The by-name modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
-
-A by-name parameter bound to a wildcard type ``\lstinline!_!'' matches any type of by-name argument. 
 
 By-name parameters with default value expressions evaluate the default value expression each time the parameter is accessed, unlike optional parameters that evaluate the default value expression only once. 
 
@@ -851,11 +838,6 @@ By-name parameters with default value expressions evaluate the default value exp
 
 \subsubsection{By-Need Parameters}
 \label{sec:by-need-parameters}
-
-\syntax\begin{lstlisting}
-Param_Extra ::= 'lazy' [M_Modifier] [Param_Rw]
-                ['*' | '~']
-\end{lstlisting}
 
 The parameter definition may be preceded by \code{lazy} keyword. This indicates that the corresponding argument is not evaluated before function application, but instead is evaluated the first time used within the function. 
 
@@ -873,16 +855,11 @@ If a parameter is prefixed with \code{eager} instead, it can't be prefixed with 
 \subsubsection{By-Future Parameters}
 \label{sec:by-future-parameters}
 
-\syntax\begin{lstlisting}
-Param_Extra ::= ['val'] ['*' | '~']
-Param_Type  ::= '=>>' (Type | id | '_')
-\end{lstlisting}
-
 By-future uses a concurrent evaluation strategy: the value of a future expression is computed concurrently with the flow of the rest of the program (on a new thread/worker). When the value of the future is needed, the invoking thread blocks until the future finishes computing, if it has not already completed by then. 
 
-This strategy is non-deterministic, as the evaluation can occur at any time between when the future is created (when the function is applied) and when the value of the future is used. 
+This strategy is non-deterministic, as the evaluation can occur at any time between when the future is created (when the function is applied) and when the value of the future is read. 
 
-The by-future modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}). The by-future modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
+The by-future modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
 
 By-future parameters with default value expressions evaluate the default value also as a future value, if the argument is not explicitly given. 
 
@@ -892,238 +869,105 @@ By-future parameter prefix is omitted from examples of valid parameter definitio
 
 
 
-\subsection{Explicit Parameters}
-\label{sec:explicit-parameters}
-
-\syntax\begin{lstlisting}
-Param ::= Literal 
-        | Pattern2
-\end{lstlisting}
-
-The parameter may be specified by its literal value. Such parameters may only appear where positional mandatory parameters (\sref{sec:mandatory-parameters}) may appear. The type of the parameter is the inferred type of the literal value. Methods with explicit parameters are considered more specific during overloading resolution to methods with the same parameter types (\sref{sec:function-applications}). 
-
-The recommendation for usage of these parameters are: 
-\begin{itemize}
-  \item Use explicit parameters with unary methods only. 
-  \item If the value is a collection, use an empty collection literal only. 
-\end{itemize}
-
-\example Sample methods that use explicit parameters:
-\begin{lstlisting}
-def factorial (0) := 1
-def factorial (x) := x * factorial(x - 1)
-\end{lstlisting}
-
-Since the parameter has no name to bind to, it is not accessible inside the method body. 
-
-The parameter's explicit value may also be specified as a pattern, then the type of the pattern is being contributed from the pattern as defined for each pattern type (\sref{sec:pattern-matching}). The pattern may or may not bind variables, which are then treated as parameters to the function, eagerly evaluated. Note that parameters in a single parameter list that are not explicit render together a tuple extracting pattern, thus explicit parameters using patterns are a {\em generalization of ``regular'' parameters}. 
-
-
-
-
-
 \subsection{Positional Parameters}
 \label{sec:positional-parameters}
 
-Positional parameters are identified by their ordered position within their section. Each such parameter has an external name that can be used to pass an argument into it by its name. The external name might not be the same as the internal name of the parameter: if there are two identifiers for the parameter name, the first one is external, the second one is internal. If there is one identifier for the parameter name, it is both external and internal. An internal name is the name under which the parameter is made available inside the function body, external name is the name under which an argument may be passed into the parameter. It is an error if the function body references a parameter by it's external name, if its internal name is different. 
+Positional parameters are parameters that were given no explicit label, and thus it is not possible to pass arguments to them by label. % TBD: this might change, what about an implicit numbered label? Like, instead of a name (identifier), the label would be a number, and applied as: f `1`: argument
 
-Positional parameters can optionally contain default values. Positional parameters with default values are {\em optional parameters} (the other without default values are {\em required parameters}), and may appear only in the middle of the parameters section. During application, they are picked from left to right, and are omitted in application from right to left and assigned default values from left to right.
+Positional parameters are of the following forms:
+\begin{enumerate}
+  \item \lstinline!Atomic_Pattern!, the most basic form, which uses atomic patterns to extract and bind data from its corresponding argument. 
+  \item \lstinline!($\mbox{\sl params}$)!, a form that uses an augmented form of tuple extractions, and can indeed extract also from a tuple of size 1, which corresponds to a single argument. 
+\end{enumerate}
 
-\example Positional mandatory parameters vs. optional parameters. Consider the following function declaration:
-\begin{lstlisting}
-def f (a, b := 0, c := 0, d := 0, e): Unit end
-\end{lstlisting}
+The second form is augmented by means of the \code{Param_Extra} and \code{Param_Type} grammar elements, which give the tuple extraction the possibility to override some properties of the matched tuple's elements. Those augmentations are also present in the other parameter kinds, but will be described here. This utilizes the fact that arguments passed directly or as tuple elements in a function application (\sref{sec:function-applications}) have also deferred evaluation (unless they are already of evaluated forms). 
 
-Then, a minimal number of passed arguments is 2, one for each positional mandatory parameter. If 3 arguments are passed, the second is assigned to \code{b}, and \code{c} and \code{d} are assigned with their default values. If 4 arguments are passed, the second is assigned to \code{b} and the third is assigned to \code{c}. If 5 arguments are passed, the second is assigned to \code{b}, the third is assigned to \code{c} and the fourth is assigned to \code{d}. If a parameter is not assigned with an argument, then \code{undefined} is assigned to it. 
+\code{Param_Extra} can specify:
+\begin{enumerate}
+  \item Whether arguments are lazily or eagerly evaluated, by default eagerly. 
+  \item What is the mutability modifier of the top-level variable bound by the parameter, if there is any such variable. 
+  \item Whether the bound variable is itself mutable (\code{var}) or immutable (\code{val}), or whether its type is implicitly wrapped in a \code{Reference_Cell} (then \code{val} is implied for the variable that holds the reference cell). 
+\end{enumerate}
 
-Positional parameters may also contain a special parameter that captures all extra arguments: {\em variadic parameter}. It's only legal position is right before the last positional mandatory parameter, and after any optional parameters, due to the order in which arguments are assigned to parameters. 
+\code{Param_Type} can specify whether the parameter is evaluated in a by-name strategy, by-future strategy, or another strategy (by-value, by-reference, by-need). 
 
-
-
-
-
-\subsubsection{Mandatory Parameters}
-\label{sec:mandatory-parameters}
-
-Positional mandatory parameters are of the forms:
-\begin{lstlisting}
-$x$: $T$
-var $x$: $T$
-val $x$: $T$
-$x$: => $T$
-val $x$: => $T$
-\end{lstlisting}
-
-Positional mandatory parameters may not have any modifiers, except for  by-name (\sref{sec:by-name-parameters}). 
+\paragraph{Note}
+No two parameters (of any kind, not just positional) can bind their input argument or a value nested in the argument to the same variable name. 
 
 
 
 
 
+\subsection{Labelled Parameters}
+\label{sec:labelled-parameters}
 
-\subsubsection{Optional Parameters}
+Labelled parameters are of the following forms:
+\begin{enumerate}
+  \item \lstinline!~$\mbox{\sl param-extra}$ $\id$!, which matches arguments of variable type and binds them to variable named $\id$. 
+  \item \lstinline!~($\mbox{\sl param-extra}$ $\id$: $T$)!, which matches arguments conforming to the type $T$ and binds them to variable named $\id$. 
+  \item \lstinline!~$\mbox{\sl param-extra}$ $\id$: $p$!, which matches arguments that are matched by the pattern $p$ and binds them to variable named $\id$, but only if $p$ does not already bind the argument to a variable. 
+  \item \lstinline!~$\mbox{\sl param-extra}$ $\id$: ($p$: $T$)!, which matches arguments of variable type or the type $T$, if that is present, and are matched by the pattern $p$, and binds them to variable named $\id$, but only if $p$ does not already bind the argument to a variable. 
+\end{enumerate}
+
+It is possible for a single method to have multiple parameters bearing the same label -- in which case, it is important that every such parameter binds the argument to a distinct variable. 
+
+
+
+
+
+\subsection{Optional Parameters}
 \label{sec:optional-parameters}
 
-Optional parameters are of the forms:
-\begin{lstlisting}
-$x$: $T$ := $e$
-var $x$: $T$ := $e$
-val $x$: $T$ := $e$
-$x$: => $T$ := $e$
-val $x$: => $T$ := $e$
-$x$: optional $T$ := $e$
-var $x$: optional $T$ := $e$
-val $x$: optional $T$ := $e$
-$x$: => optional $T$ := $e$
-val $x$: => optional $T$ := $e$
-?$x$: $T$ := $e$
-var ?$x$: $T$ := $e$
-val ?$x$: $T$ := $e$
-?$x$: => $T$ := $e$
-val ?$x$: => $T$ := $e$
-\end{lstlisting}
+Optional parameters are of the following forms:
+\begin{enumerate}
+  \item \lstinline!~?$\mbox{\sl param-extra}$ $\id$!, which matches arguments of variable type and binds them to variable named $\id$, typed \code{Option[$T$]}, where $T$ is the argument's type. 
+  \item \lstinline!~?($\mbox{\sl param-extra}$ $\id$: $T$ := $e$)!, which matches arguments of variable type or the type $T$, if that is present, and binds them to variable named $\id$, typed \code{Option[$T$]}, where $T$ is the parameter's type, if $e$ is not present, and typed just $T$ otherwise.
+  \item \lstinline!~?$\mbox{\sl param-extra}$ $\id$: $p$!, which matches arguments that are matched by the pattern $p$ and binds them to variable named $\id$, but only if $p$ does not already bind the argument to a variable. 
+  \item \lstinline!~?$\mbox{\sl param-extra}$ $\id$: ($p$: $T$ := $e$)!, which matches arguments of variable type or the type $T$, if that is present, and are matched by the pattern $p$, and binds them to variable named $\id$ (but only if $p$ does not already bind the argument to a variable), and typed \code{Option[$T$]}, where $T$ is the parameter's type, if $e$ is not present, and typed just $T$ otherwise.
+\end{enumerate}
 
-Optional parameters may not have any modifiers, except for by-name modifier (\sref{sec:by-name-parameters}). Optional parameters have a {\em default value expressions} and may appear between positional parameters, being followed by any number of positional parameters (including no more positional parameters at all), or being followed by repeated parameters and then positional parameters (\sref{sec:named-optional-arguments}). Optional parameters are disallowed for repeated parameters. 
-
-Optional parameters add the annotation (\sref{sec:annotations}) \code{@[optional_param]} to the corresponding parameter type of the function trait. 
-
-If a parameter has a nullable type $T$ (either by being a nullable type, or allowing otherwise \code{Nothing} with a union type), and appears where an optional parameter may appear, it is taken as an optional parameter with default value of \code{undefined} implicitly. 
-
-If the keyword \code{optional} is given before the parameter type, or the external parameter name is prefixed with a ``\lstinline!?!'', then the parameter type $T$ is wrapped in type ~\lstinline!Option[$T$]!, and instead of \code{undefined}, a missing argument is given as \code{None}, and a present argument $x$ is given automatically wrapped in ~\lstinline!Some($x$)!, if the argument is not prefixed with a ``\lstinline!?!'' -- then it is passed as is, and its type must be \code{Option[$T'$]}. If \code{None} is finally passed an an argument, then it is important whether a default value for the parameter is present or not -- if it is, then the default value is wrapped in \code{Some($x$)}, if it is not, then it stays \code{None}. 
-
-If the parameter type $T$ is in fact ~\lstinline!Option[$T'$]!, where $T'$ is the effective parameter type\footnote{In the meaning of ``wrapped''.}, then the parameter is treated as optional. This applies to named and purely named parameters (\sref{sec:named-parameters}) as well. 
+\paragraph{Optional parameters in overloading}
+A method that has equivalent positional, labelled, variadic and block capture parameters to another (overloaded) method can not be distinct just by having different optional parameters (or none at all). 
 
 
 
 
 
-\subsubsection{Variadic Parameters}
+\subsection{Variadic Parameters}
 \label{sec:variadic-parameters}
 
-Variadic parameters are of the forms:
-\begin{lstlisting}
-*$x$: $T$
-var *$x$: $T$
-val *$x$: $T$
-\end{lstlisting}
+Variadic parameters are in fact two possible parameters, that do not have directly mapped arguments, and can appear independently. Each combination of their presence yields different values being bound to variables they define. 
 
-Between optional parameters and the tailing positional parameters may be a value parameter prefixed by ``\lstinline!*!'', e.g. \lstinline!($\ldots$, *$x$: $T$)!. The type of such a {\em variadic parameter} inside the method is then a list type ~\lstinline!Sequence[$T$]!. Methods with variadic parameters take a variable number of arguments of type $T$ between the optional parameters block and the last positional parameters block, including no arguments at all (an empty list is then its value). If the type $T$ is defined by a variadic type parameter, then the type of the parameter inside the method is $T$ (which is a tuple type -- \sref{sec:tuple-types}). 
+The two kinds are:
+\begin{enumerate}
+  \item Positional variadic parameter (starting with single asterisk ``\code{*}''). 
+  \item Capture variadic parameter (starting with two asterisks ``\code{**}''). 
+\end{enumerate}
 
-If a variadic parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the list. Variadic parameters are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
-
-Variadic parameter may be passed in a function application by name iff the type of the named argument is compatible with \code{Sequence[$T$]}, or the variadic type parameter $T$, if it is variadic. 
-
-\example The following method definition computes the sum of the squares of a variable number of integer arguments.
-\begin{lstlisting}
-def sum (*args: Integer): Integer
-declare
-  var result := 0
-begin
-  for arg in args loop
-    result += arg ^ 2
-  end loop
-  
-  result
-end
-\end{lstlisting}
-The following applications of this method yield \code{0}, \code{1}, \code{14}, in that order.
-\begin{lstlisting}
-sum
-sum 1
-sum 1, 2, 3
-\end{lstlisting}
-Furthermore, assume the definition:
-\begin{lstlisting}
-val xs := %[1; 2; 3]
-\end{lstlisting}
-The following application of the method \code{sum} is not resolved:\footnote{Unless there is an overloaded version of the method that accepts a list of integers as its parameter.}
-\begin{lstlisting}
-sum xs (* Error: method match not found, wrong arguments *)
-\end{lstlisting}
-By contrast, the following application is well-formed and yields again the result \code{14}:
-\begin{lstlisting}
-sum *xs
-\end{lstlisting}
+The combinations are:
+\begin{itemize}
+  \item Only positional variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Sequence[$T$]} into a variable defined by the parameter.$T$ is a variable type, if not defined by the parameter. Labelled arguments are not applicable. 
+  \item Only capture variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Dictionary[Symbol, $T$]}, where $T$ is a variable type, if not defined by the parameter. Positional arguments are mapped to a symbol containing the integer number of their order of appearance, interleaved with labelled arguments. 
+  \item Both positional and capture variadic parameters are present. Then the positional parameter only binds positional arguments and the capture parameter only binds labelled arguments. 
+\end{itemize}
 
 
 
 
 
+\subsection{Block Capture Parameter}
+\label{sec:block-capture-parameter}
 
-\subsection{Purely Named Parameters}
-\label{sec:named-parameters}
-\label{sec:capturing-named-parameter}
-
-Purely named parameters are of the forms:
-\begin{lstlisting}
-~$x$: $T$
-var ~$x$: $T$
-val ~$x$: $T$
-~$x$: $T$ := $e$
-var ~$x$: $T$ := $e$
-val ~$x$: $T$ := $e$
-~$x$: => $T$
-val ~$x$: => $T$
-~$x$: => $T$ := $e$
-val ~$x$: => $T$ := $e$
-~$x$: optional $T$ := $e$
-var ~$x$: optional $T$ := $e$
-val ~$x$: optional $T$ := $e$
-~$x$: => optional $T$ := $e$
-val ~$x$: => optional $T$ := $e$
-~?$x$: $T$ := $e$
-var ~?$x$: $T$ := $e$
-val ~?$x$: $T$ := $e$
-~?$x$: => $T$ := $e$
-val ~?$x$: => $T$ := $e$
-\end{lstlisting}
-
-Capturing named parameter are of the form: 
-\begin{lstlisting}
-**$x$: $T$
-var **$x$: $T$
-val **$x$: $T$
-\end{lstlisting}
-
-Purely named parameters are parameters that may only be assigned arguments using their external name, never by their position, which may be arbitrarily reordered by the language. 
-
-Named parameters are a way of allowing users of the method to write down arguments in any order, provided that their name is given at function application (\sref{sec:function-applications} \& \sref{sec:named-optional-arguments}). Named parameters may have a default value expression. Named parameters are disallowed for variadic parameters. Named parameters inside the method are then accessible the same way as a positional parameters. 
-
-Purely named parameters have the same definition of external and internal parameter names as positional parameters: if there are two identifiers for the purely named parameter name, then the first one is the external and the second one is the internal parameter name. If there is only one identifier, it is both the external and internal parameter name. 
-
-Purely named parameters do not impose any rules on the position where each of their kind may appear, exactly because their order of appearance is insignificant. Therefore, purely named parameters with default values may appear anywhere, just like the capturing named parameter (which may appear exactly once, or not at all). 
-
-Capturing named parameter is capturing any other applied named arguments that were not captured by their explicit declaration (\sref{sec:named-optional-arguments}). It is declared after the section of purely named parameters, prefixed by ``\lstinline!**!'', e.g. \lstinline!($\ldots$, **$x$: $T$)!. The type of such a captured named parameter inside the method is then a dictionary type \lstinline!Dictionary[Symbol, $T$]!. Methods with capturing named parameter take a variable number of named arguments of type $T$ mixed with other named arguments and before the captured block parameter. capturing named parameter are disallowed for repeated parameters and by-name parameters. 
-
-If a captured named parameter is flagged with \code{val}, the parameter itself is immutable, not the elements of the dictionary. capturing named parameter are \code{val}-flagged implicitly, unless explicitly flagged as \code{var}, to protect the captured elements from accidental overwrite. 
-
-If a capturing named parameter is supposed to capture arguments of multiple types, one can use union types (\sref{sec:unions}). This does not ensure any particular relation between the argument's key and value's type other than that provided by the union though.
-
-If a purely named parameter has a nullable type $T$ (either by being a nullable type, or allowing otherwise \code{Nothing} with a union type), it is taken as having default value of \code{nil} implicitly. 
-
-
-If the keyword \code{optional} is given before the parameter type, or the external parameter name is prefixed with a ``\lstinline!~?!'' instead of just ``\lstinline!~!'', then the parameter type $T$ is wrapped in type ~\lstinline!Option[$T$]!, and instead of \code{undefined}, a missing argument is given as \code{None}, and a present argument $x$ is given automatically wrapped in ~\lstinline!Some($x$)!, if it's not already. 
+A block capture parameter binds a block argument to a variable. The block argument may optionally be passed as a regular labelled argument. 
 
 
 
 
 
-\subsection{Captured Block Parameter}
-\label{sec:captured-block-parameter}
+\subsection{Implicit Parameter}
+\label{sec:implicit-parameter}
 
-Captured block parameters are of the forms:
-\begin{lstlisting}
-&$x$
-&$x$: $T$
-\end{lstlisting}
-
-Captured block parameter is a way to capture an applied block that is otherwise passed in implicitly as a function into \code{yield} expressions. The forms of captured block parameters explicitly denote the case without the block's function type, since block parameters receive any arguments and those missing are implicitly set to \code{nil}. The function type of the block may be used to further constrain the applied block argument, but is not used during method resolution (\sref{sec:function-applications}). The captured block parameter may be used also to capture function arguments, e.g. anonymous functions (\sref{sec:anonymous-functions}), then the type is used during method resolution. 
-
-It is an error if a block parameter type $T$ is provided and it is not a function type (\sref{sec:function-types}). It is also an error if the applied block argument does not accept the arguments declared by the type $T$, or if the block would not return a value conforming to the result type required by the type $T$. The applied block argument may accept more arguments than required by $T$, however, these will be set implicitly to \code{nil}. Also, the applied block argument may itself require less constrained parameter types, in which case the arguments applied to it must (and will) always conform (\sref{sec:conformance}) to the block's parameter requirements. Whether the function type $T$ has a result type or not is irrelevant. 
-
-If a block parameter type $T$ is given, then the applied block argument must accept parameters, such that the parameter constrains declared by the function type $T$ conform to the parameter constrains declared by the applied block: the parameters of the applied block must be the same or less restrictive than those declared by $T$ -- they must be pairwise contravariant or invariant, never covariant (\sref{sec:variance-of-type-parameters}). 
-
-If a function has multiple parameter lists, the captured block parameter may only appear in the last one, unless the last one is an implicit parameters list, in which case the last allowed parameter list for a captured block parameter to appear in is the one directly preceding the implicit parameters list. 
+Implicit parameter is described in (\sref{sec:implicit-parameters}). An implicit parameter does not yield a distinct overloaded method, very much like optional parameters. 
 
 
 
@@ -1132,16 +976,15 @@ If a function has multiple parameter lists, the captured block parameter may onl
 \subsection{Method Signature}
 \label{sec:method-signature}
 
-Two methods $M$ and $N$ have the same signature, if they have the same name, the same type parameters (if any), the same parameters with equivalent types, and equivalent result type. 
+Two methods $M$ and $N$ have the same signature, if they have the same name, the same type parameters (if any), the same number of parameters with equivalent types and kinds (positional, labelled, optional etc.), and equivalent result type. 
 
 The signature of a method $m_1$ is a {\em subsignature} of the signature of a method $m_2$ if either:
 \begin{itemize}
-\item $m_2$ has the same signature as $m_1$, or
-\item the signature of $m_1$ has the same name, the same type parameters (if any), the same parameter lists\footnote{The \code{implicit} modifier does not make a parameter list different in this matter.} and the same parameters within them with equivalent types, and a result type that conforms to result type of $m_2$. 
+  \item $m_2$ has the same signature as $m_1$, or
+  \item the signature of $m_1$ has the same name, the same type parameters (if any), the same parameter lists\footnote{The \code{implicit} modifier does not make a parameter list different in this matter.} and the same parameters within them with equivalent types, and a result type that conforms to result type of $m_2$. 
 \end{itemize}
 
 A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsignature of $m_2$. Two method signatures $m_1$ and $m_2$ are {\em override-equivalent}, iff $m_1$ is the same as $m_2$. 
-
 
 
 

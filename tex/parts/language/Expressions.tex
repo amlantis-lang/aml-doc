@@ -977,9 +977,9 @@ Positional_Unapplied_Argument
               | '(' Partially_Applied_Tuple_Argument ')'
 Labelled_Unapplied_Argument
             ::= ['~' | '~?'] id ':' '_' ['as' Type]
-              | ['~' | '~?'] id ':' Partial_Slice_Expr
-              | ['~' | '~?'] id ':' Partially_Applied_Tuple_Argument
-              | ['~' | '~?'] id ':' '(' [Partially_Applied_Tuple_Argument] ')'
+              | ['~']        id ':' Partial_Slice_Expr
+              | ['~']        id ':' Partially_Applied_Tuple_Argument
+              | ['~']        id ':' '(' [Partially_Applied_Tuple_Argument] ')'
 Partially_Applied_Tuple_Argument
             ::= Positional_Partially_Applied_Tuple_Arguments 
                 [',' Named_Partially_Applied_Tuple_Arguments]
@@ -1108,15 +1108,35 @@ A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is usef
 \label{sec:attribute-selection}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= Value_Expr ''' Simple_Selection
+Simple_Expr1 ::= Value_Expr '.'' Simple_Selection
 \end{lstlisting}
 
-An attribute is a special function that has at least one parameter list with a single parameter, and optionally more regular parameter lists following the first one. 
+An attribute is a special function that has at least one parameter, and optionally more than one parameter. 
 
-An attribute selection ~\lstinline!$x$'$a$!~ is then viewed as function application ~\lstinline!$a$($x$)!. An attribute selection ~\lstinline!$x$'$a$($\args$)!~ is then viewed as function application ~\lstinline!$a$($x$)($\args$)!~ etc. (\sref{sec:function-applications}).
+An attribute selection ~\lstinline!$x$.'$a$!~ is then viewed as function application ~\lstinline!$a$($x$)!. An attribute selection ~\lstinline!$x$.'$a$($\args$)!~ is then viewed as function application ~\lstinline!$a$($x$)($\args$)!~ etc. (\sref{sec:function-applications}). 
 
-Since simple identifiers that may make up the \code{Value_Expr} can contain trailing apostrophes, the last apostrophe is considered a part of the attribute selection expression and not the identifier itself. 
-
+\paragraph{Note}
+Attribute selections are similar to function composition operators, but allow for a bit more concise code\footnote{Done by not requiring whitespace around the symbolic keyword, unlike whitespace being required around most infix operators.}, resembling designator selections (\sref{sec:designators}):
+\begin{lstlisting}
+let y := x.'a in
+let z := x |> a in
+y = z
+\end{lstlisting}
+The main difference between attribute selections and function compositions shows up when more arguments are needed or multiple functions are composed and attributes chained, compare: 
+\begin{lstlisting}
+{
+  let y := x.'a(b) in    (* a(x)(b) *)
+  let z := x |> a(b) in  (* a(b)(x) *)
+  y /= z
+}
+\end{lstlisting}
+\begin{lstlisting}
+{
+  let y := x.'a(b).'c(d) in      (* c(a(x)(b))(d) *)
+  let z := x |> a(b) |> c(d) in  (* c(d)(a(b)(x)) *)
+  y /= z
+}
+\end{lstlisting}
 
 
 
@@ -1199,17 +1219,17 @@ Arguments   ::= {Argument}+
 Argument    ::= Positional_Argument
               | Labelled_Argument
 Positional_Argument 
-            ::= ['?'] Value_Expr
+            ::= ['?' | '*' | '**'] Value_Expr
               | '$'
               | Tuple_Argument
               | '(' Tuple_Argument ')'
 Labelled_Argument
             ::= ['~' | '~?'] id ':' Value_Expr
-              | ['~' | '~?'] id ':' TT_Expr
-              | ['~' | '~?'] id ':' Slice_Expr
+              | ['~']        id ':' TT_Expr
+              | ['~']        id ':' Slice_Expr
               | ['~' | '~?'] id ':' '$'
-              | ['~' | '~?'] id ':' Tuple_Argument
-              | ['~' | '~?'] id ':' '(' Tuple_Argument ')'
+              | ['~']        id ':' Tuple_Argument
+              | ['~']        id ':' '(' Tuple_Argument ')'
               | ('~' | '~?') id
 Tuple_Argument 
             ::= Positional_Tuple_Arguments [',' Named_Tuple_Arguments]

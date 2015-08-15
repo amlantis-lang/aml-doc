@@ -15,34 +15,40 @@
 \label{sec:patterns}
 
 \syntax\begin{lstlisting}[deletekeywords={as,with}]
-Pattern             ::= Var_Pattern
+Pattern             ::= Atomic_Pattern
+                      | Non_Atomic_Pattern
+Atomic_Pattern      ::= Var_Pattern
                       | Bound_Pattern
                       | Typed_Pattern
-                      | Type_Pattern
+                      | ':?' Type (* a portion of Type_Pattern *)
                       | Wildcard_Pattern
                       | Constant_Pattern
                       | Grouped_Pattern
+                      | Stable_Id (* a portion of Named_Pattern *)
+                      | List_Pattern
+                      | Array_Pattern
+                      | Dict_Pattern
+                      | Multimap_Pattern
+                      | Bag_Pattern
+                      | Record_Pattern
+                      | Struct_Pattern
+                      | '(' Pattern ')'
+Non_Atomic_Pattern  ::= Type_Pattern
+                      | Type_Bound_Pattern
                       | Infix_Pattern
                       | Or_Pattern
                       | And_Pattern
                       | Named_Pattern
                       | Tag_Pattern
                       | Tuple_Pattern
-                      | List_Pattern
-                      | Array_Pattern
-                      | Dict_Pattern
-                      | Multimap_Pattern
-                      | Bag_Pattern
                       | Cons_Pattern
-                      | Record_Pattern
-                      | Struct_Pattern
                       | Annotated_Pattern
 Var_Pattern         ::= ['implicit'] ['val' | 'var'] var_id
 Bound_Pattern       ::= Pattern 'as' Var_Pattern
 Wildcard_Pattern    ::= '_'
 Constant_Pattern    ::= Constant
 Typed_Pattern       ::= '(' Type_Bound_Pattern ')'
-Type_Pattern        ::= ['type' ['is'] | ':?'] Type
+Type_Pattern        ::= ['type' 'is' | ':?'] Type
 Type_Bound_Pattern  ::= Pattern ':' Type
 Grouped_Pattern     ::= '(' Pattern ')'
 Infix_Pattern       ::= Pattern (id | op_id) Pattern
@@ -64,9 +70,6 @@ Extractions         ::= Pattern
                       | Positional_Extracts {',' Labelled_Extracts}
                       | Labelled_Extracts
 Tuple_Extractions   ::= Extractions
-                      | '(' 
-                        ? Pattern with Type_Bound_Pattern as Pattern as well ? 
-                        ')'
                       | '(' Extractions ')'
 Positional_Extracts ::= Pattern {',' Pattern} 
                         [',' Rest_Extracts {',' Pattern}]
@@ -75,20 +78,23 @@ Rest_Extracts       ::= Optional_Extract {',' Optional_Extract}
                         [',' Rest_Extract]
                       | Rest_Extract
 Optional_Extract    ::= '?' Pattern
-                      | '?' ['val' | 'var'] var_id ':' Type
+                      | '?' ['val' | 'var'] id ':' Type
                       | '?' '_' ':' Type
                       | '?(' Pattern ':=' Value_Expr ')'
-Rest_Extract        ::= '*' ['val' | 'var'] var_id [':' Type]
+Rest_Extract        ::= '*' ['val' | 'var'] id [':' Type]
                       | '*' '_' [':' Type]
 Labelled_Extracts   ::= Labelled_Pattern {',' Labelled_Pattern} 
                         [',' Capture_Extract]
-Labelled_Pattern    ::= '~' id 
-                      | '~(' id [':' Type] ')'
-                      | '~' id ':' Pattern
-                      | '~?' id
-                      | '~?(' id [':' Type] [':=' Value_Expr] ')'
-                      | '~?' id ':' Pattern
-                      | '~?' id ':' 
+                      | Capture_Extract
+Labelled_Pattern    ::= '~' ['val' | 'var'] id 
+                      | '~(' ['val' | 'var'] id [':' Type] ')'
+                      | '~' ['val' | 'var'] id ':' Pattern
+                      | '~' ['val' | 'var'] id ':' 
+                        '(' Pattern [':' Type] ')'
+                      | '~?' ['val' | 'var'] id
+                      | '~?(' ['val' | 'var'] id [':' Type] [':=' Value_Expr] ')'
+                      | '~?' ['val' | 'var'] id ':' Pattern
+                      | '~?' ['val' | 'var'] id ':' 
                         '(' Pattern [':' Type] [':=' Value_Expr] ')'
 Capture_Extract     ::= '**' var_id [':' Type]
                       | '**' '_' [':' Type]
@@ -131,6 +137,16 @@ Pattern_Param       ::= Value_Expr
 \end{center}
 \label{table:pattern-matching-op-precedences}
 \end{table}%
+
+
+
+
+
+\subsection{Atomic \& Non-Atomic Patterns}
+\label{sec:atomic-patterns}
+\label{sec:non-atomic-patterns}
+
+We call {\em atomic patterns} those of pattern forms that can appear consecutively on a line and still have their boundaries clear and unambiguous. On the other hand, {\em non-atomic patterns} could make such consecutive appearances ambiguous. This distinction is only important in grammar constructs that allow consecutive appearance of patterns, namely function parameters. 
 
 
 
@@ -544,10 +560,10 @@ Conjunctive patterns contribute intersection of types contributed by both sub-pa
 \syntax\begin{lstlisting}
 Typed_Pattern      ::= '(' Type_Bound_Pattern ')'
 Type_Bound_Pattern ::= Pattern ':' Type
-Type_Pattern       ::= ['type' ['is'] | ':?'] Type
+Type_Pattern       ::= ['type' 'is' | ':?'] Type
 \end{lstlisting}
 
-A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!type $T$!, ~\lstinline!type is $T$!~ and
+A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!type is $T$!~ and
 ~\lstinline!:? $T$!, all of which are equivalent. 
 
 Gear does not distinguish type-annotated patterns from dynamic type-test patterns -- all such patterns are dynamic type-test patterns, with implications from a type-annotated pattern. 
@@ -800,6 +816,7 @@ Labelled extractions (\code{Labelled_Pattern}) are similar to dictionary extract
 \begin{enumerate}
   \item The forms ~\lstinline!~$v$!~ and ~\lstinline!~($v$ $[$: $T$$]$)!~ are shorthands for respectively ~\lstinline!~$v$: val $v$!~ and ~\lstinline!~$v$: (val $v$ $[$: $T$$]$)!. 
   \item The form ~\lstinline!~$v$: $p$!, which matches an input value labelled $v$, and matches the value against the pattern $p$. This form subsumes the form ~\lstinline!~$v$: val $v$!, which is using a variable pattern $v$ to bind the input value, and also the form ~\lstinline!~$v$: (val $v$ $[$: $T$$]$)!, which uses a typed pattern instead of a simple variable pattern, but needs grouping parentheses. 
+  \item The form ~\lstinline!~$v$: ($p$ $[$: $T$$]$)!~ is extension to the previous form and restricts inputs for the sub-pattern $p$ to conform to $T$, if $T$ is present. 
   \item The form ~\lstinline!~?$v$!~ is a shorthand for the form ~\lstinline!~?$v$: val $v$!. 
   \item The form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!~ is a shorthand for the form ~\lstinline!~?$v$: (val $v$ $[$: $T$$]$ $[$:= $e$$]$)!. 
   \item The form ~\lstinline!~?$v$: ($p$ $[$: $T$$]$ $[$:= $e$$]$)!, which subsumes the form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!, matches an input value labelled $v$, and if such value is not present in the input tuple, then the result bound to a variable by $p$ depends on whether $e$ is present: if it is, the result of its evaluation is bound directly, otherwise \code{Option[$T$]} wrapper is used instead, very much like with optional extractions in sequence extractions. 

@@ -3,6 +3,7 @@
 
 \chapter[Implicit Parameters, Views \& Multiple Dispatch]{Implicit Parameters, Views \\\& Multiple Dispatch}
 \label{sec:implicit-params-views}
+\label{sec:implicits}
 
 \minitoc
 
@@ -16,11 +17,12 @@
 \label{sec:implicit-modifier}
 
 \syntax\begin{lstlisting}
-Local_Modifier ::= 'implicit'
-Param_Clauses  ::= {Param_Clause} '(' 'implicit' Params ')'
+Local_Modifier  ::= 'implicit'
+Implicit_Params ::= 'implicit' ':' Atomic_Pattern
+                  | '(' 'implicit' ':' (Atomic_Pattern | Params) ')'
 \end{lstlisting}
 
-Template members and parameters labeled with \code{implicit} modifier can be passed to implicit parameters (\sref{sec:implicit-parameters}) and can be used as implicit conversions called views (\sref{sec:views}). 
+Template members and parameters labelled with \code{implicit} modifier can be passed to implicit parameters (\sref{sec:implicit-parameters}) and can be used as implicit conversions called views (\sref{sec:views}). 
 
 If the member marked with \code{implicit} is a class, it makes the primary constructor of the class available for implicit conversions as a function. Such primary constructor may take exactly one non-implicit argument in its first parameter list. 
 
@@ -50,32 +52,32 @@ object Monoids {
 \section{Implicit Parameters}
 \label{sec:implicit-parameters}
 
-An implicit parameter list ~\lstinline!(implicit $p_1 \commadots p_n$)!~ of a method marks the parameters $p_1 \commadots p_n$ as implicit. A method or constructor can have at most one implicit parameter list, and it must be the last parameter list given. 
+An implicit parameter ~\lstinline!(implicit: $p$)!~ of a method marks the variables that bind arguments by $p$ as implicit, both for the outside world, and for the method's scope. A method or constructor can have at most one implicit parameter, and it must be the last parameter defined. 
 
-A method with implicit parameters can be applied to arguments just like normal method. In this case the \code{implicit} label has no effect. However, if such a method misses arguments for its implicit parameters (determined by a missing consecutive function application -- \sref{sec:partial-applications}), such arguments will be automatically provided, if possible. 
+A method with implicit parameter can be applied to arguments just like normal method. In this case the \code{implicit} label has no effect. However, if such a method misses argument for its implicit parameter, such argument will be automatically provided, if possible. If a tuple extraction is used as the implicit parameter, then an argument will be automatically provided for each defined tuple element, but those extractions can only define positional non-optional extractions at the top level. 
 
 The actual arguments that are eligible to be passed to an implicit parameter of type $T$ fall into two categories.
 \begin{itemize}
-\item First, eligible are all identifiers $x$ that can be accessed at the point of the method call without a prefix and that denote an implicit definition (\sref{sec:implicit-modifier}) or an implicit parameter. An eligible identifier may thus be a local name, or a member of an enclosing template, or it may have been made accessible without a prefix through a use clause (\sref{sec:use-clauses}). 
-\item If there are no eligible identifiers under the previous rule, then, second, eligible are also all \code{implicit} members of some object that belongs to the implicit scope of the implicit parameter's type, $T$. 
+  \item First, eligible are all identifiers $x$ that can be accessed at the point of the method call without a prefix and that denote an implicit definition (\sref{sec:implicit-modifier}) or an implicit parameter. An eligible identifier may thus be a local name, or a member of an enclosing template, or it may have been made accessible without a prefix through a use clause (\sref{sec:use-clauses}). 
+  \item If there are no eligible identifiers under the previous rule, then, second, eligible are also all \code{implicit} members of some object that belongs to the implicit scope of the implicit parameter's type, $T$. 
 \end{itemize}
 
 % TBD: base classes
 The {\em implicit scope} of a type $T$ consists of the type $T$ itself and all classes and class objects that are associated with the type $T$. Here, we say a class $C$ is {\em associated} with a type $T$, if it is a base class of some part of $T$. The {\em parts} of a type $T$ are:
 \begin{itemize}
-\item If $T$ is a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, the union of the parts of $T_1 \commadots T_n$, as well as $T$ itself.
-\item If $T$ is a parameterized type ~\lstinline!$S$[$T_1 \commadots T_n$]!, the union of the parts of $S$ and $T_1 \commadots T_n$. 
-\item If $T$ is a singleton type \code{$p$.type}, the parts of the type of $p$. 
-\item If $T$ is a type projection ~\lstinline!$S$#$U$!, the parts of $S$ as well as $T$ itself.
-\item If $T$ is a union type ~\lstinline!union of ($T_1$; $\ldots$; $T_n$)!, the union of all types $T_1 \commadots T_n$. 
-\item In all other cases, just $T$ itself. 
+  \item If $T$ is a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, the union of the parts of $T_1 \commadots T_n$, as well as $T$ itself.
+  \item If $T$ is a parameterized type ~\lstinline!$S$[$T_1 \commadots T_n$]!, the union of the parts of $S$ and $T_1 \commadots T_n$. 
+  \item If $T$ is a singleton type \code{$p$.type}, the parts of the type of $p$. 
+  \item If $T$ is a type projection ~\lstinline!$S$#$U$!, the parts of $S$ as well as $T$ itself.
+  \item If $T$ is a union type ~\lstinline!union of ($T_1$; $\ldots$; $T_n$)!, the union of all types $T_1 \commadots T_n$. 
+  \item In all other cases, just $T$ itself. 
 \end{itemize}
 
 If there are several eligible arguments which match the implicit parameter's type, a most specific one will be chosen using the rules of overloading resolution without any application (\sref{sec:overloading-resolution}). If the parameter has a default argument and no implicit argument can be found, the default argument is used. 
 
 \example Assuming the classes from \ref{ex:impl-monoid}, here is a method which computes the sum of a list of elements using the monoid's \code{add} and \code{unit} operations.
 \begin{lstlisting}
-def sum [A] (xs: List[A])(implicit m: Monoid[A]): A 
+def sum [A] (xs: List[A])(implicit: m: Monoid[A]): A 
   if xs.is_empty?
     m.unit
   else
@@ -145,8 +147,8 @@ def $f$ [$A$ <% $T_1$ $\ldots$ <% $T_m$ : $U_1$ : $U_n$] ($\ps$): $R$ := $\ldots
 
 Then the method definition above is equivalent to
 \begin{lstlisting}
-def $f$ [$A$] ($\ps$)(implicit $v_1$: $A$ -> $T_1 \commadots v_m$: $A$ -> $T_m$,
-                        $w_1$: $U_1$[$A$]$\commadots w_n$: $U_n$[$A$]): $R$ := $\ldots$
+def $f$ [$A$] ($\ps$)(implicit: $v_1$: $A$ -> $T_1 \commadots v_m$: $A$ -> $T_m$,
+                         $w_1$: $U_1$[$A$]$\commadots w_n$: $U_n$[$A$]): $R$ := $\ldots$
 \end{lstlisting}
 where the $v_i$ and $w_j$ are fresh names for the newly introduced implicit parameters. These parameters are called {\em evidence parameters}. 
 
@@ -157,7 +159,7 @@ If the type of a context-bound parameter uses the type parameter in its definiti
 \example The following example shows a method with a context-bound parameter using a partially applied type, and the resulting translation below it. 
 \begin{lstlisting}
 def f [T : T -> String](t: T) := $\ldots$
-def f [T] (t: T)(implicit $w_1$: Function_1[T, String]) := $\ldots$
+def f [T] (t: T)(implicit: $w_1$: Function_1[T, String]) := $\ldots$
 \end{lstlisting}
 
 
@@ -299,7 +301,7 @@ object program {
   }
   
   method multiply [A, B, C]
-      (a: A, b: B)(implicit dep: Mult_Dep[A, B, C]): C
+      (a: A, b: B)(implicit: dep: Mult_Dep[A, B, C]): C
     dep.apply(a, b)
   end method
   
