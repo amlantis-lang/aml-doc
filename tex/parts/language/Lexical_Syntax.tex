@@ -139,7 +139,7 @@ let!  yield!  return!  as?  as!  is!  not!
 %[|  |]  %[  %(  {  %{  }  %/  /
 '  #  ..  ..<  ...  :=  ==  /==  ;  ;;  ->  <-
 =>  =>>  *  **  &
-_  @  <@  @>  <@@  @@>  {<  >}
+_  @  <@  @>  <@@  @@>  {<  >}  %%
 \end{lstlisting}
 
 Symbolic or partially symbolic character sequences can be treated as keywords, if a lexical or syntactic grammars specifies that. Some lexical grammars extend some of these sequences with ``flags''. 
@@ -601,35 +601,9 @@ Symbol literals are members of the type \lstinline@Symbol@. They differ from \na
 \subsection{Regular Expression Literals}
 \label{sec:regexpliterals}
 
-\syntax\begin{lstlisting}
-regexp_literal     ::= matching_regexp_p5
-                     | matching_regexp_p6
-                     | subst_regexp_p5
-                     | subst_regexp_p6
-matching_regexp_p5 ::= '%/' {int_string_element} '/' [regexp_flags]
-subst_regexp_p5    ::= '%s/' {int_string_element} '/' 
-                       {int_string_element} '/' [regexp_flags]
-matching_regexp_p6 ::= '%rx/' {int_string_element} '/'
-	                   | '%rx#' {int_string_element - int_expr1} '#'
-	                   | '%rx~' {int_string_element} '~'
-	                   | '%rx[' {int_string_element} ']'
-	                   | '%rx{' {int_string_element} '}'
-	                   | '%rx(' {int_string_element} ')'
-subst_regexp       ::= '%srx/' {int_string_element} '/'
-                       {int_string_element} '/'
-	                   | '%srx#' {int_string_element - int_expr1} '#'
-	                     {int_string_element - int_expr1} '#'
-	                   | '%srx~' {int_string_element} '~'
-	                     {int_string_element} '~'
-regexp_content_int ::= regexp_element_int {regexp_element_int}
-regexp_element_int ::= string_element | int_string_element
-regexp_content     ::= string_element {string_element}
-regexp_flags       ::= letter_char {letter_char}
-\end{lstlisting}
-
 Regular expression literals are members of the type \lstinline@Regular_Expression@ with alias of \lstinline@Regexp@. 
 
-Regular expressions are subject to \code{GFR-3} (PACRE). 
+Regular expressions are defined in (\sref{sec:pacre}). 
 
 
 

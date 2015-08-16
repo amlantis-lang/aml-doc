@@ -56,9 +56,6 @@ subst_regexp       ::= '%srx/' {int_string_element} '/'
 	                     {int_string_element - int_expr1} '#'
 	                   | '%srx~' {int_string_element} '~'
 	                     {int_string_element} '~'
-regexp_content_int ::= regexp_element_int {regexp_element_int}
-regexp_element_int ::= string_element | int_string_element
-regexp_content     ::= string_element {string_element}
 regexp_flags       ::= letter_char {letter_char}
 \end{lstlisting}
 
