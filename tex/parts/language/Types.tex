@@ -365,7 +365,7 @@ Polymorphic_Variant_Type ::= '[[' Tag_Spec {semi Tag_Spec} ']]'
                                    [semi '>' {Tag_Name}+] ']]'
 Tag_Spec                 ::= Tag_Name ['of' Type]
                            | Type
-Tag_Name                 ::= '`' id
+Tag_Name                 ::= '`' ? id that does not start with ` or @ ?
 \end{lstlisting}
 
 Polymorphic variant types describe the values a polymorphic variant may take. 

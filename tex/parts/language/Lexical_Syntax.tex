@@ -46,7 +46,7 @@ plain_id ::= upper id_rest
 id       ::= ['@' | '@@'] (plain_id
              | '`' plain_id '`'
              | '``' {any_id}+ '``')
-           | '`' op_id '`'
+           | '`' {op_char}+ '`'
 impl_par ::= '%' {digit_char}+
 id_char  ::= letter_char
            | digit_char
@@ -138,7 +138,7 @@ let!  yield!  return!  as?  as!  is!  not!
 |  .  .?  .!  .'  :  (  )  [  ]  <  >  >:  <:  :>
 %[|  |]  %[  %(  {  %{  }  %/  /
 '  #  ..  ..<  ...  :=  ==  /==  ;  ;;  ->  <-
-=>  =>>  *  **  &
+=>  =>>  *  **  &  ?  ,
 _  @  <@  @>  <@@  @@>  {<  >}  %%
 \end{lstlisting}
 
@@ -151,11 +151,11 @@ Symbolic or partially symbolic character sequences can be treated as keywords, i
 \section{Symbolic Operators}
 \label{sec:symbolic-operators}
 
-\syntax\begin{lstlisting}[deletekeywords={of,and}]
+\syntax\begin{lstlisting}[deletekeywords={of,and,for}]
 op_id       ::= Symbolic_Op
 Symbolic_Op ::= {op_char}+
               | '`' {op_char}+ '`'
-op_char     ::= ? Unicode char of classes Sm and So ?
+op_char     ::= ? Unicode char of classes Sm and So except for 0x0060 ?
               | '!'
               | '#'
               | '%'
