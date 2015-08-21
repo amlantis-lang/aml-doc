@@ -50,7 +50,7 @@ The list of parents of a template must be well-formed, i.e. the class denoted by
 
 The {\em least proper supertype} of a template is the class type or compound type (\sref{sec:compound-types}) consisting of all its parent class types. 
 
-The statement sequence $\stats$ contain member definitions that define new members or overwrite members in the parent classes. It is called also the {\em class-level block}, as it does not need to contain only member definitions for the template, but also arbitrary other expressions that construct the class object and that are executed while the class is being loaded, in the context of the class. If the template forms part of an abstract class or trait definition, the statement part $\stats$ may also contain declarations of abstract members. If the template forms part of a concrete class definition, $\stats$ may still contain declarations of abstract type members, but not of abstract term members. Unlike in Scala, the expressions in $\stats$ are not forming the primary constructor of the class, but a multi-constructor\footnote{The classes are open in Gear, a single class may have its statements spread across multiple source files (\sref{sec:open-templates}).} of the class itself. 
+The statement sequence $\stats$ contain member definitions that define new members or overwrite members in the parent classes. It is called also the {\em class-level block}, as it does not need to contain only member definitions for the template, but also arbitrary other expressions that construct the class object and that are executed while the class is being loaded, in the context of the class. If the template forms part of an abstract class or trait definition, the statement part $\stats$ may also contain declarations of abstract members. If the template forms part of a concrete class definition, $\stats$ may still contain declarations of abstract type members, but not of abstract term members. Unlike in Scala, the expressions in $\stats$ are not forming the primary constructor of the class, but a multi-constructor\footnote{The classes are open in Aml, a single class may have its statements spread across multiple source files (\sref{sec:open-templates}).} of the class itself. 
 
 The sequence of template statements may be prefixed with a formal parameter definition prefixed with \code{requires} or \code{use}, i.e. ~\lstinline!use self as $x$!, ~\lstinline!use self as $x$: $T$!, ~\lstinline!requires $T$!~ or ~\lstinline!requires $x$: $T$!. If a formal parameter $x$ is given, it can be used as an alias for the reference \code{self} throughout the body of the template, including any nested types. If the formal parameter $x$ comes with a type $T$, this definition affects the {\em self type} $S$ of the underlying class or objects as follows: Let $C$ be the type of the class or trait or object defining the template. If a type $T$ is given for the formal self parameter, $S$ is the greatest lower bound of $T$ and $C$. If no type $T$ is given, $S$ is simply $C$. Inside the template, the type of \code{self} is assumed to be $S$. 
 
@@ -58,7 +58,7 @@ The self type of a class or object must conform to the self types of all classes
 
 A second form of self type definition reads just ~\lstinline!requires self: $S$!~. It prescribes the type $S$ for \code{self} without introducing an alias name for it. 
 
-% TBD: add distinction between use/requires to Gear naming guidelines (use-rename, requires-affect self type)
+% TBD: add distinction between use/requires to Aml naming guidelines (use-rename, requires-affect self type)
 
 \example Consider the following class definitions:
 \begin{lstlisting}
@@ -78,13 +78,13 @@ object O extends Base with Mixin; $\ldots$ end
 \subsection{Open Templates}
 \label{sec:open-templates}
 
-Unlike in Java, Scala or any other language that does not feature open classes, and similar to Ruby's open classes or C\#'s partial classes, Gear has a feature of open templates. This means that a single template (be it a class or a trait) can have its definition spread across several source files. 
+Unlike in Java, Scala or any other language that does not feature open classes, and similar to Ruby's open classes or C\#'s partial classes, Aml has a feature of open templates. This means that a single template (be it a class or a trait) can have its definition spread across several source files. 
 
 An open template has a {\em main template}, which is the template that specifies the base class -- a property that can't be changed once set, and any number of {\em auxiliary templates}, which have only the limitation of not being able to define the base class (and a primary constructor, including the parent constructor invocation). However, it is possible for the auxiliary templates to define additional traits applied or prepended to the template. 
 
 Auxiliary templates do not need to be eager loaded. There are basically three major ways to make use of an auxiliary template:
 \begin{itemize}
-  \item Eager loaded auxiliary template, using a file name scheme ~\lstinline!$t$.aux/$a$.gear!, where $t$ is the name of the template and $a$ is arbitrary auxiliary name. This way the auxiliary template is loaded along with the leading template, on-demand, without incrementing the template's version.
+  \item Eager loaded auxiliary template, using a file name scheme ~\lstinline!$t$.aux/$a$.aml!, where $t$ is the name of the template and $a$ is arbitrary auxiliary name. This way the auxiliary template is loaded along with the leading template, on-demand, without incrementing the template's version.
   \item Autoload (\sref{sec:autoloading}) of the auxiliary template. 
   \item On-demand load of the auxiliary template via independent ~\lstinline[deletekeywords={to}]!VM.load 'path/to/file'!, after the leading template is defined.
 \end{itemize}
@@ -155,13 +155,13 @@ Primary constructor evaluation happens in the following order in respect to the 
 \label{sec:eigenclasses}
 
 \paragraph{\em Metaclasses}
-A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behavior and properties of its instances, a metaclass defines the behavior of its class. Classes are first-class citizens in Gear. 
+A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behavior and properties of its instances, a metaclass defines the behavior of its class. Classes are first-class citizens in Aml. 
 
-Everything is an object in Gear. Every object has a class that defines the structure (i.e. the instance variables) and behavior of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
+Everything is an object in Aml. Every object has a class that defines the structure (i.e. the instance variables) and behavior of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
 
 Class methods actually belong to the metaclass, just as instance methods actually belong to the class. All metaclasses are instances of only one class called \code{Metaclass}, which is a subclass of the class \code{Class}. 
 
-In Gear, every class (except for the root class \code{Object}) has a superclass. The base superclass of all metaclasses is the class \code{Class}, which describes the general nature of classes. 
+In Aml, every class (except for the root class \code{Object}) has a superclass. The base superclass of all metaclasses is the class \code{Class}, which describes the general nature of classes. 
 
 The superclass hierarchy for metaclasses parallels that for classes, except for the class \code{Object}. The following holds for the class \code{Object}:
 \begin{lstlisting}[deletekeywords={class}]
@@ -172,7 +172,7 @@ Object.superclass = nil
 Classes and metaclasses are ``born together''. Every \code{Metaclass} instance has a method \code{this_class}, which returns the conjoined class. 
 
 \paragraph{\em Eigenclasses}
-Gear further purifies the concept of metaclasses by introducing {\em eigenclasses}, borrowed from Ruby, but keeping the \code{Metaclass} known from Smalltalk-80. Every metaclass is an eigenclass, either to a class, to a terminal object, or to another eigenclass\footnote{Eigenclasses of eigenclasses (``higher-order'' eigenclasses) are supposed to be rarely needed, but are there for conceptual integrity, establishing infinite regress.}. 
+Aml further purifies the concept of metaclasses by introducing {\em eigenclasses}, borrowed from Ruby, but keeping the \code{Metaclass} known from Smalltalk-80. Every metaclass is an eigenclass, either to a class, to a terminal object, or to another eigenclass\footnote{Eigenclasses of eigenclasses (``higher-order'' eigenclasses) are supposed to be rarely needed, but are there for conceptual integrity, establishing infinite regress.}. 
 
 \begin{table}[ht]
   \centering
@@ -186,7 +186,7 @@ Gear further purifies the concept of metaclasses by introducing {\em eigenclasse
   \end{tabular}
 \end{table}
 
-Eigenclasses are manipulated indirectly through various syntax features of Gear, or directly using the \code{eigenclass} method. This method can possibly trigger creation of an eigenclass, if the receiver of the \code{eigenclass} message did not previously have its own (singleton) eigenclass (because it was a terminal object whose eigenclass was a regular class, or the reciever was an eigenclass itself). 
+Eigenclasses are manipulated indirectly through various syntax features of Aml, or directly using the \code{eigenclass} method. This method can possibly trigger creation of an eigenclass, if the receiver of the \code{eigenclass} message did not previously have its own (singleton) eigenclass (because it was a terminal object whose eigenclass was a regular class, or the reciever was an eigenclass itself). 
 
 Another way to access an eigenclass is to use the \lstinline!class << obj; $\ldots$; end! construct. The block of code inside runs is evaluated in the scope of the eigenclass of \code{obj}. 
 
@@ -426,7 +426,7 @@ If $sp$ is not empty, then for each $M_i$ in $sp$, remove $M_i$ from $sp$ and re
 \end{enumerate}
 
 \paragraph{\em Traits \& Metaclasses}
-Since traits may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses.\footnote{This makes Gear in no need of constructs like \lstinline[language=Ruby]!module ClassMethods!, known from Ruby.}
+Since traits may contain ``class'' methods as well as instance methods, all the operations with include classes are mirrored on the respective metaclasses.\footnote{This makes Aml in no need of constructs like \lstinline[language=Ruby]!module ClassMethods!, known from Ruby.}
 
 
 
@@ -435,7 +435,7 @@ Since traits may contain ``class'' methods as well as instance methods, all the 
 \subsection{Class Members}
 \label{sec:class-members}
 
-A class $C$ defined by a template ~\lstinline!$C_1$ with $\ldots$ with $C_n$ { $\stats$ }!~ can define members in its statement sequence $\stats$ and can inherit members from all parent classes. Gear uses overloading of methods, therefore it is possible for a class to define and/or inherit several methods with the same name. To decide whether a defined member of a class $C$ overrides a member of a parent class, or whether the two co-exist as overloaded alternatives in $C$, Gear uses the following definition of {\em matching} on members:
+A class $C$ defined by a template ~\lstinline!$C_1$ with $\ldots$ with $C_n$ { $\stats$ }!~ can define members in its statement sequence $\stats$ and can inherit members from all parent classes. Aml uses overloading of methods, therefore it is possible for a class to define and/or inherit several methods with the same name. To decide whether a defined member of a class $C$ overrides a member of a parent class, or whether the two co-exist as overloaded alternatives in $C$, Aml uses the following definition of {\em matching} on members:
 
 \begin{definition}
 A member definition $M$ {\em matches} a member definition $M'$, if $M$ and $M'$ bind the same name, and one of the following conditions holds.
@@ -635,7 +635,7 @@ The rules governing the validity and meaning of a modifier are as follows:
 
   A different form of qualification is \lstinline!protected[self]!. A member $M$ marked with this modifier can be accessed only from within the object in which it is defined, including methods from inherited scope. That is, a selection \lstinline!$p$.$M$! is only legal if the prefix ends with \code{this}, \code{self} or \code{super} and starts with $O$ for some class $O$ enclosing the reference. Moreover, the restrictions for unqualified \code{protected} apply. 
 
-  \item The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Gear is virtual, so Gear has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). If the optional class qualifier is present after the \code{override} modifier, then a supertype of the given simple name or identified by the stable id has to provide a member that this modifier is applied to, either abstract or concrete, and it is an error if it does not. 
+  \item The \code{override} modifier applies to class member definitions and declarations. It is never mandatory, unlike in Scala or C\# (in further contrast with C\#, every method in Aml is virtual, so Aml has no need for a keyword ``\code{virtual}''). On the other hand, when the modifier is used, it is mandatory for the superclass to define or declare at least one matching member (either concrete or abstract). If the optional class qualifier is present after the \code{override} modifier, then a supertype of the given simple name or identified by the stable id has to provide a member that this modifier is applied to, either abstract or concrete, and it is an error if it does not. 
 
   \item The \code{override} modifier has an additional significance when combined with the \code{abstract} local modifier. That modifier combination is only allowed for members of traits. 
 
@@ -752,7 +752,7 @@ Here,
 $c$ is the name of the class to be defined. 
 
 \item[]
-$\tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline![$\tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Gear, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Gear in runtime. 
+$\tps$ is a non-empty list of type parameters of the class being defined. The scope of a type parameter is the whole class definition including the type parameter section itself. It is an error to define two type parameters with the same name. The type parameter section \lstinline![$\tps$]! may be omitted. A class with a type parameter section is called {\em polymorphic}, a class without a type parameter section is called otherwise {\em monomorphic}. Type arguments are reified in Aml, i.e. type arguments are preserved in runtime\footnote{Unlike in Java or Scala, which both perform type erasure.}, generating a new concrete subtype of the original generic class. This ensures type safety in a dynamic environment of Aml in runtime. 
 
 \item[]
 $\as$ is a possibly empty sequence of annotations (\sref{sec:annotations}). If any annotations are given at this point, they apply to the primary constructor of the class. 
@@ -851,7 +851,7 @@ $c$[String, *_]
 \label{sec:constructor-destructor-def}
 
 \paragraph{\em Primary constructor}
-The primary constructor is a special function, more special in its syntax than any other function in Gear. Its definition can spread across three syntactically different places inside of a class definition: formal value parameters, explicit field declarations, explicit primary constructor body. Primary constructor without explicitly defined parameters is equivalent to the default constructor. 
+The primary constructor is a special function, more special in its syntax than any other function in Aml. Its definition can spread across three syntactically different places inside of a class definition: formal value parameters, explicit field declarations, explicit primary constructor body. Primary constructor without explicitly defined parameters is equivalent to the default constructor. 
 
 \paragraph{\em Primary constructor parameters}
 These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
@@ -881,7 +881,7 @@ Constr_Block3   ::= [[Block_Stat {semi Block_Stat} semi]
 \end{lstlisting}
 
 \paragraph{Auxiliary constructors}
-Besides the primary constructor, a class may define additional constructors with different parameter sections, that form together with the primary constructor an overloaded constructor definition. Every auxiliary constructor is constrained in means that it has to either invoke another constructor defined before itself, or any superclass constructor. Therefore classes in Gear have multiple entry points, but with great power comes great responsibility: user must ensure that every constructor path defines all necessary members. It is an error if a constructor invocation leads to an instance with abstract members. If a constructor does not explicitly invoke another constructor, an invocation of the implicit constructor is inserted implicitly as the first invocation in the constructor. 
+Besides the primary constructor, a class may define additional constructors with different parameter sections, that form together with the primary constructor an overloaded constructor definition. Every auxiliary constructor is constrained in means that it has to either invoke another constructor defined before itself, or any superclass constructor. Therefore classes in Aml have multiple entry points, but with great power comes great responsibility: user must ensure that every constructor path defines all necessary members. It is an error if a constructor invocation leads to an instance with abstract members. If a constructor does not explicitly invoke another constructor, an invocation of the implicit constructor is inserted implicitly as the first invocation in the constructor. 
 
 \syntax\begin{lstlisting}
 Ctor_Def     ::= ['convenience'] 'constructor' Ctor_Fun_Def
@@ -1168,7 +1168,7 @@ trait Comparable[T <: Comparable[T]] {
 \section{Refinement Definitions}
 \label{sec:refinements}
 
-There are two separate branches of refinements in Gear, both are quite similar, but used for different purposes. Refinements are kind of a trait (\sref{sec:traits}). The branches are as follows:
+There are two separate branches of refinements in Aml, both are quite similar, but used for different purposes. Refinements are kind of a trait (\sref{sec:traits}). The branches are as follows:
 \begin{itemize}
   \item[] First, refinements as part of the type system. Those refinements present only declarations and further type restrictions as part of compound types (\sref{sec:compound-types}).
 
@@ -1267,7 +1267,7 @@ Object_Tmpl_Env   ::= Tmpl_Env_With_Pars ['object']
 Expr              ::= [Mutability] 'object' Object_Tmpl_Env
 \end{lstlisting}
 
-Object definitions define singleton instances. If no superclass is given, \code{Gear/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Gear/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Gear/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Gear/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Gear has one scope for both types and terms. 
+Object definitions define singleton instances. If no superclass is given, \code{Aml/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Aml/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Aml/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Aml/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Aml has one scope for both types and terms. 
 
 It's most general form is ~\lstinline!object $m$ extends $t$!. Here, $m$ is the name of the object to be defined (or of the class object, which is the same as the related class), and $t$ is a template (\sref{sec:templates}) of one of the following forms:
 

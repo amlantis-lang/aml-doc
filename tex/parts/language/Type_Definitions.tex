@@ -195,7 +195,7 @@ The form ~\lstinline!$\id$ of $T$! is called {\em non-constant variant construct
 \paragraph{Note}
 Non-constant variant constructors are internally type-parameterized with the same type parameters as the variant type. 
 
-The form ~\lstinline!$\id$! is called {\em constant variant constructors}. The objects that represent constant variant constructors are singletons. Unlike with regular union types in Gear, constant variant constructors are not pre-existing types, but rather new types. 
+The form ~\lstinline!$\id$! is called {\em constant variant constructors}. The objects that represent constant variant constructors are singletons. Unlike with regular union types in Aml, constant variant constructors are not pre-existing types, but rather new types. 
 
 Variant types may be parameterized, therefore polymorphic. Overloading on type parameters is possible. 
 
@@ -423,7 +423,7 @@ struct
 end struct
 \end{lstlisting}
 
-Outside the structure, its components can be accessed as object properties\footnote{Since everything in Gear is an object, structures are also objects.}. 
+Outside the structure, its components can be accessed as object properties\footnote{Since everything in Aml is an object, structures are also objects.}. 
 
 \example Accessing structure components.
 \begin{lstlisting}

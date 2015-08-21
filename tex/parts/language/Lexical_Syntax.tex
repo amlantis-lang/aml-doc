@@ -9,7 +9,7 @@
 
 \minitoc
 
-Gear programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Gear programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs and text editors might use may not support the full Unicode character set.
+Aml programs are written using the Unicode character set; Unicode supplementary characters are supported as well. Aml programs are preferably encoded with the UTF-8 character encoding. While every Unicode character is supported, usage of Unicode escapes is encouraged, since fonts that IDEs and text editors might use may not support the full Unicode character set.
 
 Grammar of lexical tokens is given in the following sections. These tokens are then used as terminal symbols of the semantical grammar. 
 
@@ -60,9 +60,9 @@ any_id   ::= ? any Unicode chars except for two backquotes: '``' ?
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
 
-An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Gear keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Aml keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
-Gear programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
+Aml programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
 
 The ``\lstinline[mathescape=false]!$!'' character is reserved. 
 
@@ -186,7 +186,7 @@ Symbolic operators are sequences of characters as shown above, except where the 
 \section{Delimiter Characters}
 \label{sec:delimiter-characters}
 
-Some characters are not considered as operator characters (\sref{sec:symbolic-operators}), but are still part of lexical structure of Gear programs. These include:
+Some characters are not considered as operator characters (\sref{sec:symbolic-operators}), but are still part of lexical structure of Aml programs. These include:
 
 \syntax\begin{lstlisting}[deletekeywords={of}]
 Delimiter ::= ','
@@ -228,7 +228,7 @@ semi ::= {nl}+ | ';' {nl}
 tend ::= ';;'
 \end{lstlisting}
 
-Gear is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Gear source file is treated as the special separator token \lstinline@nl@ if the following criteria are satisfied:
+Aml is a line-oriented language, in which statements are expressions and may be terminated by newlines, as well as by semi-colon operator. A newline in a Aml source file is treated as the special separator token \lstinline@nl@ if the following criteria are satisfied:
 
 \begin{enumerate}
   \item The token immediately preceding the newline can terminate an expression.
@@ -237,7 +237,7 @@ Gear is a line-oriented language, in which statements are expressions and may be
 
 In interactive environment, top-level expressions are ended by entering the ``\code{;;}'' sequence of tokens (\code{tend}). 
 
-If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Gear still sees that as only a one significant newline, to prevent any confusion.
+If the token immediately preceding the newline can not terminate an expression and is followed by more than one newline, Aml still sees that as only a one significant newline, to prevent any confusion.
 
 The grammar rules contain productions where the optional newline (``\code{[nl]}'') is present, in which case it obviously does not end any expression. 
 
@@ -294,7 +294,7 @@ sign            ::= ['+' | '-'] | ()
 int_suffix      ::= ('G' | 'I' | 'M' | 'N' | 'T' | 'Q' | 'R' | 'Z') {digit}
 \end{lstlisting}
 
-Integers are usually of type \lstinline@Number@, which is a class cluster of all types that can represent numbers. Unlike Java, Gear supports both signed and unsigned integral types directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@, but this is implementation-defined. Math operations on numbers are handled internally in such a way that the user doesn't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type, or maybe even in a smaller container if fit. Expected type is always respected in any case. 
+Integers are usually of type \lstinline@Number@, which is a class cluster of all types that can represent numbers. Unlike Java, Aml supports both signed and unsigned integral types directly. Usually integer literals that are obviously unsigned integers are automatically represented internally by a class that stores the integer unsigned, like \lstinline@Integer_64_Unsigned@, but this is implementation-defined. Math operations on numbers are handled internally in such a way that the user doesn't need to worry about the actual types of the numbers — when an integer overflow would occur, the result is stored in a larger container type, or maybe even in a smaller container if fit. Expected type is always respected in any case. 
 
 Underscores ``\code{_}'' are allowed between digits for readability, but are otherwise ignored. Decimal integer literals can begin with leading zeros ``\code{0}'', but those zeros are likewise ignored. 
 
@@ -397,7 +397,7 @@ Literals that have \lstinline@float_type@ of ``\code{m}'' are (deci{\bf m}al) fi
 
 \end{enumerate}
 
-Letters in the exponent type, hexadecimal numbers and float type literals should be lower-case in Gear sources, but functions that parse floating point numbers have to support them being upper-case for compatibility. 
+Letters in the exponent type, hexadecimal numbers and float type literals should be lower-case in Aml sources, but functions that parse floating point numbers have to support them being upper-case for compatibility. 
 
 
 
@@ -406,7 +406,7 @@ Letters in the exponent type, hexadecimal numbers and float type literals should
 \subsection{Not A Number}
 \label{sec:nan}
 
-A member named \code{Not_a_Number} exists in the class cluster \code{Number}, with an alias of \code{NaN}, to denote results of operations on numbers that are not numbers, e.g., result of division by zero. There is no literal for this special value in Gear. 
+A member named \code{Not_a_Number} exists in the class cluster \code{Number}, with an alias of \code{NaN}, to denote results of operations on numbers that are not numbers, e.g., result of division by zero. There is no literal for this special value in Aml. 
 
 
 
@@ -458,7 +458,7 @@ Imaginary number literals are of type \code{Number}, and have a basically a sing
 \subsection{Units of Measure}
 \label{sec:unitsofmeasuresyntax}
 
-Gear has an addition to number handling, called {\em units of measure} (\sref{sec:units-of-measure}). Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
+Aml has an addition to number handling, called {\em units of measure} (\sref{sec:units-of-measure}). Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
 
 \syntax\begin{lstlisting}
 annotated_number ::= number_literal '[<' uom_expr '>]'
@@ -588,7 +588,7 @@ simple_symbol        ::= ':' plain_id
 quoted_symbol        ::= ':"' {int_string_element} '"'
 \end{lstlisting}
 
-Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Gear does not require their ids to be constant in time. 
+Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Aml does not require their ids to be constant in time. 
 
 
 
@@ -616,7 +616,7 @@ Tokens may be separated by whitespace characters and/or comments. Comments come 
 
 A multi-line comment is a sequence of characters between \lstinline@(* and *)@. Multi-line comments may be nested. There is a whitespace (including newlines) required after \lstinline@(*@ and before \lstinline@*)@ in the outermost multi-line comment. 
 
-A single-line comment in Gear is a multi-line comment, written all on one line. That's all. No special syntax for that. 
+A single-line comment in Aml is a multi-line comment, written all on one line. That's all. No special syntax for that. 
 
 Documentation comments are multi-line comments that start with \lstinline@(*!@. A whitespace is required after the opening token. 
 

@@ -5,7 +5,7 @@
 
 \minitoc
 
-This chapter introduces the way programs {\em should} be written and laid out in Gear. 
+This chapter introduces the way programs {\em should} be written and laid out in Aml. 
 
 
 
@@ -40,36 +40,36 @@ A directory holding a module must have the same name as the module, contained in
 
 \example Such directories may look like:
 \begin{lstlisting}[deletekeywords={module},mathescape=false]
-/Gear/Language
+/Aml/Language
 /Example/Your_Module
     /source (* or `src` *)
-        /gear
+        /aml
             /Some_Submodule 
             /macros
-                /some_macro.gearm
-            /some_source_file.gear
-            /module.gear
-            /build.gear
-            /module.dependencies.gear
+                /some_macro.amlm
+            /some_source_file.aml
+            /module.aml
+            /build.aml
+            /module.dependencies.aml
             /module.dependencies.lock
-        /cpp14 (* or whichever the Gear VM is implemented in *)
+        /cpp14 (* or whichever the Aml VM is implemented in *)
             /native_method.hpp
             /native_method.cpp
     /compiled (* or `com` *)
-        /gear
+        /aml
             /Some_Submodule
-            /Example/Your_Module.gearb
+            /Example/Your_Module.amlb
             /Example/Your_Module/native/ (* optimized code *)
-            /Example/Your_Module.gearpsi
+            /Example/Your_Module.amlpsi
         /cpp14
             /native_method.a
-    /vendor -> /usr/local/A_Gear_VM/modules
+    /vendor -> /usr/local/An_Aml_VM/modules
     /binaries (* or `bin` *)
         /an_executable.a
         /run_your_module (* some executable file 
-                            using #! to run a Gear VM *)
+                            using #! to run a Aml VM *)
     /protocols (* or `pro` *)
-        /Plugin.gearp
+        /Plugin.amlp
     /resources (* or `res` *)
         /logo.png
     /.gitignore
@@ -77,36 +77,36 @@ A directory holding a module must have the same name as the module, contained in
 \end{lstlisting} 
 
 \paragraph{Sources}
-A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Gear sources may be located, or alternatively, it can be forked into more directories, each for a specific language. 
+A common name for this directory is \code{src}, or \code{source}. Inside of this directory, all Aml sources may be located, or alternatively, it can be forked into more directories, each for a specific language. 
 
 The directory name consists of a lowercase name of the source language, optionally followed by a platform specifier. A build tool used to create the software may then choose the sources appropriately. 
 
-Gear source files have the suffix \code{.gear}. Readme files are not source files, having their name starting with any-case \code{readme}, followed by e.g. \code{.md} for a Markdown-formatted readme. 
+Aml source files have the suffix \code{.aml}. Readme files are not source files, having their name starting with any-case \code{readme}, followed by e.g. \code{.md} for a Markdown-formatted readme. 
 
-Gear source directory (\code{/src} or \code{/src/gear}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly -- some may be generated during compilation to provide skeletons for implementation of native methods and functions), which, for Gear, is named \code{build.gear}, and can make use of other files as needed. 
+Aml source directory (\code{/src} or \code{/src/aml}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly -- some may be generated during compilation to provide skeletons for implementation of native methods and functions), which, for Aml, is named \code{build.aml}, and can make use of other files as needed. 
 
-Macros should be placed in a \code{/macros} directory inside of a directory with Gear sources, so e.g. \code{/src/macros} or \code{/src/gear/macros}. Those files may also use other files as needed. A file that contains solely Gear macro definitions may be optionally named with suffix \code{.gearm}, but that is not a requirement. 
+Macros should be placed in a \code{/macros} directory inside of a directory with Aml sources, so e.g. \code{/src/macros} or \code{/src/aml/macros}. Those files may also use other files as needed. A file that contains solely Aml macro definitions may be optionally named with suffix \code{.amlm}, but that is not a requirement. 
 
-A module file may be placed in a Gear sources directory, and is named \code{module.gear}. This file is important in the fact that it defines the module and vendor name for the module, and the vendor name for all nested submodules. Along with this file, a \code{module.dependencies.gear} and \code{module.dependencies.lock} files may be present, to define the module's dependencies on other modules, where the latter is a generated file, supposed to be checked into your VCS\footnote{Version Control System.}.
+A module file may be placed in a Aml sources directory, and is named \code{module.aml}. This file is important in the fact that it defines the module and vendor name for the module, and the vendor name for all nested submodules. Along with this file, a \code{module.dependencies.aml} and \code{module.dependencies.lock} files may be present, to define the module's dependencies on other modules, where the latter is a generated file, supposed to be checked into your VCS\footnote{Version Control System.}.
 
 This directory may be omitted from a release version of your software (usually useful for proprietary software). 
 
-Submodules can be placed in a directory of the same name as the submodule's inside the directory where Gear sources are. 
+Submodules can be placed in a directory of the same name as the submodule's inside the directory where Aml sources are. 
 
 \paragraph{Compiled files}
 A common name for this directory is \code{com}, or \code{compiled}.
 
-Gear compiled files (bytecode) have the suffix \code{.gearb} for bytecode and \code{.gearpsi} for extracted Program Structure Information. Readme files might be copied into it, if needed. Note that Gear VM will refuse to execute module's entry point if the module is not compiled including all native method implementations. 
+Aml compiled files (bytecode) have the suffix \code{.amlb} for bytecode and \code{.amlpsi} for extracted Program Structure Information. Readme files might be copied into it, if needed. Note that Aml VM will refuse to execute module's entry point if the module is not compiled including all native method implementations. 
 
-Note that files compiled from other languages, if not bound to Gear environment via native method definitions, may be still used with \code{FFI} mechanisms. 
+Note that files compiled from other languages, if not bound to Aml environment via native method definitions, may be still used with \code{FFI} mechanisms. 
 
 \paragraph{Binary files}
-A common name for this directory is \code{bin}, or very less commonly \code{binaries}. It is intended to contain any necessary binary files that are not to be compiled during build of the software, but rather just included in it as they are. May include executable binary files, or even shell scripts that start up a Gear VM with a specific entry point. 
+A common name for this directory is \code{bin}, or very less commonly \code{binaries}. It is intended to contain any necessary binary files that are not to be compiled during build of the software, but rather just included in it as they are. May include executable binary files, or even shell scripts that start up a Aml VM with a specific entry point. 
 
 \paragraph{Protocol files}
 A common name for this directory is \code{pro}, or \code{protocols}. It is supposed to hold extracted interface of the module for use in other modules outside of this module. Such files contain just \code{interface} and \code{protocol} definitions, which may result by translation from \code{class} and \code{trait} definitions, and also other type definitions that are not regular classes. 
 
-Gear protocol files have the suffix of \code{.gearp}, but their structure is identical to any other Gear source file. 
+Aml protocol files have the suffix of \code{.amlp}, but their structure is identical to any other Aml source file. 
 
 Module builds that contain just the protocol files are an option to include in vendor directory. 
 
@@ -126,21 +126,21 @@ A path to a vendor directory follows the module name.
 
 \section{File Organization}
 
-A file in Gear is basically a function, but it is a good idea to keep it organized in sections, if it represents a definition rather than a script. Each section should be separated by blank lines and preceded with a documentation comment if needed (usually when the documented section is a part of a public API). 
+A file in Aml is basically a function, but it is a good idea to keep it organized in sections, if it represents a definition rather than a script. Each section should be separated by blank lines and preceded with a documentation comment if needed (usually when the documented section is a part of a public API). 
 
-Files longer than 1989 lines are cumbersome and should be avoided. Gear has a mechanism of open classes that allows programmers to split longer class definitions into multiple files, one defining the basic parts of the class and locations of its other sources and the others should define the implementation, logically separated. 
-
-
+Files longer than 1989 lines are cumbersome and should be avoided. Aml has a mechanism of open classes that allows programmers to split longer class definitions into multiple files, one defining the basic parts of the class and locations of its other sources and the others should define the implementation, logically separated. 
 
 
 
-\subsection{Gear Source Files}
 
-Each Gear source file contains a definition of an implicit function, which is defined by the whole file. Such function may define types, classes, traits, and also do stuff. 
 
-A Gear file whose purpose is to define classes should contain at most one such top-level class (and may include inner classes as needed, indeed). When a private class or interface is associated with a public class, these can be put into the same file. The public class should be the first class defined in the file. 
+\subsection{Aml Source Files}
 
-A typical Gear source file has the following ordering: 
+Each Aml source file contains a definition of an implicit function, which is defined by the whole file. Such function may define types, classes, traits, and also do stuff. 
+
+A Aml file whose purpose is to define classes should contain at most one such top-level class (and may include inner classes as needed, indeed). When a private class or interface is associated with a public class, these can be put into the same file. The public class should be the first class defined in the file. 
+
+A typical Aml source file has the following ordering: 
 \begin{enumerate}
 \item Module identification, e.g.:
 \begin{lstlisting}
@@ -174,7 +174,7 @@ The following list describes the parts of a class definition (or an interface, a
 A class documentation should introduce the class and its purpose to the documentation reader. 
 
 \item {\bfseries Class signature statement} \hfill \\
-According to Gear's syntax, this defines the class' name, parents (including traits), type parameters, primary constructor's parameters and annotations for the class itself and its primary constructor. The primary constructor can also define some (or all) of the class' instance variables. The order of each element is defined by the syntax (\sref{sec:class-definitions}). 
+According to Aml's syntax, this defines the class' name, parents (including traits), type parameters, primary constructor's parameters and annotations for the class itself and its primary constructor. The primary constructor can also define some (or all) of the class' instance variables. The order of each element is defined by the syntax (\sref{sec:class-definitions}). 
 
 \item {\bfseries Class implementation comment} \hfill \\
 This comment should contain any class-wide information that is considered essential to understand the implementation and wasn't appropriate for the class documentation. 
@@ -224,7 +224,7 @@ Avoid lines longer than 80 characters and try not to exceed 100 characters per l
 
 \subsection{Line Wrapping}
 
-When an expression will not fit into a single line, break it according to the following general principles. Note though that Gear is also possibly used in a REPL environment, therefore it's syntax uses line breaks as significant whitespace in many places. This can however be prevented by means of preventing an expression end -- usually by wrapping an expression that is supposed to be continued on the next line in parentheses. 
+When an expression will not fit into a single line, break it according to the following general principles. Note though that Aml is also possibly used in a REPL environment, therefore it's syntax uses line breaks as significant whitespace in many places. This can however be prevented by means of preventing an expression end -- usually by wrapping an expression that is supposed to be continued on the next line in parentheses. 
 
 \begin{itemize}
 \item Break after a comma. 
@@ -311,7 +311,7 @@ then
 end
 \end{lstlisting}
 
-\example Gear does not have any ternary operators, but the following is an equivalent expression:
+\example Aml does not have any ternary operators, but the following is an equivalent expression:
 
 \begin{lstlisting}
 alpha := if a_long_boolean_expression
@@ -334,7 +334,7 @@ end
 
 \section{Comments}
 
-Gear programs can have two kinds of comments: implementation comments and documentation comments. Implementation comments are delimited by block \code{(* $\ \ldots$ *)}. Documentation comments are delimited by \code{(*! $\ \ldots$ *)} or alternatively \code{(** $\ \ldots$ *)}\footnote{As a convenience for those used to this syntax from other languages. Gear toolchain prefers the first version.}. Documentation comments can be extracted by Gear toolchains.
+Aml programs can have two kinds of comments: implementation comments and documentation comments. Implementation comments are delimited by block \code{(* $\ \ldots$ *)}. Documentation comments are delimited by \code{(*! $\ \ldots$ *)} or alternatively \code{(** $\ \ldots$ *)}\footnote{As a convenience for those used to this syntax from other languages. Aml toolchain prefers the first version.}. Documentation comments can be extracted by Aml toolchains.
 
 Implementation comments are meant for commenting-out code (to temporarily disable it) or for comments about the particular implementation. Documentation comments are meant to describe the specification of the code, independently on the actual implementation. 
 
@@ -390,7 +390,7 @@ val current_entry: Object
 
 Preferable is to put declarations at the beginning of scopes (blocks). Variable declarations in the middle of code should be avoided. The only exception is in expressions like generators. 
 
-To optimize variable creation, variables do not have to be defined before first used -- Gear provides the \code{lazy} modifier for variables, which takes care of that. 
+To optimize variable creation, variables do not have to be defined before first used -- Aml provides the \code{lazy} modifier for variables, which takes care of that. 
 
 
 
@@ -407,7 +407,7 @@ Try to initialize every variable as soon as possible, or use the \code{lazy} mod
 
 \section{Class Definitions}
 
-When writing Gear classes, the following formatting rules should be followed: 
+When writing Aml classes, the following formatting rules should be followed: 
 \begin{itemize}
   \item A space between a method name and the parenthesis of its first parameter list, if any. 
   \item Open brace ``\lstinline!{!'' appears at the end of the same line as the declaration statement. 

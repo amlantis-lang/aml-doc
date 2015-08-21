@@ -60,7 +60,7 @@ A value declaration \lstinline@val $x$: $T$@ (or \lstinline@let $x$: $T$@) intro
 
 A value definition \lstinline@val $x$: $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
 
-A value in this sense\footnote{Everything in Gear is a value -- remember, Gear is also a functional language, to some extent.} is an immutable variable. A declared value can be assigned just once\footnote{A similar way that \lstinline[language=Java]@final@ variables or members in Java can be assigned just once, but Java furthermore requires that this assignment will happen in every code path, Gear does not impose such requirement.}, a defined value is already assigned from its definition. 
+A value in this sense\footnote{Everything in Aml is a value -- remember, Aml is also a functional language, to some extent.} is an immutable variable. A declared value can be assigned just once\footnote{A similar way that \lstinline[language=Java]@final@ variables or members in Java can be assigned just once, but Java furthermore requires that this assignment will happen in every code path, Aml does not impose such requirement.}, a defined value is already assigned from its definition. 
 
 The value type $T$ may be always omitted, in that case the type is inferred and bound to the name. If a type $T$ is omitted, the type of expression $e$ is assumed. If a type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}). 
 
@@ -96,12 +96,12 @@ A value definition can alternatively have a pattern (\sref{sec:patterns}) as lef
 \item
 If the pattern $p$ has bound variables $x_1 \commadots x_n$ for some $n > 1$:
 \begin{lstlisting}[escapechar=@]
-val $x$@\$@ := match $e$
+val $x$' := match $e$
   when $p$ then ($x_1 \commadots x_n$)
 end match
-val $x_1$ := $x$@\$@.1
+val $x_1$ := $x$'.1
 $\ldots$
-val $x_n$ := $x$@\$@.$n$
+val $x_n$ := $x$'.$n$
 \end{lstlisting}
 
 \item
@@ -136,17 +136,17 @@ val x := match f()
   when Some(x) then x
 end match
 
-val x@\$@ = f()
-val x := match x@\$@
-  when Some(x) then x
+val x' = f()
+val x := match x'.1
+  when Some(x'') then x''
 end match
-val y := x@\$@
+val y := x'.2
 
-val x@\$@ := match my_list
-  when x ~> xs then (x, xs)
+val x' := match my_list
+  when x :: xs then (x, xs)
 end match
-val x := x@\$@.1
-val xs := x@\$@.2
+val x := x'.1
+val xs := x'.2
 \end{lstlisting}
 
 The name of any declared or defined value must not end with ``\lstinline@_=@''. 
@@ -325,7 +325,7 @@ Reference type modifiers are the syntax category \code{R_Modifier} (stands for R
 
 Reference type modifiers are applied to variables, whose \code{id} begins with ``\lstinline!@!'' (class instance variables) or with ``\lstinline!@@!'' (class object variables). Such variable may appear as a part of pattern matching, in that case, the modifier is applied as well. By default, all other declared or defined variables are inferred to be \code{strong}. If a variable is declared with a non-\code{strong} reference type, then it does not have to be explicitly defined with the same reference type, and it is an error if it is defined with a different reference type. 
 
-Gear provides automatic wrapping and unwrapping of variables that are declared or defined non-\code{strong}. Strong references are (usually) not wrapped in anything. 
+Aml provides automatic wrapping and unwrapping of variables that are declared or defined non-\code{strong}. Strong references are (usually) not wrapped in anything. 
 
 Non-\code{strong} references are intended to break strong reference cycles that would prevent values from being ever released. 
 
@@ -357,7 +357,7 @@ An exception to immutability is presented by the \code{R_Modifier} syntax catego
 
 \subsection{Strong Reference}
 
-This reference does not have a direct representation in Gear, but it can be emulated with the \code{Strong_Reference[$T$]} type. 
+This reference does not have a direct representation in Aml, but it can be emulated with the \code{Strong_Reference[$T$]} type. 
 
 A {\em strong reference} is a reference that does keep a strong hold on the value it refers to. As long as there are strong references to a value, it does not get released. 
 
@@ -368,13 +368,13 @@ A {\em strong reference} is a reference that does keep a strong hold on the valu
 
 \subsection{Weak Reference Type}
 
-This reference type is represented in Gear by the type \code{Weak_Reference[$T$]}. 
+This reference type is represented in Aml by the type \code{Weak_Reference[$T$]}. 
 
 A {\em weak reference} is a reference that does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it behaves as a nullable type. 
 
 Retrieving the referenced value can end in two different scenarios (and the same applies to all other non-strong reference types): either the value was already destructed (or is being destructed) and \code{nil} is returned, or the value has been retained and the returned value is a strong reference to it. 
 
-Weak reference type is required to be provided by every proper Gear VM implementation. 
+Weak reference type is required to be provided by every proper Aml VM implementation. 
 
 
 
@@ -382,11 +382,11 @@ Weak reference type is required to be provided by every proper Gear VM implement
 
 \subsection{Unowned Reference Type}
 
-This reference type is represented in Gear by the type \code{Unowned_Reference[$T$]}. 
+This reference type is represented in Aml by the type \code{Unowned_Reference[$T$]}. 
 
 Like weak references, an {\em unowned reference} does not keep a strong hold on the value it refers to, but it assumes that it will always refer to a non-\code{nil} value until itself released. It is an error if the value is accessed in runtime via this reference type and it is already released. 
 
-Unowned reference type is required to be provided by every proper Gear VM implementation, and may reuse internal representation of weak references. 
+Unowned reference type is required to be provided by every proper Aml VM implementation, and may reuse internal representation of weak references. 
 
 
 
@@ -394,15 +394,15 @@ Unowned reference type is required to be provided by every proper Gear VM implem
 
 \subsection{Soft Reference Type}
 
-This reference is represented in Gear by the type \code{Soft_Reference[$T$]}. 
+This reference is represented in Aml by the type \code{Soft_Reference[$T$]}. 
 
 Like weak references, an {\em unowned reference} does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it behaves as a nullable type. A value does not need to be released when there are only soft references referring to it -- there are other facilities which may trigger clearing of soft references, including out-of-memory scenarios and explicit clearing triggers. Soft references are suitable for implementations of various caches. 
 
-Soft references are not required to be provided by proper Gear VM implementations. If a Gear VM uses garbage collection instead of automatic reference counting, it is suggested to provide support for soft references. 
+Soft references are not required to be provided by proper Aml VM implementations. If a Aml VM uses garbage collection instead of automatic reference counting, it is suggested to provide support for soft references. 
 
 Support for soft references is to be queried with the following method:
 \begin{lstlisting}
-Gear/Language.Soft_Reference.is_supported?
+Aml/Language.Soft_Reference.is_supported?
 \end{lstlisting}
 
 
@@ -568,13 +568,13 @@ let rec depth ['a] (x: T['a]): 'b := match x
   when Node(y) then 1 + depth y
 end match
 \end{lstlisting}
-Note that ~\lstinline!'b!~ is not explicitly polymorphic here, and will be actually unified with \code{Gear/Language.Number.Integer} (since it is almost equivalent to \code{Gear/Language.Auto}). 
+Note that ~\lstinline!'b!~ is not explicitly polymorphic here, and will be actually unified with \code{Aml/Language.Number.Integer} (since it is almost equivalent to \code{Aml/Language.Auto}). 
 
 \example Ensuring that some definition is sufficiently polymorphic.
 \begin{lstlisting}
 let id ['a] (x: 'a): 'a := x + 1 
 \end{lstlisting}
-Now type of \code{x + 1} is required to be polymorphic. The type of the expression \code{x + 1} is not \code{Gear/Language.Number.Integer}, because the operator \code{+} can be implemented for many other different types.
+Now type of \code{x + 1} is required to be polymorphic. The type of the expression \code{x + 1} is not \code{Aml/Language.Number.Integer}, because the operator \code{+} can be implemented for many other different types.
 
 
 
@@ -757,7 +757,7 @@ A {\em function path} is a reference to the function being declared or defined. 
 
 \subsection{Automatically Curried Function Definitions}
 
-In Gear, every function may be seen as a function from one parameter to a result value. Thus, functions that define multiple parameters can be seen as functions that return another function of the second parameter and so on. However, Gear also allows overloading of functions, and therefore the actual number of declared parameters is important for function applications (\sref{sec:function-applications}).
+In Aml, every function may be seen as a function from one parameter to a result value. Thus, functions that define multiple parameters can be seen as functions that return another function of the second parameter and so on. However, Aml also allows overloading of functions, and therefore the actual number of declared parameters is important for function applications (\sref{sec:function-applications}).
 
 
 
@@ -790,7 +790,7 @@ Locally abstract types (the \code{LAT_Param_Clause} grammar element, \sref{sec:l
 
 Note: This section applies (from the other side of the wall) to function applications (\sref{sec:function-applications}) as well, but it's pointless to have it duplicated over there. 
 
-Gear utilizes five argument evaluation strategies. Every strategy defers evaluation of argument values until the function application is resolved, using only arguments' expected types -- see (\sref{sec:overloading-resolution}). 
+Aml utilizes five argument evaluation strategies. Every strategy defers evaluation of argument values until the function application is resolved, using only arguments' expected types -- see (\sref{sec:overloading-resolution}). 
 
 Evaluations strategies are only applied to arguments as whole, not to any possible sub-expressions or nested data. 
 
@@ -798,7 +798,7 @@ Evaluations strategies are only applied to arguments as whole, not to any possib
 Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. This includes explicit parameter values (\sref{sec:explicit-parameters}).
 
 \paragraph{Call-by-reference, strict}
-Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in Gear, by usage of wrapper objects. Those are described in (\sref{sec:by-ref-parameters}).
+Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in Aml, by usage of wrapper objects. Those are described in (\sref{sec:by-ref-parameters}).
 
 \paragraph{Call-by-name, non-strict}
 The argument is not evaluated until accessed, and is re-evaluated each time it is accessed, providing another tool to create DSLs. Those are described in (\sref{sec:by-name-parameters}). 
@@ -807,7 +807,7 @@ The argument is not evaluated until accessed, and is re-evaluated each time it i
 Also known as {\em lazy evaluation}, this is a memoized version of {\em call-by-name} strategy. The difference is, {\em call-by-need} parameters are not re-evaluated, once they are evaluated. Those are described in (\sref{sec:by-need-parameters}). 
 
 \paragraph{Call-by-future, non-deterministic}
-This is a rather experimental feature of Gear, depending on whether the Gear VM is capable of parallelization and whether there are defined standard tools for ``system'' parallelization. These are described in (\sref{sec:by-future-parameters}).
+This is a rather experimental feature of Aml, depending on whether the Aml VM is capable of parallelization and whether there are defined standard tools for ``system'' parallelization. These are described in (\sref{sec:by-future-parameters}).
 
 
 

@@ -71,7 +71,7 @@ The typing of expressions is often relative to some {\em expected type} (which m
 
 Usually, the type of the expression is defined by the last element of an execution branch, as discussed subsequently with each expression kind. 
 
-What we call ``statement'', in context of Gear is in fact yet another kind of an expression, and those expressions themselves always have a type and a value. 
+What we call ``statement'', in context of GeAmlar is in fact yet another kind of an expression, and those expressions themselves always have a type and a value. 
 
 
 
@@ -93,7 +93,7 @@ Constant     ::= Literal
 
 Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate. 
 
-Gear guarantees that methods of numeric literals (the class \code{Number}) always terminate, are idempotent, and do not have any observable side effects. 
+Aml guarantees that methods of numeric literals (the class \code{Number}) always terminate, are idempotent, and do not have any observable side effects. 
 
 
 
@@ -146,7 +146,7 @@ A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the clas
 
 Sub-expressions in a tuple expression that are prepended with an id (in form of ~\lstinline!~$x_i$: $e_i$!) are named $x_i$ -- this adds annotation ~\lstinline!@[named :$x_i$]!~ to the type of the sub-expression. If the annotation is explicitly added, the behaviour is the same. Named sub-expressions, either in the syntax sugar or explicit form, can only appear at the end of the sequence of sub-expressions, thus no unnamed sub-expressions can appear after a named sub-expression. 
 
-Tuple expressions have the runtime type of ~\lstinline!Gear/Language.Tuple_$n$[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that name sub-expressions. 
+Tuple expressions have the runtime type of ~\lstinline!Aml/Language.Tuple_$n$[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that name sub-expressions. 
 
 Tuple expressions might be automatically converted into full argument expressions, as defined in (\sref{sec:function-applications}).
 
@@ -184,7 +184,7 @@ An expression of the form ~\lstinline!%[$e_1$; $\ldots$; $e_n$]! is a list expre
   \item Expression of the form ~\lstinline!%ml[$e_1$; $\ldots$; $e_n$]!
     has type of \code{Mutable_Double_Linked_List[$T$]}. 
   \item Expression of the form ~\lstinline!%w[word word2 wordx]!
-    has type of \code{Linked_List[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Gear/Language.String}). 
+    has type of \code{Linked_List[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Aml/Language.String}). 
 \end{itemize}
 
 The ``\code{i}'' and ``\code{m}'' flags can be inferred from the expected type, based on \code{immutable} and \code{mutable} modifier (\sref{sec:mutable-immutable-storage}) respectively (or the related type annotations). This is also true for array expressions (\sref{sec:array-expressions}), dictionary expressions (\sref{sec:dict-expressions}), multimap expressions (\sref{sec:multimap-expressions}) and bag expressions (\sref{sec:bag-expressions}). It is an error if there is a mutability flag in the expression that is incompatible to the mutability required by the expected type. 
@@ -214,7 +214,7 @@ An expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]! is an array e
   \item Expression of the form ~\lstinline!%m[|$e_1$; $\ldots$; $e_n$|]!
     has type of \code{Mutable_Array[$T$]}.
   \item Expression of the form ~\lstinline!%w[|word word2 wordx|]!
-    has type of \code{Mutable_Array[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Gear/Language.String}). 
+    has type of \code{Mutable_Array[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Aml/Language.String}). 
 \end{itemize}
 
 
@@ -253,7 +253,7 @@ An expression of the form ~\lstinline!%{$e_1$; $\ldots$; $e_n$}! is a dictionary
     has also type of \code{Linked_Hash_Dictionary[$K$, $T$]}.
   \item Expression of the form ~\lstinline!%ml{$e_1$; $\ldots$; $e_n$}!
     has type of \code{Mutable_Linked_Hash_Dictionary[$K$, $T$]}.
-  \item Dictionary expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Gear/Language.Symbol}). 
+  \item Dictionary expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Aml/Language.Symbol}). 
 \end{itemize}
 
 
@@ -284,7 +284,7 @@ An expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}! is a multimap
     has also type of \code{Linked_Hash_Multimap[$K$, $T$]}. 
   \item Expression of the form ~\lstinline!%ml{{$e_1$; $\ldots$; $e_n$}}!
     has type of \code{Mutable_Linked_Hash_Multimap[$K$, $T$]}.
-  \item Multimap expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Gear/Language.Symbol}). 
+  \item Multimap expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Aml/Language.Symbol}). 
 \end{itemize}
 
 
@@ -422,10 +422,10 @@ Delayed_Expr ::= 'lazy' [nl] Expr
 
 Delayed expressions of the form ~\lstinline!lazy $e$!~ are a syntax sugar for:
 \begin{lstlisting}[deletekeywords={new}]
-Gear/Language.Lazy.new(() -> { $e$ })
+Aml/Language.Lazy.new(() -> { $e$ })
 \end{lstlisting}
 
-The \code{Gear/Language.Lazy} instance is not automatically unboxed, unlike lazy value or variable definitions. It is an error to define a lazy value or variable with a delayed expression, as that would be only redundant. The delayed expression is evaluated by sending the instance a ``\code{value}'' message\footnote{This is the behaviour of call-by-need parameters.}, or by using the prefix operator ``\lstinline@!@''. The delayed expression is force re-evaluated by sending the instance a ``\code{value!}'' message, overwriting any previous value\footnote{This is the behaviour of call-by-name parameters.}, or by using the prefix operator ``\lstinline@!!@'', with the same side-effect. 
+The \code{Aml/Language.Lazy} instance is not automatically unboxed, unlike lazy value or variable definitions. It is an error to define a lazy value or variable with a delayed expression, as that would be only redundant. The delayed expression is evaluated by sending the instance a ``\code{value}'' message\footnote{This is the behaviour of call-by-need parameters.}, or by using the prefix operator ``\lstinline@!@''. The delayed expression is force re-evaluated by sending the instance a ``\code{value!}'' message, overwriting any previous value\footnote{This is the behaviour of call-by-name parameters.}, or by using the prefix operator ``\lstinline@!!@'', with the same side-effect. 
 
 
 
@@ -441,10 +441,10 @@ Ref_Expr ::= 'ref' [nl] Expr
 
 Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
 \begin{lstlisting}[deletekeywords={new}]
-Gear/Language.Reference_Cell.new($e$)
+Aml/Language.Reference_Cell.new($e$)
 \end{lstlisting}
 
-The \code{Gear/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{value_=}'' message. 
+The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{value_=}'' message. 
 
 Reference cells are lightweight instances that can be used to simulate output parameters at low costs, in both CPU cycles and the language design.
 
@@ -452,8 +452,8 @@ Reference cells are lightweight instances that can be used to simulate output pa
 \begin{lstlisting}
 (* initialize a reference cell *)
 let a := ref 42
-let b := Gear/Language.Reference_Cell.new(42)
-let c := new Gear/Language.Reference_Cell(42)
+let b := Aml/Language.Reference_Cell.new(42)
+let c := new Aml/Language.Reference_Cell(42)
 
 (* retrieve contained value from reference cell *)
 let d := !a
@@ -592,7 +592,7 @@ Seq_Literal        ::= Seq '{' Collection_Gen '}'
 Collection_Literal ::= Seq_Literal
 \end{lstlisting}
 
-Apart from collection comprehensions (\sref{sec:collection-comprehensions}), Gear offers also sequence comprehensions. The crucial difference is in evaluation: collection comprehension trigger eager evaluation, unless indeed the used source collection does not employ lazy evaluation of some kind by itself. Sequence comprehension, on the other hand, is super-lazy. 
+Apart from collection comprehensions (\sref{sec:collection-comprehensions}), Aml offers also sequence comprehensions. The crucial difference is in evaluation: collection comprehension trigger eager evaluation, unless indeed the used source collection does not employ lazy evaluation of some kind by itself. Sequence comprehension, on the other hand, is super-lazy. 
 
 A sequence generated by the form ~\lstinline!seq { $e$ }!~ works like a forgetting enumerator -- it computes values using the expression $e$ only when they are required. This is most useful for very large sequences, and/or when the computation is expensive in some way. 
 
@@ -605,7 +605,7 @@ The expression $e$ may be of a few different kinds:
 
 In every case, a range may be optionally given to constrain the generated sequence. 
 
-The Gear Standard Runtime Library offers more functions to manipulate and create sequences. 
+The Aml Standard Runtime Library offers more functions to manipulate and create sequences. 
 
 A sequence comprehension expression ~\lstinline!seq { $e$ }!~ is equivalent to ~\lstinline!lazy seq { $e$ }!, whereas ~\lstinline!eager seq { $e$ }!~ is implicitly cached, but eagerly evaluated -- and thus can't use \code{Method_Expr}, because there is no known range of keys or indexes.\footnote{The GSRL offers functions to overcome this issue.}
 
@@ -632,9 +632,9 @@ protocol Nil_Literal_Convertible
 end protocol
 \end{lstlisting}
 
-A not-nullable or strictly not-nullable value type may implement the protocol \code{Gear/Language.Nil_Literal_Convertible}, and then it accepts both \code{nil} and \code{undefined} values without error -- the expression that assigns these values to a variable of such a type $T$ is converted into application of \code{$T$.new(nil)}. The conversion is applied also dynamically, and also before any attempts of view applications. 
+A not-nullable or strictly not-nullable value type may implement the protocol \code{Aml/Language.Nil_Literal_Convertible}, and then it accepts both \code{nil} and \code{undefined} values without error -- the expression that assigns these values to a variable of such a type $T$ is converted into application of \code{$T$.new(nil)}. The conversion is applied also dynamically, and also before any attempts of view applications. 
 
-In GSRL, the \code{Gear/Language.Option[T]} type implements this protocol. 
+In GSRL, the \code{Aml/Language.Option[T]} type implements this protocol. 
 
 % \subsubsection{String Literal Convertible}
 % TBD: finish this after API is ready
@@ -652,7 +652,7 @@ protocol List_Literal_Convertible
 end protocol
 \end{lstlisting}
 
-Any type may implement the protocol \code{Gear/Language.List_Literal_Convertible}, and then list literals may be converted to the type. 
+Any type may implement the protocol \code{Aml/Language.List_Literal_Convertible}, and then list literals may be converted to the type. 
 
 
 
@@ -869,7 +869,7 @@ Nameless_Params ::= Nameless_Param {',' Nameless_Param}
 Nameless_Param  ::= '_' [':' Type]
 \end{lstlisting}
 
-The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Gear, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
+The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
 
 If the expected type of an anonymous function is of the form ~\lstinline!Function_$n$[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
 
@@ -1267,7 +1267,7 @@ Target type expression (\sref{sec:target-type-expressions}) can't be the first a
 \subsubsection{Argument Evaluation Strategies}
 \label{sec:arg-eval-strategies}
 
-Gear defers evaluation of arguments up to the point of function application, and happens then as specified in parameter evaluation strategies (\sref{sec:param-eval-strategies}). The type that each argument is type-checked against the corresponding parameter type (defined as follows) is the expected type of the argument expression, i.e. not its actual concrete type, which is known only after its evaluation. If the expected type is undefined, then \code{Any} is assumed. Typed expressions (\sref{sec:typed-expressions}) may be used to give the argument expression a concrete expected type. When the argument expression is evaluated, it is evaluated as if it were in the scope of the function application (which it is), so that visibility rules from that scope apply. 
+Aml defers evaluation of arguments up to the point of function application, and happens then as specified in parameter evaluation strategies (\sref{sec:param-eval-strategies}). The type that each argument is type-checked against the corresponding parameter type (defined as follows) is the expected type of the argument expression, i.e. not its actual concrete type, which is known only after its evaluation. If the expected type is undefined, then \code{Any} is assumed. Typed expressions (\sref{sec:typed-expressions}) may be used to give the argument expression a concrete expected type. When the argument expression is evaluated, it is evaluated as if it were in the scope of the function application (which it is), so that visibility rules from that scope apply. 
 
 
 
@@ -1542,7 +1542,7 @@ prefix.receiver().apply(prefix.receiver().`$`())
 \end{lstlisting}
 
 \paragraph{Note}
-The receiver universal shortcut is defined for Gear's collection types as an alias to \code{size} -- to be used in slicing, primarily.
+The receiver universal shortcut is defined for Aml's collection types as an alias to \code{size} -- to be used in slicing, primarily.
 % TBD: decide whether more shortcuts should be allowed, numbered e.g., probably not 
 
 
@@ -1579,7 +1579,7 @@ New_Expr ::= 'new' [Early_Defs] Class_Parents
              Record_Extensions
 \end{lstlisting}
 
-Unlike languages like Java, Scala, C\# and similar, Gear does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline[deletekeywords={new}]!Class#new!~ method (not to be confused with ``static'' ~\lstinline[deletekeywords={new}]@Class.new@, which is for dynamic creation of ad-hoc classes), which passes all the arguments to the appropriate constructor (and is defined using \code{Variadic_Arguments}). 
+Unlike languages like Java, Scala, C\# and similar, Aml does not have dedicated language construct for creating new instances of classes. Instead, all such attempts are made through the ~\lstinline[deletekeywords={new}]!Class#new!~ method (not to be confused with ``static'' ~\lstinline[deletekeywords={new}]@Class.new@, which is for dynamic creation of ad-hoc classes), which passes all the arguments to the appropriate constructor (and is defined using \code{Variadic_Arguments}). 
 
 It is indeed possible to write custom ~\lstinline[deletekeywords={new}]!$T$#new! implementations, where $T$ is the class---or even trait!---for which the custom implementation is, and that implementation may decide to use ~\lstinline[deletekeywords={new}]!Class#new!~ or not (typical use case: a factory method without the usual corporate factory names).
 
@@ -1672,7 +1672,7 @@ An explicit return expression (\sref{sec:return-expressions}) within the block i
 \subsubsection{Variable Closure}
 \label{sec:variable-closure}
 
-Gear uses variable closure when defining a block expression. 
+Aml uses variable closure when defining a block expression. 
 
 If a block expression is used just as a statement, it implicitly inherits access to all variables and methods defined in the scope in which it itself is defined. 
 
@@ -1706,8 +1706,8 @@ A yield expression ~\lstinline!yield $a_1 \commadots a_n$!~ is an universal \cod
 
 A yield expression ~\lstinline!$T$.yield $a_1 \commadots a_n$!~ is a specialized case of the previous definitions of \code{yield}, where $T$ may be one of:
 \begin{itemize}
-  \item \code{Block}, for invoking block argument. To test if a block argument is available, use \code{Yield.block_available?}, defined in Gear's \code{Language} module. 
-  \item \code{Fiber}, for yielding from a fiber. To test if a yield from a fiber is available, use \code{Yield.fiber_available?}, defined in Gear's \code{Language} module. 
+  \item \code{Block}, for invoking block argument. To test if a block argument is available, use \code{Yield.block_available?}, defined in Aml's \code{Language} module. 
+  \item \code{Fiber}, for yielding from a fiber. To test if a yield from a fiber is available, use \code{Yield.fiber_available?}, defined in Aml's \code{Language} module. 
 \end{itemize}
 
 
@@ -1762,7 +1762,7 @@ Prefix operations may alternatively appear in the form $(\op)\ e$, which is equi
 
 \subsubsection{Postfix Operations}
 
-Apart from standard function applications (\sref{sec:function-applications}) that may be viewed as postfix, Gear does not include support for postfix operations. 
+Apart from standard function applications (\sref{sec:function-applications}) that may be viewed as postfix, Aml does not include support for postfix operations. 
 
 
 
@@ -2389,7 +2389,7 @@ The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses 
 
 The conditional expression is evaluated by evaluating first $e_1$. If this evaluates to \code{true}, the result of evaluating $e_2$ is returned, otherwise the result of evaluating $e_3$ is returned. 
 
-The evaluation of $e_1$ utilizes the so-called {\em short-circuit evaluation}. The expression $e_1$ is split by binary boolean operators. Then every first argument is evaluated, but the second argument is evaluated only if the evaluation of the first argument does not suffice to determine the value of the expression. When the first argument of ``\lstinline!&!'' evaluates to \code{no}, the overall value must be \code{no} and the result of evaluating the second argument does not change that. When the first argument of ``\lstinline!|!'' evaluates to \code{yes}, the overall value must be \code{yes}. These boolean operators are in fact short-circuited source-code-wide, not only as part of conditional expressions. Word equivalents of these operators are also short-circuited (``\code{and}'' and ``\code{or}'' respectively). To prevent short-circuited behavior, one has to use a non short circuiting version of the operator (``\code{and also}'' and ``\code{or else}'', or ``\code{&&}'' and ``\code{||}'').\footnote{This is different from SML, where the short circuiting behaviour is the other way around with ``\code{and also}'' and ``\code{or else}''. The reason is that Gear prefers the ``lazy'' behaviour of short circuiting these infix expressions, so it also requires less typing.}
+The evaluation of $e_1$ utilizes the so-called {\em short-circuit evaluation}. The expression $e_1$ is split by binary boolean operators. Then every first argument is evaluated, but the second argument is evaluated only if the evaluation of the first argument does not suffice to determine the value of the expression. When the first argument of ``\lstinline!&!'' evaluates to \code{no}, the overall value must be \code{no} and the result of evaluating the second argument does not change that. When the first argument of ``\lstinline!|!'' evaluates to \code{yes}, the overall value must be \code{yes}. These boolean operators are in fact short-circuited source-code-wide, not only as part of conditional expressions. Word equivalents of these operators are also short-circuited (``\code{and}'' and ``\code{or}'' respectively). To prevent short-circuited behavior, one has to use a non short circuiting version of the operator (``\code{and also}'' and ``\code{or else}'', or ``\code{&&}'' and ``\code{||}'').\footnote{This is different from SML, where the short circuiting behaviour is the other way around with ``\code{and also}'' and ``\code{or else}''. The reason is that Aml prefers the ``lazy'' behaviour of short circuiting these infix expressions, so it also requires less typing.}
 
 \example The following examples show how short-circuit evaluation behaves. Let's mark the short-circuited ``\lstinline!&&!'' as ``\lstinline!sand!'' and the short-circuited ``\lstinline!||!'' as ``\lstinline!sor!''. On the right side are the equivalent conditional expressions. 
 \begin{lstlisting}
@@ -2416,7 +2416,7 @@ The modifier-fashion conditional expression ~\lstinline!$e_1$ if $e_2$ else $e_3
 Unlike in some languages, conditional expressions do not require to place parentheses around the conditions -- but it is possible to do so, the result is equivalent. That might be useful when the condition is inevitably long and needs to span multiple lines -- so that boolean operators may be situated at the beginning of each new line, instead of being at the end of the previous line. 
 
 \paragraph{Note}
-Gear provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
+Aml provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
 
 \paragraph{Conditional Variable Binding}
 The conditional variable definition ~\lstinline!if $p$ := $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ := $e_1$!~ is a variable binding (see syntactic categories \code{Var_Def} \& \code{Val_Def}), works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil}\footnote{Or \code{undefined}, which is an equal case.} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no} (literally), the condition is still met (because \code{no} is not \code{nil} neither \code{()}) and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ := $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. In case the \code{unless} keyword is used instead of \code{if}, then the variable binding is effective in $e_3$ (and possible other \code{elsif} branches), but not in $e_2$.
@@ -2428,7 +2428,7 @@ The conditional variable definition ~\lstinline!if $p$ := $e_1$ then $e_2$ else 
 
 \subsection{Loop Expressions}
 
-Gear has an elaborate support for loop expressions. Not all structures known from other languages are supported though, e.g. the ~\lstinline[language=Java]!do $\ldots$ while!~ expression, which is expressed differently in Gear. 
+Aml has an elaborate support for loop expressions. Not all structures known from other languages are supported though, e.g. the ~\lstinline[language=Java]!do $\ldots$ while!~ expression, which is expressed differently in Aml. 
 
 
 
@@ -2710,7 +2710,7 @@ Compiler adds extra code to determine the value to switch on if the switched exp
 Switch expressions therefore do not involve any other implicit conversions or user code evaluation, other than that required to get the value to switch on. If a switch branch uses a guard, that guard becomes a part of the conditional expression that follows. 
 
 \paragraph{Difference from Java etc}
-Java (and countless other languages) does not allow switching on other values than integral numbers (and strings since Java 1.7), where Gear allows all scalar literals, including floating point numbers. It is quite unreliable to switch on floating point numbers, due to rounding errors, whereas switching on fixed point numbers is reliable. Both switching on floating point numbers and fixed point numbers should only be involved in switch expressions with ranges. 
+Java (and countless other languages) does not allow switching on other values than integral numbers (and strings since Java 1.7), where Aml allows all scalar literals, including floating point numbers. It is quite unreliable to switch on floating point numbers, due to rounding errors, whereas switching on fixed point numbers is reliable. Both switching on floating point numbers and fixed point numbers should only be involved in switch expressions with ranges. 
 
 \paragraph{NaN in a switch}
 The {\em not a number} (\code{Number.NaN}) value is treated specially in switch expressions -- it simply never matches anything else but the \code{else} branch. The comparisons of values involved are safe from errors that could be raised from regular unsuspecting comparison with a \code{NaN} value. 
@@ -2898,7 +2898,7 @@ reset(ctx)
 \end{lstlisting}
 
 \paragraph{Note}
-Gear uses saguaro stack mechanisms instead of code conversions to actually implement both continuations. Due to this, the continuations are technically less limited, but the typing of its expressions may get complicated easily, as the control flow is manipulated on VM level.
+Aml uses saguaro stack mechanisms instead of code conversions to actually implement both continuations. Due to this, the continuations are technically less limited, but the typing of its expressions may get complicated easily, as the control flow is manipulated on VM level.
 
 % TBD: add the example from http://dcsobral.blogspot.cz/2009/07/delimited-continuations-explained-in.html and explain it step-by-step, incl. the double flat_map
 
@@ -3004,7 +3004,7 @@ Optionally, the \code{rescue} may appear before any \code{begin} keyword, being 
 
 The ~\lstinline!retry $l$!~ expression is available inside of each raiseable handler block, and evaluating it restarts evaluation of the whole expression since \code{begin} of the labeled rescue expression, or if no label is given, then of the innermost (if nested) rescue expression. Again, it is not available in catch handler block. 
 
-The keyword ~\lstinline[language=Java]!try!~ is not available in Gear -- in Gear, there is no trying, there is doing or not doing.  
+The keyword ~\lstinline[language=Java]!try!~ is not available in Aml -- in Aml, there is no trying, there is doing or not doing.  
 
 
 
@@ -3029,7 +3029,7 @@ Splice_Expr     ::= '#{' Expr '}'
                   | '%%' Simple_Expr1 (* as prefix operator *)
 \end{lstlisting}
 
-Quasi-quote expression ``~\lstinline!<@ $e$ @>!~'' is basically a well-formed piece of Gear source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
+Quasi-quote expression ``~\lstinline!<@ $e$ @>!~'' is basically a well-formed piece of Aml source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
 
 Quasi-quote expressions may optionally be interpolated, so that values or other nodes may be injected into the represented AST. There are the following ways to interpolate the AST:
 \begin{itemize}
@@ -3161,7 +3161,7 @@ On the other hand, a function that is declared with \code{opaque} in its \code{d
 
 A function that is declared with \code{pure} has no access to the \code{self} object, the \code{Function.self} object is marked \code{constant}, and moreover, it has disabled access to all expressions that were not passed to it via arguments. However, \code{constant} is not added to its parameters. A function that is declared with \code{pure} can't be declared with \code{opaque}, as that would be contradictory. A function that is declared with \code{transparent} combines restrictions from both keywords. 
 
-A function that is declared with \code{native} in its \code{declare} block, has its body defined outside of Gear source files. Compilation of a source code that contains such functions result in generation of necessary header files, so that the native implementation may interface with a particular Gear VM implementation. Every Gear VM that has the ability to run native functions defines its own extra annotations that may be attached to the function, to influence the header file somehow (implementation-defined). 
+A function that is declared with \code{native} in its \code{declare} block, has its body defined outside of Aml source files. Compilation of a source code that contains such functions result in generation of necessary header files, so that the native implementation may interface with a particular Aml VM implementation. Every Aml VM that has the ability to run native functions defines its own extra annotations that may be attached to the function, to influence the header file somehow (implementation-defined). 
 
 A function that is declared with \code{immutable} in its \code{declare} block, has the \code{self} value treated as immutable, therefore it presents a guarantee that applying it will never modify the target value. On the other hand, a function that is declared with \code{mutable} in its \code{declare} block, is no different from a function that is declared without \code{immutable} or \code{mutable}, but it presents a requirement that the target object will be mutable, and thus it is an error if it is not, and also it is an error if a function with such modifier is a member of a template that is declared \code{immutable}, because all of its member values are inherently immutable. 
 
@@ -3225,7 +3225,7 @@ If none of the previous conversions applies, view applications are not disallowe
 \paragraph{Dynamic member selection}
 If none of the previous conversions applies, and $e$ is a prefix of a selection ~\lstinline!$e$.$x$!, then if $e$'s type conforms to \code{Dynamic_Member_Selecting}, the selection is rewritten according to rules for dynamic member selection (\sref{sec:dynamic-member-selection}). Otherwise, \code{member_not_found} is invoked on the receiver, whose implementation in \code{Object} is to raise an error. 
 
-% TBD: explain in a GFR how dynamic member selecting actually works on the Gear VM level - registering a method fallback chain if a member is not found, here it is like %[:apply_dynamic; :member_not_found], and determine what happens when this is not done (no-op maybe? error maybe? language config error maybe?)
+% TBD: explain in a GFR how dynamic member selecting actually works on the Aml VM level - registering a method fallback chain if a member is not found, here it is like %[:apply_dynamic; :member_not_found], and determine what happens when this is not done (no-op maybe? error maybe? language config error maybe?)
 
 
 
@@ -3268,7 +3268,7 @@ One first determines the set of functions that are potentially applicable based 
 The shape of an argument expression $e$, written ~\lstinline!$\shape$($e$)!, is a type that is defined as follows:
 \begin{itemize}
 \item For a function expression ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) -> $b$!, the shape is ~\lstinline!(Any$\commadots\,$Any) -> $\shape$($b$)!, where \code{Any} occurs $n$ times in the argument type. 
-\item For a named argument ~\lstinline!$n$: $e$!, the shape is ~\lstinline!@[named_arg :$n$] $\shape$($e$)!, which is an annotated type.\footnote{This is different from e.g. Scala, since Gear supports capturing named arguments, which make the definition of applicable functions different.} % TBD: fix the name of the annotation as it will be chosen over time. 
+\item For a named argument ~\lstinline!$n$: $e$!, the shape is ~\lstinline!@[named_arg :$n$] $\shape$($e$)!, which is an annotated type.\footnote{This is different from e.g. Scala, since Aml supports capturing named arguments, which make the definition of applicable functions different.} % TBD: fix the name of the annotation as it will be chosen over time. 
 \item For all other expressions, the shape is \code{Nothing}. 
 \end{itemize}
 
@@ -3445,7 +3445,7 @@ All or parts of an expected type $\exptype$ may be undefined. The rules for conf
   \item $T \conforms \udef$
 \end{itemize}
 
-It is possible that no minimal or maximal solution for a type variable exists, which is an error. Because ``$\conforms$'' is a partial order, it is also possible that a solution set has several optimal solutions for a type. In that case, Gear is free to pick any one of them. 
+It is possible that no minimal or maximal solution for a type variable exists, which is an error. Because ``$\conforms$'' is a partial order, it is also possible that a solution set has several optimal solutions for a type. In that case, Aml is free to pick any one of them. 
 
 \example Consider the two methods, where \code{List} is covariant in its type parameter:
 \begin{lstlisting}
@@ -3554,7 +3554,7 @@ First, one identifies the maximal subexpressions of $e$, let's say these are $e_
 \subsection{Dynamic Member Selection}
 \label{sec:dynamic-member-selection}
 
-Gear defines a marker trait \code{Dynamic_Member_Selecting} that enables dynamic invocations rewriting without resorting to use error handling mechanisms to implement dynamic dispatch. 
+Aml defines a marker trait \code{Dynamic_Member_Selecting} that enables dynamic invocations rewriting without resorting to use error handling mechanisms to implement dynamic dispatch. 
 
 Instances $x$ of this trait allow method invocations ~\lstinline[deletekeywords={method}]!$x$.method(args)! for arbitrary method ~\lstinline[deletekeywords={method}]!method!~ and argument lists \code{args}, as well as property accesses ~\lstinline[deletekeywords={property}]!$x$.property! for arbitrary property names ~\lstinline[deletekeywords={property}]!property!. 
 

@@ -42,20 +42,20 @@ Named_Subtype       ::= [['~'] id ':'] Type
 Type_Equation       ::= '=' Type
 \end{lstlisting}
 
-When we say \textit{type} in the context of Gear, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Gear is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
+When we say \textit{type} in the context of Aml, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Aml is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
 
-We distinguish a few different properties of types in Gear. There are first-order types and type constructors, which take type parameters and yield new types. A subset of first-order types called \textit{value types} represents set of first-class values. Value types are either \textit{concrete} or \textit{abstract}. 
+We distinguish a few different properties of types in Aml. There are first-order types and type constructors, which take type parameters and yield new types. A subset of first-order types called \textit{value types} represents set of first-class values. Value types are either \textit{concrete} or \textit{abstract}. 
 
 Concrete value types can be either a \textit{class type} (e.g. referenced with a type designator, referencing a class or maybe a trait), or a \textit{compound type} representing an intersection of types, possibly with a refinement that further constrains the types of its members. Both class types and compound types may be bound to a constant, but only class types referencing a concrete class can be blueprints of values -- \textit{objects}. Compound types can only constrain bindings to a subset of other types. 
 
-Non-value types capture properties of identifiers that are not values. For instance, a type constructor does not directly specify a type of values, but a type constructor, when applied to the correct type arguments, yields a first-order type, which may be a value type. Non-value types are expressed indirectly in Gear. In example, a method type is described by writing down a method signature, which is not a real type itself, but it creates a corresponding method type. 
+Non-value types capture properties of identifiers that are not values. For instance, a type constructor does not directly specify a type of values, but a type constructor, when applied to the correct type arguments, yields a first-order type, which may be a value type. Non-value types are expressed indirectly in Aml. In example, a method type is described by writing down a method signature, which is not a real type itself, but it creates a corresponding method type. 
 
 
 
 
 
 
-\section{About Gear's Type System}
+\section{About Amlantis' Type System}
 
 There are two main streams of typing systems out there -- statically typed and dynamically typed. Static typing in a language usually means that the language is compiled into an executable with a definite set of types and every operation is type checked. Dynamic typing means that these checks are deferred until needed, in runtime. 
 
@@ -63,11 +63,11 @@ Let's talk about Java. Java uses static typing -- but, in a very limited and unf
 
 Let's talk about Ruby. Ruby uses dynamic typing -- but, using types blindly can possibly lead to some confusion. Ruby is amazing though, because you can write programs with it really fast and enjoy the process at the same time. But when it comes to type safety, you need to be careful. 
 
-And now, move on to Gear. Gear uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Dynamic}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and result types to particular types. But you don't have to. Types in Gear were heavily inspired by Scala's and Ruby's type systems, but modified for this hybrid environment that Gear provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Gear are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types, record types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. Implicit conversions are also made available dynamically at runtime, not just during compilation. 
+And now, move on to Aml. Aml uses hybrid typing. In its core, it uses static typing. But, it allows to opt-in for dynamic typing using a special type \code{Dynamic}. Unlike in Ruby, you can overload methods (not just override!). You can constrain variables, constants, properties, arguments and result types to particular types. But you don't have to. Types in Aml were heavily inspired by Scala's and Ruby's type systems, but modified for this hybrid environment that Aml provides. Unlike in Ruby, you can have pure interfaces (called protocols\footnote{Interfaces in Aml are used to extract the {\em public interface} of classes in modules, so that only a small amount of code may be distributed along with the module to allow binding to it.}), or interfaces with default method implementations (similar to Java 8). Unlike in Java, you can have traits, union types, record types and much more. Unlike in Java, you may easily modify classes, even from other modules ({\em pimp my library!} and {\em open-class principle}). You may even easily add more classes if needed, and possibly shadow existing ones. Implicit conversions are also made available dynamically at runtime, not just during compilation. 
 
-While Gear is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a {\em cached binding} would change, it is ok -- as long as the new binding would be compatible with the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Gear interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state with dynamic typing), or if the cached version does not match the current version of the bound type. This mechanism is also used for caching methods, not only types.
+While Aml is so dynamic, it also needs to maintain stability and performance. Therefore, it ``caches'' its bindings and tracks versions of each type\footnote{Versions are simply integers that are incremented with each significant change to the type and distributed among its subtypes.}. If a {\em cached binding} would change, it is ok -- as long as the new binding would be compatible with the old one. Practically, the code that executes first initiates the binding -- first to come, first to bind. Bindings are also cached, so that the Aml interpreter does not need to traverse types all the time -- it only does so if the needed binding does not exist (initial state with dynamic typing), or if the cached version does not match the current version of the bound type. This mechanism is also used for caching methods, not only types.
 
-Types in Gear are represented by objects that are members of the \code{Type} type. Instances of value types are represented by objects that are members of the \code{Class} type. 
+Types in Aml are represented by objects that are members of the \code{Type} type. Instances of value types are represented by objects that are members of the \code{Class} type. 
 
 
 
@@ -95,7 +95,7 @@ Vendor           ::= id '/'
 Type_Var         ::= ''' id
 \end{lstlisting}
 
-Paths are not types themselves, but they can be a part of named types and in that function form a role in Gear's type system. 
+Paths are not types themselves, but they can be a part of named types and in that function form a role in Aml's type system. 
 
 A path is one of the following:
 
@@ -104,7 +104,7 @@ A path is one of the following:
 
   \item \code{this}, which references the directly enclosing class. 
 
-  \item \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Gear's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
+  \item \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Aml's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
 
   \item \lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
 
@@ -126,7 +126,7 @@ Paths introduce also {\em path dependent types}, if the referenced member is a t
 \subsection{Type Variables}
 \label{sec:type-variables}
 
-A type \lstinline!'$x$! stands for a type variable named $x$. The associated type is \code{Gear/Language.Auto}, for use with automatic inference (\sref{sec:automatic-inference}).
+A type \lstinline!'$x$! stands for a type variable named $x$. The associated type is \code{Aml/Language.Auto}, for use with automatic inference (\sref{sec:automatic-inference}).
 
 In type definitions, type variables are names for type parameters. As such, they are implicitly added to type parameters section, in order of appearance, unless specified in type parameters section explicitly otherwise. 
 
@@ -139,7 +139,7 @@ In type constraints, type variables represent unspecified types that an be insta
 
 \section{Value Types}
 
-Every value in Gear has a type which is of one of the following forms. 
+Every value in Aml has a type which is of one of the following forms. 
 
 
 
@@ -219,7 +219,7 @@ a2.f a2.B.new     (* prints "Got my B." to stdout *)
 \end{lstlisting}
 This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
 
-% TBD: add example with graphs from http://www.scala-lang.org/old/node/115, as Gear does the same thing
+% TBD: add example with graphs from http://www.scala-lang.org/old/node/115, as Aml does the same thing
 
 
 
@@ -242,8 +242,8 @@ A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a pa
 \example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
 \begin{lstlisting}
 t = $\epsilon$.type#t (* "global space" *)
-(* predefined import of Gear/Language *)
-Number = Gear/Language.type#Number 
+(* predefined import of Aml/Language *)
+Number = Aml/Language.type#Number 
 
 object An_Object {
   type t
@@ -496,7 +496,7 @@ Function argument types may be annotated with some extra properties. In that cas
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
 
-Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Gear library for any $n \ge 0$:
+Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Aml library for any $n \ge 0$:
 
 \begin{lstlisting}
 protocol Function_$n$[-$T_1 \commadots\,$-$T_n$, +$R$]
@@ -586,7 +586,7 @@ As a syntactic convenience, the bindings clause in an existential type may also 
 
 \paragraph{Placeholder syntax for existential types}
 \label{par:placeholder-existential-types}
-Gear supports a placeholder syntax for existential types. A {\em wildcard type} is of the form ~\lstinline!_ >: $L$ <: $U$!. Both bound clauses may be omitted. If a lower bound clause ~\lstinline!_ >: $L$!~ is omitted, ~\lstinline!_ >: Nothing!~ is assumed. If an upper bound clause ~\lstinline!_ <: $U$!~ is omitted, ~\lstinline!_ >: Object!~ is assumed. A wildcard type is a shorthand for an existentially quantified type variable, where the existential quantification is implicit. 
+Aml supports a placeholder syntax for existential types. A {\em wildcard type} is of the form ~\lstinline!_ >: $L$ <: $U$!. Both bound clauses may be omitted. If a lower bound clause ~\lstinline!_ >: $L$!~ is omitted, ~\lstinline!_ >: Nothing!~ is assumed. If an upper bound clause ~\lstinline!_ <: $U$!~ is omitted, ~\lstinline!_ >: Object!~ is assumed. A wildcard type is a shorthand for an existentially quantified type variable, where the existential quantification is implicit. 
 
 A wildcard type must appear as a type argument of a parameterized type. Let ~\lstinline!$T$ := $p$.$c$[$\targs$, $T$, $\targs'$]!~ be a parameterized type, where $\targs$, $\targs'$ may be empty and $T$ is a wildcard type ~\lstinline!_ >: $L$ <: $U$!. Then $T$ is equivalent to the existential type
 \begin{lstlisting}
@@ -660,7 +660,7 @@ Annot_Type    ::= {Annotation} Simple_Type Nullable_Mod
 Nullable_Mod  ::= '?' | '!'
 \end{lstlisting}
 
-A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Gear types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
+A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Aml types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
 
 A block of code (or whole files or modules) may opt-in to behaviour that raises errors in runtime, instead of issuing warnings, using \code{pragma error_on_nil} inside the code block, file or module. 
 
@@ -678,11 +678,11 @@ end type
 
 When a method is applied on a variable containing \code{nil}, the standard \code{Member_Not_Found} may occur, if the method is really not found in the class \code{Nothing} or in any of implicit conversions from \code{Nothing} (e.g., \code{Nothing} has an implicit conversion to the option type \code{None}). 
 
-A strictly not-nullable type has the form ~\lstinline@$T$!@, where ``\code{!}'' denotes a not-nullable type. Gear types are implicitly not-nullable, but strictly not-nullable types have the extra property that \code{nil} and \code{undefined} do not cause a warning when assigned to a variable or value that is of a strictly not-nullable type, but raise a type error. In case the referenced value changes in runtime by other means than assignment (native access or maybe due to hot code load), the same error has to be raised. 
+A strictly not-nullable type has the form ~\lstinline@$T$!@, where ``\code{!}'' denotes a not-nullable type. Aml types are implicitly not-nullable, but strictly not-nullable types have the extra property that \code{nil} and \code{undefined} do not cause a warning when assigned to a variable or value that is of a strictly not-nullable type, but raise a type error. In case the referenced value changes in runtime by other means than assignment (native access or maybe due to hot code load), the same error has to be raised. 
 
 A compiler may decide to issue extra warnings when assignment of a \code{nil} or \code{undefined} can be detected. 
 
-A strictly not-nullable may be seen as some implicitly wrapped-on-assignment / unwrapped-on-read box that checks for \code{value = nil} and raises an error when such condition is true. But Gear does not have any special methods for object dereference.\footnote{Yet, and probably never will.} 
+A strictly not-nullable may be seen as some implicitly wrapped-on-assignment / unwrapped-on-read box that checks for \code{value = nil} and raises an error when such condition is true. But Aml does not have any special methods for object dereference.\footnote{Yet, and probably never will.} 
 
 When used in a compound type, use nullable modifier only on the first component. When used in a constrained type, use nullable modifier only on the component type of the constrained type. 
 
@@ -782,7 +782,7 @@ A constrained type constructs a subset of allowed members of its component type.
 Constrained types, in face of overloading, trigger eager argument expression evaluation, so that the constrained type of a parameter can even be checked.\footnote{Therefore, constrained types are not really suitable candidates for parameters that are supposed to be lazy-evaluated, unless the early evaluation is intended.}
 
 \paragraph{Note}
-Constrained types are an implementation of {\em dependent types} in Gear. Dependent types are basically functions from values to types, where the value part is present in the defined constraint and/or the constraint block. 
+Constrained types are an implementation of {\em dependent types} in Aml. Dependent types are basically functions from values to types, where the value part is present in the defined constraint and/or the constraint block. 
 
 
 
@@ -791,7 +791,7 @@ Constrained types are an implementation of {\em dependent types} in Gear. Depend
 \subsection{Mutable \& Immutable Types}
 \label{sec:mutable-immutable-types}
 
-Gear offers two annotations that can constrain a type to either {\em mutability} or {\em immutability}. Implicitly, types are not constrained in such a way, therefore a type could represent both mutable and immutable values at the same time. 
+Aml offers two annotations that can constrain a type to either {\em mutability} or {\em immutability}. Implicitly, types are not constrained in such a way, therefore a type could represent both mutable and immutable values at the same time. 
 
 \paragraph{Mutable types}
 A mutable type is expressed with the annotation \code{@[mutable]}, and is not transitive. It constrains a type to mutable values (i.e. not frozen), but not values referred to by the values it represents. 
@@ -831,13 +831,13 @@ Foreign_Type ::= 'foreign' lang_name '{'
 lang_name    ::= id
 \end{lstlisting}
 
-A {\em foreign type} is a tool that helps Gear programs integrate with other languages written for the same VM, the Gear VM. It is viewed as extending the type \code{Any}, can be given an alias name and be a part of a compound type with another foreign types or Gear types. 
+A {\em foreign type} is a tool that helps Aml programs integrate with other languages written for the same VM, the Aml VM. It is viewed as extending the type \code{Any}, can be given an alias name and be a part of a compound type with another foreign types or Aml types. 
 
 \paragraph{Syntax note}
-If an opening delimiter ``\lstinline!{!'' appears within the foreign language type name, then it is properly paired with the next ``\lstinline!}!'' by Gear and not treated as closing delimiter, but this is done without any knowledge of the foreign language, only presuming that these delimiters are paired. 
+If an opening delimiter ``\lstinline!{!'' appears within the foreign language type name, then it is properly paired with the next ``\lstinline!}!'' by Aml and not treated as closing delimiter, but this is done without any knowledge of the foreign language, only presuming that these delimiters are paired. 
 
 \paragraph{Parameterized foreign types}
-If the foreign type is parameterized, it can be a part of a type application as well, but its type parameters are not declared neither defined on the Gear side. Also, the foreign language defines how the parameterization works -- e.g., Java does type erasure with its type parameters.
+If the foreign type is parameterized, it can be a part of a type application as well, but its type parameters are not declared neither defined on the Aml side. Also, the foreign language defines how the parameterization works -- e.g., Java does type erasure with its type parameters.
 
 \example A foreign type aliases for a few foreign types:
 \begin{lstlisting}
@@ -1024,10 +1024,10 @@ The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding 
 \syntax\begin{lstlisting}[morekeywords={Any},deletekeywords={also}]
 Simple_Type ::= 'Any'
 (* also: *)
-Simple_Type ::= 'Gear/Language.Any'
+Simple_Type ::= 'Aml/Language.Any'
 \end{lstlisting}
 
-This type does not represent a single concrete value type, but any concrete type. It is used in places where the actual type does not matter, and could be even from other language running along Gear in the VM. 
+This type does not represent a single concrete value type, but any concrete type. It is used in places where the actual type does not matter, and could be even from other language running along Aml in the VM. 
 
 With respect to overloading resolution (\sref{sec:value-conversions}), this type is always the least specific, as there is no other less specific type available. 
 
@@ -1035,7 +1035,7 @@ Structural constraints may be appended to this type as with any other type by us
 
 The \code{Any} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Language} module, and therefore can be shadowed and aliased (e.g. to \code{Any_Object}). 
 
-The \code{Any} virtual type is the actual root of the type system of Gear, although explicit inheritance is not allowed from it. Other languages that integrate with Gear on the same VM may have \code{Any} as their root type as well, disobeying the rule that is set only for Gear. This way, Gear preserves its unified type system. 
+The \code{Any} virtual type is the actual root of the type system of Aml, although explicit inheritance is not allowed from it. Other languages that integrate with Aml on the same VM may have \code{Any} as their root type as well, disobeying the rule that is set only for Aml. This way, Aml preserves its unified type system. 
 
 
 
@@ -1047,7 +1047,7 @@ The \code{Any} virtual type is the actual root of the type system of Gear, altho
 \syntax\begin{lstlisting}[morekeywords={Auto},deletekeywords={also}]
 Simple_Type ::= 'Auto'
 (* also: *)
-Simple_Type ::= 'Gear/Language.Auto'
+Simple_Type ::= 'Aml/Language.Auto'
 \end{lstlisting}
 
 This type does represent a single concrete value type: a compound type with usually just the refinement part. However, it does not explicitly state what the refinement is. Instead, the refinement is inferred from the context in which it is used. The inference algorithm is very different from local type inference (\sref{sec:local-type-inference}). 
@@ -1073,7 +1073,7 @@ By default, when a type annotation is missing in a function declaration, then it
 \syntax\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
 Simple_Type ::= 'Dynamic'
 (* also: *)
-Simple_Type ::= 'Gear/Language.Dynamic'
+Simple_Type ::= 'Aml/Language.Dynamic'
 \end{lstlisting}
 
 This type does not represent a single concrete value type\footnote{This type is similar to what ~\lstinline[language={[Sharp]C}]!dynamic!~ is to C\#.}, but any concrete type, very much like \code{Any} or \code{Auto}. 
@@ -1102,7 +1102,7 @@ Using \code{Dynamic} type is one of possible ways to use multi-methods -- the ty
 \syntax\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
 Simple_Type ::= 'Variadic_Arguments'
 (* also: *)
-Simple_Type ::= 'Gear/Language.Variadic_Arguments'
+Simple_Type ::= 'Aml/Language.Variadic_Arguments'
 \end{lstlisting}
 
 This type is recognized only as a parameter type (be it a function, constructor\ldots), and with a further constraint that it has to be applied to a solely parameter of a whole parameter list. Such parameter list must be the last parameter list of a definition or declaration, and there might be more parameter lists present preceding it. 
@@ -1117,10 +1117,10 @@ where each $T$ has a type that is retrieved as a function type ~\lstinline!() ->
 
 This type does not represent by itself any concrete value type, instead, it represents a whole class of them (two-dimensional tuples of variable lengths, basically). 
 
-If no arguments are passed to a function that accepts this parameter type, a \code{Unit} value (\lstinline!()!) is used. The \code{Unit} value is also used for matched arguments list that carry no argument expressions. As a special case, when only one argument list is matched, the type is \code{Tuple_1}, a type that is generally avoided throughout Gear (e.g., ~\lstinline!($e$ as $T$)!~ is not of type ~\lstinline!Tuple_1[$T$]!, but just $T$), as its contents can be implicitly unwrapped, but here it is needed to keep the semantics consistent. 
+If no arguments are passed to a function that accepts this parameter type, a \code{Unit} value (\lstinline!()!) is used. The \code{Unit} value is also used for matched arguments list that carry no argument expressions. As a special case, when only one argument list is matched, the type is \code{Tuple_1}, a type that is generally avoided throughout Aml (e.g., ~\lstinline!($e$ as $T$)!~ is not of type ~\lstinline!Tuple_1[$T$]!, but just $T$), as its contents can be implicitly unwrapped, but here it is needed to keep the semantics consistent. 
 
 \paragraph{Note}
-This type is used e.g. within the \code{Language.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Gear VM). 
+This type is used e.g. within the \code{Language.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Aml VM). 
 
 
 
@@ -1285,9 +1285,9 @@ A declaration or definition in some compound type of class type $C$ {\em subsume
 The ($\conforms$) relation forms partial order between types, i.e. it is transitive, antisymmetric and reflexive. The terms {\em least upper bound} and {\em greatest lower bound} of a set of types are understood to be relative to that order. 
 
 \paragraph{Note}
-The least upper bound or the greatest lower bound of a set of types does not always exist. Gear is free to reject a term which has a type specified as a least upper bound or a greatest lower bound, and that bound would be more complex than a preset limit, e.g. this could happen with infinite bounds sequence. 
+The least upper bound or the greatest lower bound of a set of types does not always exist. Aml is free to reject a term which has a type specified as a least upper bound or a greatest lower bound, and that bound would be more complex than a preset limit, e.g. this could happen with infinite bounds sequence. 
 
-The least upper bound or the greatest lower bound might also not be unique. If there are several such bounds, Gear is free to pick up any of them. 
+The least upper bound or the greatest lower bound might also not be unique. If there are several such bounds, Aml is free to pick up any of them. 
 
 
 
@@ -1302,12 +1302,12 @@ The term {\em least upper bound} of a set of types (and the closely related term
   \item {\em Union type representation}. This approach simply makes a union type (\sref{sec:unions}) out of all types in the set. 
 \end{itemize}
 
-Gear implicitly uses the union type representation for least upper bounds. The union type already presents quite a few simplifications of itself. This behaviour can be changed per-scope, per-file or even per-module, using a pragma:
+Aml implicitly uses the union type representation for least upper bounds. The union type already presents quite a few simplifications of itself. This behaviour can be changed per-scope, per-file or even per-module, using a pragma:
 \begin{lstlisting}
 pragma least-upper-bound(.Union)  (* implicit *)
 pragma least-upper-bound(.Common) (* optionally *)
 \end{lstlisting}
-These pragmas are a part of Gear's \code{Language} module. % TBD: specify where these pragmas are exactly located
+These pragmas are a part of Aml's \code{Language} module. % TBD: specify where these pragmas are exactly located
 
 
 
@@ -1326,14 +1326,14 @@ A {\em weak least upper bound} is a least upper bound with respect to weak confo
 \section{Reified Types}
 \label{sec:reified-types}
 
-Unlike in Java or Scala, {\em type erasure} does not exist in Gear. Instead, type arguments are {\em reified} -- meaning that they persist in runtime. This is achieved by generating a lightweight subtype of parameterized types, containing basically just a reference to the parameterized type and a tuple of type arguments. This also implies that each new combination of type arguments to the exact same parameterized type creates a new lightweight subtype.
+Unlike in Java or Scala, {\em type erasure} does not exist in Aml. Instead, type arguments are {\em reified} -- meaning that they persist in runtime. This is achieved by generating a lightweight subtype of parameterized types, containing basically just a reference to the parameterized type and a tuple of type arguments. This also implies that each new combination of type arguments to the exact same parameterized type creates a new lightweight subtype.
 
-Reified types have some major effects on programs in Gear:
+Reified types have some major effects on programs in Aml:
 \begin{itemize}
 
 \item Type arguments are accessible in runtime. The actual type argument can be inspected via reflection. 
 
-\item Type arguments do not go away after compilation. This means, for example, that mutable collections should have invariant type parameters, since a hypothetical \code{List[+T]} can have type instance \code{List[String]} assigned to a variable bound to be a \code{List[Object]}, but instances of other subclasses than those that conform to \code{String} will not be able to be added to the collection. This is in fact true even if Gear did have type erasure -- the difference is, with reified types, the addition of a new incompatible value will fail immediately, unlike with type erasure, where retrieving the added value would fail later. 
+\item Type arguments do not go away after compilation. This means, for example, that mutable collections should have invariant type parameters, since a hypothetical \code{List[+T]} can have type instance \code{List[String]} assigned to a variable bound to be a \code{List[Object]}, but instances of other subclasses than those that conform to \code{String} will not be able to be added to the collection. This is in fact true even if Aml did have type erasure -- the difference is, with reified types, the addition of a new incompatible value will fail immediately, unlike with type erasure, where retrieving the added value would fail later. 
 \end{itemize}
 
 
@@ -1343,24 +1343,24 @@ Reified types have some major effects on programs in Gear:
 \section{Types Representing Emptiness}
 \label{sec:emptiness}
 
-In Gear, there are a few types and their values that represent emptiness of some sort. The following lists specifies their semantical purposes. 
+In Aml, there are a few types and their values that represent emptiness of some sort. The following lists specifies their semantical purposes. 
 
 \begin{enumerate}
   \item The \code{Nothing} type. It represents a missing object in places where an object is expected. 
   
-  The type has just one inhabitant, and that is the frozen \code{nil} value. In a Gear VM, this type is usually an immediate value. 
+  The type has just one inhabitant, and that is the frozen \code{nil} value. In a Aml VM, this type is usually an immediate value. 
   
   \item The \code{Undefined} type. It represents a missing object in places where an object is expected, but its source is not defined. This applies to non-defined instance variables, undefined variables, or undefined mappings in, e.g., \code{Map} implementations. 
   
-  The type has just one inhabitant, and that is the frozen \code{undefined} value, which is equal to, but not identical to \code{nil}. In a Gear VM, this type is usually an immediate value.
+  The type has just one inhabitant, and that is the frozen \code{undefined} value, which is equal to, but not identical to \code{nil}. In a Aml VM, this type is usually an immediate value.
   
   The semantical difference between a \code{nil} and \code{undefined} in context of, e.g., \code{Map} implementations is that \code{nil} is returned if the map contains the given key, but has \code{nil} assigned to it on purpose, whereas \code{undefined} means there was no mapping defined. 
   
-  Gear forbids access to undefined local variables during compilation, unlike e.g. JavaScript. 
+  Aml forbids access to undefined local variables during compilation, unlike e.g. JavaScript. 
   
   \item The \code{None} case object. It is a subtype of \code{Option[$T$]} and represents the exact same thing as \code{Nothing}, but has the extra semantical meaning of ``being ready to handle missing values'', which non-nullable types do not represent -- those expect a value to be present and cause errors when it is not present. 
   
-  The \code{None} case object is primarily designed to be used with pattern matching, and also plays an important internal part in Gear's implementation of pattern matching. 
+  The \code{None} case object is primarily designed to be used with pattern matching, and also plays an important internal part in Aml's implementation of pattern matching. 
   
   Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Language.Predef}, and results in \code{None}. 
   
@@ -1368,9 +1368,9 @@ In Gear, there are a few types and their values that represent emptiness of some
   
   It's semantical meaning is that no value is even expected. It is used for functions that should never return any value, and that are technically procedures, whose purpose lies in side-effects. 
   
-  The type has just one inhabitant, the ``\code{()}'' value, also known as an empty tuple. In a Gear VM, this type is usually an immediate value.
+  The type has just one inhabitant, the ``\code{()}'' value, also known as an empty tuple. In a Aml VM, this type is usually an immediate value.
   
-  There are no implicit conversions from \code{Unit} to any other type defined by Gear. 
+  There are no implicit conversions from \code{Unit} to any other type defined by Aml. 
 \end{enumerate}
 
 The following lines show some common relations between empty values. 

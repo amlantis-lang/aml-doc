@@ -4,39 +4,39 @@
 \chapter{Program Structure}
 \label{sec:program-structure}
 
-The Gear Programming Language System consists of a couple of command line tools, which are described with greater detail in (\sref{part:tools}): 
+The Amlantis Programming Language System consists of a couple of command line tools, which are described with greater detail in (\sref{part:tools}): 
 \begin{itemize}
-  \item \code{gear}, runs Gear interactively in a read-eval-print loop.
-  \item \code{gearc}, compiles Gear modules or scripts.
-  \item \code{gearopt}, compiles native optimized Gear modules or scripts.
-  \item \code{gearrun}, runs Gear modules or scripts.
-  \item \code{geardoc}, generates documentation for Gear modules. 
-  \item \code{geardbg}, debugger for Gear modules or scripts. 
-  \item \code{gearp}, inspects compiled Gear modules or scripts.
-  \item \code{gearf}, Gear module bundler and builder.
-  \item \code{gearprof}, Gear module or script profiler.
+  \item \code{aml}, runs Aml interactively in a read-eval-print loop.
+  \item \code{amlc}, compiles Aml modules or scripts.
+  \item \code{amlopt}, compiles native optimized Aml modules or scripts.
+  \item \code{amlrun}, runs Aml modules or scripts.
+  \item \code{amldoc}, generates documentation for Aml modules. 
+  \item \code{amldbg}, debugger for Aml modules or scripts. 
+  \item \code{amlp}, inspects compiled Aml modules or scripts.
+  \item \code{amlf}, Aml module bundler and builder.
+  \item \code{amlprof}, Aml module or script profiler.
 \end{itemize}
 
-The inputs to the Gear tools consist of: 
+The inputs to the Aml tools consist of: 
 \begin{itemize}
   \item Source code files. 
     \begin{itemize}
-      \item Files with extension \code{.gear}, implementation files, conforming to the grammar element \code{Implementation_File}. 
-      \item Files with extension \code{.gearm}, implementation files with permanent macro definitions, conforming to the grammar element \code{Implementation_File}. 
-      \item Files with extension \code{.gears}, implementation signature files, conforming to the grammar element \code{Signature_File}. 
-      \item Files with extension \code{.gearx}, script files, conforming to the grammar element \code{Script_File}. 
-      \item Files with name \lstinline[deletekeywords={module}]!module.gear!, module definition files, conforming to the grammar element \code{Implementation_File}. 
-      \item Files with name \lstinline[deletekeywords={signature}]!signature.gear!, module or submodule signature files, conforming to the grammar element \code{Signature_File}. 
+      \item Files with extension \code{.aml}, implementation files, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with extension \code{.amlm}, implementation files with permanent macro definitions, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with extension \code{.amls}, implementation signature files, conforming to the grammar element \code{Signature_File}. 
+      \item Files with extension \code{.amlx}, script files, conforming to the grammar element \code{Script_File}. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.aml!, module definition files, conforming to the grammar element \code{Implementation_File}. 
+      \item Files with name \lstinline[deletekeywords={signature}]!signature.aml!, module or submodule signature files, conforming to the grammar element \code{Signature_File}. 
     \end{itemize}
   \item Compiled files. 
     \begin{itemize}
-      \item Files with extension \code{.gearb}, bytecode function files. 
-      \item Files with extension \code{.gearpsi}, bytecode PSI files. 
+      \item Files with extension \code{.amlb}, bytecode function files. 
+      \item Files with extension \code{.amlpsi}, bytecode PSI files. 
     \end{itemize}
   \item Semi-source files. 
     \begin{itemize}
-      \item Files with extension \code{.gearp}, protocol files, conforming to the grammar element \code{Signature_File}. 
-      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.gear!, module dependencies, conforming to the grammar element \code{Script_File}. 
+      \item Files with extension \code{.amlp}, protocol files, conforming to the grammar element \code{Signature_File}. 
+      \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.aml!, module dependencies, conforming to the grammar element \code{Script_File}. 
       \item Files with name \lstinline[deletekeywords={module}]!module.dependencies.lock!, locked module dependencies. 
     \end{itemize}
   \item Script fragments, used in interactive environments, conforming to the grammar element \code{Script_Fragment}, where each script fragment can be separated by ``\code{;;}''\footnote{This simulates ``End Of File'' in regular script files.}, to trigger evaluation by the interactive environment. 
@@ -44,7 +44,7 @@ The inputs to the Gear tools consist of:
   \item Pragma and annotation applications (\sref{sec:pragmas}) within source files and their compiled forms. 
 \end{itemize}
 
-The \code{Gear/Language.VM} class shall offer methods for querying the compilation environment -- methods \code{is_compiled?} and \code{is_interactive?}.
+The \code{Aml/Language.VM} class shall offer methods for querying the compilation environment -- methods \code{is_compiled?} and \code{is_interactive?}.
 
 Processing of the source code portions of these inputs consists of the following steps: 
 \begin{enumerate}

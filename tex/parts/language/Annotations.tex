@@ -28,7 +28,7 @@ Macro_Def             ::= 'def' 'macro' Fun_Sig [Fun_Dec]
                         | 'def' 'macro' Fun_Sig ':=' [Fun_Dec2] Expr
 \end{lstlisting}
 
-Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Gear, possibly affecting the resulting bytecode and abstract syntax trees. 
+Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Aml, possibly affecting the resulting bytecode and abstract syntax trees. 
 
 
 
@@ -60,7 +60,7 @@ Pragmas are basically annotations that are applied in its scope from that point 
 \section{Macros}
 \label{sec:macros}
 
-Macros are a way to directly manipulate with abstract syntax trees. Unlike in languages such as C, macros in Gear are written using the same language. The only essential restriction here is that while compiling a Gear module or another source file, every macro that is applied in it must be pre-compiled, e.g. available from a separate compilation phase, and applied in the same compilation phase, not runtime. The only way to apply macros in runtime is by ad-hoc compilation. 
+Macros are a way to directly manipulate with abstract syntax trees. Unlike in languages such as C, macros in Aml are written using the same language. The only essential restriction here is that while compiling a Aml module or another source file, every macro that is applied in it must be pre-compiled, e.g. available from a separate compilation phase, and applied in the same compilation phase, not runtime. The only way to apply macros in runtime is by ad-hoc compilation. 
 
 Macro authors are encouraged to use syntactic forms (\sref{sec:syntactic-forms}) to manipulate and generate abstract syntax trees. 
 
@@ -68,8 +68,8 @@ A macro is defined as a regular function, but it's body is required to pass invo
 \begin{enumerate}
   \item A parameter list with exactly one parameter of type either
     \begin{itemize}
-      \item \code{Gear/Language.Reflection.Macros.Whitebox.Context} or 
-      \item \code{Gear/Language.Reflection.Macros.Blackbox.Context}.
+      \item \code{Aml/Language.Reflection.Macros.Whitebox.Context} or 
+      \item \code{Aml/Language.Reflection.Macros.Blackbox.Context}.
     \end{itemize} 
   \item A parameter list with the parameters of the macro definitions, with the described parameter type translation applied. 
 \end{enumerate}
@@ -77,7 +77,7 @@ A macro is defined as a regular function, but it's body is required to pass invo
 \example The following code is an example implementation of a simple \code{assert} macro. 
 \begin{lstlisting}[deletekeywords={message,assert}]
 (* import a blackbox context *)
-use Gear/Language.Reflection.Macros.Blackbox.Context
+use Aml/Language.Reflection.Macros.Blackbox.Context
 
 (* define the macro *)
 def macro assert (condition: Boolean, message: String_Like): Unit := 

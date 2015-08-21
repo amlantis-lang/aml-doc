@@ -209,7 +209,7 @@ A variable pattern is implicitly prefixed with \code{val}, and thus the bound va
 
 A variable pattern prefixed with \code{implicit} is made eligible to be passed as implicit argument (\sref{sec:implicit-parameters}). The value that is eligible is however the current value at the instant of function application with implicit arguments -- therefore if the variable is mutable, it might be a different value than the one bound from the pattern match. 
 
-A variable pattern contributes the type \code{Gear/Language.Any} to type of parameter, when used in function parameter list. 
+A variable pattern contributes the type \code{Aml/Language.Any} to type of parameter, when used in function parameter list. 
 
 
 
@@ -225,7 +225,7 @@ Wildcard_Pattern ::= '_'
 
 The pattern ``\code{_}'' is a wildcard pattern that matches any input and does not bind any value to any variable. 
 
-A wildcard pattern contributes the type \code{Gear/Language.Any} to type of parameter, when used in function parameter list. 
+A wildcard pattern contributes the type \code{Aml/Language.Any} to type of parameter, when used in function parameter list. 
 
 \example In this example, if \code{x} is 0, the match returns 1, if \code{x} has any other value, the match returns 0. The second definition is equivalent. 
 \begin{lstlisting}
@@ -258,7 +258,7 @@ Named_Pattern ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
 
 In a named pattern, the \code{Stable_Id} part must not start with a lowercase letter as defined in \code{var_id}, otherwise it would be interpreted as a variable pattern. 
 
-Due to the syntactic overlap regarding variable patterns, Gear offers a simple solution to interpret an identifier starting with a lowercase letter as a value instead of a variable pattern, and that is to enclose the identifier in backquotes, so that ``\code{id}'' is ``\code{`id`}''. Such an identifier is never considered to be a variable pattern. 
+Due to the syntactic overlap regarding variable patterns, Aml offers a simple solution to interpret an identifier starting with a lowercase letter as a value instead of a variable pattern, and that is to enclose the identifier in backquotes, so that ``\code{id}'' is ``\code{`id`}''. Such an identifier is never considered to be a variable pattern. 
 
 If that condition is met, then the \code{Stable_Id} part may resolve into the following elements:
 \begin{itemize}
@@ -566,7 +566,7 @@ Type_Pattern       ::= ['type' 'is' | ':?'] Type
 A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!type is $T$!~ and
 ~\lstinline!:? $T$!, all of which are equivalent. 
 
-Gear does not distinguish type-annotated patterns from dynamic type-test patterns -- all such patterns are dynamic type-test patterns, with implications from a type-annotated pattern. 
+Aml does not distinguish type-annotated patterns from dynamic type-test patterns -- all such patterns are dynamic type-test patterns, with implications from a type-annotated pattern. 
 
 At runtime, the pattern input is matched, if the input value's type is known to be a subtype (or equivalent) to the type $T$, or if it dynamically is of such a subtype (the input is evaluated either way). 
 
@@ -983,7 +983,7 @@ An anonymous function can alternatively be defined by a sequence of cases
   when $p_k$ then $b_k$ 
   else $b_{k+1}$ }
 \end{lstlisting}
-which appears as an expression without a prior \code{match}. The expression is expected to be of a block type, unless it is expected to be a function type, in that case it is converted to ~\lstinline!Function_$k$[$S_1 \commadots S_k$, $T$]!~ automatically for $k \geq 1$, and for $k = 0$ the expression does not match the expected function type in function applications (\sref{sec:function-applications}).\footnote{This is due to Gear not knowing the expected types in advance, but this anonymous function expression is able to match any non-empty arguments list, which is simply passed into the implicit pattern matching expression.} 
+which appears as an expression without a prior \code{match}. The expression is expected to be of a block type, unless it is expected to be a function type, in that case it is converted to ~\lstinline!Function_$k$[$S_1 \commadots S_k$, $T$]!~ automatically for $k \geq 1$, and for $k = 0$ the expression does not match the expected function type in function applications (\sref{sec:function-applications}).\footnote{This is due to Aml not knowing the expected types in advance, but this anonymous function expression is able to match any non-empty arguments list, which is simply passed into the implicit pattern matching expression.} 
 
 The expression is taken to be equivalent to the anonymous function:
 \begin{lstlisting}

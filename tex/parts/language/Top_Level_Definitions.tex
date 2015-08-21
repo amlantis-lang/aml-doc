@@ -42,7 +42,7 @@ Script_Stat              ::= Impl_Pkg_Stat
                            | Sig_Pkg_Stat
 \end{lstlisting}
 
-Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Gear's approach to modules solves these issues: 
+Module definitions are objects that have one main purpose: to join related code and separate it from the outside. Aml's approach to modules solves these issues: 
 \begin{itemize}
   \item {\em Namespaces}. A class with a name $C$ may appear in a module $M$ or a module $N$, or any other module, and yet be a different object. Modules may be nested.
   \item {\em Vendor packages}. Even modules of the same name may co-exists, provided that they have a different vendor, which is just another identifier. 
@@ -69,8 +69,8 @@ end module
 
 Implicitly imported into every compilation unit are, in that order: 
 \begin{enumerate}
-\item the module ~\lstinline!Gear/Language! 
-\item the object ~\lstinline!Gear/Language.Predef!
+\item the module ~\lstinline!Aml/Language! 
+\item the object ~\lstinline!Aml/Language.Predef!
 \end{enumerate} 
 Members of a later import in that order hide members of an earlier import. 
 
@@ -78,11 +78,11 @@ Members of a later import in that order hide members of an earlier import.
 
 The implicitly added code looks like the following code listing, with all its implications:\footnote{The \code{@Root} is actually redundant, as explained in (\sref{sec:module-refs}).}
 \begin{lstlisting}
-use @Root.Gear/Language.{_}
-use @Root.Gear/Language.Predef.{_}
+use @Root.Aml/Language.{_}
+use @Root.Aml/Language.Predef.{_}
 \end{lstlisting}
 
-The vendor specified in module's \code{src/module.gear} is inherited by every source file in the same module and it's submodules (unless explicitly overwritten). Modules imported from within the module object defined in \code{src/module.gear} also make those modules available without fully qualifying their name in other source files of the same module. 
+The vendor specified in module's \code{src/module.aml} is inherited by every source file in the same module and it's submodules (unless explicitly overwritten). Modules imported from within the module object defined in \code{src/module.aml} also make those modules available without fully qualifying their name in other source files of the same module. 
 
 
 
@@ -122,7 +122,7 @@ Notice how these fully qualified names do not use the ``\lstinline!@Root.!'' pat
 
 Selections ~\lstinline!$p$.$m$!~ from $p$ as well as imports from $p$ work as for objects. Moreover, unlike in Scala, modules may be used as values, instances of \code{Module} class, which shares some behavior with \code{Class} class. It is illegal to have a module with the same fully qualified name (minus the vendor parts) as a class or a trait. 
 
-Top-level definitions outside a packaging are assumed to be injected into the \code{Object} class directly, and therefore visible to each other without qualification. However, as \code{Object} is actually a simple name for the fully qualified name ~\lstinline!@Root.Gear/Language.Object!, no member is ever defined outside of packaging -- it may only seem to be so: the type of \code{self} pseudo-variable in ``global'' context (outside of any packagings) is ~\lstinline!@Root.Gear/Language.Object!---a special instance of \code{Object} dedicated to handling ``global'' space---unless the source file is loaded in context of another instance, used with DSLs. This should however be only used in script files, not inside modules, where all code has to be packaged. 
+Top-level definitions outside a packaging are assumed to be injected into the \code{Object} class directly, and therefore visible to each other without qualification. However, as \code{Object} is actually a simple name for the fully qualified name ~\lstinline!@Root.Aml/Language.Object!, no member is ever defined outside of packaging -- it may only seem to be so: the type of \code{self} pseudo-variable in ``global'' context (outside of any packagings) is ~\lstinline!@Root.Aml/Language.Object!---a special instance of \code{Object} dedicated to handling ``global'' space---unless the source file is loaded in context of another instance, used with DSLs. This should however be only used in script files, not inside modules, where all code has to be packaged. 
 
 
 
@@ -135,7 +135,7 @@ Top-level definitions outside a packaging are assumed to be injected into the \c
 Module_Object ::= {Annotation} 'module' 'object' Object_Def
 \end{lstlisting}
 
-A module object ~\lstinline!module object $p$ extends $t$! can specify some properties of the module object, add new traits to it, and adds the members of the template $t$ to the module object $p$. There can be only one module object per module. The module object has to be defined in a file named ~\lstinline[deletekeywords={module}]!module.gear!~ in the module's sources directory, otherwise the module object has an implied empty template with no annotations. 
+A module object ~\lstinline!module object $p$ extends $t$! can specify some properties of the module object, add new traits to it, and adds the members of the template $t$ to the module object $p$. There can be only one module object per module. The module object has to be defined in a file named ~\lstinline[deletekeywords={module}]!module.aml!~ in the module's sources directory, otherwise the module object has an implied empty template with no annotations. 
 
 The module object should not define a member with the same name as one of the top-level objects or classes defined in module $p$. If there is a name conflict, it is an error. 
 
@@ -218,7 +218,7 @@ module object {
 
 This program can be started by the command
 \begin{lstlisting}
-% gear Test
+% amlrun Test
 \end{lstlisting}
 
 

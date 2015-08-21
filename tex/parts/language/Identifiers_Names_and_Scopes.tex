@@ -4,7 +4,7 @@
 \chapter{Identifiers, Names \& Scopes}
 \label{sec:identifiers-names-scopes}
 
-Names in Gear identify various types, values, methods and constants, which are the \emph{entities}. Names are introduced by local definitions and declarations, inheritance, use clauses or module clauses, which are the \emph{bindings}. 
+Names in Amlantis identify various types, values, methods and constants, which are the \emph{entities}. Names are introduced by local definitions and declarations, inheritance, use clauses or module clauses, which are the \emph{bindings}. 
 
 Bindings of different kinds have a different precedence defined on them: 
 
@@ -20,9 +20,9 @@ Bindings of different kinds have a different precedence defined on them:
 
 There is only one root name space, in which a single fully-qualified binding designates always up to one entity. 
 
-Every binding has a \emph{scope}\footnote{This includes, but is not limited to nested templates.} in which the bound entity can be referenced using a simple name (unqualified). Scopes are nested, inner scopes inherit the same bindings, unless shadowed. A binding in an inner scope \emph{shadows} bindings of lower precedence in the same scope (and nested scopes) as well as bindings of the same or lower precedence in outer scopes. Shadowing is a partial order, and bindings can become ambiguous -- fully qualified names can be used to resolve binding conflicts. This restriction is checked in limited scope during compilation\footnote{This is due to the hybrid typing system in Gear, to make use of all the available information as soon as possible.} and fully in runtime. 
+Every binding has a \emph{scope}\footnote{This includes, but is not limited to nested templates.} in which the bound entity can be referenced using a simple name (unqualified). Scopes are nested, inner scopes inherit the same bindings, unless shadowed. A binding in an inner scope \emph{shadows} bindings of lower precedence in the same scope (and nested scopes) as well as bindings of the same or lower precedence in outer scopes. Shadowing is a partial order, and bindings can become ambiguous -- fully qualified names can be used to resolve binding conflicts. This restriction is checked in limited scope during compilation\footnote{This is due to the hybrid typing system in Aml, to make use of all the available information as soon as possible.} and fully in runtime. 
 
-If at any point of the program execution a binding would change (e.g., by introducing a new type in a superclass that is closer in the inheritance tree to the actual class than the previous binding), and such a change would be incompatible with the previous binding, it is an error. Also, if a new binding would be ambiguous\footnote{Gear runtime actually checks for bindings until the binding-candidate would not be able to shadow the already found binding-candidates and caches the result.}, then it is an error. 
+If at any point of the program execution a binding would change (e.g., by introducing a new type in a superclass that is closer in the inheritance tree to the actual class than the previous binding), and such a change would be incompatible with the previous binding, it is an error. Also, if a new binding would be ambiguous\footnote{Aml runtime actually checks for bindings until the binding-candidate would not be able to shadow the already found binding-candidates and caches the result.}, then it is an error. 
 
 As shadowing is only a partial order, in a situation like
 

@@ -22,7 +22,7 @@ Unit_Elem      ::= number_literal | id |
 Unit_Op        ::= '*' | '/' | '^'
 \end{lstlisting}
 
-Numbers in Gear can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
+Numbers in Aml can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
 
 \example The following defines the measure \code{cm} (centimeter).
 \begin{lstlisting}
@@ -69,5 +69,5 @@ Variant_Type_Param ::= '<' (id | '_') ['<:' id] '>'
 Names of unit of measure parameters must not clash with names of type parameters or other unit of measure parameters, otherwise it is a compile-time error. 
 
 \paragraph{\em Persistence of Units of Measure}
-There is a huge difference between the way F\# handles units of measure and Gear's way. In F\#, the unit of measure information is lost after compilation, but persists in Gear in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
+There is a huge difference between the way F\# handles units of measure and Aml's way. In F\#, the unit of measure information is lost after compilation, but persists in Aml in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
 
