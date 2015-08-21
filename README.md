@@ -1,2 +1,2 @@
-A collection of documents about The Gear Programming Language. 
+A collection of documents about The Amlantis System and associated Programming Language. 
 
