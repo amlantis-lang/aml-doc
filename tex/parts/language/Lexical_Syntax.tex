@@ -64,14 +64,16 @@ An identifier may also be formed by an identifier between back-quotes (``\lstinl
 
 Aml programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
 
-The ``\lstinline[mathescape=false]!$!'' character is reserved. 
+The ``\lstinline[mathescape=false]!$!'' character is reserved as an identifier for special purposes, each described in this document (e.g. \sref{sec:receiver-universal-shortcut} or \sref{sec:target-type-expressions}).
 
 A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in some other languages, keywords are not being recognized inside of paths, except for a few specific cases.
 
 The following names are the reserved words. Identifiers that match any of the specified reserved word carry the extra property of being a possible keyword, which is used in syntactic grammar. 
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[deletekeywords={of}]
 Identifier_Keyword ::= ? id, one of: ?
+\end{lstlisting}
+\begin{lstlisting}
 abstract      advice        advice-execution            after
 alias         also          and           annotation    arguments
 around        as            aspect        assert        atomic
@@ -102,11 +104,11 @@ reverse       sealed        self          set           seq
 sig           skip          soft          step          struct
 super         switch        synchronized  tailcall      target
 then          this          throw         throwable     throwing
-to            trait         transparent   type          undefined
-unless        unowned       until         union         upgrade
-use           val           var           variant       yes
-weak          when          while         with          xor
-yield         yielding
+to            trait         transparent   tuple         type
+undefined     unless        unowned       until         union
+upgrade       use           val           var           variant
+yes           weak          when          while         with
+xor           yield         yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
@@ -396,7 +398,7 @@ float_type      ::= 'h' (* Half float precision *)
 
 Floating point and fixed point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. If \lstinline@float_type@ part is not present, then the expressions' expected type is used, and if expected type is unable to determine the floating/fixed point type, then a fixed point type is used, with precision set precise enough to store all given significant digits without loss. 
 
-Literals that have \lstinline@float_type@ of ``\code{m}'' are (deci{\bf m}al) fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly inferred to be fixed point literals, unless specifically converted to a floating point type or using a \code{float_type} of \code{h}, \code{f} or \code{d}. From \code{Number}'s user perspective, this is only an implementation detail, and the VM is not required to store floating or fixed point values in any specific representation other than that with the required precision and properties. 
+Literals that have \lstinline@float_type@ of ``\code{m}'' are fixed point literals. Also, floating point literals that are impossible to represent in binary form accurately are implicitly inferred to be fixed point literals, unless specifically converted to a floating point type or using a \code{float_type} of \code{h}, \code{f} or \code{d}. From \code{Number}'s user perspective, this is only an implementation detail, and the VM is not required to store floating or fixed point values in any specific representation other than that with the required precision and properties. 
 
 \begin{enumerate}
 

@@ -6,7 +6,7 @@
 
 \RequirePackage{fourier}
 \usepackage[a4paper]{geometry}
-\usepackage{mathspec,xltxtra,xunicode,titling,ifpdf}
+\usepackage{mathspec,xltxtra,xunicode,xspace,titling,ifpdf}
 \RequirePackage{color}
 \RequirePackage{colortbl}
 \usepackage[usenames,dvipsnames]{xcolor}
@@ -284,6 +284,7 @@
     to,%
     trait,%
     transparent,%
+    tuple,%
     type,%
     undefined,%
     unless,%
@@ -402,6 +403,16 @@
 \newcommand{\exptype}{\mbox{\sl et}}
 \newcommand{\udef}{\mbox{\sl undefined}}
 \newcommand{\superth}{\mbox{\scriptsize th}}
+
+\newcommand{\Aml}{\lstinline!Aml!\xspace}
+\newcommand{\AmlCore}{\lstinline!Aml/Core!\xspace}
+\newcommand{\AmlSystem}{\lstinline!Aml/System!\xspace}
+\newcommand{\AmlSharp}{\mbox{\lstinline!Aml\#!}\xspace}
+\newcommand{\AmlSharpSystem}{\mbox{\lstinline!Aml\#/System!}\xspace}
+\newcommand{\AmlS}{\lstinline!Aml/S!\xspace}
+\newcommand{\SharpSign}{\textsuperscript{\symbol{"266F}}\xspace}
+\newcommand{\AmlSharpTitle}{Amlantis{\normalfont \SharpSign}\xspace}
+
 
 
 

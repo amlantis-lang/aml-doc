@@ -741,8 +741,7 @@ Infix_Type          ::= Type {'and' Type}
 
 An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. 
 
-The difference between intersection types and compound types (\sref{sec:compound-types}) is that intersection types are commutative and associative -- independent on the order in which the member types appear. 
-
+The difference between intersection types and compound types (\sref{sec:compound-types}) is that intersection types are commutative and associative -- independent on the order in which the member types appear.\footnote{This should be rarely causing any difference, if the types are distinct anyway -- however, when types share methods that they override, the order might matter.}
 
 Intersection types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
 \begin{itemize}
@@ -804,13 +803,13 @@ See also section about storage of mutable and immutable values: (\sref{sec:mutab
 
 A \code{mutable} type can be seen as a constrained type, where the constraint is:
 \begin{lstlisting}
-$T$ with constraint { not self'is_frozen? }  ,
+$T$ with constraint { not self.'is_frozen? }  ,
 \end{lstlisting}
 where \code{self} would be a constraint published by the type $T$, referring to the \code{self} of a value of the type $T$. 
 
 An \code{immutable} type can be seen as a constrained type, where the constraint is:
 \begin{lstlisting}
-$T$ with constraint { self'is_frozen? }  ,
+$T$ with constraint { self.'is_frozen? }  ,
 \end{lstlisting}
 where \code{self} would be a constraint published by the type $T$, referring to the \code{self} of a value of the type $T$. 
 

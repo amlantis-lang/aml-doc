@@ -1,7 +1,7 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
-\chapter{Introduction}
+\chapter{Introduction to Amlantis Core}
 
 \minitoc
 
@@ -9,9 +9,9 @@
 
 % TBD: add a proper introduction
 
-\section{About The Amlantis Language}
+\section{About The Amlantis Core Language}
 
-Amlantis (or shorter Aml) is a scalable, reasonably verbose, type-safe and type-inferred multi-paradigm language. These paradigms are:
+\Aml is a scalable, reasonably verbose, type-safe and type-inferred multi-paradigm language. These paradigms are:
 \begin{itemize}
   \item Object-oriented, both class-based and prototype-based
   \item Functional. 
@@ -21,7 +21,7 @@ Amlantis (or shorter Aml) is a scalable, reasonably verbose, type-safe and type-
   \item Reflective. 
 \end{itemize}
 
-Aml is a hybrid language in two significant properties. First, the language itself is inherently dynamic, but focuses on minimizing impact of the dynamic changes. Second, it uses hybrid typing discipline, where most types are statically defined and selected types may opt-in for dynamic typing. 
+\Aml is a hybrid language in two significant properties. First, the language itself is inherently dynamic, but focuses on minimizing impact of the dynamic changes. Second, it uses hybrid typing discipline, where most types are statically defined and selected types may opt-in for dynamic typing. 
 
 It aims to be a good modern high-level self-optimizing language with a scent of retro that programmers will just love. 
 
@@ -33,27 +33,27 @@ It aims to be a good modern high-level self-optimizing language with a scent of 
 \section{Influences}
 
 \paragraph{Ada}
-Ada influenced the base of Aml's syntax, and also had an impact on floating and fixed point types, which are very distinct in Aml. 
+Ada influenced the base of \Aml's syntax, and also had an impact on floating and fixed point types, which are very distinct in \Aml. 
 
-Aml uses heavily keyword program parentheses in Ada fashion. There are \lstinline!class $\ldots$ end class!, \lstinline!def $\ldots$ end def!, \lstinline!do $\ldots$ end!, \lstinline!loop $\ldots$ end loop! etc.
+\Aml uses heavily keyword program parentheses in Ada fashion. There are \lstinline!class $\ldots$ end class!, \lstinline!def $\ldots$ end def!, \lstinline!do $\ldots$ end!, \lstinline!loop $\ldots$ end loop! etc.
 
 \paragraph{Ruby}
-Ruby was the original inspiration in early stages of Aml's development. It still has some visible marks left throughout Aml's syntax, e.g. the metaclass access, and it itself being influenced by Ada, the syntaxes are also similar. Aml also admires Ruby's dynamic features and metaprogramming capabilities and wants to be as little obstacle in creating custom DSLs\footnote{Domain-Specific Languages} as it can be. 
+Ruby was the original inspiration in early stages of \Aml's development. It still has some visible marks left throughout \Aml's syntax, e.g. the metaclass access, and it itself being influenced by Ada, the syntaxes are also similar. \Aml also admires Ruby's dynamic features and metaprogramming capabilities and wants to be as little obstacle in creating custom DSLs\footnote{Domain-Specific Languages} as it can be. 
 
 \paragraph{Scala}
-Scala influenced the type system of Aml. The most visible effect that it has left here is the syntax for type arguments and type parameters, which are enclosed in square brackets, instead of the kind of more usual and troubled angle brackets. 
+Scala influenced the type system of \Aml. The most visible effect that it has left here is the syntax for type arguments and type parameters, which are enclosed in square brackets, instead of the kind of more usual and troubled angle brackets. 
 
 \paragraph{OCaml \& F\#}
-These two languages (which themselves are related) influenced Aml so remarkably, that one may almost consider Aml to be a distant relative of the ML family of programming languages, it even has {\em ML} in its name. Function application syntax, function compositions, functional algebraic datatypes, currying, automatic type inference and much more. OCaml also had an impact on Aml's name: it has {\em ML} in its name, too (although it is less ML-like than F\#, which does not have that in its name). 
+These two languages (which themselves are related) influenced \Aml so remarkably, that one may almost consider \Aml to be a distant relative of the ML family of programming languages, it even has {\em ML} in its name. Function application syntax, function compositions, functional algebraic datatypes, currying, automatic type inference and much more. OCaml also had an impact on \Aml's name: it has {\em ML} in its name, too (although it is less ML-like than F\#, which does not have that in its name). 
 
 \paragraph{Clojure}
-While Clojure as a member of the Lisp language family does not have much of a direct effect on the syntax of Aml, it influences Aml more conceptually. 
+While Clojure as a member of the Lisp language family does not have much of a direct effect on the syntax of \Aml, it influences \Aml more conceptually. 
 
 \paragraph{ATS}
-ATS convinced Aml to give dependent types a try. 
+ATS convinced \Aml to give dependent types a try. 
 
 \paragraph{Personal experiences}
-Aml is kind of an opinionated language. It makes some subtle or also significant choices that may seem odd at the first sight, but they make more sense over the time (or are bugs). These include decisions like whitespace being required around most infix operators. However, its intentions are friendly -- Aml prefers readability even one year from now to having the code written and compiled a little bit faster. 
+\Aml is kind of an opinionated language. It makes some subtle or also significant choices that may seem odd at the first sight, but they make more sense over the time (or are bugs). These include decisions like whitespace being required around most infix operators. However, its intentions are friendly -- \Aml prefers readability even one year from now to having the code written and compiled a little bit faster. 
 
 
 
@@ -61,7 +61,7 @@ Aml is kind of an opinionated language. It makes some subtle or also significant
 
 \section{Notational Conventions}
 
-All lexical and grammar syntax definitions use a customized form of EBNF. 
+All lexical and grammar syntax definitions use a customized form of EBNF. These forms are reused across definitions of all Aml languages. 
 
 \begin{itemize}
   \item \lstinline![element]! \newline

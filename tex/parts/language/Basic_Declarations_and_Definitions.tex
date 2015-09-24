@@ -594,7 +594,7 @@ A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named 
 
 
 
-\section{Explicitly Polymorphic Locally Abstract Types}
+\section[Explicitly Polymorphic Locally Abstract Types]{Explicitly Polymorphic \\ Locally Abstract Types}
 \label{sec:locally-abstract-polymorphic-types}
 
 \syntax\begin{lstlisting}
@@ -711,7 +711,7 @@ Labelled_Params
                   [',' Capture_Extract]
                 | Capture_Extract
 Labelled_Param 
-              ::= Labelled_Extract
+              ::= Labelled_Pattern
                 | '~' Param_Extra id 
                 | '~(' Param_Extra id [':' Param_Type] ')'
                 | '~' Param_Extra id ':' Pattern
@@ -795,7 +795,7 @@ Aml utilizes five argument evaluation strategies. Every strategy defers evaluati
 Evaluations strategies are only applied to arguments as whole, not to any possible sub-expressions or nested data. 
 
 \paragraph{Call-by-value, strict}
-Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. This includes explicit parameter values (\sref{sec:explicit-parameters}).
+Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. 
 
 \paragraph{Call-by-reference, strict}
 Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in Aml, by usage of wrapper objects. Those are described in (\sref{sec:by-ref-parameters}).
@@ -946,7 +946,7 @@ The two kinds are:
 
 The combinations are:
 \begin{itemize}
-  \item Only positional variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Sequence[$T$]} into a variable defined by the parameter.$T$ is a variable type, if not defined by the parameter. Labelled arguments are not applicable. 
+  \item Only positional variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Sequence[$T$]} into a variable defined by the parameter. $T$ is a variable type, if not defined by the parameter. Labelled arguments are not applicable. 
   \item Only capture variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Dictionary[Symbol, $T$]}, where $T$ is a variable type, if not defined by the parameter. Positional arguments are mapped to a symbol containing the integer number of their order of appearance, interleaved with labelled arguments. 
   \item Both positional and capture variadic parameters are present. Then the positional parameter only binds positional arguments and the capture parameter only binds labelled arguments. 
 \end{itemize}
