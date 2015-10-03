@@ -25,13 +25,14 @@ Expr        ::= Value_Expr
               | Jump_Expr
               | Anon_Fun
               | Anon_Class
+              | Def_Expr
+              | New_Expr
+              | Tuple_Exprs
               | Expr semi Expr
 Value_Expr  ::= Simple_Expr
               | App_Expr
               | Cond_Expr
               | Match_Expr
-              | New_Expr
-              | Def_Expr
               | '(' Expr ')'
               | 'begin' Expr 'end'
               | Quasiquote_Expr
@@ -134,7 +135,7 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 \label{sec:tuples}
 
 \syntax\begin{lstlisting}
-Value_Expr        ::= Tuple_Exprs
+Value_Expr        ::= '(' [Tuple_Exprs] ')'
 Tuple_Exprs       ::= Exprs {',' [nl] Named_Exprs}
                     | Named_Exprs
                     | ['mutable' | 'immutable'] 'tuple' [nl] 
@@ -482,7 +483,7 @@ Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
 Aml/Language.Reference_Cell.new($e$)
 \end{lstlisting}
 
-The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in the meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{value_=}'' message. 
+The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in the meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{set-value}'' message. 
 
 Reference cells are lightweight instances that can be used to simulate output parameters at low costs, in both CPU cycles and the language design.
 
@@ -2045,11 +2046,11 @@ Rvalue_Expr ::= Expr | TT_Expr
 
 The interpretation of an assignment to a simple variable ~\lstinline!$x$ := $e$!~ depends on the definitions of $x$. If $x$ denotes a mutable variable, then the assignment changes the current value of $x$ to the result of evaluating the expression $e$. The type of $e$ is expected to conform to the type of $x$. 
 
-If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!$x$_=!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!$x$_=($e$)!~ of that setter function. 
+If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!set-$x$!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!set-$x$($e$)!~ of that setter function. 
 
-Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.$x$_=($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}.\footnote{This likely results in a runtime error being raised, unless \code{nil} would actually implement method \code{x_=}.} 
+Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.set-$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}.\footnote{This likely results in a runtime error being raised, unless \code{nil} would actually implement method \code{set-$x$}.} 
 
-An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?$x$_=($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
+An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?set-$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
 
 An assignment ~\lstinline!$f$($\args$) := $e$!~ with a function application to the left of the ``\lstinline!:=!'' operator is interpreted as ~\lstinline!$f$.update($\args$)($e$)!, i.e. the invocation of an \code{update} function defined by $f$. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}. The ``\lstinline!.?!'' navigation is not available with this expression. 
 
@@ -2057,11 +2058,11 @@ The interpretation of an assignment ~\lstinline!$x$ := .$e$!, where $x$ may be a
 
 \example Here are some assignment expressions and their equivalent interpretations. 
 \begin{lstlisting}
-f := e                       f_=(e)
+f := e                       set-f(e) (* or, self.set-f(e) *)
 f() := e                     f.update()(e)
 f(i) := e                    f.update(i)(e)
 f(i, j) := e                 f.update(i, j)(e)
-x.f := e                     x.f_=(e)
+x.f := e                     x.set-f(e)
 x.f() := e                   x.f.update()(e)
 x.f(i) := e                  x.f.update(i)(e)
 x.f(i, j) := e               x.f.update(i, j)(e)
@@ -2570,7 +2571,7 @@ Unconditional expressions change the flow of programs without a condition.
 Implicit return expression is always the value of the last expression in a code execution path. 
 
 \syntax\begin{lstlisting}
-Result_Expr ::= ['memoize'] Expr
+Result_Expr ::= ['memoize'] Value_Expr
               | ['memoize'] 'tailcall' Arguments [Block_Argument]
               | ['memoize'] 'tailcall' '(' [Arguments] ')' [Block_Argument]
               | ['memoize'] 'tailcall' Block_Argument
