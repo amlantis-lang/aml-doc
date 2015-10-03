@@ -270,11 +270,11 @@ If the property is declared as \code{optional}, then the property is stored in a
 
 \end{enumerate}
 
-Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline!set-$x$!, declared as follows:
+Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline!set_$x$!, declared as follows:
 
 \begin{lstlisting}
 message $x$ (): $T$ end
-message set-$x$ (y: $T$): () end
+message set_$x$ (y: $T$): Unit end
 \end{lstlisting}
 
 Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation due to implicit conversions (\sref{sec:implicit-conversions}). 

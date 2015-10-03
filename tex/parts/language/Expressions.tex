@@ -483,7 +483,7 @@ Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
 Aml/Language.Reference_Cell.new($e$)
 \end{lstlisting}
 
-The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in the meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{set-value}'' message. 
+The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in the meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{set_value}'' message. 
 
 Reference cells are lightweight instances that can be used to simulate output parameters at low costs, in both CPU cycles and the language design.
 
@@ -2046,11 +2046,11 @@ Rvalue_Expr ::= Expr | TT_Expr
 
 The interpretation of an assignment to a simple variable ~\lstinline!$x$ := $e$!~ depends on the definitions of $x$. If $x$ denotes a mutable variable, then the assignment changes the current value of $x$ to the result of evaluating the expression $e$. The type of $e$ is expected to conform to the type of $x$. 
 
-If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!set-$x$!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!set-$x$($e$)!~ of that setter function. 
+If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!set_$x$!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!set_$x$($e$)!~ of that setter function. 
 
-Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.set-$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}.\footnote{This likely results in a runtime error being raised, unless \code{nil} would actually implement method \code{set-$x$}.} 
+Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.set_$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}.\footnote{This likely results in a runtime error being raised, unless \code{nil} would actually implement method \code{set_$x$}.} 
 
-An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?set-$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
+An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?set_$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
 
 An assignment ~\lstinline!$f$($\args$) := $e$!~ with a function application to the left of the ``\lstinline!:=!'' operator is interpreted as ~\lstinline!$f$.update($\args$)($e$)!, i.e. the invocation of an \code{update} function defined by $f$. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}. The ``\lstinline!.?!'' navigation is not available with this expression. 
 
@@ -2058,11 +2058,11 @@ The interpretation of an assignment ~\lstinline!$x$ := .$e$!, where $x$ may be a
 
 \example Here are some assignment expressions and their equivalent interpretations. 
 \begin{lstlisting}
-f := e                       set-f(e) (* or, self.set-f(e) *)
+f := e                       set_f(e) (* or, self.set_f(e) *)
 f() := e                     f.update()(e)
 f(i) := e                    f.update(i)(e)
 f(i, j) := e                 f.update(i, j)(e)
-x.f := e                     x.set-f(e)
+x.f := e                     x.set_f(e)
 x.f() := e                   x.f.update()(e)
 x.f(i) := e                  x.f.update(i)(e)
 x.f(i, j) := e               x.f.update(i, j)(e)
@@ -3071,7 +3071,7 @@ If none of the previous conversions applies, and $e$ is a prefix of a selection 
 \subsection{Method Conversions}
 \label{sec:method-conversions}
 
-The following implicit conversions can be applied to methods which are not applied to some argument list. 
+The following implicit conversions can be applied to methods which are not applied to any arguments. 
 
 \paragraph{Evaluation}
 A parameterless method $m$ of type ~\lstinline!() -> $T$!~ is always converted to type $T$ by evaluating the expression to which $m$ is bound. 
