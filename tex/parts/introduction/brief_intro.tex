@@ -1,0 +1,53 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter*{A Brief Introduction to the Amlantis System}
+\label{sec:brief-intro}
+
+Amlantis System is a collection of specifications of programming and data definition languages and their related tools, runtimes and libraries. 
+
+Those specifications do not always require particular implementations, but attempt to avoid undefined behaviours as much as possible. 
+
+Amlantis also provides an open source implementation of those specifications, but it is indeed possible for other people to write their own implementations or forks\footnote{Forks and pull requests are preferred!} of this default implementation, probably focusing on optimizing other aspects of the system, maybe exploring new options of future development to be pull-requested into the default implementation. 
+
+
+
+
+
+\section*{A Few Notes on the Name}
+
+Amlantis' name has quite some history. The project started being named {\em Coral}, but that collided with another language of a similar name, \href{https://en.wikipedia.org/wiki/Coral_66}{{\em CORAL 66}}. Then it got renamed to {\em Gear}, but that again collided with another language of the same name, which seemed inactive at the time, \href{https://github.com/zippers/gear}{{\em zippers/gear}}. Than an idea was born and Aml was named {\em Amlantis}, which is whatever you want it to be. It could be a misspelling of {\em Atlantis}\footnote{Intentionally -- because otherwise, it would be named Atlantis, but there is already a city of that name.}, it could be an acronym like {\em A ML Language}, or maybe even something like {\em A ML Language And Neat Technology Improvement System}, or maybe {\em Caml} without the {\em C}. For the meaning of the cryptic {\em ML} part, search for the {\em Standard ML} or {\em OCaml}. 
+
+
+
+
+
+\newpage
+
+\section*{The Amlantis Languages}
+\label{sec:amlantis-languages}
+
+There is a couple of languages that come with a fully-featured Amlantis' implementation:
+
+\begin{itemize}
+  \item Virtual Machine Runtime languages:
+    \begin{itemize}
+      \item Amlantis Core (or \AmlCore, or even simpler \Aml\footnote{Whenever this document mentions \Aml alone, suffix-less, it mentions this core language.}), the core programming language of the system. It is the most versatile language in this list, also allowing programming of DSLs etc. (\sref{part:language})
+      \item Amlantis\SharpSign (or \AmlSharp), a more functional-style focused language. (\sref{part:language-sharp})
+      \item Amlantis S (or \AmlS), also a functional-style focused language, but more {\em homoiconic}, using {\em Symbol-Expressions} and defining itself in its own data-structures (which are shared with the other \code{Aml} languages). (\sref{part:language-s})
+    \end{itemize}
+  \item System Runtime languages:
+    \begin{itemize}
+      \item Amlantis System (or \AmlSystem), based on \mbox{\lstinline!Aml/Core!}. (\sref{part:language-system})
+      \item Amlantis\SharpSign System (or \AmlSharpSystem), based on \AmlSharp. (\sref{part:language-sharp-system})
+    \end{itemize}
+\end{itemize}
+
+Languages are interoperable within the same runtime, and have interoperability tools across runtimes. This is due to different ABIs of each runtime. 
+
+
+
+
+
+
+

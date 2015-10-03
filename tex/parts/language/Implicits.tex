@@ -133,7 +133,6 @@ If there are multiple implicit scopes searched in order, we mean that the follow
 Type_Param ::= (id | '_') [Type_Param_Clause]
                ['>:' Type] ['<:' Type]
                {'<%' Type} {':' Type}
-             | '<' (id | '_') '>' ['<:' id]
 \end{lstlisting}
 
 A type parameter $A$ of a method or a non-trait class may have one or more view bounds ~\lstinline!$A$ <% $T$!. In this case, the type parameter may be instantiated to any type $S$, which is convertible by an application of a view to the bound $T$.
@@ -158,8 +157,8 @@ If the type of a context-bound parameter uses the type parameter in its definiti
 
 \example The following example shows a method with a context-bound parameter using a partially applied type, and the resulting translation below it. 
 \begin{lstlisting}
-def f [T : T -> String](t: T) := $\ldots$
-def f [T] (t: T)(implicit: $w_1$: Function_1[T, String]) := $\ldots$
+def f [T : T -> String] (t: T) := $\ldots$
+def f [T] (t: T) (implicit: $w_1$: T -> String) := $\ldots$
 \end{lstlisting}
 
 

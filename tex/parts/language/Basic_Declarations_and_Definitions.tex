@@ -149,8 +149,6 @@ val x := x'.1
 val xs := x'.2
 \end{lstlisting}
 
-The name of any declared or defined value must not end with ``\lstinline@_=@''. 
-
 The following shorthands are recognized: 
 \begin{itemize}
   \item[] A value declaration ~\lstinline@val $x_1 \commadots x_n$: $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$: $T$; $\ldots$; val $x_n$: $T$@. 
@@ -185,8 +183,6 @@ A variable declaration \lstinline@var $x$: $T$@ introduces a mutable variable wi
 A variable definition \lstinline@var $x$: $T$ := $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
 
 Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dcl-def}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
-
-The name of any declared or defined variable must not end with ``\lstinline@_=@''. 
 
 A variable definition ~\lstinline!var $x$: $T$ := _!~ introduces a mutable variable with type $T$ and a default initial value. The default value depends on the type $T$ as follows:
 \begin{quote}\begin{tabular}{ll}
@@ -274,11 +270,11 @@ If the property is declared as \code{optional}, then the property is stored in a
 
 \end{enumerate}
 
-Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline@$x$_=@, declared as follows:
+Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline!set-$x$!, declared as follows:
 
 \begin{lstlisting}
-def $x$ (): $T$; end
-def $x$_= (y: $T$): (); end
+message $x$ (): $T$ end
+message set-$x$ (y: $T$): () end
 \end{lstlisting}
 
 Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation due to implicit conversions (\sref{sec:implicit-conversions}). 
@@ -594,7 +590,7 @@ A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named 
 
 
 
-\section{Explicitly Polymorphic Locally Abstract Types}
+\section[Explicitly Polymorphic Locally Abstract Types]{Explicitly Polymorphic \\ Locally Abstract Types}
 \label{sec:locally-abstract-polymorphic-types}
 
 \syntax\begin{lstlisting}
@@ -711,7 +707,7 @@ Labelled_Params
                   [',' Capture_Extract]
                 | Capture_Extract
 Labelled_Param 
-              ::= Labelled_Extract
+              ::= Labelled_Pattern
                 | '~' Param_Extra id 
                 | '~(' Param_Extra id [':' Param_Type] ')'
                 | '~' Param_Extra id ':' Pattern
@@ -795,7 +791,7 @@ Aml utilizes five argument evaluation strategies. Every strategy defers evaluati
 Evaluations strategies are only applied to arguments as whole, not to any possible sub-expressions or nested data. 
 
 \paragraph{Call-by-value, strict}
-Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. This includes explicit parameter values (\sref{sec:explicit-parameters}).
+Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. 
 
 \paragraph{Call-by-reference, strict}
 Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in Aml, by usage of wrapper objects. Those are described in (\sref{sec:by-ref-parameters}).
@@ -946,7 +942,7 @@ The two kinds are:
 
 The combinations are:
 \begin{itemize}
-  \item Only positional variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Sequence[$T$]} into a variable defined by the parameter.$T$ is a variable type, if not defined by the parameter. Labelled arguments are not applicable. 
+  \item Only positional variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Sequence[$T$]} into a variable defined by the parameter. $T$ is a variable type, if not defined by the parameter. Labelled arguments are not applicable. 
   \item Only capture variadic parameter is present. All extra arguments are in order of their appearance bound to a \code{Dictionary[Symbol, $T$]}, where $T$ is a variable type, if not defined by the parameter. Positional arguments are mapped to a symbol containing the integer number of their order of appearance, interleaved with labelled arguments. 
   \item Both positional and capture variadic parameters are present. Then the positional parameter only binds positional arguments and the capture parameter only binds labelled arguments. 
 \end{itemize}

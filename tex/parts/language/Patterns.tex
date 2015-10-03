@@ -810,7 +810,7 @@ Tuple extractions combine two approaches to extractions: positional and labelled
 
 Positional extractions are very much like sequential extractions, delimited by a comma ``\code{,}'' instead of a newline or semicolon. After all positional extractions are evaluated against the input tuple, labelled extractions are used to extract any remaining elements, by their given labels. 
 
-% TBD: use portions of labelled extractions in dictionary extractions, as those are quite similar
+Positional extractions are used to extract elements from the sequence of all non-labelled elements of the matched tuple, and then separately labelled extractions are used to extract elements from the map (from labels to elements) of all labelled elements of that tuple. Both extractions must succeed in order for the pattern that uses tuple extractions to match. In some cases, positional and labelled elements of the matched tuple may overlap -- that has only one consequence: the overlapping elements may be matched more than once. 
 
 Labelled extractions (\code{Labelled_Pattern}) are similar to dictionary extractions, where the keys are of type \code{Symbol} and represented in the syntactic form with the \code{id} element. Capture extraction is shared with dictionary patterns (\sref{sec:dict-patterns}), where the type of keys in the sub-dictionary is \code{Symbol}, and all remaining elements are bound into it, preserving their labels in the keys. There are multiple kinds of labelled extractions: 
 \begin{enumerate}
@@ -820,7 +820,16 @@ Labelled extractions (\code{Labelled_Pattern}) are similar to dictionary extract
   \item The form ~\lstinline!~?$v$!~ is a shorthand for the form ~\lstinline!~?$v$: val $v$!. 
   \item The form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!~ is a shorthand for the form ~\lstinline!~?$v$: (val $v$ $[$: $T$$]$ $[$:= $e$$]$)!. 
   \item The form ~\lstinline!~?$v$: ($p$ $[$: $T$$]$ $[$:= $e$$]$)!, which subsumes the form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!, matches an input value labelled $v$, and if such value is not present in the input tuple, then the result bound to a variable by $p$ depends on whether $e$ is present: if it is, the result of its evaluation is bound directly, otherwise \code{Option[$T$]} wrapper is used instead, very much like with optional extractions in sequence extractions. 
+  \item The forms ~\lstinline!**$v$!~ and ~\lstinline!**$v$: $T$!, which match all remaining unmatched input values, into a variable $v$ typed \code{Dictionary[Symbol, $T$]}, where $T$ is \code{Any}, if $T$ is not given.
+  \item The forms ~\lstinline!**_!~ and ~\lstinline!**_: $T$!, which match all remaining unmatched input values, discarding those values. The values must be of the type $T$, if given. 
 \end{enumerate}
+
+The sequence of matched elements depends on which kinds of extractions are present:
+\begin{itemize}
+  \item If only positional extractions are present, all elements are matched, stripped of their labels. 
+  \item If only labelled extractions are present, then elements without labels are not matched. If a capture extraction is present, then its value contains all elements, where the key is the element's position for elements without label, and the label for the rest that has a label. 
+  \item If both extractions are present, then both are performed. Positional extractions are performed only on elements without any label and labelled extractions are similarly only performed on labelled elements. 
+\end{itemize}
 
 
 
@@ -910,7 +919,7 @@ Type patterns consist of types, type variables and wildcards. A type pattern $T$
 
 Types are not subject to any type erasure (\sref{sec:reified-types}), so it is basically safe to use any other type as type pattern, unlike in Scala. 
 
-A {\em type variable pattern} is a simple identifier which starts with a lower case letter, or with a single quote: \code{'$x$}. Such type variable patterns are bound to the types extracted from the reified input type's type arguments by their position. The form with a leading single quote must not resolve to a name already existing in the outer scope, for it to be a type variable pattern. 
+A {\em type variable pattern} is a simple identifier which starts with a lower case letter, or with a single quote: \code{'$x$}. Such type variable patterns are bound to the types extracted from the reified input type's type arguments by their position. The form with a leading single quote must not resolve to a name already existing in the scope of the pattern match, for it to be a type variable pattern. 
 
 A type pattern contributes the type itself to type of parameter, when used in function parameters list, where all type variable patterns are replaced by wildcard placeholders from existential types (\sref{par:placeholder-existential-types}).
 

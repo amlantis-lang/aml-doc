@@ -25,13 +25,14 @@ Expr        ::= Value_Expr
               | Jump_Expr
               | Anon_Fun
               | Anon_Class
+              | Def_Expr
+              | New_Expr
+              | Tuple_Exprs
               | Expr semi Expr
 Value_Expr  ::= Simple_Expr
               | App_Expr
               | Cond_Expr
               | Match_Expr
-              | New_Expr
-              | Def_Expr
               | '(' Expr ')'
               | 'begin' Expr 'end'
               | Quasiquote_Expr
@@ -41,14 +42,12 @@ Value_Expr  ::= Simple_Expr
               | Rescue_Expr
               | Catch_Expr
               | Type_Expr
-Type_Expr   ::= 'type' '{' Type '}s'
+Type_Expr   ::= 'type' '{' Type '}'
               | Annot_Type - (Nullable_Mod, Type_Var, Postfix_Simple_Type)
 Simple_Expr ::= Block_Expr
               | Simple_Expr1
               | Method_Expr
               | TT_Expr
-Result_Expr ::= ['memoize'] Expr
-              | ['memoize'] 'tailcall' Argument_Exprs
 Exprs       ::= Expr {',' Expr}
 \end{lstlisting}
 
@@ -71,7 +70,7 @@ The typing of expressions is often relative to some {\em expected type} (which m
 
 Usually, the type of the expression is defined by the last element of an execution branch, as discussed subsequently with each expression kind. 
 
-What we call ``statement'', in context of GeAmlar is in fact yet another kind of an expression, and those expressions themselves always have a type and a value. 
+What we call ``statement'', in context of Aml is in fact yet another kind of an expression, and those expressions themselves always have a type and a value. 
 
 
 
@@ -136,19 +135,62 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 \label{sec:tuples}
 
 \syntax\begin{lstlisting}
-Value_Expr   ::= Tuple_Exprs
-Tuple_Exprs  ::= Named_Expr {',' Named_Expr}
-Named_Expr   ::= [['~'] id ':'] Expr
-Constant     ::= '()'
+Value_Expr        ::= '(' [Tuple_Exprs] ')'
+Tuple_Exprs       ::= Exprs {',' [nl] Named_Exprs}
+                    | Named_Exprs
+                    | ['mutable' | 'immutable'] 'tuple' [nl] 
+                      '{' [nl] Tuple_Fields_Init [nl] '}'
+Named_Exprs       ::= Named_Expr {',' [nl] Named_Expr}
+Named_Expr        ::= [['~'] id ':'] Value_Expr
+Constant          ::= '()'
+Tuple_Fields_Init ::= Tuple_Field_Init {semi Tuple_Field_Init}
+Tuple_Field_Init  ::= (id | {digit}+) '=>' Value_Expr
 \end{lstlisting}
 
-A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple_$n$($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple. Also ~\lstinline!Tuple_1!~ is a special type (pretty much like \code{Any} or \code{Auto}), which helps to make this possible even in dynamic use cases. 
+A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 1$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is usually only the value itself, without being wrapped in a tuple.  
 
-Sub-expressions in a tuple expression that are prepended with an id (in form of ~\lstinline!~$x_i$: $e_i$!) are named $x_i$ -- this adds annotation ~\lstinline!@[named :$x_i$]!~ to the type of the sub-expression. If the annotation is explicitly added, the behaviour is the same. Named sub-expressions, either in the syntax sugar or explicit form, can only appear at the end of the sequence of sub-expressions, thus no unnamed sub-expressions can appear after a named sub-expression. 
+A tuple expression may alternatively appear in the form ~\lstinline!tuple {$e_1$; $\ldots$; $e_n$}!. In that form, it may also be prepended with either \code{mutable} or \code{immutable} keyword. Implicitly, all forms are prepended with \code{immutable}. 
 
-Tuple expressions have the runtime type of ~\lstinline!Aml/Language.Tuple_$n$[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that name sub-expressions. 
+Sub-expressions that are not labelled with any id are positional. 
 
-Tuple expressions might be automatically converted into full argument expressions, as defined in (\sref{sec:function-applications}).
+Sub-expressions in a tuple expression that are prepended with an id (in form of ~\lstinline!$x_i$: $e_i$!) are labelled $x_i$ -- this adds annotation ~\lstinline!@[labelled :$x_i$]!~ to the type of the sub-expression, and such an element is then not accessible by its order. If the annotation is explicitly added, the behaviour is the same. Labelled sub-expressions, either in the syntax sugar or explicit form, can only appear at the end of the sequence of sub-expressions, thus no unnamed sub-expressions can appear after a named sub-expression. 
+% TBD: specify the full path to that annotation
+
+Labelled sub-expressions must appear after all positional (non-labelled) sub-expressions. Otherwise, they are implicitly reordered after all positional sub-expressions, and a warning is issued. The positions of non-labelled sub-expressions is then recalculated to match the new order.
+
+Sub-expressions in a tuple expression can optionally be also prepended with a tilde and an id (in form of ~\lstinline!~$x_i$: $e_i$!). This is the same as labelled sub-expressions. 
+
+Tuple expressions have the runtime type of ~\lstinline!Aml/Language.Tuple[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that give label to sub-expressions. Tuple expressions prepended by \code{mutable} are of the type ~\lstinline!Aml/Language.Mutable_Tuple[$T_1 \commadots T_n$]!.
+
+Tuple expressions with an extended grammar rules are also used within function applications (\sref{sec:function-applications}), and the rules considering element labelling and positions are the same as for the simple data tuple expressions. 
+
+\paragraph{Mixing labelled and non-labelled elements}
+As a rule of thumb, only the following combinations of labelled and non-labelled elements should be used:
+\begin{itemize}
+  \item All non-labelled elements. Usually should not exceed 3 elements.
+  \item All labelled elements.  
+  \item One non-labelled element followed by labelled elements, as an argument (\sref{sec:function-applications}). 
+  \item Many non-labelled elements followed by up to 3 labelled elements, also as an argument. 
+\end{itemize}
+The compiler should by default issue a warning when different combinations are encountered. 
+
+
+
+
+
+\subsection{Tuple Clone Expressions}
+\label{sec:tuple-clone}
+
+\syntax\begin{lstlisting}
+Value_Expr ::= ['mutable' | 'immutable'] 'tuple' [nl] 
+               '{' [nl] Value_Expr 'with' Tuple_Fields_Init [nl] '}'
+\end{lstlisting}
+
+An expression of the form 
+\begin{lstlisting}
+tuple { $e$ with $i_1$ => $e_1$; $\ldots$; $i_n$ => $e_n$ }
+\end{lstlisting}
+is a tuple clone expression. 
 
 
 
@@ -161,7 +203,7 @@ Tuple expressions might be automatically converted into full argument expression
 Words        ::= Word {{? Unicode whitespace ?}+ Word}
 Word         ::= {id_char}+
 Simple_Expr1 ::= List_Expr
-List_Expr    ::= '%' List_Flags '[' [Expr {semi Expr}] ']'
+List_Expr    ::= '%' List_Flags '[' [Value_Expr {semi Value_Expr}] ']'
                | '%w' List_Flags '[' [Words] ']'
 List_Flags   ::= [['i' | (* immutable *)
                    'm']  (* mutable *)
@@ -198,7 +240,7 @@ The ``\code{i}'' and ``\code{m}'' flags can be inferred from the expected type, 
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Array_Expr
-Array_Expr   ::= '%' Array_Flags '[|' [Expr {semi Expr}] '|]'
+Array_Expr   ::= '%' Array_Flags '[|' [Value_Expr {semi Value_Expr}] '|]'
                | '%w' Array_Flags '[|' Words '|]'
 Array_Flags  ::= [['i' | (* immutable *)
                    'm']] (* mutable *)
@@ -229,8 +271,8 @@ An expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]! is an array e
 Simple_Expr1    ::= Dictionary_Expr
 Dictionary_Expr ::= '%' Dict_Flags '{' [Dict_Mapping1 {semi Dict_Mapping1}] '}'
                   | '%' Dict_Flags '{' [Dict_Mapping2 {semi Dict_Mapping2}] '}'
-Dict_Mapping1   ::= Simple_Expr1 '=>' Expr
-Dict_Mapping2   ::= ['~'] id ':' Expr
+Dict_Mapping1   ::= Simple_Expr1 '=>' Value_Expr
+Dict_Mapping2   ::= ['~'] id ':' Value_Expr
 Dict_Flags      ::= [['i' | (* immutable *)
                       'm']  (* mutable *)
                      ['l']] (* linked *)
@@ -297,8 +339,7 @@ An expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}! is a multimap
 
 \syntax\begin{lstlisting}
 Simple_Expr1 ::= Bag_Expr
-Bag_Expr     ::= '%' Bag_Flags '(' [Expr {semi Expr}] ')'
-               | '%' Bag_Flags '(' [Expr {semi Expr}] ')'
+Bag_Expr     ::= '%' Bag_Flags '(' [Value_Expr {semi Value_Expr}] ')'
 Bag_Flags    ::= [['i' | (* immutable *)
                    'm']  (* mutable *)
                   ['l']  (* linked *)
@@ -342,7 +383,7 @@ An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expres
 \label{sec:polymorphic-variant-expressions}
 
 \syntax\begin{lstlisting}
-Simple_Expr1 ::= Tag_Name Expr
+Simple_Expr1 ::= Tag_Name Value_Expr
 \end{lstlisting}
 
 The expression ~\lstinline!`$\id$ $e$! evaluates to the polymorphic variant value whose tag is $\id$, and whose argument is the value of evaluated expression $e$. 
@@ -358,7 +399,7 @@ The expression ~\lstinline!`$\id$ $e$! evaluates to the polymorphic variant valu
 Simple_Expr1       ::= Record_Expr
 Record_Expr        ::= 'record' [nl] '{' [nl] Record_Fields_Init [nl] '}'
 Record_Fields_Init ::= Record_Field_Init {semi Record_Field_Init}
-Record_Field_Init  ::= Stable_Id '=>' Expr
+Record_Field_Init  ::= Stable_Id '=>' Value_Expr
 \end{lstlisting}
 
 An expression of the form
@@ -378,9 +419,7 @@ is a record expression.
 \syntax\begin{lstlisting}
 Simple_Expr1       ::= Record_Clone_Expr
 Record_Clone_Expr  ::= 'record' [nl] 
-                       '{' [nl] Expr 'with' Record_Fields_Init [nl] '}'
-Record_Fields_Init ::= Record_Field_Init {semi Record_Field_Init}
-Record_Field_Init  ::= Stable_Id '=>' Expr
+                       '{' [nl] Value_Expr 'with' Record_Fields_Init [nl] '}'
 \end{lstlisting}
 
 An expression of the form
@@ -400,7 +439,7 @@ is a record clone expression.
 Simple_Expr1      ::= Object_Clone_Expr
 Object_Clone_Expr ::= '{<' Object_Ivars_Init '>}'
 Object_Ivars_Init ::= Object_Ivar_Init {semi Object_Ivar_Init}
-Object_Ivar_Init  ::= id '=>' Expr
+Object_Ivar_Init  ::= id '=>' Value_Expr
 \end{lstlisting}
 
 An expression of the form
@@ -444,7 +483,7 @@ Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
 Aml/Language.Reference_Cell.new($e$)
 \end{lstlisting}
 
-The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{value_=}'' message. 
+The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in the meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{set-value}'' message. 
 
 Reference cells are lightweight instances that can be used to simulate output parameters at low costs, in both CPU cycles and the language design.
 
@@ -463,6 +502,21 @@ let e := a.value
 a <- 64
 a.value := 128
 \end{lstlisting}
+
+
+
+
+
+\subsection{Arguments Expressions}
+\label{sec:arguments-expressions}
+
+\syntax\begin{lstlisting}
+Args_Expr ::= 'arguments' [nl] '(' Arguments ')' [Block_Argument]
+            | 'arguments' [nl] Arguments [Block_Expr2 | Method_Expr]
+            | 'arguments' [nl] Block_Argument
+\end{lstlisting}
+
+Arguments expressions of the form ~\lstinline!arguments $a_1 \ldots a_n$!~ generate a special value, which is equivalent to what is passed as arguments in function applications. % TBD: define what the type is; also define the operations on it (joining arguments lists etc.)
 
 
 
@@ -948,93 +1002,6 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 
 
 
-
-\subsection{Method Values \& Explicit Partial Applications}
-\label{sec:method-values}
-
-\syntax\begin{lstlisting}
-Method_Expr ::= '&' Value_Expr ['(' Partially_Applied_Arguments ')']
-                [Partially_Applied_Block_Argument]
-              | '&(' Value_Expr ['(' Partially_Applied_Arguments ')']
-                [Partially_Applied_Block_Argument] ')'
-              | '&(' Value_Expr Partially_Applied_Arguments
-                [Partially_Applied_Block_Argument2] ')'
-              | '&(' op_id ')' ['(' Partially_Applied_Arguments ')']
-              | '&(' nary_op_id ')' ['(' Partially_Applied_Arguments ')']
-              | '(' op_id ')'
-              | '(~' op_id ')' (* requires space after `(~` *)
-Partially_Applied_Arguments
-            ::= {Partially_Applied_Argument} 
-Partially_Applied_Argument
-            ::= Argument
-              | Positional_Unapplied_Argument
-              | Labelled_Unapplied_Argument
-Positional_Unapplied_Argument
-            ::= '_' ['as' Type]
-              | Partially_Applied_Tuple_Argument
-              | '(' Partially_Applied_Tuple_Argument ')'
-Labelled_Unapplied_Argument
-            ::= ['~' | '~?'] id ':' '_' ['as' Type]
-              | ['~']        id ':' Partial_Slice_Expr
-              | ['~']        id ':' Partially_Applied_Tuple_Argument
-              | ['~']        id ':' '(' [Partially_Applied_Tuple_Argument] ')'
-Partially_Applied_Tuple_Argument
-            ::= Positional_Partially_Applied_Tuple_Arguments 
-                [',' Named_Partially_Applied_Tuple_Arguments]
-              | Named_Partially_Applied_Tuple_Arguments
-Positional_Partially_Applied_Tuple_Arguments 
-            ::= Positional_Partially_Applied_Tuple_Argument
-                {',' Positional_Partially_Applied_Tuple_Argument}
-Positional_Partially_Applied_Tuple_Argument
-            ::= Positional_Tuple_Argument
-              | Positional_Unapplied_Argument
-Named_Partially_Applied_Tuple_Arguments
-            ::= Named_Partially_Applied_Tuple_Argument 
-                {',' Named_Partially_Applied_Tuple_Argument}
-Named_Partially_Applied_Tuple_Argument
-            ::= Named_Tuple_Argument
-              | Labelled_Unapplied_Argument
-Partially_Applied_Block_Argument
-            ::= Block_Argument
-              | '&_' ['as' Type]
-Partially_Applied_Block_Argument2
-            ::= Block_Expr2
-              | Method_Expr
-              | '&_' ['as' Type]
-Partial_Slice_Expr
-            ::= Slice_Expr
-              | '_' ['as' Type] ('..' | '...' | '..<') ['_' ['as' Type]]
-              | ('..' | '...' | '..<') '_' ['as' Type]
-\end{lstlisting}
-
-The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
-
-\example The method values in the left column are each equivalent to the anonymous functions (\sref{sec:anonymous-functions}) on their right. 
-\begin{lstlisting}[deletekeywords={range}]
-&(Math.sin)             x -> { Math.sin(x) }
-&(Array.range)          (x1, x2) -> { Array.range(x1, x2) }
-&(42.`*`)               x -> { 42 * x }
-val vs := 1 .. 9; &(vs.fold)
-                        x1 -> x2 -> { vs.fold(x1)(x2) }
-&((1 .. 9).fold(z))     { val eta1 := z 
-                          val eta2 := (1 .. 9)
-                          x -> eta2.fold(eta1)(x) }
-&(Some(1).fold(`???`))  { val eta1 := () -> { `???` }
-                          val eta2 := Some(1)
-                          x -> { eta2.fold(eta1())(x) } }
-\end{lstlisting}
-
-Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
-
-If $e$ resolves to an overloaded member, then the type of the expression is a type projection to that member, constrained to the matching alternatives. 
-
-If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_ as $T$!'', called {\em argument placeholders}, then the method value contains only those overloaded alternatives that are applicable to the given sub-expressions, including the argument placeholders. Such an expression is then partially applied and resolves to an anonymous function, where the argument placeholders become parameters of the anonymous function. 
-
-
-
-
-
-
 \subsection{Anonymous Classes}
 \label{sec:anonymous-classes}
 
@@ -1074,7 +1041,7 @@ Selection          ::= Simple_Selection
                      | Tuple_Selection
                      | Optional_Selection
 Simple_Selection   ::= id
-Tuple_Selection    ::= digit {digit}
+Tuple_Selection    ::= {digit}+
 Optional_Selection ::= '?' (Simple_Selection | Tuple_Selection)
 \end{lstlisting}
 
@@ -1088,15 +1055,15 @@ For other expressions $e$, ~\lstinline!$e$.$x$!~ is typed as if it was ~\lstinli
 
 The selection ~\lstinline!$e$.?$x$!~ is typed as if it was 
 \begin{lstlisting}
-{ val $y$ := $e$; if Nothing !=== $y$ then $y$.$x$ else nil }
+{ val $y$ := $e$; if $y$ is Nothing then $y$.$x$ else nil end }
 \end{lstlisting}
-for some fresh name $y$; also called {\em safe navigation} or {\em safe selection}; \code{!===} is the negated result of \code{===} used in (\sref{sec:case-exprs}).
+for some fresh name $y$; also called {\em safe navigation} or {\em safe selection}.
 
 The expected type of a designator's prefix is undefined. The type of a designator is the type $T$ of the entity it refers to. 
 
 The selection ~\lstinline!$e$.$x$!~ is evaluated by first evaluating the qualifier expression $e$, which yields an object $r$. The selection's result is then the member $m$ of $r$ that is either defined by $m$ or defined by a definition overriding $m$. 
 
-A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is useful for selecting members whose name is a decimal number. Tuple types have such members, and other types may define such members by enclosing their names in backticks, e.g. ~\lstinline!def `1` () := 1!. The expression $e$ must not be a number literal. 
+A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is useful for selecting members whose name is a decimal number. Tuple types have such members, and other types may define such members by enclosing their names in backticks, e.g. ~\lstinline!def ``1`` () := 1!. The expression $e$ must not be a number literal. 
 
 
 
@@ -1185,18 +1152,23 @@ Class qualifier may be a simple name referring to name of an enclosing type or s
 Use_Expr       ::= Use_Expr_As 
                  | Use_Aspect
                  | Use_Refinement
-Use_Expr_As    ::= 'use' Simple_Expr ('as' | 'as!' | 'as?')
-                   [id ':'] Type [Do_Block]
+                 | Use_Droppable
+Use_Expr_As    ::= 'use' Value_Expr ('as' | 'as!' | 'as?')
+                   [['var' | 'val'] id ':'] Type [Do_Block]
 Use_Aspect     ::= 'use' 'aspect' Stable_Id [Do_Block]
 Use_Refinement ::= 'use' 'refinement' Stable_Id [Do_Block]
+Use_Droppable  ::= [S_Modifier] 'use' Let_Binding In_Sep Expr ['end']
 \end{lstlisting}
 
-Use expressions of the form ~\lstinline!use $e$ as $a$: $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
+Use expressions of the form ~\lstinline!use $e$ as $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
+
+Use expressions of the forms ~\lstinline!use $e$ as val $v$: $T$!~ and ~\lstinline!use $e$ as var $v$: $T$!~ rebind the evaluated expression $e$ to a value or variable named $v$, typed with type $T$. The \code{val} and \code{var} parts are optional -- and \code{val} is implied. 
 
 Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified aspect, either in the scope defined by the given block, or if no block is given, then from that point onward, up to the scope end. If the expression is used as a template statement, then the aspect is enabled for the whole template anywhere, unless it has the block part. 
 
-Use expressions of the form ~\lstinline!use refinement $T$!~ enable the specified refinement, either in the scope defined by the given block, or if no block is given, then from that point onward, up to the scope end. If the expression is used as a template statement, then the refinement is enabled for the whole template anywhere, unless it has the block part. 
+Use expressions of the form ~\lstinline!use refinement $T$!~ enable the specified refinement, either in the scope defined by the given block, or if no block is given, then from that point onward, up to the scope end. If the expression is used as a template statement, then the refinement is enabled for the whole template anywhere, unless it has the block part.
 
+Use expressions of the form ~\lstinline!use $v$ := $a$ in $e$!~ are droppable expressions -- on every value $v_i$ bound in variable sub-patterns of $v$\footnote{Or, if $v$ is a variable pattern, than the value bound from such pattern.} has \code{$v_i$.drop()} applied on them right after evaluation of the expression $e$ ends (or \code{drop($v_i$)}, in case the type of $v_i$ does not implement \code{Droppable} and neither an implicit conversion to a \code{Droppable} exists in the scope). The exact behaviour of that application is obviously defined by the implementation of such method.\footnote{Usually, such value should be considered unusable.}
 
 
 
@@ -1247,248 +1219,78 @@ Block_Argument
               | Method_Expr
 \end{lstlisting}
 
-% TBD: describe last block arg
-% TBD: describe arg prefixed with a dot (e.g. .Red)
-
-A function application ~\lstinline!$f$($e_1 \ldots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \ldots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$) $\mapsto\ U$!, the type of each argument expression $e_i$ is typed with the corresponding parameter type $T_i$ (\sref{sec:corresponding-parameters}) as expected type. Let $S_i$ be type of argument $e_i$ (for $i = 1 \commadots m$). If $f$ is a polymorphic method, local type inference (\sref{sec:local-type-inference}) is used to determine type arguments for $f$. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \commadots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
-
-If none of $e_i$ is purely a named argument, and $f$ accepts a single parameter of \code{Any}, \code{Object} or \code{Tuple_$n$} type (where $n = m$), then the function application is taken as ~\lstinline!$f$(($e_1 \commadots e_m$))!. With respect to overloading resolution (\sref{sec:overloading-resolution}), a member that requires argument expressions to tuple conversion is always less specific than a member that does not require such conversion. 
-
-\paragraph{Distinctions}
-Function applications using the \code{Poetry_Args} syntactic category are automatically partially applied, see (\sref{sec:method-values}).
+A function application ~\lstinline!$f$($e_1 \ldots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \ldots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \ldots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
 
 \paragraph{Note}
-Target type expression (\sref{sec:target-type-expressions}) can't be the first argument in a function application that uses poetry-style arguments passing, due to resulting ambiguity between an argument expression and a chained function application or selection.
+Target type expression (\sref{sec:target-type-expressions}) that start only with a dot ``\,\code{.}\,'' can't appear among arguments, unless the arguments are enclosed in parentheses, or the argument is preceded by a comma inside a tuple argument; due to resulting ambiguity between an argument expression and a chained function application or selection. This limitation can be solved by prefixing the target type expression with a dollar sign.\footnote{Which is still way shorter than having to explicitly type out the full target type name.}
 
 
 
 
 
-\subsubsection{Argument Evaluation Strategies}
-\label{sec:arg-eval-strategies}
+\subsubsection{Compared to Other Languages}
 
-Aml defers evaluation of arguments up to the point of function application, and happens then as specified in parameter evaluation strategies (\sref{sec:param-eval-strategies}). The type that each argument is type-checked against the corresponding parameter type (defined as follows) is the expected type of the argument expression, i.e. not its actual concrete type, which is known only after its evaluation. If the expected type is undefined, then \code{Any} is assumed. Typed expressions (\sref{sec:typed-expressions}) may be used to give the argument expression a concrete expected type. When the argument expression is evaluated, it is evaluated as if it were in the scope of the function application (which it is), so that visibility rules from that scope apply. 
-
+\Aml has a sort of unusual definition of function applications, for an object-oriented language. The definition is unlike that of C or similar languages, which has arguments following the function always enclosed in parentheses. The parentheses are actually only necessary to resolve precedences. It is more similar to function applications of the ML family of languages, most similar to that of OCaml. The most prominent difference from OCaml is that OCaml does not have member overloading (as of version 4.02 at the time of writing this), while \Aml does have that. If \Aml did not have that overloading, all functions could be seen as functions of one or no parameters (procedures), possibly returning another function curried with the given argument. But \Aml does have overloading, and therefore the number of declared parameters of each overloaded variant actually matters a lot. 
 
 
 
 
 
-\subsubsection{Corresponding Parameters}
-\label{sec:corresponding-parameters}
+\subsubsection{Total Function Application}
 
-The argument expressions $a_1 \commadots a_n$ are said to be corresponding to parameters $p_1 \commadots p_n$ based on the following mapping definition. 
-
-\begin{enumerate}
-  \item Argument unpacking is applied. 
-    \begin{enumerate}
-      \item {\em Sequence arguments} are prefixed with an asterisk ``\code{*}'', and are evaluated to a \code{Sequence[_]}-compatible type. The values are unpacked and injected in place of the sequence argument in order defined by the sequence. This triggers early evaluation of the argument, which is only done once in face of overloading resolution and/or the following function application. Sequence arguments may only appear among positional arguments. 
-      \item {\em Mapping arguments} are prefixed with a double asterisk ``\code{**}'', and are evaluated to a \code{Sequence[(Symbol, _)]}-compatible type; \code{Map[Symbol, _]} is one such an acceptable type which does not require further conversion to a sequence. The key and value pairs (tuples) are unpacked from the sequence and appended to the sequence of other named arguments. 
-    \end{enumerate}
-    
-  \item Condition check: if there are named arguments, each argument name must be unique per argument list. It is an error if there are duplicate argument names, either before or after argument unpacking.
-    
-  \item Positional arguments are mapped to their corresponding parameters, as defined by positional parameters (\sref{sec:positional-parameters}). Positional parameters will never map to purely named parameters. 
-  
-  \item Condition check: after the previous step, if there are any other unassigned arguments, the remaining arguments must be named, and optionally followed by a block argument. 
-  
-  \item The remaining named arguments are mapped based on their name to parameters of the same external name (\sref{sec:external-internal-parameter-names}). If the corresponding parameter is a variadic parameter, then rules for the parameter apply (\sref{sec:variadic-parameters}). Named arguments are never corresponding to positional parameters without an external name (\sref{sec:external-internal-parameter-names}). 
-  
-  \item If there are any extra named arguments, and a capturing named parameter is present, those extra named arguments are mapped to it. 
-  
-  \item If there is a {\em block argument} passed as positional and appearing last in the argument list, it is mapped to the captured block parameter, if that is present, and if not, then the argument is available for use with the \code{yield} keyword (\sref{sec:yield-expressions}). It not an error if the function member does not use \code{yield}, but that should be avoided. A block argument is either a block expression, or an argument prefixed with an ampersand ``\lstinline!&!''. In a consecutive function application, there may be only one block argument per each argument list as allowed by syntax, unlike with captured block parameter. 
-  
-  \item If there are any parameters without an assigned argument, those parameters must have a default value, which is evaluated prior to the function application (provided that the function was selected as unique in overloading resolution, if any). It is an error if there are any parameters left without a corresponding argument or default value. It is not an error if a variadic parameter is left with an empty sequence, as it is not an error if a capturing named parameter contains an empty mapping. 
-  
-\end{enumerate}
-
-The type of each argument expression $a_i$ is typed with the corresponding parameter type $T_j$ as expected type, where the mapping from $i$ to $j$ is defined by corresponding parameters and is correct. 
+\Aml follows roughly OCaml's definition of function applications. A total application for \Aml is such an application that fills all required parameters with arguments. Required parameters are those that are not optional, variadic, block capture or implicit: positional and labelled. A total application may be evaluated, while non-total applications are implicitly curried using the remaining unfilled parameters, in their order of appearance. 
 
 
 
 
 
 
-\subsubsection{Applicable Function}
 
-The function $f$ must be applicable to its arguments $a_1 \commadots a_n$ of types $S_1 \commadots S_n$. 
+\subsubsection{Arguments to Parameters Mapping}
 
-If $f$ has a method type ~\lstinline!($p_1$: $T_1 \commadots p_n$: $T_n$)$R$!, the function $f$ is applicable if all of the following conditions hold:
+A single function application may contain one or more arguments. The mapping of arguments to parameters follows these rules, given that parameters are ordered as specified by their function definition:
 \begin{itemize}
-
-  \item A mapping defined by corresponding parameters exists and is correct. 
-
-  \item For every named argument ~\lstinline!$x_i$: $a'_i$!, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with the parameter type $T_j$, whose name $p_j$ matches $x_i$, or if $f$ defines a capturing named parameter and $x_i$ does not match name of any $p_j$, then the type $S_i$ is compatible with the parameter type $T_j$, whose name $p_j$ matches the name of the capturing named parameter.
-
-  \item For every positional argument $a_i$, the type $S_i$ is compatible (\sref{sec:implicit-conversions}) with its corresponding $T_i$. 
-
-  \item The given block or the last argument prefixed with ``\lstinline!&!'' is of a type compatible (\sref{sec:implicit-conversions}) with the type of the captured block parameter, if such parameter is defined. 
-
-  \item If the expected type of the function application is defined, the result type $R$ is compatible (\sref{sec:implicit-conversions}) to it. 
-
-  \item Every formal parameter $p_j$: $T_j$ which is not specified by either a positional or a named argument has a default value (\sref{sec:optional-parameters} \& \sref{sec:named-parameters}). 
-  
+  \item Argument without a label (positional) is mapped to the next unfilled parameter. Such mapped parameter may be non-labelled as well as labelled, without total application making any difference.\footnote{This is different from OCaml.} If there is are no more unfilled parameters to map the argument to, the argument belongs to a consecutive function application, if any. 
+  \item Argument with a label is mapped to the next unfilled parameter bearing the same label. If there are multiple such parameters, the first is the one mapped. Thus, the order of parameters matters. If there is no such parameter, the argument belongs to a consecutive function application, if any. The mapped-to parameter may be also optional, that does not make a difference -- it is only important when considering whether a function application is or is not total. 
+  \item Arguments do not need to appear in the same order as their mapped parameters, which is what parameter/argument labels are for. 
+  \item Arguments that have no label can not commute among themselves, their order matters. 
+  \item Arguments that bear the same label and belong to the same function application (meaning, there are parameters these can be mapped to), they can not commute among themselves, because their order matters. Although they can commute with other arguments within the boundaries of the same function application. 
+  \item Arguments are typed with the type of the parameter they are mapped to as their expected type. 
+  \item Arguments that can not be mapped to parameters by the previous rules can be mapped to variadic parameter (or variadic parameters, if both are specified), defined by the function (see \sref{sec:variadic-parameters} for details). 
+  \item If a function application is total, the function defines an implicit parameter and there is an unmapped argument available (possibly a tuple argument), that argument is mapped to the implicit parameter. 
+  \item A function application that is not total, is implicitly curried on the remaining unfilled parameters. The resulting function is a function of all the remaining parameters in order specified by the function definition, preserving also their labels.\footnote{The part about preserved labels should be obvious.}
+  \item Arguments are not evaluated, until that is specified by the evaluation strategy of the mapped parameter, at the point when the function is actually applied (which is after any overloading resolution happens). Some arguments might be already evaluated though, e.g. local variables. Early argument evaluations are possible, if needed in overloading resolution.\footnote{E.g., when the parameter's type is a constrained type, or type of the argument is \code{Dynamic}, but the parameter requires a specific type.} In fact, arguments are passed as if they were wrapped in nested parameterless functions (including their closure over any local variables and the \code{self} references). 
+  \item Positional arguments that are prefixed with a ``\,\code{?}\,'' are not wrapped in \code{Option[$T$]} type, and are expected to already be of type \code{Option[$T$]}. This is useful especially inside tuple arguments, when an optional extraction does not specify a default value expression. 
+  \item Labelled arguments that are prefixed with a ``\,\lstinline!~?!\,'' are also not wrapped in \lstinline!Option[$T$]! type, and are expected to already be of type \lstinline!Option[$T$]! as well.
+  \item An argument may also comprise multiple sub-arguments, inside a tuple argument. In that case, positional sub-arguments must always come before named sub-arguments, as required by tuple expressions. 
+  \begin{itemize}
+    \item Additionally, the rules for arguments prefixed with a ``\,\code{?}\,'' apply. 
+    \item Mapping of sub-arguments in a tuple argument is defined by tuple pattern matching (\sref{sec:tuple-patterns}). 
+    \item No two sub-arguments inside a tuple argument can have the same label (does not apply to unlabelled sub-arguments). 
+  \end{itemize}
+  \item Arguments prefixed with a ``\,\code{*}\,'' are early evaluated, expected to result in a sequence, values are extracted from such a sequence and inserted in place of the argument, without labels, possibly spanning multiple function applications (unless used within a tuple argument). 
+  \item Arguments prefixed with a ``\,\code{**}\,'' are early evaluated, expected to result in a dictionary from \code{Symbol} to any type, values are extracted from such a dictionary and inserted in place of the argument, with labels defined by each dictionary key, possibly spanning multiple function applications (unless used within a tuple argument). 
+  \item Block argument is mapped to the block capture parameter, if any, otherwise made available only to \code{yield}. 
+  \item Tuple argument's sub-arguments do not yield implicit currying. Explicit currying is possible though, see (\sref{sec:method-values}). 
+  \item A labelled argument of the forms ~\lstinline!~$\id$!~ and ~\lstinline!~?$\id$!~ are referring to a local variable (usually parameter) and have the same label as is the name of the variable.
+  \item Labelled arguments that do not specify either of the prefixes ``\,\lstinline!~!\,'' and ``\,\lstinline!~?!\,'', are implicitly prefixed with ``\,\lstinline!~!\,''. This is different from tuple expressions (\sref{sec:tuples}), where the explicitly written tilde prefix ``\,\lstinline!~!\,'' actually yields a slightly different data type. 
 \end{itemize}
 
-If $f$ is a polymorphic method, it is applicable if local type inference (\sref{sec:local-type-inference}) can determine type arguments, so that the instantiated method is applicable. If $f$ is of a value type, it is applicable if it has a method member named \code{apply}, which is applicable. Note that if explicit type parameters are given to the polymorphic method, type application (\sref{sec:type-applications}) happens prior to function application. 
-
-If a function application appears to be an argument to another function application (let's call it a nested function application), the expected type of the nested function application is used to determine, whether the outer function is applicable, but the nested function application is not evaluated until time specified by argument evaluation strategy (\sref{sec:arg-eval-strategies}) corresponding to the argument. Local type inference may indeed occur for the nested function application, if it involves a polymorphic method, but again, only using the available expected types. 
-
-If a corresponding parameter $p_j$ to an argument expression $e_i$ is of a constrained type (\sref{sec:constrained-types}), the argument expression is early evaluated, so that it can be determined whether the argument's type conforms to the constrained type, but only if the expected type of $e_i$ does conform to the type of $p_j$ (otherwise, it is clear that it won't conform, thus there is no need to evaluate the expression). 
-
-\example Assume the following function, which computes the sum of variable number of arguments:
-\begin{lstlisting}
-def sum (*xs: Integer) := (0 /: xs) ((x, y) -> { x + y })
-\end{lstlisting}
-Then 
-\begin{lstlisting}
-sum 1, 2, 3, 4
-sum (1, 2, 3, 4)
-sum *%[1; 2; 3; 4]
-sum (*%[1; 2; 3; 4])
-sum 1, 2, *%[3; 4]
-sum (1, 2, *%[3; 4])
-sum 1, *%[2; 3], 4
-sum (1, *%[2; 3], 4)
-\end{lstlisting}
-all yield $10$ as result. On the other hand,
-\begin{lstlisting}
-sum %[1; 2; 3; 4]
-\end{lstlisting}
-would not be applicable. Moreover, (note the extra space before the sequence-splat operator),
-\begin{lstlisting}
-sum * %[1; 2; 3; 4]
-\end{lstlisting}
-would be interpreted as 
-\begin{lstlisting}
-sum.`*`(%[1; 2; 3; 4])
-\end{lstlisting}
-which is an infix expression rather than a function application. On the other hand, a space may appear between the function name and the arguments list.
 
 
 
 
-
-\subsubsection{Tail-call optimization}
+\subsubsection{Tail-call Optimizations}
 
 A function application usually allocates a new stack frame on the program's runtime stack for the current thread. However, if at least one of the following conditions holds and function calls itself as its last action, the application is executed using the stack frame of the caller, replacing arguments and rewinding stack pointer to the first instruction, called {\em tail-call optimization}:
 \begin{itemize}
-\item The function is local and not overloaded. 
-\item The function is \code{final}. 
-\item The function is \code{private} or ~\lstinline!private[self]!. 
-\item The function is annotated so that tail-call optimization is explicitly allowed. 
-\item A pragma allowing tail-call optimizations is effective in the scope of the tail call. 
+  \item The function is local and not overloaded. 
+  \item The function is \code{final}. 
+  \item The function is \code{private} or ~\lstinline!private[self]!. 
+  \item The function is annotated so that tail-call optimization is explicitly allowed. 
+  \item A pragma allowing tail-call optimizations is effective in the scope of the tail call. 
 \end{itemize}
 The optimization will not happen if the application results in a different (possibly overloaded or overridden) variant of the caller function being applied, and a warning is issued if the tail-call optimization was explicitly expected (either via an annotation or a pragma). 
-
-
-
-
-
-\subsubsection{Named \& Optional Arguments}
-\label{sec:named-optional-arguments}
-
-If an application uses named arguments ~\lstinline!$p_i$: $e_i$!~ or default arguments, the following conditions must hold:
-\begin{itemize}
-\item No named argument appears left of a positional argument in the argument list. 
-\item No positional argument appears right of a named argument. A bit of an exception is the captured block argument, which appears to be positional, but is treated specially. 
-\item The names $p_i$ of all named arguments are pairwise distinct per argument list.
-\item Every formal parameter ~\lstinline!$p_j$: $T_j$!, which is not specified by a positional argument, has a default argument. 
-\item Every formal parameter ~\lstinline!~$p_j$: $T_j$!, which is not specified by a named argument, has a default argument. 
-\item If there are more named arguments than named parameters (excluding the capturing named parameter), a capturing named parameter is defined. (If it is not, the function is not applicable.)
-\end{itemize}
-
-No transformation is applied to convert a function application into an application without named or default arguments -- the runtime handles the application itself. 
-
-
-
-
-
-
-\subsubsection{By-Name, By-Need \& By-Future Arguments}
-\label{sec:by-name-arguments}
-\label{sec:by-need-arguments}
-\label{sec:by-future-arguments}
-
-None of these argument types require any syntactically special treatment. The user of a function that uses these types should however consider the implications of their types on their evaluation. 
-
-
-
-
-
-\subsubsection{Curried Functions \& Partial Applications}
-\label{sec:curried-functions}
-\label{sec:partial-applications}
-
-A curried function can appear in two distinct forms:
-\begin{itemize}
-  \item[] {\em Implicitly curried form}, which is defined by using multiple parameters lists. 
-  \item[] {\em Explicitly curried form}, which is defined by using function types as result types of functions, or simply by returning a function from within a function. Those have no special treatment, e.g. in regard of overloading resolution. 
-\end{itemize}
-
-Each form has some implications on function applications. 
-
-Let's define {\em consecutive function applications}. Such function applications are a continuous sequence of function applications, where each following function application is directly applied to the result of the previous function application, without storing the intermediate values anyhow. 
-
-\example The following are examples of consecutive function applications:
-\begin{lstlisting}
-f(a, b)(c, d)
-f(a, b).apply(c, d)
-f(a, b).(c, d) (* short form of the previous *)
-\end{lstlisting}
-The following are not consecutive function applications:
-\begin{lstlisting}
-val e := f(a, b)
-e(c, d)
-\end{lstlisting}
-
-An implicitly curried function requires a consecutive function application for all of its parameters lists, excluding the implicit parameters list. If the implicitly curried function is intended to be {\em partially applied} (not providing all the parameters lists with arguments lists), then a method value (\sref{sec:method-values}) can be used. This also applies to the implicit parameters list -- if providing it is to be deferred, a method value that encloses arguments lists up to the implicit parameters list can be used, but then the implicit arguments list has to be provided later in order to evaluate the curried function. 
-
-On the other hand, explicitly curried functions do not care about consecutive function applications. 
-
-The consecutive function applications meta-construct is also a solution to providing explicitly the implicit parameters list an arguments list. Without it, the function application would handle the implicits from it and the consecutive application would be applied to the result of the whole function. Therefore, if a consecutive function application is present, the evaluation of implicit parameters list is deferred to this consecutive function application, so that arguments for it can be specified. If there is no consecutive function application, then the implicit parameters list is evaluated as usual. 
-
-
-
-
-
-\subsubsection{Function Compositions \& Pipelines}
-\label{sec:function-compositions}
-\label{sec:function-pipelines}
-
-These expressions are not in fact syntax features, but rather an implementation on functions and their traits. 
-
-A {\em function composition} is a way to compose two functions and return a function. A {\em function pipeline} is a way to pass a value to a function and return a value, which can be again passed to another function in a pipeline. 
-
-Function composition is usually defined by operators such as ``\lstinline!|>>!'' for unary functions, ``\lstinline!||>>!'' for binary functions and so on, and ``\lstinline!<<|!'' for unary functions, ``\lstinline!<<||!'' for binary functions, in reverse order. 
-
-Function pipeline is usually defined by operators such as ``\lstinline!|>!'' for unary functions, ``\lstinline!||>!'' for binary functions and so on, and ``\lstinline!<|!'' for unary functions, ``\lstinline!<||!'' for binary functions, in reverse order. 
-
-These operators for unary functions can be defined as follows, e.g.:
-\begin{lstlisting}
-trait Function_1 [-T, +R]
-begin
-
-  (* right-binding *)
-  operator |>> [T1] (g: T1 -> T): T1 -> R := 
-    (a: T1) -> { self(g(a)) }
-
-  (* left-binding *)
-  operator <<| [T1] (g: T1 -> T): T1 -> R :=
-    (a: T1) -> { self(g(a)) }
-
-  (* right-binding *)
-  operator |> (a: T): R :=
-    self(a)
-
-  (* left-binding *)
-  operator <| (a: T): R := 
-    self(a)
-    
-end trait
-\end{lstlisting}
-
-Function composition and pipelining makes more sense with the use of positional parameters rather than with named parameters, although with some more verbose syntax, it can be achieved as well, e.g. by assuming that the composed functions or pipelines share the same names of their named parameters. 
 
 
 
@@ -1499,7 +1301,7 @@ Function composition and pipelining makes more sense with the use of positional 
 
 How to memoize a function's result is described in (\sref{sec:return-expressions}).
 
-A memoized function's body is not evaluated, if it was once called with the same arguments (based on equality, not identity), and if that result value is still memoized. If so, the memoized result value is immediately returned without evaluation of the function's body, which can speed up execution of some functions significantly. Such functions should however be referentially transparent in best-case scenario (\sref{sec:function-decls-defs} \& \sref{sec:statements}) or at least tolerant to being memoized. 
+A memoized function's body is not evaluated, if it was once called with the same arguments (based on structural equality, not physical identity\footnote{Therefore, it is actually a good idea to memoize function's results based on arguments that have simple or physical structural equality.}), and if that result value is still memoized. If so, the memoized result value is immediately returned without evaluation of the function's body, which can speed up execution of some functions significantly. Such functions should however be referentially transparent in best-case scenario (\sref{sec:function-decls-defs} \& \sref{sec:statements}) or at least tolerant to being memoized. 
 
 Memoization is better with small parameter numbers, so that searching the result values cache would not actually take longer than evaluation of the function's body. Functions that are defined with the \code{function} keyword (\sref{sec:function-decls-defs}) may opt-in to implicit memoization\footnote{E.g., based on the computed complexity of the function. If the function is decided to be simple, then memoization could actually worsen performance.}, as well as functions declared as \code{transparent} (\sref{sec:statements}). Functions declared as \code{opaque} (\sref{sec:statements}) should not be memoized. 
 
@@ -1525,9 +1327,9 @@ A function application ~\lstinline!$p$.$f$.($e_1 \ldots e_m$) $b$!~ is a syntax 
 \subsubsection{Receiver Universal Shortcut}
 \label{sec:receiver-universal-shortcut}
 
-A function application ~\lstinline!$r$.$f$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!~ or contains it as a sub-expression, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!r.`$`()!. 
+A function application ~\lstinline!$r$.$f$($e_1 \ldots e_m$)!, where at least one of $e_i$ is literally ``\,\lstinline[mathescape=false]!$!\,'' or contains it as a sub-expression that is not a part of a nested function application, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!r.`$`()!. 
 
-A function application ~\lstinline!$r$($e_1 \commadots e_m$)!, where at least one of $e_i$ is literally ~\lstinline[mathescape=false]!$!, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!r.`$`()!~ and \code{r} is a variable reference. 
+A function application ~\lstinline!$r$($e_1 \ldots e_m$)!, where at least one of $e_i$ is literally ``\,\lstinline[mathescape=false]!$!\,'' and \code{r} is a variable reference, is a syntax sugar for function application, where each ~\lstinline[mathescape=false]!$!~ is replaced with ~\lstinline[mathescape=false]!r.`$`()!. 
 
 In case of nested function applications, this shortcut is applied absolutely only to the outermost application, to prevent any confusion. It can be combined with application shortcut.
 
@@ -1542,8 +1344,94 @@ prefix.receiver().apply(prefix.receiver().`$`())
 \end{lstlisting}
 
 \paragraph{Note}
-The receiver universal shortcut is defined for Aml's collection types as an alias to \code{size} -- to be used in slicing, primarily.
+The receiver universal shortcut is defined for Aml's collection types as an alias to \code{size} -- to be used in slicing, primarily. 
 % TBD: decide whether more shortcuts should be allowed, numbered e.g., probably not 
+
+
+
+
+
+
+\subsubsection{Method Values \& Explicit Partial Applications}
+\label{sec:method-values}
+
+\syntax\begin{lstlisting}
+Method_Expr ::= '&' Value_Expr ['(' Partially_Applied_Arguments ')']
+                [Partially_Applied_Block_Argument]
+              | '&(' Value_Expr ['(' Partially_Applied_Arguments ')']
+                [Partially_Applied_Block_Argument] ')'
+              | '&(' Value_Expr Partially_Applied_Arguments
+                [Partially_Applied_Block_Argument2] ')'
+              | '&(' op_id ')' ['(' Partially_Applied_Arguments ')']
+              | '&(' nary_op_id ')' ['(' Partially_Applied_Arguments ')']
+              | '(' op_id ')'
+              | '(~' op_id ')' (* requires space after `(~` *)
+Partially_Applied_Arguments
+            ::= {Partially_Applied_Argument} 
+Partially_Applied_Argument
+            ::= Argument
+              | Positional_Unapplied_Argument
+              | Labelled_Unapplied_Argument
+Positional_Unapplied_Argument
+            ::= '_' ['as' Type]
+              | Partially_Applied_Tuple_Argument
+              | '(' Partially_Applied_Tuple_Argument ')'
+Labelled_Unapplied_Argument
+            ::= ['~' | '~?'] id ':' '_' ['as' Type]
+              | ['~']        id ':' Partial_Slice_Expr
+              | ['~']        id ':' Partially_Applied_Tuple_Argument
+              | ['~']        id ':' '(' [Partially_Applied_Tuple_Argument] ')'
+Partially_Applied_Tuple_Argument
+            ::= Positional_Partially_Applied_Tuple_Arguments 
+                [',' Named_Partially_Applied_Tuple_Arguments]
+              | Named_Partially_Applied_Tuple_Arguments
+Positional_Partially_Applied_Tuple_Arguments 
+            ::= Positional_Partially_Applied_Tuple_Argument
+                {',' Positional_Partially_Applied_Tuple_Argument}
+Positional_Partially_Applied_Tuple_Argument
+            ::= Positional_Tuple_Argument
+              | Positional_Unapplied_Argument
+Named_Partially_Applied_Tuple_Arguments
+            ::= Named_Partially_Applied_Tuple_Argument 
+                {',' Named_Partially_Applied_Tuple_Argument}
+Named_Partially_Applied_Tuple_Argument
+            ::= Named_Tuple_Argument
+              | Labelled_Unapplied_Argument
+Partially_Applied_Block_Argument
+            ::= Block_Argument
+              | '&_' ['as' Type]
+Partially_Applied_Block_Argument2
+            ::= Block_Expr2
+              | Method_Expr
+              | '&_' ['as' Type]
+Partial_Slice_Expr
+            ::= Slice_Expr
+              | '_' ['as' Type] ('..' | '...' | '..<') ['_' ['as' Type]]
+              | ('..' | '...' | '..<') '_' ['as' Type]
+\end{lstlisting}
+
+The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
+
+\example The method values in the left column are each equivalent to the anonymous functions (\sref{sec:anonymous-functions}) on their right. 
+\begin{lstlisting}[deletekeywords={range}]
+&(Math.sin)             x -> { Math.sin(x) }
+&(Array.range)          (x1, x2) -> { Array.range(x1, x2) }
+&(42.`*`)               x -> { 42 * x }
+val vs := 1 .. 9; &(vs.fold)
+                        x1 -> x2 -> { vs.fold(x1)(x2) }
+&((1 .. 9).fold(z))     { val eta1 := z 
+                          val eta2 := (1 .. 9)
+                          x -> eta2.fold(eta1)(x) }
+&(Some(1).fold(`???`))  { val eta1 := () -> { `???` }
+                          val eta2 := Some(1)
+                          x -> { eta2.fold(eta1())(x) } }
+\end{lstlisting}
+
+Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
+
+If $e$ resolves to an overloaded member, then the type of the expression is a type projection to that member, constrained to the matching alternatives. 
+
+If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_ as $T$!'', called {\em argument placeholders}, then the method value contains only those overloaded alternatives that are applicable to the given sub-expressions, including the argument placeholders. Such an expression is then partially applied and resolves to an anonymous function, where the argument placeholders become parameters of the anonymous function. 
 
 
 
@@ -1831,11 +1719,18 @@ Precedence, associativity and binding direction of operators determine the group
 
 
 
-\paragraph{Alphanumeric Infix Operators vs. Function Application}
+\paragraph{Solution to Ambiguity between Infix Operations and Function Applications}
 
-Infix operations take precedence over function applications (\sref{sec:function-applications}) that use ``poetry''-style arguments passing.
+There is a syntactic overlap between syntaxes of function applications and infix operations. It's solution is not based on any extra syntactic elements, but rather on static AST resolution. The overlap occurs when an identifier is used in a place of a function application, where it could as well be an infix operation. 
 
-\example Distinction between infix operations and function applications with ``poetry''-style arguments passing. 
+Identifiers are then resolved with the following precedence:
+\begin{enumerate}
+  \item Variables and values that are declared in the scope always come first. The variable is a part of a function application. 
+  \item In an ambiguous sequence of expressions $e_1\ e_2\ e_3$, where $e_2$ is an identifier, if the type of $e_1$ defines an infix operator of the name $e_2$, is implicitly convertible\footnote{Only statically known implicit conversions are available.} to a type that defines it, or if an infix operator exists in the scope where the sequence of expressions appears, it is a part of an infix operation. 
+  \item Otherwise, it is a part of a function application.  
+\end{enumerate}
+
+\example Distinction between infix operations and function applications. 
 \begin{lstlisting}
 (* function application *)
 file.open "hello_world.txt"
@@ -1850,6 +1745,7 @@ a.shift-left(b)
 shift-left(a, b)
 (* and not to the less obvious *)
 a(shift-left(b))
+(* but only if `shift-left` is an infix operator in the scope *)
 \end{lstlisting}
 
 Infix operations can be grouped together. If there is an even number of expressions separated by whitespace (i.e., no right-hand side of an infix operation), the last one is an argument in ``poetry''-style function application, but such code is considered suspicious and a warning is issued during compilation. 
@@ -1877,7 +1773,7 @@ query {
 
 \paragraph{Tuple Arguments}
 
-If the left hand side of an infix operator is of a tuple type, then an infix expression $(e_{01} \commadots e_{0n})\ \op\ (e_{11} \commadots e_{1n})$ is  always seen as $\op(e_{01} \commadots e_{0n})(e_{11} \commadots e_{1n})$. Two arguments lists are used to distinguish which arguments come from the left side and which from the right side. 
+If the left hand side of an infix operator is of a tuple type, then an infix expression $(e_{01} \commadots e_{0n})\ \op\ (e_{11} \commadots e_{1n})$ is always seen as $\op(e_{01} \commadots e_{0n})(e_{11} \commadots e_{1n})$. Two tuple arguments are used to distinguish which arguments come from the left side and which from the right side. 
 
 
 
@@ -1885,7 +1781,7 @@ If the left hand side of an infix operator is of a tuple type, then an infix exp
 
 \paragraph{Standard Operators}
 
-Always consult GFR-2 for complete reference. This is a short extract of the full set of standard operators. Not all classes implement these operators, e.g. \code{Object} implements none, not even ``\code{=}''. 
+This is a short extract of the full set of standard operators. Not all classes implement these operators, e.g. \code{Object} implements none, not even ``\code{=}''. 
 
 Language-reserved operators:
 \begin{lstlisting}
@@ -2061,7 +1957,7 @@ nary_op_id  ::= '?' {op_char}
 Infix_Expr  ::= Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
 \end{lstlisting}
 
-Operators that begin with a question mark ``\code{?}'' (and may as well consist only of that one character) have the special ability to create an $n$-ary infix expression. Those are recognized by the ``\code{:}'' symbol, which is otherwise not allowed as an operator. Here, it serves as a separator of arguments to the $n$-ary infix operation. The expression is viewed as if it were a regular infix expression, where the infix expressions following the $n$-ary operator are all right-hand side arguments to the operation. 
+Operators that begin with a question mark ``\code{?}'' (and may as well consist only of that one character) have the special ability to create an $n$-ary infix expression. Those are recognized by the ``\,\code{:}\,'' symbol (separated by whitespace from both sides), which is otherwise not allowed as an operator. Here, it serves as a separator of arguments to the $n$-ary infix operation. The expression is viewed as if it were a regular infix expression, where the infix expressions following the $n$-ary operator are all right-hand side arguments to the operation. 
 
 The following two infix expressions and the third function application are equivalent.
 \begin{lstlisting}
@@ -2070,16 +1966,15 @@ a ? (b, c, d)
 a.`?`(b, c, d)
 \end{lstlisting}
 
-\example The most widely used $n$-ary operator is the ternary conditional operator ``\code{?}'', which could be defined on the \code{Boolean} type as follows:
+\example The most widely used $n$-ary operator is the ternary conditional operator ``\code{?}'', which could be defined as follows:
 
 \begin{lstlisting}
-class Boolean extends Object
-  operator ? [A, B <: A, C <: A] (if_true: => B, if_false: => C): A
-    if self
-      if_true
-    else
-      if_false
-    end
+operator ? [A <% Boolean_Like, B, C <: B, D <: B]
+    (eager tested: A) (lazy when_yes: C, lazy when_no: D): B
+  if tested as Boolean
+    when_yes
+  else
+    when_no
   end
 end
 \end{lstlisting}
@@ -2087,19 +1982,13 @@ end
 Such definition of the conditional operator includes lazy evaluation of the arguments. A shorthand version could use an object definition from which the operator name may be imported into scope:
 
 \begin{lstlisting}
-object Conditional
-begin
-  operator ?: [A, B] (if_true: => A, if_false: => B): A or B
-    if if_true.to_boolean
-      if_true
-    else
-      if_false
-    end
+operator ?: [A <% Boolean_Like, B <: A]
+    (eager tested: A) (lazy when_no: B): A
+  if tested as Boolean
+    tested
+  else
+    when_no
   end
-end
-
-implicit def to_boolean_wrapper [W] (obj: W): Boolean_Wrapper[W]
-  Boolean_Wrapper.new(obj)
 end
 \end{lstlisting}
 
@@ -2107,7 +1996,7 @@ Then, one may use these operators as follows:
 
 \begin{lstlisting}
 val a := b ? c : d
-val e := b ?: d (* which is equal to `b ? b : d` *)
+val e := b ?: d (* which is equal to b ? b : d *)
 \end{lstlisting}
 
 
@@ -2131,16 +2020,16 @@ If the found operator does not accept $n$ arguments, but instead has $n$ type pa
 \subsection{Target Type Expressions}
 \label{sec:target-type-expressions}
 
-\syntax\begin{lstlisting}
-TT_Expr ::= '.' Simple_Expr1
+\syntax\begin{lstlisting}[mathescape=false]
+TT_Expr ::= ['$'] '.' id ['(' [Arguments] ')']
 \end{lstlisting}
 
 Target type expression $e$ with expected type $\exptype$ is a shorthand for the selection and/or application (either function, type or both) ~\lstinline!$\exptype$.$e$!. 
 
-Target type expressions appear throughout the syntax in a few places. Each such place imposes a condition on what is a legal target type expression for it. Every target type expressions requires an expected type to be defined. Based on the expected type, the target type expression is a selection from the expected type. If a target type expression is used as an argument, its type is a refinement that contains the selected member (or members if chained), and optionally a requirement of type parameters and/or application parameters. The refinement is then as usual checked relative to the expected type, and not recursively on any nested members. Implicit conversions may not be applied on the resulting expression, because there would be no way to evaluate an original value, which depends on the expected type. 
+Target type expressions appear throughout the syntax in a few places. Each such place imposes a condition on what is a legal target type expression for it. Every target type expressions requires an expected type to be defined. Based on the expected type, the target type expression is a selection from the expected type. If a target type expression is used as an argument, its type is a refinement that contains the selected member (or members if chained), and optionally a requirement of application parameters. The refinement is then as usual checked relative to the expected type, and not recursively on any nested members. Implicit conversions may not be applied on the resulting expression, because there would be no way to evaluate an original value, which depends on the expected type. 
 
 \paragraph{Note}
-Target type expressions are limited to a simple selection, or a chain of selections, optionally followed by a type application and/or a function application with arbitrary number of argument lists. 
+Target type expressions are limited to a simple selection, optionally followed by a function application arguments, enclosed in parentheses. The optional dollar prefix is for cases when the target type expression could be confused with a chained selection, which has higher priority. No space can appear between the dollar prefix and the dot. 
 
 
 
@@ -2149,19 +2038,19 @@ Target type expressions are limited to a simple selection, or a chain of selecti
 \subsection{Assignments}
 
 \syntax\begin{lstlisting}
-Assign_Expr ::= [Simple_Expr '.'] id ':=' Rvalue_Expr
-              | Mul_Assign_Expr
-Update_Expr ::= Simple_Expr1 Argument_Exprs ':=' Rvalue_Expr
+Assign_Expr ::= [Value_Expr '.'] id ':=' Rvalue_Expr
+              | Value_Expr '.' Selection ::= Rvalue_Expr
+Update_Expr ::= Value_Expr '(' [Arguments] ')' ':=' Rvalue_Expr
 Rvalue_Expr ::= Expr | TT_Expr
 \end{lstlisting}
 
 The interpretation of an assignment to a simple variable ~\lstinline!$x$ := $e$!~ depends on the definitions of $x$. If $x$ denotes a mutable variable, then the assignment changes the current value of $x$ to the result of evaluating the expression $e$. The type of $e$ is expected to conform to the type of $x$. 
 
-If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!$x$_=!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!$x$_=($e$)!~ of that setter function. 
+If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!set-$x$!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!set-$x$($e$)!~ of that setter function. 
 
-Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.$x$_=($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}.\footnote{This likely results in a runtime error being raised, unless \code{nil} would actually implement method \code{x_=}.} 
+Analogously, an assignment ~\lstinline!$f$.$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.set-$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}.\footnote{This likely results in a runtime error being raised, unless \code{nil} would actually implement method \code{set-$x$}.} 
 
-An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?$x$_=($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
+An assignment ~\lstinline!$f$.?$x$ := $e$!~ is interpreted as the invocation ~\lstinline!$f$.?set-$x$($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behavior of the ``\lstinline!.?!'' navigation. 
 
 An assignment ~\lstinline!$f$($\args$) := $e$!~ with a function application to the left of the ``\lstinline!:=!'' operator is interpreted as ~\lstinline!$f$.update($\args$)($e$)!, i.e. the invocation of an \code{update} function defined by $f$. If $f$ is evaluated to \code{nil}, then the invocation is forwarded to \code{nil}. The ``\lstinline!.?!'' navigation is not available with this expression. 
 
@@ -2169,11 +2058,11 @@ The interpretation of an assignment ~\lstinline!$x$ := .$e$!, where $x$ may be a
 
 \example Here are some assignment expressions and their equivalent interpretations. 
 \begin{lstlisting}
-f := e                       f_=(e)
+f := e                       set-f(e) (* or, self.set-f(e) *)
 f() := e                     f.update()(e)
 f(i) := e                    f.update(i)(e)
 f(i, j) := e                 f.update(i, j)(e)
-x.f := e                     x.f_=(e)
+x.f := e                     x.set-f(e)
 x.f() := e                   x.f.update()(e)
 x.f(i) := e                  x.f.update(i)(e)
 x.f(i, j) := e               x.f.update(i, j)(e)
@@ -2184,60 +2073,6 @@ f(i)(j) := e                 f(i).update(j)(e)
 f(i, j)(k) := e              f(i, j).update(k)(e)
 f(i, j)(k, l) := e           f(i, j).update(k, l)(e)
 f(i, j) := (e_1, e_2)        f.update(i, j)((e_1, e_2))
-\end{lstlisting}
-
-
-
-
-
-
-\subsubsection{Multiple Assignments}
-\label{sec:multiple-assignments}
-
-\syntax\begin{lstlisting}
-Mul_Assign_Expr ::= Mul_Vars ':=' Mul_Exprs
-Mul_Vars        ::= [[id {',' id} ','] '*' id ','] id {',' id}
-                  | [id {',' id} ','] '*' id
-Mul_Exprs       ::= Mul_Expr {',' Mul_Expr}
-Mul_Expr        ::= ['*'] Expr | TT_Expr
-\end{lstlisting}
-
-Multiple assignment is a way to assign multiple variables at once. On the left-hand side of the assignment are variables separated by commas, where at most one of which may be prefixed with an asterisk ``\lstinline!*!''. On the right-hand side of the assignment are expressions separated by commas, where one or more expressions may be prefixed with an asterisk ``\lstinline!*!'' as a sequence-splat operator. 
-
-The left-hand side of the multiple assignment must contain only variable names that can be assigned to -- so either mutable variables, or declared and not defined variables. 
-
-The right-hand side is expanded into a single sequence of expressions in the following way:
-\begin{enumerate}
-\item Say that $e_1 \commadots e_n$ are the original right-hand side expressions. 
-
-\item For each $e_i$, where $1 \leq i \leq n$, if $e_i$ is prefixed with a sequence-splat operator, replace $e_i$ with a comma-separated expressions $e_{i,j}$, where $j$ is the index of the sub-expression contained in the original $e_i$, and move to the next expression $e_{i+1}$. 
-\end{enumerate}
-
-To match the left-hand side variable names with the expanded right-hand side expressions, match first the variables until the one prefixed with an asterisk, if any, and remove the matched expressions. Count variables that are following the one prefixed with an asterisk as $m$ and match them with the remaining expressions, starting from expression $n - m$ where $n$ is the count of the remaining expressions, or from the first expression, if $m \geq n$. If $m \leq n$, then collect the remaining expressions into a sequence and assign it to the variable prefixed with an asterisk. In any case, if there are less expressions available than variables to assign to, assign the extra variables with \code{nil}. If there are more expressions than variables to assign to and no variable is prefixed with an asterisk, then the extra expressions are discarded and released. 
-
-The multiple assignment evaluates all expressions on the right-hand side of the assignment prior to the actual assignment. The expected type of each assigned expression is the expected type of the corresponding variable it assigns to, or if the corresponding variable is prefixed with an asterisk, then the expected type is the expected type of the elements of the sequence declared by that variable. 
-
-If the name of the assigned variable is ``\lstinline!_!'', the assignment for that variable is not evaluated and is discarded. 
-
-\example The following examples show how multiple assignment works. 
-\begin{lstlisting}
-(* swap two variables *)
-a, b := b, a
-
-(* swap with a pattern and a tuple, 
-   rebinding the names a and b *)
-let (a, b) := (b, a)
-
-(* `a` will be `e`
-   `b` will be the first element of `f` (if `f` contains anything)
-   `d` will be the last element of `f` (if `f` contains anything)
-   `c` will be the remaining elements of `f` (if `f` contains anything)
-   if `f` is an empty sequence, then `b` and `d` are assigned nil
-     and `c` is an empty sequence
-   if `f` has one element, then `d` is assigned nil 
-     and `c` is assigned an empty sequence
-   if `f` has two elements, then `c` is assigned an empty sequence *)
-a, b, *c, d := e, *f
 \end{lstlisting}
 
 
@@ -2382,7 +2217,7 @@ Cond_Modifier    ::= Cond_Modifier1
 Cond_Modifier1   ::= ('if' | 'unless') Condition 
 Cond_Block       ::= Expr | Block
 Else             ::= 'else' | 'otherwise'
-Condition        ::= Simple_Expr1 | Val_Def | Var_Def
+Condition        ::= (Value_Expr - Cond_Expr) | Val_Def | Var_Def
 \end{lstlisting}
 
 The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} and \code{undefined} objects convert always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
@@ -2736,8 +2571,10 @@ Unconditional expressions change the flow of programs without a condition.
 Implicit return expression is always the value of the last expression in a code execution path. 
 
 \syntax\begin{lstlisting}
-Result_Expr ::= ['memoize'] Expr
-              | ['memoize'] 'tailcall' Argument_Exprs
+Result_Expr ::= ['memoize'] Value_Expr
+              | ['memoize'] 'tailcall' Arguments [Block_Argument]
+              | ['memoize'] 'tailcall' '(' [Arguments] ')' [Block_Argument]
+              | ['memoize'] 'tailcall' Block_Argument
 \end{lstlisting}
 
 \paragraph{Explicit return expressions}

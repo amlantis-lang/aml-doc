@@ -13,9 +13,7 @@
 % TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits lik Function_n may use it in its type parameters to apply the parameter extras to the apply method
 
 \syntax\begin{lstlisting}
-Annotation            ::= '@[' Simple_Type [NB_Arg_Exprs] ']'
-NB_Arg_Exprs          ::= Parens_Args {Parens_Args}
-                        | Poetry_Args
+Annotation            ::= '@[' Simple_Type [Arguments] ']'
 Tmpl_Def              ::= Annotation_Definition
 Annotation_Definition ::= 'annotation' Class_Def
 Expr                  ::= Pragma
