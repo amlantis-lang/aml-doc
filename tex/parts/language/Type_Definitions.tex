@@ -307,7 +307,7 @@ Dcl               ::= Struct_Spec
 Struct_Type       ::= Struct_Type_Path
                     | 'sig' [Struct_Spec {semi Struct_Spec}] 'end'
                     | 'functor' 
-                      '(' [id ':' Struct_Type {',' id ':' Struct_Type}] ')' 
+                      {'(' [id ':' Struct_Type] ')'}+
                       '->' Struct_Type
                     | Struct_Type 'with' Struct_Constraint 
                       {'and' Struct_Constraint}
@@ -321,6 +321,8 @@ Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
                     | Protocol_Definition
                     | 'structure' id ':' Struct_Type 'end' ['structure']
                     | 'signature' id [Is Struct_Type] 'end' ['signature']
+                    | 'structure' 'rec' id ':' Struct_Type
+                      {'and' id ':' Struct_Type}+ 'end' ['structure']
                     | 'open' Struct_Path
                     | 'open!' Struct_Path
                     | 'include' Struct_Type
@@ -330,8 +332,10 @@ Def               ::= Struct_Def
 Struct_Expr       ::= Struct_Path
                     | 'struct' [Struct_Items] 'end' ['struct']
                     | 'struct' '{' [Struct_Items] '}'
-                    | 'functor' '(' [id ':' Struct_Type] ')' '->' Struct_Expr
-                    | Struct_Expr '(' Struct_Expr ')'
+                    | 'functor' 
+                      {'(' [id ':' Struct_Type] ')'}+
+                      '->' Struct_Expr
+                    | Struct_Expr {'(' [Struct_Expr] ')'}+
                     | '(' Struct_Expr ')'
                     | '(' Struct_Expr 'as' Struct_Type ')'
                     | '(' Struct_Expr Struct_Ascription Struct_Type ')'
@@ -347,9 +351,11 @@ Struct_Def        ::= [Access_Modifier] Val_Def
                       'end' ['raiseable']
                     | [Access_Modifier] 'raiseable' id Is Stable_Id
                     | {Modifier} Tmpl_Def
-                    | [Access_Modifier] 'structure' id 
-                      [Struct_Ascription Struct_Type] 
+                    | [Access_Modifier] 'structure' id [Struct_Ascription Struct_Type] 
                       Is Struct_Expr
+                    | [Access_Modifier] 'structure' 'rec' id [Struct_Ascription Struct_Type] 
+                      Is Struct_Expr
+                      {'and' id [Struct_Ascription Struct_Type] Is Struct_Expr}+
                     | 'open' Struct_Path
                     | 'open!' Struct_Path
                     | 'include' Struct_Expr
