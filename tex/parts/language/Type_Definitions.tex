@@ -13,8 +13,8 @@
 \syntax\begin{lstlisting}
 Def              ::= Type_Definition
 Type_Definition  ::= 'type' Typedef {'and' Typedef} 'end' ['type']
-Typedef          ::= id [Type_Param_Clause] [Type_Information]
-                   | Type_Param_Clause2 id [Type_Information]
+Typedef          ::= id [Type_Param_Clause] [Given_Clauses] [Type_Information]
+                   | Type_Param_Clause2 id [Given_Clauses] [Type_Information]
 Type_Information ::= [ Type_Equation 
                      | Type_Abstract 
                      | Type_Representation] {semi Type_Constraint}
@@ -30,17 +30,7 @@ If a type declaration appears as a member declaration of a type, implementations
 
 A type constructor declaration declaration imposes additional restriction on the concrete types for which $t$ may stand. Besides the bounds $L$ and $U$, the type parameter clause, indexing parameter clause and units of measure parameter clause may impose higher-order bounds and variances, as governed by the conformance of type constructors (\sref{sec:conformance}).
 
-The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!~ and the type parameter clause $\tps$ itself. A higher-order type parameter clause (of an abstract type constructor $tc$) has the same kind of scope, restricted to the declaration of the type parameter $tc$. 
-
-To illustrate nested scoping, these declarations are all equivalent: 
-\begin{itemize}
-  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[x]] end! 
-
-  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[y]] end!
-
-  \item[] ~\lstinline!type t[m[x] <: Bound[x], Bound[_]] end!,
-\end{itemize} 
-as the scope of, e.g., the type parameter of $m$ is limited to the declaration of $m$. In all of them, $t$ is an abstract type member that abstracts over two type constructors: $m$ stands for a type constructor that takes one type parameter and that must be a subtype of \code{Bound}, $t$'s second type constructor parameter. However, the first example should be avoided, as the last ~\lstinline!x!~ is unrelated to the first two occurrences, but may confuse the reader. 
+The scope of a type parameter extends over the bounds ~\lstinline!>: $L$ <: $U$!, the type parameter clause $\tps$ itself and any type parameter clauses that $\tps$ is nested in.
 
 A {\em type alias} \lstinline@type $t$ := $T$@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$[$\tps$] := $T$@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $\tps$ itself. 
 
@@ -60,8 +50,8 @@ type Abs := Comparable[Abs] end (* recursive type alias *)
 type S <: T end  (* S, T are bounded by themselves *)
 type T <: S end
 
-type T >: Comparable[T.That] end (* can't select from T
-                                    T is a type, not a value *)
+type T >: Comparable[T.That] end (* can't select from T,
+                                    T is an abstract type *)
 type My_Collection <: Iterable end
   (* type constructor members must explicitly state
      their type parameters *)
@@ -146,17 +136,15 @@ Type_Representation ::= Is ['bitfield']
 Enum_Field          ::= id ':=' Literal
                       | id ':=' Value_Expr
                       | id
-                      | id 'of' Types
 \end{lstlisting}
 
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class, or a case class nested in the enum class. 
 
-An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in four forms -- the first three of them are called {\em constant enum constructors}, the last is called {\em non-constant enum constructor}. 
+An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in three forms, called {\em constant enum constructors}
 \begin{itemize}
   \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear.
   \item Initialized with nothing, then each enum constant is by itself the ordering, no implicit literal value is added. The comparison operators are automatically added and their implementations reflect the order in which the enum constants appear. 
   \item Initialized with custom expression. The argument expression can be extracted with pattern matching as a contained single value, or if the argument expression is a tuple, as a tuple. It is highly recommended for every enum constant to be immutable, but it is not mandatory. This form can't extend any parent class and has the same implicit ordering as the previous form. 
-  \item Initialized in-place with custom expression, according to the specified types, whose members may be extracted with pattern matching (\sref{sec:named-patterns}). Those enums are similar to variant types (\sref{sec:variant-types}), but the enumerated members are nested in the enum class and thus have to be prefixed, or imported explicitly into scope. 
 \end{itemize}
 
 
@@ -307,20 +295,22 @@ Dcl               ::= Struct_Spec
 Struct_Type       ::= Struct_Type_Path
                     | 'sig' [Struct_Spec {semi Struct_Spec}] 'end'
                     | 'functor' 
-                      '(' [id ':' Struct_Type {',' id ':' Struct_Type}] ')' 
+                      {'(' [id ':' Struct_Type] ')'}+
                       '->' Struct_Type
                     | Struct_Type 'with' Struct_Constraint 
                       {'and' Struct_Constraint}
                     | '(' Struct_Type ')'
                     | 'signature' 'of' Struct_Expr
 Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
-                    | Type_Definition
+                    | Type_Definition (* containing Type_Abstract *)
                     | 'throwable' Type_Constr_Dcl 'end' ['throwable']
                     | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
                     | Interface_Definition
                     | Protocol_Definition
                     | 'structure' id ':' Struct_Type 'end' ['structure']
                     | 'signature' id [Is Struct_Type] 'end' ['signature']
+                    | 'structure' 'rec' id ':' Struct_Type
+                      {'and' id ':' Struct_Type}+ 'end' ['structure']
                     | 'open' Struct_Path
                     | 'open!' Struct_Path
                     | 'include' Struct_Type
@@ -330,8 +320,10 @@ Def               ::= Struct_Def
 Struct_Expr       ::= Struct_Path
                     | 'struct' [Struct_Items] 'end' ['struct']
                     | 'struct' '{' [Struct_Items] '}'
-                    | 'functor' '(' [id ':' Struct_Type] ')' '->' Struct_Expr
-                    | Struct_Expr '(' Struct_Expr ')'
+                    | 'functor' 
+                      {'(' [id ':' Struct_Type] ')'}+
+                      '->' Struct_Expr
+                    | Struct_Expr {'(' [Struct_Expr] ')'}+
                     | '(' Struct_Expr ')'
                     | '(' Struct_Expr 'as' Struct_Type ')'
                     | '(' Struct_Expr Struct_Ascription Struct_Type ')'
@@ -347,9 +339,11 @@ Struct_Def        ::= [Access_Modifier] Val_Def
                       'end' ['raiseable']
                     | [Access_Modifier] 'raiseable' id Is Stable_Id
                     | {Modifier} Tmpl_Def
-                    | [Access_Modifier] 'structure' id 
-                      [Struct_Ascription Struct_Type] 
+                    | [Access_Modifier] 'structure' id [Struct_Ascription Struct_Type] 
                       Is Struct_Expr
+                    | [Access_Modifier] 'structure' 'rec' id [Struct_Ascription Struct_Type] 
+                      Is Struct_Expr
+                      {'and' id [Struct_Ascription Struct_Type] Is Struct_Expr}+
                     | 'open' Struct_Path
                     | 'open!' Struct_Path
                     | 'include' Struct_Expr

@@ -718,7 +718,7 @@ This is just for the sake of completeness, since change from public to public is
 
 \syntax\begin{lstlisting}
 Class_Definition    ::= [Mutability] 'class' Class_Def
-Class_Def           ::= id [Type_Param_Clause] 
+Class_Def           ::= id [Type_Param_Clause] [Given_Clauses]
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
                         {Class_Param_Clause}
@@ -764,7 +764,7 @@ $m$ is an access modifier (\sref{sec:modifiers}), such as \code{private} or \cod
 $(\ps_1)\ldots(\ps_n)$ are formal value parameter clauses for the {\em primary constructor} of the class. The scope of a formal value parameter includes all subsequent parameter sections and the template $t$. However, a formal value parameter may not form part of the types of any of the parent classes or members of the class template $t$ -- only parameters from $\tps$ may form part of the types of any of the parent classes or members of the class template $t$. It is illegal to define two formal value parameters with the same name. If no formal parameter sections are given, an empty parameter section \lstinline!()! is implied. 
 
 \item[]
-If a formal parameter declaration ~\lstinline!$x$: $T$!~ is preceded by a \code{val} or \code{var} keyword, an accessor (getter) definition (\sref{sec:value-dcl-def}) for this parameter is implicitly added to the class. The getter introduces a value member $x$ of class $c$ that is defined as an alias of the parameter. Moreover, if the introducing keyword is \code{var}, a setter accessor ~\lstinline!set-$x$($e$)!~ is also implicitly added to the class. The formal parameter declaration may contain modifiers, which then carry over to the accessor definition(s). A formal parameter prefixed by \code{val} or \code{var} may not at the same time be a call-by-name parameter (\sref{sec:by-name-parameters}). 
+If a formal parameter declaration ~\lstinline!$x$: $T$!~ is preceded by a \code{val} or \code{var} keyword, an accessor (getter) definition (\sref{sec:value-dcl-def}) for this parameter is implicitly added to the class. The getter introduces a value member $x$ of class $c$ that is defined as an alias of the parameter. Moreover, if the introducing keyword is \code{var}, a setter accessor ~\lstinline!set_$x$($e$)!~ is also implicitly added to the class. The formal parameter declaration may contain modifiers, which then carry over to the accessor definition(s). A formal parameter prefixed by \code{val} or \code{var} may not at the same time be a call-by-name parameter (\sref{sec:by-name-parameters}). 
 
 \item[]
 If a formal value parameter is a part of the definition of a property (a property getter and/or a property value), then these accessors are not implicitly added, as the arguments may be traced into the properties. The same applies to instance value definitions that have a formal value parameter forming a part of it. In any case, every formal value parameter is implicitly added as an instance value definition of  a \code{val} or \code{var} type respectively. 
@@ -993,7 +993,7 @@ end class
 
 \syntax\begin{lstlisting}
 CCtor_Def     ::= ['convenience'] 'clone' CCtor_Fun_Def
-CCtor_Fun_Def ::= [Type_Param_Clause] [Param_Clauses] 
+CCtor_Fun_Def ::= [Type_Param_Clause] [Given_Clauses] [Param_Clauses] 
                   (':=' Constr_Expr | Clone_Block)
 Clone_Block   ::= [semi Constr_Block3] 'end' ['clone']
                 | Constr_Block2
@@ -1136,7 +1136,7 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 
 \syntax\begin{lstlisting}
 Trait_Definition ::= [Mutability] 'trait' Trait_Def
-Trait_Def        ::= id [Type_Param_Clause] 
+Trait_Def        ::= id [Type_Param_Clause] [Given_Clauses]
                      Trait_Tmpl_Env
 Trait_Tmpl_Env   ::= Tmpl_Env_With_Pars ['trait']
                    | Tmpl_Env_Brackets
@@ -1207,7 +1207,7 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 
 \syntax\begin{lstlisting}
 Protocol_Definition ::= 'protocol' Pro_Def
-Pro_Def             ::= id [Type_Param_Clause]
+Pro_Def             ::= id [Type_Param_Clause] [Given_Clauses]
                         Pro_Tmpl_Env
 Pro_Tmpl_Env        ::= Tmpl_Env_With_Pars ['protocol']
                       | Tmpl_Env_Brackets
@@ -1242,7 +1242,7 @@ Ifc_Kind             ::= ['case'] 'class'
                        | ['case'] 'object'
                        | 'trait'
                        | 'refinement'
-Ifc_Def              ::= id [Type_Param_Clause]
+Ifc_Def              ::= id [Type_Param_Clause] [Given_Clauses]
                          [Class_Param_Clauses] Ifc_Tmpl_Env
 Ifc_Tmpl_Env         ::= Tmpl_Env_With_Pars ['interface']
                        | Tmpl_Env_Brackets
