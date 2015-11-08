@@ -415,7 +415,7 @@ Type_Param_Clause2 ::= Variant_Type_Param
                        {',' Variant_Type_Param} ')'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
                      | '<' (id | '_') ['<:' id] '>'
-Type_Param         ::= (['*'] ['''] id | '_') [Type_Param_Clause]
+Type_Param         ::= (['''] id | '_') [Type_Param_Clause]
                        ['>:' Type] ['<:' Type]
                        {'<%' Type} {':' Type}
 \end{lstlisting}
@@ -424,13 +424,17 @@ Type parameters appear in type definitions, class definitions and function defin
 
 The most general form of a first-order type parameter is ~\lstinline!$a_1 \ldots a_n \pm\ t$[$\tps$] >: $L$ <: $U$!. $L$ is a lower bound and $U$ is an upper bound. These bounds constrain possible type arguments for the parameter. It is an error if $L$ does not conform to $U$. Then, $\pm$ is a {\em variance} (\sref{sec:variance-of-type-parameters}), i.e. an optional prefix of either \lstinline@+@ or \lstinline@-@. The type parameter may be preceded by one or more annotation applications (\sref{sec:annotated-exprs} \& \sref{sec:annotations}).
 
-The names of all type parameters must be pairwise different in their enclosing type parameter clause. The scope of a type parameter includes in each case the whole type parameter clause. Therefore it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause. However, a type parameter may not be bounded directly or indirectly by itself. 
+The names of all type parameters must be pairwise different in their enclosing type parameter clause. The scope of a type parameter includes in each case the whole type parameter clause, and all type parameter clauses that it is nested within. Therefore, it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause. However, a type parameter may not be bounded directly or indirectly by itself. 
+
+Bounds defined for a particular type parameter extend to all of its nested usages, thus it is only necessary and possible to define the bounds once, preferably on the first occurrence of the type parameter. 
 
 A type parameter may also contain a nested type parameter. This is for cases when the expected type argument is a type constructor. 
 
-The above scoping restrictions are generalized to the case of nested type parameter clauses, which declare higher-order type parameters. Higher-order type parameters (the type parameters of a type parameter $t$) are only visible in their immediately surrounding parameter clause (possibly including clauses at a deeper nesting level) and in the bounds of $t$. Therefore, their names must only be pairwise different from the names of other visible type parameters. Since the names of higher-order type parameters are thus often irrelevant, they may be denoted with a ``\lstinline!_!'', which is nowhere visible. 
+If the names of higher-order type parameters are irrelevant, they may be denoted with a ``\lstinline!_!'', which is nowhere visible and represents a single type parameter that is independent of all other type parameters. 
 
-A type parameter name may optionally be surrounded with angle brackets, ~\lstinline!<$t$ <: $u$>!. This makes the parameter name $t$ stand in for a unit of measure parameter, which may have an upper bound $u$, representing the abstract unit of measure. As units of measure do not have any deeper hierarchy structure, variance annotations are not applicable to them. 
+As a consequence of having type parameters visible across nested type parameter clauses, using the same type parameter name gives additional constraint on the parameterized type, requiring the type argument to be physically equivalent among all occurrences of the type parameter. 
+
+A type parameter name may optionally be surrounded by angle brackets, ~\lstinline!<$t$ <: $u$>!. This makes the parameter name $t$ stand in for a unit of measure parameter, which may have an upper bound $u$, representing the abstract unit of measure. As units of measure do not have any deeper hierarchy structure, variance annotations are not applicable to them. 
 
 \example The following are some well-formed type parameter clauses:
 \begin{lstlisting}
@@ -439,12 +443,13 @@ A type parameter name may optionally be surrounded with angle brackets, ~\lstinl
 [Ex <: Raiseable]
 [A <: Comparable[B], B <: A]
 [A, B >: A, C >: A <: B]
-[M[X], N[X]]
-[M[_], N[_]] (* equivalent to previous clause *)
+[M[X], N[X]] (* requires the polymorphic arguments M and N 
+                to have the same type argument, accessible as X *)
+[M[_], N[_]]
 [M[X <: Bound[X]], Bound[_]]
 [M[+X] <: Iterable[X]]
 [E, <Length_Unit <: length>]
-[+T, *A]
+[+T, -A]
 \end{lstlisting}
 The following type parameter clauses are illegal:
 \begin{lstlisting}
@@ -452,14 +457,6 @@ The following type parameter clauses are illegal:
 [A <: B, B <: C, C <: A]  (* illegal, 'A' has itself as bound *)
 [A, B, C >: A <: B]       (* illegal lower bound 'A' of 'C'
                              does not conform to upper bound 'B' *)
-\end{lstlisting}
-
-A type parameter name may optionally be prefixed with an asterisk ``\code{*}''. Such type parameter is a {\em variadic type parameter}, and may only appear as the last type parameter in a sequence of type parameters, and its resulting value is a tuple of all passed type arguments that were passed after the preceding type parameters. If such type parameter is used as the type of a function parameter, that parameter's type is a tuple type, as defined by the variadic type parameter, unless the function parameter is a repeated parameter, then the number of captured argument and their types are bound with the variadic type parameter (influencing local type inference (\sref{sec:local-type-inference})). 
-
-\paragraph{Note}
-If variance annotation is present with a variadic type parameter, place a space between the two:
-\begin{lstlisting}
-[+T, - *A]
 \end{lstlisting}
 
 
@@ -604,6 +601,25 @@ The locally abstract type syntax form by itself does not make polymorphic the ty
 
 
 
+
+\section{Type Class Constrained Types}
+\label{sec:type-class-constrained-types}
+
+\syntax\begin{lstlisting}
+Type_Class_Param_Clause ::= '(' Given_Clauses ')'
+\end{lstlisting}
+
+Type class constrained types are used in function definitions and declarations. A {\em type class constraint} of a form ~\lstinline!(class => $T$['$a$])!~ restricts the type $a$ to have an instance of the type class $T$ (\sref{sec:type-classes}) in the scope of the function's application. The type $a$ is then said to be a {\em type class constrained type}. 
+
+Multiple type class constraints can be specified in a single type class parameter clause. 
+
+Then, every application of operations defined by the type class $T$ to values of the type class constrained type $a$ is applied using the type class instance (be it a function application, a method call or an attribute selection, possibly together with more arguments). In case of a method call, the receiver is unshifted as the first argument.  
+
+% TBD: what about type classes with multiple type parameters
+
+
+
+
 \newpage
 
 \section{Function Declarations \& Definitions}
@@ -638,11 +654,11 @@ Att_Def       ::= 'attribute' Att_Sig [Fun_Dec] [semi Fun_Stats] 'end'
 Fun_Dec       ::= [nl] 'declare' Fun_Dec_Exprs [semi] ('begin' | 'in')
 Fun_Dec2      ::= [nl] 'declare' Fun_Dec_Exprs [semi] 'in'
 Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
-Fun_Sig       ::= Function_Path [Type_Param_Clause] 
+Fun_Sig       ::= Function_Path [Type_Param_Clause] [Given_Clauses]
                   Param_Clauses [':' Type]
-Op_Sig        ::= Op_Path [Type_Param_Clause] 
+Op_Sig        ::= Op_Path [Type_Param_Clause] [Given_Clauses]
                   Param_Clauses [':' Type]
-Att_Sig       ::= Function_Path [Type_Param_Clause] 
+Att_Sig       ::= Function_Path [Type_Param_Clause] [Given_Clauses]
                   Param_Clause Param_Clauses [':' Type]
                   (* it is an error if the first param clause
                      only accepts Unit *)
@@ -667,6 +683,7 @@ Param_Clause  ::= Atomic_Pattern
                   '(' Pattern [':' Type] [':=' Value_Expr] ')'
                 | '(' [Params] ')'
                 | LAT_Param_Clause (* locally abstract type *)
+                | Type_Class_Param_Clause
 Implicit_Params 
               ::= 'implicit' ':' Atomic_Pattern
                 | '(' 'implicit' ':' (Atomic_Pattern | Params) ')'
@@ -718,7 +735,7 @@ Labelled_Param
                   '(' Pattern [':' Param_Type] [':=' Value_Expr] ')'
 Param_Extra   ::= ['lazy' | 'eager'] [M_Modifier] [Param_Rw]
 Param_Rw      ::= 'val' | 'var' | 'ref'
-Param_Type    ::= ['=>' | '=>>'] Type
+Param_Type    ::= ['->' | '->>'] Type
 \end{lstlisting}
 
 A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's path, $\psig$ is its parameter signature and $T$ is its result type. 
@@ -821,7 +838,7 @@ The name of a parameter may be prefixed with a ``\code{ref}'' keyword, in which 
 \subsubsection{By-Name Parameters}
 \label{sec:by-name-parameters}
 
-The type of a value parameter may be prefixed by ``\lstinline@=>@'', e.g. \lstinline@$x$: => $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function.
+The type of a value parameter may be prefixed by ``\lstinline@->@'', e.g. \lstinline@$x$: -> $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function.
 
 The by-name modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}). The by-name modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
 
@@ -850,6 +867,8 @@ If a parameter is prefixed with \code{eager} instead, it can't be prefixed with 
 
 \subsubsection{By-Future Parameters}
 \label{sec:by-future-parameters}
+
+The type of a value parameter may be prefixed by ``\lstinline@->>@'', e.g. \lstinline@$x$: ->> $T$@. This indicates that the corresponding argument is not evaluated exactly at the point of function application, but instead is evaluated at some point in the future, but definitely before its first use.
 
 By-future uses a concurrent evaluation strategy: the value of a future expression is computed concurrently with the flow of the rest of the program (on a new thread/worker). When the value of the future is needed, the invoking thread blocks until the future finishes computing, if it has not already completed by then. 
 
@@ -963,7 +982,7 @@ A block capture parameter binds a block argument to a variable. The block argume
 \subsection{Implicit Parameter}
 \label{sec:implicit-parameter}
 
-Implicit parameter is described in (\sref{sec:implicit-parameters}). An implicit parameter does not yield a distinct overloaded method, very much like optional parameters. 
+Implicit parameter is described in (\sref{sec:implicit-parameters}). An implicit parameter does not yield a distinct overloaded method, very much like optional parameters. An implicit parameter appears annotated with ~\lstinline[deletekeywords={implicit}]!@[implicit]!~ in the corresponding function type. 
 
 
 

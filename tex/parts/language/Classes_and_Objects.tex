@@ -718,7 +718,7 @@ This is just for the sake of completeness, since change from public to public is
 
 \syntax\begin{lstlisting}
 Class_Definition    ::= [Mutability] 'class' Class_Def
-Class_Def           ::= id [Type_Param_Clause] 
+Class_Def           ::= id [Type_Param_Clause] [Given_Clauses]
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
                         {Class_Param_Clause}
@@ -993,7 +993,7 @@ end class
 
 \syntax\begin{lstlisting}
 CCtor_Def     ::= ['convenience'] 'clone' CCtor_Fun_Def
-CCtor_Fun_Def ::= [Type_Param_Clause] [Param_Clauses] 
+CCtor_Fun_Def ::= [Type_Param_Clause] [Given_Clauses] [Param_Clauses] 
                   (':=' Constr_Expr | Clone_Block)
 Clone_Block   ::= [semi Constr_Block3] 'end' ['clone']
                 | Constr_Block2
@@ -1136,7 +1136,7 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 
 \syntax\begin{lstlisting}
 Trait_Definition ::= [Mutability] 'trait' Trait_Def
-Trait_Def        ::= id [Type_Param_Clause] 
+Trait_Def        ::= id [Type_Param_Clause] [Given_Clauses]
                      Trait_Tmpl_Env
 Trait_Tmpl_Env   ::= Tmpl_Env_With_Pars ['trait']
                    | Tmpl_Env_Brackets
@@ -1207,7 +1207,7 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 
 \syntax\begin{lstlisting}
 Protocol_Definition ::= 'protocol' Pro_Def
-Pro_Def             ::= id [Type_Param_Clause]
+Pro_Def             ::= id [Type_Param_Clause] [Given_Clauses]
                         Pro_Tmpl_Env
 Pro_Tmpl_Env        ::= Tmpl_Env_With_Pars ['protocol']
                       | Tmpl_Env_Brackets
@@ -1242,7 +1242,7 @@ Ifc_Kind             ::= ['case'] 'class'
                        | ['case'] 'object'
                        | 'trait'
                        | 'refinement'
-Ifc_Def              ::= id [Type_Param_Clause]
+Ifc_Def              ::= id [Type_Param_Clause] [Given_Clauses]
                          [Class_Param_Clauses] Ifc_Tmpl_Env
 Ifc_Tmpl_Env         ::= Tmpl_Env_With_Pars ['interface']
                        | Tmpl_Env_Brackets

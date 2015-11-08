@@ -8,38 +8,49 @@
 \newpage
 
 \syntax\begin{lstlisting}
-Type                ::= Function_Type
-                      | Infix_Type [Existential_Clauses]
-Function_Type       ::= Function_Args {'->' Function_Args} 
-                        '->' Type
-Function_Args       ::= Infix_Type
-                      | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg        ::= ['*' | '**' | '&' | ['~'] id ':'] Param_Type
-Existential_Clauses ::= {'for-some' '{' Existential_Dcl
-                        {semi Existential_Dcl} '}'}
-Existential_Dcl     ::= Type_Definition
-                      | Val_Dcl
-Compound_Type       ::= Annot_Type {['prepend'] 'with' Annot_Type} 
-                        ['with' ['refinement'] Refine_Stats]
-                      | ['refinement'] Refine_Stats
-Postfix_Type        ::= Compound_Type 
-                        ['with' 'constraint' Constraint_Block]
-Infix_Type          ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
-                      | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
-                        {':' Postfix_Type}
-Annot_Type          ::= {Annotation} Simple_Type [Nullable_Mod]
-Simple_Type         ::= Simple_Type [Type_Args]
-                      | Postfix_Simple_Type
-                      | Simple_Type '#' id
-                      | Stable_Id
-                      | Path '.' 'type'
-                      | Literal ['.' 'type']
-                      | '(' [Types] ')'
-                      | Foreign_Type
-Postfix_Simple_Type ::= Type Stable_Id
-Types               ::= Named_Subtype {',' Named_Subtype}
-Named_Subtype       ::= [['~'] id ':'] Type
-Type_Equation       ::= '=' Type
+Type                   ::= Function_Type Quantification_Clauses
+                         | Infix_Type Quantification_Clauses
+Function_Type          ::= [Implicit_Types] Function_Args {'->' Function_Args} 
+                           '->' Type
+Function_Args          ::= Infix_Type
+                         | '(' [Function_Arg {',' Function_Arg}] ')'
+                         | '(' Function_Arg {'*' Function_Arg} ')'
+Function_Arg           ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Type
+Implicit_Types         ::= Infix_Type '=>'
+                         | '(' Types ')' '=>'
+Quantification_Clauses ::= Quantification_Clause {'and' Quantification_Clause}
+Quantification_Clause  ::= Existential_Clauses
+                         | Universal_Clauses
+                         | Given_Clauses
+Existential_Clauses    ::= 'for-some' '{' Quantification_Dcl
+                           {semi Quantification_Dcl} '}'
+Universal_Clauses      ::= 'for-all' '{' Quantification_Dcl
+                           {semi Quantification_Dcl} '}'
+Given_Clauses          ::= 'given' Simple_Type
+                         | 'given' '{' Given_Dcl {semi Given_Dcl} '}'
+Quantification_Dcl     ::= Type_Definition (* containing Type_Abstract *)
+                         | Val_Dcl
+Compound_Type          ::= Annot_Type {['prepend'] 'with' Annot_Type} 
+                           ['with' ['refinement'] Refine_Stats]
+                         | ['refinement'] Refine_Stats
+Postfix_Type           ::= Compound_Type 
+                           ['with' 'constraint' Constraint_Block]
+Infix_Type             ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
+                         | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
+                           {':' Postfix_Type}
+Annot_Type             ::= {Annotation} Simple_Type [Nullable_Mod]
+Simple_Type            ::= Simple_Type [Type_Args]
+                         | Postfix_Simple_Type
+                         | Simple_Type '#' id
+                         | Stable_Id
+                         | Path '.' 'type'
+                         | Literal ['.' 'type']
+                         | '(' [Types] ')'
+                         | Foreign_Type
+Postfix_Simple_Type    ::= Type Stable_Id
+Types                  ::= Named_Subtype {',' Named_Subtype}
+Named_Subtype          ::= ['~' id ':'] Type
+Type_Equation          ::= '=' Type
 \end{lstlisting}
 
 When we say \textit{type} in the context of Aml, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Aml is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
@@ -128,10 +139,7 @@ Paths introduce also {\em path dependent types}, if the referenced member is a t
 
 A type \lstinline!'$x$! stands for a type variable named $x$. The associated type is \code{Aml/Language.Auto}, for use with automatic inference (\sref{sec:automatic-inference}).
 
-In type definitions, type variables are names for type parameters. As such, they are implicitly added to type parameters section, in order of appearance, unless specified in type parameters section explicitly otherwise. 
-
-In type constraints, type variables represent unspecified types that an be instantiated to any type to satisfy the type constraint. 
-
+Type variables, unlike type parameters, may also be unified with a specific type by the automatic type inference, and may be made explicitly polymorphic. 
 
 
 
@@ -280,7 +288,7 @@ Type_Args           ::= '[' Types ']'
 Types               ::= Type_Arg {',' Type_Arg}
 Type_Arg            ::= [['~'] id ':'] Type 
                       | '<' uom_expr '>'
-                      | ['*'] '_'
+                      | '_'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
@@ -389,10 +397,11 @@ Intersection-like types may be given in closed polymorphic variant types, likely
 
 \syntax\begin{lstlisting}
 Simple_Type ::= '(' Types ')'
+Types       ::= Named_Subtype {',' Named_Subtype}
 Infix_Type  ::= Named_Subtype {'*' Named_Subtype}
 \end{lstlisting}
 
-A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple_$n$[$T_1 \commadots T_n$]@, where $n \geq 2$. 
+A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple[$T_1 \commadots T_n$]@, where $n \geq 1$. 
 
 A tuple type $T_1 * \ldots * T_n$ is an infix type (\sref{sec:infix-types}) representing the exact same tuple type as ($T_1 \commadots T_n$).
 
@@ -429,7 +438,7 @@ Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type}
                 | ['refinement'] Refine_Stats
 Refine_Stats  ::= '{' Refine_Stat {semi Refine_Stat} '}'
 Refine_Stat   ::= Dcl
-                | Type_Definition
+                | Type_Definition (* containing Type_Abstract *)
                 | Constraint_Dcl
                 | Struct_Constraint
                 | ()
@@ -474,58 +483,39 @@ Infix type may also result from an infix expression (\sref{sec:prefix-infix-ops}
 \label{sec:function-types}
 
 \syntax\begin{lstlisting}
-Type          ::= Function_Args {'->' Function_Args}
+Function_Type ::= [Implicit_Types] Function_Args {'->' Function_Args}
                   '->' Type
 Function_Args ::= Infix_Type
                 | '(' [Function_Arg {',' Function_Arg}] ')'
-Function_Arg  ::= ['*' | '**' | '&' | ['~'] id ':'] Param_Type
+                | '(' Function_Arg {'*' Function_Arg} ')'
+Function_Arg  ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Type
 \end{lstlisting}
 
 The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. 
 
 Function argument types may be annotated with some extra properties. In that case, these map to annotations of their types, defined as follows:
 \begin{itemize}
-\item ``\code{out}'' maps to \lstinline[deletekeywords={out}]!@[out]!. 
-\item ``\code{in}'' maps to no annotation, as it is implied, and if the parameter is \code{out}-only, the function is still applicable. 
-\item ``\code{*}'' maps to \code{@[variadic]}. 
-\item ``\code{**}'' maps to \code{@[capturing_named]}. 
-\item ``\code{&}'' maps to \code{@[captured_block]}. 
-\item ``\code{$\id$}'' maps to \code{@[named :$\id$]}. 
-\item ``\lstinline!~$\id$!'' maps to ~\lstinline!@[named :$\id$] @[purely_named]!. 
+\item ``\,\code{*}\,'' maps to \code{@[variadic]}. 
+\item ``\,\code{**}\,'' maps to \code{@[capture_variadic]}. 
+\item ``\,\code{&}\,'' maps to \code{@[captured_block]}. 
+\item ``\,\lstinline!~$\id$!\,'' maps to \code{@[named :$\id\,$]}. 
+\item ``\,\lstinline!~?$\id$!\,'' maps to \code{@[named :$\id\,$] @[optional]}. 
 \end{itemize}
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
 
-Function types are shorthands for class types that conform to the \lstinline@Function_$i$@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The $n$-ary function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function_$n$[$T_1 \commadots T_n,R$]@. Such protocols are defined in the Aml library for any $n \ge 0$:
+Function types are shorthands for class types that conform to the \lstinline@Function@ protocol -- i.e. having an \code{apply} function or simply {\em being} a function. The tuple-destructuring function type \lstinline@($T_1 \commadots T_n$) -> $R$@ is a shorthand for the protocol \lstinline@Function[$T_1 * \ldots * T_n,\,R$]@. Such protocol is defined in the Aml library:
 
 \begin{lstlisting}
-protocol Function_$n$[-$T_1 \commadots\,$-$T_n$, +$R$]
-  message apply ($x_1$: $T_1 \commadots x_n$: $T_n$): $R$
+protocol Function[-$T$, +$R$]
+  message apply ($x_1$: $T$): $R$
   $\ldots$
 end protocol
 \end{lstlisting}
 
-Function types are covariant in their result type and contravariant in their argument types (\sref{sec:variance-of-type-parameters}).
+Function types are covariant in their result type and contravariant in their argument type (\sref{sec:variance-of-type-parameters}).
 
 A function that returns ``nothing'' may be declared as returning the type \code{Unit}, which is similar to \lstinline[language=C]!void! in C-related languages. Such a type is then written as ~\lstinline!($S$) -> Unit!. 
-
-Function arguments may be optionally annotated with more requirements: 
-\begin{itemize}
-\item
-Parameter prefixed with ``\lstinline!*!'' is a requirement of a repeated parameter. 
-
-\item 
-Parameter prefixed with ``\lstinline!$\id$!'' is a requirement of a parameter named $\id$.
-
-\item 
-Parameter prefixed with ``\lstinline!~$\id$!'' is a requirement of a parameter purely named $\id$.
-
-\item 
-Parameter prefixed with ``\lstinline!**!'' is a requirement of a captured named parameters. 
-
-\item
-Parameter prefixed with ``\lstinline!&!'' is a requirement for the passed block. It does not tell whether the function must capture the passed block, it only restricts the requirements for the particular block, if any. The actual passed block may have more or even less positional or named parameters (extra ones on the block side are given \code{undefined}, unless the type is not nullable (\sref{sec:nullable-types}) -- that is an error; and extra ones on the type side are simply discarded), but the result type of the passed block must conform (\sref{sec:conformance}).
-\end{itemize}
 
 \paragraph{Note}
 Although the function type alone allows to attach the extra annotations to types of arguments in a \code{1:1} manner (and therefore types of parameters), due to how conformance is defined for function types, it is not always desirable to use them. The only argument extra that might be of any use is the captured block argument, so that a requirement of a passed block is marked (not caring about the actual style of the block passing). 
@@ -541,19 +531,59 @@ def h (x: Integer, y: Integer, z: Integer) end
 
 
 
+\subsubsection{Type Class Constraints}
 
-\subsection{Existential Types}
+\syntax\begin{lstlisting}
+Implicit_Types ::= Infix_Type '=>'                 | '(' Types ')' '=>'
+Given_Dcl      ::= ['class'] Type
+\end{lstlisting}
+
+A function type can additionally express type class constraints, either with the prefix syntax using \code{Implicit_Types}, or the postfix syntax using \code{Given_Clauses}. Each type occurring in either of those is considered to be adding a type class constraint to the function type (\sref{sec:type-class-constrained-types}). 
+
+\example A function type that requires that an instance of a type class \code{Show['a]} is available for the type parameter \code{'a}.
+\begin{lstlisting}
+Show['a] => 'a -> 'b for-all { type 'a; type 'b }
+\end{lstlisting}
+
+\example A function type that is equivalent to the previous type, but uses only the postfix syntaxes. 
+\begin{lstlisting}
+'a -> 'b given Show['a] and for-all { type 'a; type 'b }
+\end{lstlisting}
+
+\paragraph{Note}
+A good style is to not combine the two syntaxes in one function type, however, if so used, the constraints are concatenated. 
+
+
+
+
+
+\subsubsection{Functional Dependencies}
+
+\syntax\begin{lstlisting}
+Given_Dcl      ::= Simple_Type '~>' Simple_Type
+\end{lstlisting}
+
+A functional dependency expresses dependencies between type parameters of a function type. A functional dependency in form of ~\lstinline!'a ~> 'b!~ expresses the fact that type variable \code{'a} determines the type variable \code{'b}. Note that the involved type variables are still unifiable at that point, unless made explicitly polymorphic. 
+
+
+
+
+
+\subsection{Existentially Quantified Types}
 \label{sec:existential-types}
 
 \syntax\begin{lstlisting}[escapechar=@]
-Type                ::= Infix_Type Existential_Clauses
-Existential_Clauses ::= {'for-some' '{' Existential_Dcl
-                        {semi Existential_Dcl} '}'}
-Existential_Dcl     ::= Type_Definition
-                      | Val_Dcl
+Type                   ::= Infix_Type Quantification_Clauses
+Quantification_Clauses ::= {'for-some' '{' Quantification_Dcl
+                           {semi Quantification_Dcl} '}'}
+Quantification_Dcl     ::= Type_Definition (* containing Type_Abstract *)
+                         | Val_Dcl
+Type_Arg               ::= '?' ['>:' Type] ['<:' Type] 
 \end{lstlisting}
 
 An existential type has the form ~\lstinline@$T$ for-some { $Q$ }@, where $Q$ is a sequence of type declarations (\sref{sec:type-decls-aliases}). Let ~\lstinline@$t_1$[$\tps_1$] >: $L_1$ <: $U_1\ \commadots\ t_n$[$\tps_n$] >: $L_n$ <: $U_n$@~ be the types declared in $Q$ (any of the type parameter sections ~\lstinline![$\tps_i$]!~ might be missing). The scope of each type $t_i$ includes the type $T$ and the existential clause $Q$. The type variables $t_i$ (occurring in the sequence $Q$) are said to be {\em bound} in the type ~\lstinline!$T$ for-some { $Q$ }!. Type variables that occur in a type $T$, but which are not bound in $T$, are said to be {\em free} in $T$. 
+
+A type variable bound in $T$ is also explicitly polymorphic. 
 
 A {\em type instance} of ~\lstinline@$T$ for-some { $Q$ }@~ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, $\sigma L_i \conforms \sigma t_i \conforms \sigma U_i$. The set of values denoted by the existential type \lstinline@$T$ for-some { $Q$ }@ is the union of the set of values of all its type instances. In other words, a type instance of an existential type is a type application (\sref{sec:type-applications}) of the type ~\lstinline@$T$ for-some { $Q$ }@, where the applied type arguments conform to the bounds, or are free in ~\lstinline@$T$ for-some { $Q$ }@. 
 
@@ -586,7 +616,7 @@ As a syntactic convenience, the bindings clause in an existential type may also 
 
 \paragraph{Placeholder syntax for existential types}
 \label{par:placeholder-existential-types}
-Aml supports a placeholder syntax for existential types. A {\em wildcard type} is of the form ~\lstinline!_ >: $L$ <: $U$!. Both bound clauses may be omitted. If a lower bound clause ~\lstinline!_ >: $L$!~ is omitted, ~\lstinline!_ >: Nothing!~ is assumed. If an upper bound clause ~\lstinline!_ <: $U$!~ is omitted, ~\lstinline!_ >: Object!~ is assumed. A wildcard type is a shorthand for an existentially quantified type variable, where the existential quantification is implicit. 
+Aml supports a placeholder syntax for existential types. A {\em wildcard type} is of the form ~\lstinline!? >: $L$ <: $U$!~ and may only appear as a type argument. Both bound clauses may be omitted. If a lower bound clause ~\lstinline!? >: $L$!~ is omitted, ~\lstinline!? >: Nothing!~ is assumed. If an upper bound clause ~\lstinline!? <: $U$!~ is omitted, ~\lstinline!? >: Object!~ is assumed. A wildcard type is a shorthand for an existentially quantified type variable, where the existential quantification is implicit.\footnote{Although the syntax for existential types is heavily influenced by Scala, the particular syntax for the placeholder itself was chosen from Java, as the underscore, which is used in Scala, is already used by wildcard type argument for partial type applications.}
 
 A wildcard type must appear as a type argument of a parameterized type. Let ~\lstinline!$T$ := $p$.$c$[$\targs$, $T$, $\targs'$]!~ be a parameterized type, where $\targs$, $\targs'$ may be empty and $T$ is a wildcard type ~\lstinline!_ >: $L$ <: $U$!. Then $T$ is equivalent to the existential type
 \begin{lstlisting}
@@ -609,7 +639,7 @@ Ref[x_type#T] for-some { type x_type <: Outer with Singleton_Type }
 
 The last two types in this list are equivalent. An alternative formulation of the first type above using wildcard syntax is:
 \begin{lstlisting}
-Ref[_ <: Number]
+Ref[? <: Number]
 \end{lstlisting}
 
 which is equivalent to Java's
@@ -617,9 +647,9 @@ which is equivalent to Java's
 Ref<? super Number>
 \end{lstlisting}
 
-\lstinline!Ref[_ <: Number]!~ then represents any type constructed by the type\code{Ref} parameterized with a type that is \code{Number} or any type that conforms to \code{Number}. 
+\lstinline!Ref[? <: Number]!~ then represents any type constructed by the type\code{Ref} parameterized with a type that is \code{Number} or any type that conforms to \code{Number}. 
 
-\lstinline!Ref[_ >: Number]!~ would then represents any type constructed by the type \code{Ref} parameterized with a type that is \code{Number} or any type that \code{Number} conforms to. 
+\lstinline!Ref[? >: Number]!~ would then represents any type constructed by the type \code{Ref} parameterized with a type that is \code{Number} or any type that \code{Number} conforms to. 
 
 \example The type ~\lstinline!List[List[_]]!~ is equivalent to the existential type
 \begin{lstlisting}
@@ -647,6 +677,21 @@ List[Number]  .
 \end{lstlisting}
 
 Since this \code{List} type is covariant in its type parameter, then e.g. ~\lstinline!List[Integer]!~ is still a subtype of ~\lstinline!List[Number]!. 
+
+
+
+
+
+\subsection{Explicitly Universally Quantified Types}
+\label{sec:universal-types}
+
+\syntax\begin{lstlisting}
+Type              ::= Infix_Type Quantification_Clauses
+Universal_Clauses ::= {'for-all' '{' Quantification_Dcl
+                      {semi Quantification_Dcl} '}'}
+\end{lstlisting}
+
+A type variable bound in $T$ is also explicitly polymorphic. 
 
 
 
@@ -929,7 +974,6 @@ union : [A >: Nothing <: Comparable[A]] (Set[A],
 
 
 
-
 \subsection{Type Constructors}
 \label{sec:type-constructors}
 
@@ -1090,38 +1134,6 @@ If the \code{Dynamic} type is used as the type annotation of a parameter, it is 
 The \code{Dynamic} type is disallowed from use within type parameters, result types and conformance check expressions (\sref{sec:typed-expressions}). 
 
 Using \code{Dynamic} type is one of possible ways to use multi-methods -- the type of arguments typed as \code{Dynamic} are bound at runtime, not during compilation. Moreover, the two approaches can be combined, as not every argument expression needs to be \code{Dynamic}.
-
-
-
-
-
-\section{Variadic Arguments Type}
-\label{sec:varargs-type}
-
-\syntax\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
-Simple_Type ::= 'Variadic_Arguments'
-(* also: *)
-Simple_Type ::= 'Aml/Language.Variadic_Arguments'
-\end{lstlisting}
-
-This type is recognized only as a parameter type (be it a function, constructor\ldots), and with a further constraint that it has to be applied to a solely parameter of a whole parameter list. Such parameter list must be the last parameter list of a definition or declaration, and there might be more parameter lists present preceding it. 
-
-When applied to a parameter, the parameter then consumes a tuple of every consecutive argument list with all arguments in a tuple, possibly with named members, if the arguments were passed in as named arguments. If a block argument is also given, it is present in the last tuple element, under the last nested tuple element, named ``\,\lstinline!`&`!\,''. Any possible arguments combination is applicable to this type, it consumes virtually anything. The types of the tuples per each argument list are to be inspected at runtime dynamically. 
-
-The parameter that receives this tuple of tuples is typed as if it was:
-\begin{lstlisting}
-(($T_1 \commadots T_j$), ($T_{j+1} \commadots T_k$)$\commadots$($T_l \commadots T_n$))  ,
-\end{lstlisting}
-where each $T$ has a type that is retrieved as a function type ~\lstinline!() -> $U$!, where $U$ is the type available at function application time. The runtime is however not required to absolutely convert all arguments into functions (that would not be very efficient), but it can (and should) presume that all arguments are passed by-name, and then the function can evaluate them as appropriate. The function notion is there mostly for user programs that do not have access to the native representation, so that it can decide which arguments to treat as by-name and which by-value, as there is no implicit ``function application'' of by-name parameters. 
-
-This type does not represent by itself any concrete value type, instead, it represents a whole class of them (two-dimensional tuples of variable lengths, basically). 
-
-If no arguments are passed to a function that accepts this parameter type, a \code{Unit} value (\lstinline!()!) is used. The \code{Unit} value is also used for matched arguments list that carry no argument expressions. As a special case, when only one argument list is matched, the type is \code{Tuple_1}, a type that is generally avoided throughout Aml (e.g., ~\lstinline!($e$ as $T$)!~ is not of type ~\lstinline!Tuple_1[$T$]!, but just $T$), as its contents can be implicitly unwrapped, but here it is needed to keep the semantics consistent. 
-
-\paragraph{Note}
-This type is used e.g. within the \code{Language.Object.new} method, so that it can select the appropriate constructor (and perhaps does so natively on each Aml VM). 
-
-
 
 
 
