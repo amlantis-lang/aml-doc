@@ -104,6 +104,7 @@ Module_Selector  ::= [Vendor] id
 Root             ::= '@Root' '.'
 Vendor           ::= id '/'
 Type_Var         ::= ''' id
+Type_Id          ::= id | Type_Var
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Aml's type system. 
@@ -310,7 +311,7 @@ class F[M[_], X] $\ldots$ end
 class S[K <: String] $\ldots$ end
 class G[M[Z <: I], I] $\ldots$ end
 
-trait Function_1[-T, +R]; end
+trait Function[-T, +R]; end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
@@ -323,7 +324,7 @@ List[List[Boolean]]
 F[List, Number]
 G[S, String]
 
-Function_1[named: List[String], String]
+Function[named: List[String], String]
 \end{lstlisting}
 
 \example
@@ -354,8 +355,8 @@ I List               (* equivalent to List[I] *)
 String List          (* equivalent to List[String] *)
 Boolean List List    (* equivalent to List[List[Boolean]] *)
 
-(* equivalent to Function_1[List[String], String] *)
-(named: List[String], String) Function_1
+(* equivalent to Function[List[String], String] *)
+(named: List[String], String) Function
 \end{lstlisting}
 
 
@@ -531,10 +532,11 @@ def h (x: Integer, y: Integer, z: Integer) end
 
 
 
-\subsubsection{Type Class Constraints}
+\subsection{Type Class Constraints}
 
 \syntax\begin{lstlisting}
-Implicit_Types ::= Infix_Type '=>'                 | '(' Types ')' '=>'
+Implicit_Types ::= Infix_Type '=>'
+                 | '(' Types ')' '=>'
 Given_Dcl      ::= ['class'] Type
 \end{lstlisting}
 
@@ -557,13 +559,27 @@ A good style is to not combine the two syntaxes in one function type, however, i
 
 
 
-\subsubsection{Functional Dependencies}
+\subsection{Functional Dependencies}
 
 \syntax\begin{lstlisting}
-Given_Dcl      ::= Simple_Type '~>' Simple_Type
+Given_Dcl ::= Simple_Type '~>' Simple_Type
 \end{lstlisting}
 
 A functional dependency expresses dependencies between type parameters of a function type. A functional dependency in form of ~\lstinline!'a ~> 'b!~ expresses the fact that type variable \code{'a} determines the type variable \code{'b}. Note that the involved type variables are still unifiable at that point, unless made explicitly polymorphic. 
+
+
+
+
+
+\subsection{Type Dependencies \& Equations}
+
+\syntax\begin{lstlisting}
+Given_Dcl ::= Type_Id Type_Equation
+            | Type_Id '>:' Type ['<:' Type]
+            | Type_Id '<:' Type
+\end{lstlisting}
+
+A type dependency or equation expresses additional relations between different type components (usually type variables used as type parameters) that make up a type that uses the \code{given} declarations. It can equate two types (e.g. ~\lstinline!given {'a := 'b}!), or declare that two or three types have a conformance relation (e.g. ~ \lstinline!given {'a >: 'b <: 'c}!).
 
 
 
@@ -1277,7 +1293,7 @@ if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ f
 
   \item A function type ~\lstinline!($T_1 \commadots T_n$) -> $R$!~ (name it $f$) conforms to a function type ~\lstinline!($T'_1 \commadots T'_m$) -> $R'$!~ (name it $f'$), if types of arguments that are applicable to $f'$ are also applicable to $f$ (\sref{sec:function-applications}), and if $R$ conforms to $R'$. This includes reordering of named arguments/parameters and handling of repeated/optional parameters, and also variances -- since although $f$ might be applied to whatever $f'$ might be applied to, $f'$ might not be applied to whatever $f$ might be applied to (and vice versa).
 
-  \item Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
+  \item Polymorphic function traits ~\lstinline!Function!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
  
   \item A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. See also: (\sref{sec:unions}).
 
@@ -1319,6 +1335,7 @@ pragma least-upper-bound(.Union)  (* implicit *)
 pragma least-upper-bound(.Common) (* optionally *)
 \end{lstlisting}
 These pragmas are a part of Aml's \code{Language} module. % TBD: specify where these pragmas are exactly located
+
 
 
 
@@ -1375,7 +1392,7 @@ In Aml, there are a few types and their values that represent emptiness of some 
   
   Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Language.Predef}, and results in \code{None}. 
   
-  \item The \code{Unit} type. It is basically a \code{Tuple_0} type. 
+  \item The \code{Unit} type. It is basically a \code{Tuple} type with zero type parameters. 
   
   It's semantical meaning is that no value is even expected. It is used for functions that should never return any value, and that are technically procedures, whose purpose lies in side-effects. 
   

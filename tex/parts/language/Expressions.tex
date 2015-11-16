@@ -925,13 +925,13 @@ Nameless_Param  ::= '_' [':' Type]
 
 The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
 
-If the expected type of an anonymous function is of the form ~\lstinline!Function_$n$[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
+If the expected type of an anonymous function is of the form ~\lstinline!Function[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
 
 Note that anonymous functions explicitly specify all of their parameters, unlike anonymous pattern matching functions (\sref{sec:pattern-matching-anon-fun}), where the parameters are inferred from the expected type. 
 
 The anonymous function is evaluated as the following expression:
 \begin{lstlisting}
-(Function_$n$[$S_1 \commadots S_n$, $T$] with {
+(Function[$S_1 \commadots S_n$, $T$] with {
   def apply ($x_1$: $T_1 \commadots x_n$: $T_n$): $T$ := { $b$ }
 }).new
 \end{lstlisting}
@@ -1614,12 +1614,10 @@ Infix_Expr   ::= Prefix_Expr
 Simple_Expr1 ::= '(' op_id ')' Arguments
                | '(' nary_op_id ')' Argument Arguments
 Infix_Op     ::= op_id 
+               | 'and' ['also']
+               | 'or' ['else']
+               | 'xor'
                | id
-               | Nullable_Op
-               | 'and' 'also'
-               | 'or' 'else'
-Nullable_Op  ::= ['?_'] op_id '_?'
-               | '?_' op_id
 Prefix_Expr  ::= [op_id | 'not'] Simple_Expr1
 Range_Expr   ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
                  [FP_Delta [FP_Digits]]
@@ -1673,7 +1671,7 @@ $\mbox{\rm\sl(all alphanumeric characters)}$
 &
 < > ~
 = !
-:
+: @
 $\mbox{\rm\sl(all other special characters)}$
 + -
 * / %
@@ -1691,13 +1689,13 @@ A number of left-associative alphanumeric operators with different precedence ex
   \item \code{or}, with precedence of ~\lstinline!|!.  
   \item \code{or else}, with precedence of ~\lstinline!|!.  
   \item \code{xor}, with precedence of ~\lstinline!|!.  
-  \item \code{rem}, with precedence of ~\lstinline!%!. 
-  \item \code{mod}, with precedence of ~\lstinline!%!. 
+  \item \code{rem}, with precedence of ~\lstinline!/!. 
+  \item \code{mod}, with precedence of ~\lstinline!/!. 
   \item \code{div}, with precedence of ~\lstinline!/!. 
   \item \code{quot}, with precedence of ~\lstinline!/!.   
 \end{itemize}
 
-The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, unless they are $n$-ary (\sref{sec:nary-infix-expressions}); and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
+The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, unless they are $n$-ary (\sref{sec:nary-infix-expressions}); operator ``\lstinline!=~!'' is right-binding and is furthermore not associative in any direction; and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
 
 Precedence, associativity and binding direction of operators determine the grouping of parts of an expression as follows.
 
@@ -1753,23 +1751,6 @@ Infix operations can be grouped together. If there is an even number of expressi
 
 
 
-\paragraph{Nullable Operators}
-
-Nullable operators are operators that end with ``\code{_?}'', start with ``\code{?_}'', or both. If nullable operator is identified by what it starts with, it is quite obvious that the left-hand side of it might not be a useable value (i.e., it might be \code{nil} or \code{undefined}), thus any infix expression $e_0\ \op_?\ e_1$ is never seen as ~\lstinline!$e_0$.`$\op_?$`($e_1$)!, but rather always as $\op_?(e_0,\ e_1)$. For consistency, the same applies to operators that are identified as nullable by what they end with, and operators that have nullable identifiers on both sides. Parameters of such operators are always implicitly nullable on the side that contains the identifier. Nullable operators have binding direction identified by the operator with nullable identifiers trimmed from both sides. 
-
-\example An example use of a nullable operator within a workflow expression.
-\begin{lstlisting}
-query {
-  for row in db.Some_Table do
-    where row.Some_Data_Column ?_> 2
-    select row
-  done
-} 
-\end{lstlisting}
-
-
-
-
 
 \paragraph{Tuple Arguments}
 
@@ -1813,6 +1794,7 @@ Standard comparison operators:
 \begin{lstlisting}
 a = b    (* equality *)
 a /= b   (* non-equality; unordered, less than or greater than *)
+a =~ b   (* custom pattern matching, a matches b *)
 a > b    (* greater than *)
 a >= b   (* greater than or equal *)
 a < b    (* less than *)
@@ -2646,9 +2628,9 @@ Unlimited continuations are defined by the whole program, as the unlimited conti
 \paragraph{Definitions}
 The following code shows how a function that create unlimited continuations might be defined. 
 \begin{lstlisting}
-protocol Continuation [-A, +B] extends Function_1[A, B] {$\ldots$}
+protocol Continuation [-A, +B] extends Function[A, B] {$\ldots$}
 protocol Unlimited_Continuation [-A] extends Continuation[A, Unit] {$\ldots$}
-def call/cc [A, B <: A] (&ctx: Unlimited_Continuation[A] -> B?): A end
+def call/cc [A, B <: A] &(ctx: Unlimited_Continuation[A] -> B?): A end
 \end{lstlisting}
 
 A continuation, while internally holding a copy of the call stack that it was created in, is basically a function from the value that is passed into it to some other type. Unlimited continuations are restricted in the means that the input and output type has to be the same, as an unlimited continuation directly changes its result value based on that without any further modification -- the modification is to be actually performed by the code that invokes the unlimited continuation. Delimited continuations do not have this restriction, as the captured continuation is well defined and delimited to a particular scope. 

@@ -166,7 +166,6 @@ The following shorthands are recognized:
 
 
 
-
 \section{Variable Declarations \& Definitions}
 \label{sec:variable-dcl-def}
 
@@ -578,7 +577,7 @@ Now type of \code{x + 1} is required to be polymorphic. The type of the expressi
 
 \syntax\begin{lstlisting}
 Param_Clause     ::= LAT_Param_Clause
-LAT_Param_Clause ::= '(' 'type' id ')'
+LAT_Param_Clause ::= '(' 'type' id [Type_Equation | Type_Abstract] ')'
 \end{lstlisting}
 
 A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named $x$, which is considered abstract in the scope of the function or method it appears in, but then replaced by a fresh type variable of the form ~\lstinline!'$x$!~ outside the function or method, and which is unifiable by (\sref{sec:automatic-inference}).
@@ -606,10 +605,12 @@ The locally abstract type syntax form by itself does not make polymorphic the ty
 \label{sec:type-class-constrained-types}
 
 \syntax\begin{lstlisting}
-Type_Class_Param_Clause ::= '(' Given_Clauses ')'
+Type_Class_Param_Clause 
+           ::= '(' Given_Clauses ')'
+             | '(' 'given' Given_Dcl {semi Given_Dcl} ')'
 \end{lstlisting}
 
-Type class constrained types are used in function definitions and declarations. A {\em type class constraint} of a form ~\lstinline!(class => $T$['$a$])!~ restricts the type $a$ to have an instance of the type class $T$ (\sref{sec:type-classes}) in the scope of the function's application. The type $a$ is then said to be a {\em type class constrained type}. 
+Type class constrained types are used in function definitions and declarations. A {\em type class constraint} of a form ~\lstinline!(given class $T$['$a$])!~ restricts the type $a$ to have an instance of the type class $T$ (\sref{sec:type-classes}) in the scope of the function's application. The type $a$ is then said to be a {\em type class constrained type}. 
 
 Multiple type class constraints can be specified in a single type class parameter clause. 
 
@@ -771,6 +772,19 @@ A {\em function path} is a reference to the function being declared or defined. 
 \subsection{Automatically Curried Function Definitions}
 
 In Aml, every function may be seen as a function from one parameter to a result value. Thus, functions that define multiple parameters can be seen as functions that return another function of the second parameter and so on. However, Aml also allows overloading of functions, and therefore the actual number of declared parameters is important for function applications (\sref{sec:function-applications}).
+
+
+
+
+
+\subsection{Function Declarations with Function Types}
+
+As a special useful case, function declarations that have their \code{Param_Clauses} empty, but not the last type part, and that last type part is of a \code{Function_Type} kind, then the declaration is not for a parameter-less function returning a function as defined by the function type, but instead, the function type is the type of the declared function. This is especially useful, because one does not have to repeat all pattern matching (i.e. parameter destructuring) names in the declaration, and instead leave that to the definition. 
+
+To actually declare a parameter-less function that returns a function, just specify \code{()} as parameters in \code{Param_Clauses}. 
+
+\paragraph{Note}
+This does not apply to function definitions, as these obviously need to know the parameter names. 
 
 
 

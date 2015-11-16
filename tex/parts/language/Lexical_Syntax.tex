@@ -140,7 +140,7 @@ Symbolic_Keyword ::= ? one of: ?
 let!  yield!  return!  as?  as!  is!  not!
 |  .  .?  .!  .'  :  (  )  [  ]  <  >  >:  <:  :>
 %[|  |]  %[  %(  {  %{  }  %/  /
-'  #  ..  ..<  ...  :=  ==  /==  ;  ;;  ->  <-  ~>
+'  #  ..  ..<  ...  :=  ==  /==  =~  ;  ;;  ->  <-  ~>
 =>  =>>  *  **  &  ?  ,
 _  @  <@  @>  <@@  @@>  {<  >}  %%
 \end{lstlisting}
@@ -255,10 +255,9 @@ The grammar rules contain productions where the optional newline (``\code{[nl]}'
 There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
 
 \syntax\begin{lstlisting}
-Literal ::= integer_literal
-	        | fp_literal
-	        | complex_literal
-	        | rational_literal
+Literal ::= number_literal
+          | percent_literal
+          | annotated_number
 	        | character_literal
 	        | boolean_literal
 	        | string_literal
@@ -469,7 +468,20 @@ number_literal    ::= imaginary_literal
 	                  | rational_literal
 \end{lstlisting}
 
-Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{+}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
+Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{-}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
+
+
+
+
+
+\subsection{Percentage Literals}
+\label{sec:percentageliterals}
+
+\syntax\begin{lstlisting}
+percent_literal ::= real_number_literal ['_'] ('%' | '(*@‰@*)')
+\end{lstlisting}
+
+Aml offers a way to represent numbers as fractions of 100 (in case of ``\,\lstinline!%!\,'' suffix) or 1000 (in case of ``\,\texttt{‰}\,'' suffix). The type of such literal is not \code{Number} though, but \code{Percentage} (which is convertible to a number). 
 
 
 
