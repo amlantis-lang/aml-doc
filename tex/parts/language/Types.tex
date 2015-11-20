@@ -925,7 +925,7 @@ The types explained in the following paragraphs do not appear explicitly in prog
 \subsection{Method Types}
 \label{sec:method-types}
 
-A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of types  $(p_1 : T_1 \commadots p_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments of types $T_1 \commadots T_n$ and return a result of type $R$. Types of parameters are possibly annotated with conformance restricting annotations (\sref{sec:annotations}). 
+A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a tuple of types  $(p_1 : T_1 \commadots p_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments of types $T_1 \commadots T_n$ and return a result of type $R$. Types of parameters are possibly annotated with conformance restricting annotations (\sref{sec:annotations}). 
 
 Method types associate to the right:\footnote{Like in Haskell or Scala.} \newline
 $(Ps_1) \mapsto (Ps_2) \mapsto R$ is treated as $(Ps_1) \mapsto ((Ps_2) \mapsto R)$. 
@@ -942,7 +942,7 @@ Extra properties of parameters are as follows: a \lstinline@*@ for variadic para
 \begin{lstlisting}
 def a: -> Integer (* or def a () -> Integer *)
 def b (x: Integer): Boolean
-def c (x: Integer): (y : String, z : String) -> String
+def c (x: Integer): (y: String, z: String) -> String
 def d (~x: Integer): Integer
 def e (*x: Integer): Integer
 def f (x: Integer): Unit
@@ -952,13 +952,13 @@ def h (x: Integer): (y: Integer) -> Integer
 produce the typings
 \begin{lstlisting}
 a : () $\mapsto$ Integer
-b : (@[named :x] Integer) $\mapsto$ Boolean
-c : (@[named :x] Integer) $\mapsto$ (y: String, z: String) $\mapsto$ String
-d : (@[named :x] @[purely_named] Integer) $\mapsto$ Integer
-e : (@[named :x] @[variadic] Integer) $\mapsto$ Integer
-f : (@[named :x] Integer) $\mapsto$ Unit
-g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
-h : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
+b : (Integer) $\mapsto$ Boolean
+c : (Integer) $\mapsto$ (String, String) $\mapsto$ String
+d : (@[named :x] Integer) $\mapsto$ Integer
+e : (@[variadic] Integer) $\mapsto$ Integer
+f : (Integer) $\mapsto$ Unit
+g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
+h : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
 \end{lstlisting}
 
 The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of result types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
@@ -975,15 +975,13 @@ A polymorphic method type is the same as a regular method type, but enhanced wit
 
 \example The declarations
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-def empty[A]: List[A]
-def union[A <: Comparable[A]] (x : Set[A], 
-         xs : Set[A]): Set[A]
+def empty[A]: List[A] end
+def union[A <: Comparable[A]] (x: Set[A], xs: Set[A]): Set[A] end
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
 empty : [A >: Nothing <: Any] () $\mapsto$ List[A]
-union : [A >: Nothing <: Comparable[A]] (Set[A], 
-        Set[A]) $\mapsto$ Set[A]
+union : [A >: Nothing <: Comparable[A]] (Set[A], Set[A]) $\mapsto$ Set[A]
 \end{lstlisting}
 
 
