@@ -412,6 +412,8 @@ Tuple classes are generated lazily by the runtime as needed, so that the languag
 
 If any of the tuple's type parameters $T_i$ is annotated to be named $n$ (see \sref{sec:parameterized-types}, then an additional method named $n$ is added, returning the same value as ~\lstinline!$i$!, of the type $T_i$. If that type parameter is furthermore annotated with ~\lstinline!@[purely_named]!, then the ~\lstinline!$i$!~ is removed. 
 
+Tuple type with single type parameter is an alias for the type parameter itself. This is true for the form ~\lstinline!($T$)!~ as well as ~\lstinline!Tuple[$T$]!.
+
 
 
 
@@ -500,7 +502,7 @@ Function argument types may be annotated with some extra properties. In that cas
 \item ``\,\code{**}\,'' maps to \code{@[capture_variadic]}. 
 \item ``\,\code{&}\,'' maps to \code{@[captured_block]}. 
 \item ``\,\lstinline!~$\id$!\,'' maps to \code{@[named :$\id\,$]}. 
-\item ``\,\lstinline!~?$\id$!\,'' maps to \code{@[named :$\id\,$] @[optional]}. 
+\item ``\,\lstinline!~?$\id$!\,'' maps to \lstinline[deletekeywords={optional}]!@[named :$\id\,$] @[optional]!. 
 \end{itemize}
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
