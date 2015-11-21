@@ -758,7 +758,7 @@ When used in a compound type, use nullable modifier only on the first component.
 
 In Aml, two traits exist that make every type that implements them conform to a compatible strictly not-nullable type: \code{Default[$T$]} and \code{Never_Nil}. 
 
-\code{Default[$T$]} does that by implementing a default value to runtime-replace \code{nil} or \code{undefined}. \code{Never_Nil} does that by making the implementing type cause a type error when used with an expression of a nullable type. 
+\code{Default[$T$]} does that by implementing a default value to runtime-replace \code{nil} or \code{undefined}. \code{Never_Nil} does that by making the implementing type behave as if all of its occurrences were in fact \code{$T$!} (strictly not-nullable). 
 
 An implementation of \code{Default[$T$]} must provide the following method, where \code{self} is the implementing class or type instance: 
 \begin{lstlisting}
