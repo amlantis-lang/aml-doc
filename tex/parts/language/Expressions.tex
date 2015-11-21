@@ -62,7 +62,7 @@ Expressions are composed of various keywords, operators and operands. Expression
 \section{Expression Typing}
 \label{sec:expression-typing}
 
-The typing of expressions is often relative to some {\em expected type} (which might be undefined). When we write ``expression $e$ is expected to conform to type $T$'', we mean:
+The typing of expressions is often relative to some {\em expected type} (which might be undefined). When we write ``expression $e$ is expected to conform to type $T$\,'', we mean:
 \begin{enumerate}
 \item The expected type of $e$ is $T$.
 \item The type of expression $e$ must conform to $T$. 
@@ -70,7 +70,7 @@ The typing of expressions is often relative to some {\em expected type} (which m
 
 Usually, the type of the expression is defined by the last element of an execution branch, as discussed subsequently with each expression kind. 
 
-What we call ``statement'', in context of Aml is in fact yet another kind of an expression, and those expressions themselves always have a type and a value. 
+What we call ``statement'', in context of Aml is in fact yet another kind of an expression, and those expressions themselves always have a type (usually \code{Unit}) and a value. 
 
 
 
@@ -907,9 +907,10 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 \syntax\begin{lstlisting}
 Anon_Fun        ::= Anon_Params '->' '{' Block '}'
                   | 'def' Anon_Params '->' Expr
-                  | 'def' Params2 '->' Expr
+                  | 'def' {Params_Clause} '->' Expr
                   | 'function' When_Clauses 'end' ['function']
                   | 'function' '{' When_Clauses '}'
+                  | 'function' Atomic_Pattern '->' Value_Expr
 Result_Expr     ::= Anon_Params '->' Block 
 Anon_Params     ::= Bindings {'->' Bindings}
                   | Param_Clause
@@ -925,13 +926,13 @@ Nameless_Param  ::= '_' [':' Type]
 
 The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
 
-If the expected type of an anonymous function is of the form ~\lstinline!Function_$n$[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
+If the expected type of an anonymous function is of the form ~\lstinline!Function[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
 
 Note that anonymous functions explicitly specify all of their parameters, unlike anonymous pattern matching functions (\sref{sec:pattern-matching-anon-fun}), where the parameters are inferred from the expected type. 
 
 The anonymous function is evaluated as the following expression:
 \begin{lstlisting}
-(Function_$n$[$S_1 \commadots S_n$, $T$] with {
+(Function[$S_1 \commadots S_n$, $T$] with {
   def apply ($x_1$: $T_1 \commadots x_n$: $T_n$): $T$ := { $b$ }
 }).new
 \end{lstlisting}
@@ -1185,6 +1186,7 @@ App_Expr    ::= Value_Expr '(' [Arguments] ')' [Block_Argument]
               | Value_Expr '.' '(' [Arguments] ')' [Block_Argument]
               | Value_Expr Arguments [Block_Expr2 | Method_Expr]
               | Value_Expr Block_Argument
+              | 'super' [Arguments]
 Arguments   ::= {Argument}+
 Argument    ::= Positional_Argument
               | Labelled_Argument
@@ -1614,12 +1616,10 @@ Infix_Expr   ::= Prefix_Expr
 Simple_Expr1 ::= '(' op_id ')' Arguments
                | '(' nary_op_id ')' Argument Arguments
 Infix_Op     ::= op_id 
+               | 'and' ['also']
+               | 'or' ['else']
+               | 'xor'
                | id
-               | Nullable_Op
-               | 'and' 'also'
-               | 'or' 'else'
-Nullable_Op  ::= ['?_'] op_id '_?'
-               | '?_' op_id
 Prefix_Expr  ::= [op_id | 'not'] Simple_Expr1
 Range_Expr   ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
                  [FP_Delta [FP_Digits]]
@@ -1673,7 +1673,7 @@ $\mbox{\rm\sl(all alphanumeric characters)}$
 &
 < > ~
 = !
-:
+: @
 $\mbox{\rm\sl(all other special characters)}$
 + -
 * / %
@@ -1691,13 +1691,13 @@ A number of left-associative alphanumeric operators with different precedence ex
   \item \code{or}, with precedence of ~\lstinline!|!.  
   \item \code{or else}, with precedence of ~\lstinline!|!.  
   \item \code{xor}, with precedence of ~\lstinline!|!.  
-  \item \code{rem}, with precedence of ~\lstinline!%!. 
-  \item \code{mod}, with precedence of ~\lstinline!%!. 
+  \item \code{rem}, with precedence of ~\lstinline!/!. 
+  \item \code{mod}, with precedence of ~\lstinline!/!. 
   \item \code{div}, with precedence of ~\lstinline!/!. 
   \item \code{quot}, with precedence of ~\lstinline!/!.   
 \end{itemize}
 
-The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, unless they are $n$-ary (\sref{sec:nary-infix-expressions}); and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
+The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, unless they are $n$-ary (\sref{sec:nary-infix-expressions}); operator ``\lstinline!=~!'' is right-binding and is furthermore not associative in any direction; and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
 
 Precedence, associativity and binding direction of operators determine the grouping of parts of an expression as follows.
 
@@ -1753,23 +1753,6 @@ Infix operations can be grouped together. If there is an even number of expressi
 
 
 
-\paragraph{Nullable Operators}
-
-Nullable operators are operators that end with ``\code{_?}'', start with ``\code{?_}'', or both. If nullable operator is identified by what it starts with, it is quite obvious that the left-hand side of it might not be a useable value (i.e., it might be \code{nil} or \code{undefined}), thus any infix expression $e_0\ \op_?\ e_1$ is never seen as ~\lstinline!$e_0$.`$\op_?$`($e_1$)!, but rather always as $\op_?(e_0,\ e_1)$. For consistency, the same applies to operators that are identified as nullable by what they end with, and operators that have nullable identifiers on both sides. Parameters of such operators are always implicitly nullable on the side that contains the identifier. Nullable operators have binding direction identified by the operator with nullable identifiers trimmed from both sides. 
-
-\example An example use of a nullable operator within a workflow expression.
-\begin{lstlisting}
-query {
-  for row in db.Some_Table do
-    where row.Some_Data_Column ?_> 2
-    select row
-  done
-} 
-\end{lstlisting}
-
-
-
-
 
 \paragraph{Tuple Arguments}
 
@@ -1813,6 +1796,7 @@ Standard comparison operators:
 \begin{lstlisting}
 a = b    (* equality *)
 a /= b   (* non-equality; unordered, less than or greater than *)
+a =~ b   (* custom pattern matching, a matches b *)
 a > b    (* greater than *)
 a >= b   (* greater than or equal *)
 a < b    (* less than *)
@@ -2124,20 +2108,14 @@ The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expressi
 \begin{enumerate}
   \item No conversion, if $e$ conforms to $T$ directly. 
   \item If an implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope, then the conversion is of the form ~\lstinline!$c$($e$)!. 
-  \item Otherwise, the conversion is of the form ~\lstinline!$e$.as_instance_of[$T$]()!.\footnote{Note that this conversion method is not included in implicit conversions, and has to be used either directly, or via a typed expression.}
+  \item Otherwise, the conversion is of the form ~\lstinline!$e$.as_instance_of[$T$]()!, and the type of $e$ must implement \code{Type_Convertible[$S$]}, where $S$ conforms to $T$.
 \end{enumerate}
-
-If a type implements the ~\lstinline!as_instance_of[$T$]()!~ method, it must meet one of the following conditions:
-\begin{itemize}
-  \item Have at most one empty parameter list.
-  \item Have exactly one implicit parameter list.\footnote{And no other parameter list.}
-\end{itemize}
 
 The conformance check expression ~\lstinline!$e$ is $T$!~ has type \code{Boolean} and tests whether $e$ conforms to $T$, basically by asking a question ``Can $e$ be of type $T$?'', answering either ``It can be'' or ``It can't be''. The expression $e$ conforms to type $T$ if at least one of the following conditions hold:
 \begin{enumerate}
   \item Type of $e$ is a subtype of $T$. 
   \item An implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope. 
-  \item As a last resort, type of $e$ overrides the method ~\lstinline!is_instance_of[$T$]()!~ and evaluating it results in \code{yes} value.\footnote{This method basically tells whether the instance implements ~\lstinline!as_instance_of[$T$]()!, thus being able to convert itself into another type without other implicit conversions.}
+  \item As a last resort, type of $e$ implements \code{Type_Convertible[$S$]} and $S$ conforms to $T$.
 \end{enumerate}
 
 \paragraph{Flow Based Typing} 
@@ -2646,9 +2624,9 @@ Unlimited continuations are defined by the whole program, as the unlimited conti
 \paragraph{Definitions}
 The following code shows how a function that create unlimited continuations might be defined. 
 \begin{lstlisting}
-protocol Continuation [-A, +B] extends Function_1[A, B] {$\ldots$}
+protocol Continuation [-A, +B] extends Function[A, B] {$\ldots$}
 protocol Unlimited_Continuation [-A] extends Continuation[A, Unit] {$\ldots$}
-def call/cc [A, B <: A] (&ctx: Unlimited_Continuation[A] -> B?): A end
+def call/cc [A, B <: A] &(ctx: Unlimited_Continuation[A] -> B?): A end
 \end{lstlisting}
 
 A continuation, while internally holding a copy of the call stack that it was created in, is basically a function from the value that is passed into it to some other type. Unlimited continuations are restricted in the means that the input and output type has to be the same, as an unlimited continuation directly changes its result value based on that without any further modification -- the modification is to be actually performed by the code that invokes the unlimited continuation. Delimited continuations do not have this restriction, as the captured continuation is well defined and delimited to a particular scope. 
@@ -2906,7 +2884,8 @@ Block_Stat     ::= Use
                  | Expr
                  | Alias_Expr
                  | Capture_Usage
-                 | 'assert' Expr
+                 | 'super'
+                 | 'assert' Value_Expr
                  | ()
 Template_Stat  ::= Use
                    (* no 'implicit' directly in Def_Expr *)
@@ -2946,7 +2925,7 @@ Template_Stat  ::= Use
                  | Access_Modifier [id {',' id} | symbol_ids]
                  | {Annotation} {Modifier} Constraint_Dcl
                  | {Annotation} {Modifier} Constraint_Def
-                 | {Annotation} 'invariant' Invariant_Def
+                 | {Annotation} 'invariant' '{' Block '}'
 Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                  | Block
                    {'rescue' [Pattern [Guard]] semi Block }
@@ -2964,6 +2943,8 @@ Fun_Dec_Expr   ::= {Annotation} Dcl
                  | 'native' [Expr]
                  | ('immutable' | 'mutable')
                  | 'implicit' id
+                 | {Annotation} 'in'  '{'              Block '}'
+                 | {Annotation} 'out' '{' ['|' id '|'] Block '}'
                  | Expr
                  | ()
 Alias_Expr     ::= 'alias' symbol_literal 'is' symbol_literal
@@ -2975,12 +2956,18 @@ Constraint_Dcl ::= 'constraint' id ['as' Type] 'end' ['constraint']
 Constraint_Def ::= 'constraint' 
                    (id ['as' Type] [':='] Constraint_Block 
                    | Alias_Expr)
-Invariant_Def  ::= '{' Block '}' | 'do' Block 'end' ['invariant']
 Opt_Req        ::= 'optional' | 'requires'
 symbol_ids     ::= symbol_literal {',' symbol_literal}
 \end{lstlisting}
 
 Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{nil}, or the empty statement/expression, whose value is again \code{nil}. 
+
+
+
+
+
+
+\subsection{Function-Specific Statements}
 
 Function statements is an umbrella term for a series of statements and expressions, so their effective value is more complex. 
 
@@ -3006,6 +2993,13 @@ An alias to a function name creates a duplicate record in method table of a clas
 
 The \code{Capture_Usage} syntax construct (of the forms ~\lstinline{use $\id_1 \commadots \id_n$ as weak}, ~\lstinline{use $\id_1 \commadots \id_n$ as unowned} and ~\lstinline{use $\id_1 \commadots \id_n$ as soft}) provide a way to define ownership of captured variables in blocks and anonymous functions. Every captured variable is stored as a property within the function object, and therefore it takes an ownership of the pointed object. By using this construct, the default strong reference can be replaced with a \code{Weak_Reference[T]}, an \code{Unowned_Reference[T]} or a \code{Soft_Reference[T]}, with automatic unwrapping and wrapping of read and written values. It is an error if $\id_i$ is not a variable name in an enclosing scope. 
 
+
+
+
+
+
+\subsection{Template-Specific Statements}
+
 When \code{optional} or \code{requires} appear in a template, the following message declarations are either optional or required. When a message declaration is optional, then its result type is always nullable. No restriction is put on required messages. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
 
 When \code{public}, \code{protected} or \code{private} appear in a template, the following member declarations have their accessibility affected. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
@@ -3014,7 +3008,39 @@ Constraint definitions, of the form ~\lstinline!constraint $\id$ as $T$ := $b$!,
 
 If a parameter-less method of the same name as a constraint already exists, it is sufficient to just declare the constraint and let the pre-existing method implement it. Otherwise, a constraint declaration behaves exactly like a method declaration. On the contrary, neither method declaration, nor method definition alone create a constraint. 
 
-% TBD: describe invariant and assert
+
+
+
+
+\subsection{Contracts}
+
+A body of a contract should consist only of assert expressions, in form of \lstinline!assert $e$!, and also be side-effect free. As a contract, an assert expression represents a guarantee that the code in its expression must uphold. The expected type of the asserted expression is \code{Boolean}, and can employ implicit conversions to get a boolean value, but only those available in the scope. If the asserted expression evaluates to \code{no}, then the contract is broken and \code{Contract_Broken} is raised. 
+
+A function be declared with contract blocks in its definition:
+\begin{itemize}
+  \item Input contracts ({\em preconditions}) in form of \lstinline!in { $e$ }!.
+  \item Output contracts ({\em postconditions}) in forms of either \lstinline!out { |$p$| $e$ }! or \lstinline!out { $e$ }!. If the variable $p$ is specified, its type is inferred from the result type of the function. The variable $p$ references the result value, and the contract code can't change its content. 
+\end{itemize}
+
+A template may contain an invariant contract in its definition, in form of \lstinline!invariant { $e$ }!.
+
+Contracts are by default always evaluated when needed, unless they are marked as only debugging by annotations. The times contract have to be evaluated are after constructors are finished and around calls to public methods. Contracts are inherited by traits and classes alike, and the implicit ordering is to run inherited contracts before own contracts. 
+
+The exact location of evaluation of an inherited contract can be overridden by application of \code{super} (without arguments) in the contract's code. Contract blocks can access all parameters (except the invariant contract) of the function application, but the output contract may\footnote{Well, only if somebody does update those variables.} see updated values of parameters in mutable variables. 
+% TBD: add names for those annotations
+
+The evaluation order of contracts code is:
+\begin{enumerate}
+  \item Preconditions (excluding parameter-less constructors)
+  \item Invariant (excluding constructor, where the invariant may not yet be met)
+  \item Constructor chain or function body
+  \item Invariant
+  \item Postconditions
+\end{enumerate}
+
+Applications of public methods on the object tested for invariant that are nested in any contract's code do not repeat invariant contract evaluations, instead, only the first and last are evaluated. Preconditions and postconditions are evaluated for every such nested application. 
+
+Every type can have only up to one own invariant contract. There is no limit on inheritance of invariant contracts -- there is always only up to one from each parent type. 
 
 
 

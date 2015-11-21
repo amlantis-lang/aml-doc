@@ -94,22 +94,22 @@ memoize       message       method        module        monitored
 multi         mutable       native        next          nil
 no            not           object        of            opaque
 operator      optional      or            origin        otherwise
-outer         override      parallel      per-self      per-target
-pointcut      pragma        prefer        prepend       private
-property      protected     protocol      public        pure
-raise         raiseable     raising       range         rec
-recursive     record        redo          ref           refine
-refinement    release       reraise       rescue        retain
-rethrow       retry         return        returning     requires
-reverse       sealed        self          set           seq
-sig           skip          soft          step          struct
-super         switch        synchronized  tailcall      target
-then          this          throw         throwable     throwing
-to            trait         transparent   tuple         type
-undefined     unless        unowned       until         union
-upgrade       use           val           var           variant
-yes           weak          when          while         with
-xor           yield         yielding
+out           outer         override      parallel      per-self
+per-target    pointcut      pragma        prefer        prepend
+private       property      protected     protocol      public
+pure          raise         raiseable     raising       range
+rec           recursive     record        redo          ref
+refine        refinement    release       reraise       rescue
+retain        rethrow       retry         return        returning
+requires      reverse       sealed        self          set
+seq           sig           skip          soft          step
+struct        super         switch        synchronized  tailcall
+target        then          this          throw         throwable
+throwing      to            trait         transparent   tuple
+type          undefined     unless        unowned       until
+union         upgrade       use           val           var
+variant       yes           weak          when          while
+with          xor           yield         yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
@@ -140,7 +140,7 @@ Symbolic_Keyword ::= ? one of: ?
 let!  yield!  return!  as?  as!  is!  not!
 |  .  .?  .!  .'  :  (  )  [  ]  <  >  >:  <:  :>
 %[|  |]  %[  %(  {  %{  }  %/  /
-'  #  ..  ..<  ...  :=  ==  /==  ;  ;;  ->  <-  ~>
+'  #  ..  ..<  ...  :=  ==  /==  =~  ;  ;;  ->  <-  ~>
 =>  =>>  *  **  &  ?  ,
 _  @  <@  @>  <@@  @@>  {<  >}  %%
 \end{lstlisting}
@@ -255,10 +255,9 @@ The grammar rules contain productions where the optional newline (``\code{[nl]}'
 There are literals for numbers (including integer, floating point and complex), characters, booleans, strings, symbols, regular expressions and collections (including tuples, lists, dictionaries and bags). 
 
 \syntax\begin{lstlisting}
-Literal ::= integer_literal
-	        | fp_literal
-	        | complex_literal
-	        | rational_literal
+Literal ::= number_literal
+          | percent_literal
+          | annotated_number
 	        | character_literal
 	        | boolean_literal
 	        | string_literal
@@ -469,7 +468,20 @@ number_literal    ::= imaginary_literal
 	                  | rational_literal
 \end{lstlisting}
 
-Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{+}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
+Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{-}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
+
+
+
+
+
+\subsection{Percentage Literals}
+\label{sec:percentageliterals}
+
+\syntax\begin{lstlisting}
+percent_literal ::= real_number_literal ['_'] ('%' | '(*@‰@*)')
+\end{lstlisting}
+
+Aml offers a way to represent numbers as fractions of 100 (in case of ``\,\lstinline!%!\,'' suffix) or 1000 (in case of ``\,\texttt{‰}\,'' suffix). The type of such literal is not \code{Number} though, but \code{Percentage} (which is convertible to a number). 
 
 
 

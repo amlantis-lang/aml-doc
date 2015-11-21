@@ -104,6 +104,7 @@ Module_Selector  ::= [Vendor] id
 Root             ::= '@Root' '.'
 Vendor           ::= id '/'
 Type_Var         ::= ''' id
+Type_Id          ::= id | Type_Var
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Aml's type system. 
@@ -310,7 +311,7 @@ class F[M[_], X] $\ldots$ end
 class S[K <: String] $\ldots$ end
 class G[M[Z <: I], I] $\ldots$ end
 
-trait Function_1[-T, +R]; end
+trait Function[-T, +R]; end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
@@ -323,7 +324,7 @@ List[List[Boolean]]
 F[List, Number]
 G[S, String]
 
-Function_1[named: List[String], String]
+Function[named: List[String], String]
 \end{lstlisting}
 
 \example
@@ -354,8 +355,8 @@ I List               (* equivalent to List[I] *)
 String List          (* equivalent to List[String] *)
 Boolean List List    (* equivalent to List[List[Boolean]] *)
 
-(* equivalent to Function_1[List[String], String] *)
-(named: List[String], String) Function_1
+(* equivalent to Function[List[String], String] *)
+(named: List[String], String) Function
 \end{lstlisting}
 
 
@@ -410,6 +411,8 @@ Tuple classes are available as patterns for pattern matching. The properties can
 Tuple classes are generated lazily by the runtime as needed, so that the language does not constrain users to tuples of only limited sizes, but allows any size. 
 
 If any of the tuple's type parameters $T_i$ is annotated to be named $n$ (see \sref{sec:parameterized-types}, then an additional method named $n$ is added, returning the same value as ~\lstinline!$i$!, of the type $T_i$. If that type parameter is furthermore annotated with ~\lstinline!@[purely_named]!, then the ~\lstinline!$i$!~ is removed. 
+
+Tuple type with single type parameter is an alias for the type parameter itself. This is true for the form ~\lstinline!($T$)!~ as well as ~\lstinline!Tuple[$T$]!.
 
 
 
@@ -499,7 +502,7 @@ Function argument types may be annotated with some extra properties. In that cas
 \item ``\,\code{**}\,'' maps to \code{@[capture_variadic]}. 
 \item ``\,\code{&}\,'' maps to \code{@[captured_block]}. 
 \item ``\,\lstinline!~$\id$!\,'' maps to \code{@[named :$\id\,$]}. 
-\item ``\,\lstinline!~?$\id$!\,'' maps to \code{@[named :$\id\,$] @[optional]}. 
+\item ``\,\lstinline!~?$\id$!\,'' maps to \lstinline[deletekeywords={optional}]!@[named :$\id\,$] @[optional]!. 
 \end{itemize}
 
 Function types associate to the right, e.g. \lstinline@($S$) -> ($T$) -> $R$@ is the same as \lstinline@($S$) -> (($T$) -> $R$)@. 
@@ -531,10 +534,11 @@ def h (x: Integer, y: Integer, z: Integer) end
 
 
 
-\subsubsection{Type Class Constraints}
+\subsection{Type Class Constraints}
 
 \syntax\begin{lstlisting}
-Implicit_Types ::= Infix_Type '=>'                 | '(' Types ')' '=>'
+Implicit_Types ::= Infix_Type '=>'
+                 | '(' Types ')' '=>'
 Given_Dcl      ::= ['class'] Type
 \end{lstlisting}
 
@@ -557,13 +561,27 @@ A good style is to not combine the two syntaxes in one function type, however, i
 
 
 
-\subsubsection{Functional Dependencies}
+\subsection{Functional Dependencies}
 
 \syntax\begin{lstlisting}
-Given_Dcl      ::= Simple_Type '~>' Simple_Type
+Given_Dcl ::= Simple_Type '~>' Simple_Type
 \end{lstlisting}
 
 A functional dependency expresses dependencies between type parameters of a function type. A functional dependency in form of ~\lstinline!'a ~> 'b!~ expresses the fact that type variable \code{'a} determines the type variable \code{'b}. Note that the involved type variables are still unifiable at that point, unless made explicitly polymorphic. 
+
+
+
+
+
+\subsection{Type Dependencies \& Equations}
+
+\syntax\begin{lstlisting}
+Given_Dcl ::= Type_Id Type_Equation
+            | Type_Id '>:' Type ['<:' Type]
+            | Type_Id '<:' Type
+\end{lstlisting}
+
+A type dependency or equation expresses additional relations between different type components (usually type variables used as type parameters) that make up a type that uses the \code{given} declarations. It can equate two types (e.g. ~\lstinline!given {'a := 'b}!), or declare that two or three types have a conformance relation (e.g. ~ \lstinline!given {'a >: 'b <: 'c}!).
 
 
 
@@ -709,7 +727,7 @@ A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a null
 
 A block of code (or whole files or modules) may opt-in to behaviour that raises errors in runtime, instead of issuing warnings, using \code{pragma error_on_nil} inside the code block, file or module. 
 
-If an implicit conversion from \code{Nothing} to $T$ is available, then nullability is not a problem. 
+If an implicit conversion from \code{Nothing} to $T$ is available, then nullability is not a problem. Also, if $T$ implements the \code{Default[$T$]} trait (\sref{sec:types-preventing-nil}), nullability is also not a problem, as there will always be a value that replaces \code{nil} or even \code{undefined}. 
 
 Nullable types in this form can appear everywhere where a type is expected. 
 
@@ -730,6 +748,25 @@ A compiler may decide to issue extra warnings when assignment of a \code{nil} or
 A strictly not-nullable may be seen as some implicitly wrapped-on-assignment / unwrapped-on-read box that checks for \code{value = nil} and raises an error when such condition is true. But Aml does not have any special methods for object dereference.\footnote{Yet, and probably never will.} 
 
 When used in a compound type, use nullable modifier only on the first component. When used in a constrained type, use nullable modifier only on the component type of the constrained type. 
+
+
+
+
+
+\subsection{Types Preventing Nil}
+\label{sec:types-preventing-nil}
+
+In Aml, two traits exist that make every type that implements them conform to a compatible strictly not-nullable type: \code{Default[$T$]} and \code{Never_Nil}. 
+
+\code{Default[$T$]} does that by implementing a default value to runtime-replace \code{nil} or \code{undefined}. \code{Never_Nil} does that by making the implementing type cause a type error when used with an expression of a nullable type. 
+
+An implementation of \code{Default[$T$]} must provide the following method, where \code{self} is the implementing class or type instance: 
+\begin{lstlisting}
+message self.default (): $T$! end
+\end{lstlisting}
+
+Then, the value returned by it replaces occurrences of \code{nil} or \code{undefined} in runtime. Also, an attribute is provided for the implementing type, in form of \code{$T$.'default}. 
+
 
 
 
@@ -909,7 +946,7 @@ The types explained in the following paragraphs do not appear explicitly in prog
 \subsection{Method Types}
 \label{sec:method-types}
 
-A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a sequence of types  $(p_1 : T_1 \commadots p_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments of types $T_1 \commadots T_n$ and return a result of type $R$. Types of parameters are possibly annotated with conformance restricting annotations (\sref{sec:annotations}). 
+A method type is denoted internally as $(Ps) \mapsto R$, where $(Ps)$ is a tuple of types  $(p_1 : T_1 \commadots p_n : T_n)$ for some $n \geq 0$ and $R$ is a (value or method) type. This type represents named or anonymous methods that take arguments of types $T_1 \commadots T_n$ and return a result of type $R$. Types of parameters are possibly annotated with conformance restricting annotations (\sref{sec:annotations}). 
 
 Method types associate to the right:\footnote{Like in Haskell or Scala.} \newline
 $(Ps_1) \mapsto (Ps_2) \mapsto R$ is treated as $(Ps_1) \mapsto ((Ps_2) \mapsto R)$. 
@@ -926,7 +963,7 @@ Extra properties of parameters are as follows: a \lstinline@*@ for variadic para
 \begin{lstlisting}
 def a: -> Integer (* or def a () -> Integer *)
 def b (x: Integer): Boolean
-def c (x: Integer): (y : String, z : String) -> String
+def c (x: Integer): (y: String, z: String) -> String
 def d (~x: Integer): Integer
 def e (*x: Integer): Integer
 def f (x: Integer): Unit
@@ -936,13 +973,13 @@ def h (x: Integer): (y: Integer) -> Integer
 produce the typings
 \begin{lstlisting}
 a : () $\mapsto$ Integer
-b : (@[named :x] Integer) $\mapsto$ Boolean
-c : (@[named :x] Integer) $\mapsto$ (y: String, z: String) $\mapsto$ String
-d : (@[named :x] @[purely_named] Integer) $\mapsto$ Integer
-e : (@[named :x] @[variadic] Integer) $\mapsto$ Integer
-f : (@[named :x] Integer) $\mapsto$ Unit
-g : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
-h : (@[named :x] Integer) $\mapsto$ (@[named :y] Integer) $\mapsto$ Integer
+b : (Integer) $\mapsto$ Boolean
+c : (Integer) $\mapsto$ (String, String) $\mapsto$ String
+d : (@[named :x] Integer) $\mapsto$ Integer
+e : (@[variadic] Integer) $\mapsto$ Integer
+f : (Integer) $\mapsto$ Unit
+g : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
+h : (Integer) $\mapsto$ (Integer) $\mapsto$ Integer
 \end{lstlisting}
 
 The difference between the ``\code{g}'' and ``\code{h}'' functions is that using the chain of result types as in function ``\code{g}'', the function body is automatically curried to return a function that is of type \lstinline@(Integer) $\mapsto$ Integer@. With the function ``\code{h}'', currying has to be implemented manually. 
@@ -959,15 +996,13 @@ A polymorphic method type is the same as a regular method type, but enhanced wit
 
 \example The declarations
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
-def empty[A]: List[A]
-def union[A <: Comparable[A]] (x : Set[A], 
-         xs : Set[A]): Set[A]
+def empty[A]: List[A] end
+def union[A <: Comparable[A]] (x: Set[A], xs: Set[A]): Set[A] end
 \end{lstlisting}
 produce the typings
 \begin{lstlisting}[escapechar=@,deletekeywords={union}]
 empty : [A >: Nothing <: Any] () $\mapsto$ List[A]
-union : [A >: Nothing <: Comparable[A]] (Set[A], 
-        Set[A]) $\mapsto$ Set[A]
+union : [A >: Nothing <: Comparable[A]] (Set[A], Set[A]) $\mapsto$ Set[A]
 \end{lstlisting}
 
 
@@ -1121,7 +1156,7 @@ Simple_Type ::= 'Aml/Language.Dynamic'
 
 This type does not represent a single concrete value type\footnote{This type is similar to what ~\lstinline[language={[Sharp]C}]!dynamic!~ is to C\#.}, but any concrete type, very much like \code{Any} or \code{Auto}. 
 
-In runtime, this type is always dynamically replaced by the type of the actual referenced value -- e.g., if a variable is typed with \code{Dynamic} type, assigned a value, and used in a function application, the type of that value is used, not \code{Dynamic}, unless it would be typed with \code{Any} again (\sref{sec:typed-expressions}). Nonetheless, this does not imply that a value of another type can not be assigned to that same variable -- such variable is still bound to \code{Dynamic} and accepts \code{Any} type. 
+In runtime, this type is always dynamically replaced by the type of the actual referenced value -- e.g., if a variable is typed with \code{Dynamic} type (\sref{sec:type-consistency}), assigned a value, and used in a function application, the type of that value is used, not \code{Dynamic}, unless it would be typed with \code{Any} again (\sref{sec:typed-expressions}). Nonetheless, this does not imply that a value of another type can not be assigned to that same variable -- such variable is still bound to \code{Dynamic} and accepts \code{Any} type. 
 
 Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Dynamic} is used as a trait type.\footnote{Thus, if \code{Dynamic} is used in a compound type, the compound type can contain a class type that is not \code{Dynamic}. This is different from \code{Any}, which can only appear as a class type.}
 
@@ -1277,7 +1312,7 @@ if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ f
 
   \item A function type ~\lstinline!($T_1 \commadots T_n$) -> $R$!~ (name it $f$) conforms to a function type ~\lstinline!($T'_1 \commadots T'_m$) -> $R'$!~ (name it $f'$), if types of arguments that are applicable to $f'$ are also applicable to $f$ (\sref{sec:function-applications}), and if $R$ conforms to $R'$. This includes reordering of named arguments/parameters and handling of repeated/optional parameters, and also variances -- since although $f$ might be applied to whatever $f'$ might be applied to, $f'$ might not be applied to whatever $f$ might be applied to (and vice versa).
 
-  \item Polymorphic function traits ~\lstinline!Function_$n$!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
+  \item Polymorphic function traits ~\lstinline!Function!~ and ~\lstinline!Partial_Function!~ follow the rules for conformance of function types, as defined above. The repeated parameter, optional parameters, named parameters and all capturing parameters are derived from their conformance restricting annotations (\sref{sec:annotations}). Note that optional parameters may not be expressed with function types in another than with an annotation. The rules may be inverted in the means of constructing a virtual methods $m$ and $m'$ that are reconstructed from the type arguments of the function types $f$ and $f'$ respectively, and applying the rules for function types on them.
  
   \item A union type (\sref{sec:unions}) $U_1$ conforms to $U_2$, if every member type that is present in $U_2$ has also an equivalent member type in $U_1$. $U_1$ may thus contain more member types than $U_2$, but must contain all of member types in $U_2$. See also: (\sref{sec:unions}).
 
@@ -1285,13 +1320,13 @@ if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ f
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 
-  \begin{itemize}
+\begin{itemize}
   \item A value declaration or definition that defines a name $x$ with type $T$ subsumes a value or method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
   \item A method declaration or definition that defines a name $x$ with type $T$ subsumes a method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
   \item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T'$!~ if $T \equiv T'$. 
   \item A type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!~ subsumes a type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L'$ <: $U'$!, if $L' \conforms L$ and $U \conforms U'$. 
   \item A type or class definition that binds a type name $t$ subsumes an abstract type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!, if $L \conforms t \conforms U$. 
-  \end{itemize}
+\end{itemize}
 
 The ($\conforms$) relation forms partial order between types, i.e. it is transitive, antisymmetric and reflexive. The terms {\em least upper bound} and {\em greatest lower bound} of a set of types are understood to be relative to that order. 
 
@@ -1323,6 +1358,7 @@ These pragmas are a part of Aml's \code{Language} module. % TBD: specify where t
 
 
 
+
 \subsection{Weak Conformance}
 \label{sec:weak-conformance}
 
@@ -1330,6 +1366,25 @@ For now, {\em weak conformance} is a relation defined on members of the \code{Nu
 
 A {\em weak least upper bound} is a least upper bound with respect to weak conformance. 
 
+
+
+
+
+\subsection{Type Consistency}
+\label{sec:type-consistency}
+
+Type consistency is a relation between types, and a part of Aml's {\em gradual typing}. 
+
+Consistency ($\sim$) relation allows an implicit conversion between two types. By writing $T_1 \sim T_2$, we say that $T_1$ is consistent with $T_2$ and vice versa. We will denote the \code{Dynamic} type as $?$ (not to be confused with the existential type placeholder). 
+
+\begin{itemize}
+  \item For any type $T$, we have that $T \sim ?$ and also $? \sim T$. 
+  \item For every type $T$, we have $T \sim T$. 
+  \item A tuple type $(T_1, T_2)$ is consistent with another tuple type $(S_1, S_2)$ if $T_1 \sim S_1$ and $T_2 \sim S_2$, and so on for tuple types of any other arbitrary size. 
+  \item A function type \lstinline!$P_1$ -> $R_1$! is consistent with another function type \lstinline!$P_2$ -> $R_2$! if $P_1 \sim P_2$ and $R_1 \sim R_2$. 
+\end{itemize}
+
+% TBD: if a rule is found missing from here, add it
 
 
 
@@ -1375,7 +1430,7 @@ In Aml, there are a few types and their values that represent emptiness of some 
   
   Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Language.Predef}, and results in \code{None}. 
   
-  \item The \code{Unit} type. It is basically a \code{Tuple_0} type. 
+  \item The \code{Unit} type. It is basically a \code{Tuple} type with zero type parameters. 
   
   It's semantical meaning is that no value is even expected. It is used for functions that should never return any value, and that are technically procedures, whose purpose lies in side-effects. 
   
