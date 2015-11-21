@@ -70,7 +70,7 @@ The typing of expressions is often relative to some {\em expected type} (which m
 
 Usually, the type of the expression is defined by the last element of an execution branch, as discussed subsequently with each expression kind. 
 
-What we call ``statement'', in context of Aml is in fact yet another kind of an expression, and those expressions themselves always have a type and a value. 
+What we call ``statement'', in context of Aml is in fact yet another kind of an expression, and those expressions themselves always have a type (usually \code{Unit}) and a value. 
 
 
 
@@ -907,9 +907,10 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 \syntax\begin{lstlisting}
 Anon_Fun        ::= Anon_Params '->' '{' Block '}'
                   | 'def' Anon_Params '->' Expr
-                  | 'def' Params2 '->' Expr
+                  | 'def' {Params_Clause} '->' Expr
                   | 'function' When_Clauses 'end' ['function']
                   | 'function' '{' When_Clauses '}'
+                  | 'function' Atomic_Pattern '->' Value_Expr
 Result_Expr     ::= Anon_Params '->' Block 
 Anon_Params     ::= Bindings {'->' Bindings}
                   | Param_Clause
