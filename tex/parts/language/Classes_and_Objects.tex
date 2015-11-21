@@ -235,18 +235,17 @@ end class
 \end{lstlisting}
 Class \code{A} uses the \lstinline!class << obj; $\ldots$; end! construct to get direct access to the eigenclass. The keyword \code{self} inside the block is bound to the eigenclass object. 
 
-\example Alternative direct access to the eigenclass of any object, here a class' eigenclass:
+\example Alternative direct access to the eigenclass of any object, here a class' eigenclass accessed via an attribute:
 \begin{lstlisting}
 class B
 begin
-  self.eigenclass do
-    def a_class_method
+  self.'eigenclass do |e|
+    def e.a_class_method
       "B.a_class_method"
     end def
   end
 end class
-\end{lstlisting}
-Class \code{B} uses the \code{eigenclass} method, which---given a block---evaluates the block in the scope of the eigenclass of \code{self}, which is bound to the class \code{B}. The keyword \code{self} inside the block is again bound directly to the eigenclass object. 
+\end{lstlisting} 
 
 \example Indirect access to the eigenclass using a singleton method definition:
 \begin{lstlisting}

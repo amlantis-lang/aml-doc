@@ -94,22 +94,22 @@ memoize       message       method        module        monitored
 multi         mutable       native        next          nil
 no            not           object        of            opaque
 operator      optional      or            origin        otherwise
-outer         override      parallel      per-self      per-target
-pointcut      pragma        prefer        prepend       private
-property      protected     protocol      public        pure
-raise         raiseable     raising       range         rec
-recursive     record        redo          ref           refine
-refinement    release       reraise       rescue        retain
-rethrow       retry         return        returning     requires
-reverse       sealed        self          set           seq
-sig           skip          soft          step          struct
-super         switch        synchronized  tailcall      target
-then          this          throw         throwable     throwing
-to            trait         transparent   tuple         type
-undefined     unless        unowned       until         union
-upgrade       use           val           var           variant
-yes           weak          when          while         with
-xor           yield         yielding
+out           outer         override      parallel      per-self
+per-target    pointcut      pragma        prefer        prepend
+private       property      protected     protocol      public
+pure          raise         raiseable     raising       range
+rec           recursive     record        redo          ref
+refine        refinement    release       reraise       rescue
+retain        rethrow       retry         return        returning
+requires      reverse       sealed        self          set
+seq           sig           skip          soft          step
+struct        super         switch        synchronized  tailcall
+target        then          this          throw         throwable
+throwing      to            trait         transparent   tuple
+type          undefined     unless        unowned       until
+union         upgrade       use           val           var
+variant       yes           weak          when          while
+with          xor           yield         yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 

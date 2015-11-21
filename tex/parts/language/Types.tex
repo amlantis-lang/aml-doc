@@ -727,7 +727,7 @@ A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a null
 
 A block of code (or whole files or modules) may opt-in to behaviour that raises errors in runtime, instead of issuing warnings, using \code{pragma error_on_nil} inside the code block, file or module. 
 
-If an implicit conversion from \code{Nothing} to $T$ is available, then nullability is not a problem. 
+If an implicit conversion from \code{Nothing} to $T$ is available, then nullability is not a problem. Also, if $T$ implements the \code{Default[$T$]} trait (\sref{sec:types-preventing-nil}), nullability is also not a problem, as there will always be a value that replaces \code{nil} or even \code{undefined}. 
 
 Nullable types in this form can appear everywhere where a type is expected. 
 
@@ -748,6 +748,25 @@ A compiler may decide to issue extra warnings when assignment of a \code{nil} or
 A strictly not-nullable may be seen as some implicitly wrapped-on-assignment / unwrapped-on-read box that checks for \code{value = nil} and raises an error when such condition is true. But Aml does not have any special methods for object dereference.\footnote{Yet, and probably never will.} 
 
 When used in a compound type, use nullable modifier only on the first component. When used in a constrained type, use nullable modifier only on the component type of the constrained type. 
+
+
+
+
+
+\subsection{Types Preventing Nil}
+\label{sec:types-preventing-nil}
+
+In Aml, two traits exist that make every type that implements them conform to a compatible strictly not-nullable type: \code{Default[$T$]} and \code{Never_Nil}. 
+
+\code{Default[$T$]} does that by implementing a default value to runtime-replace \code{nil} or \code{undefined}. \code{Never_Nil} does that by making the implementing type cause a type error when used with an expression of a nullable type. 
+
+An implementation of \code{Default[$T$]} must provide the following method, where \code{self} is the implementing class or type instance: 
+\begin{lstlisting}
+message self.default (): $T$! end
+\end{lstlisting}
+
+Then, the value returned by it replaces occurrences of \code{nil} or \code{undefined} in runtime. Also, an attribute is provided for the implementing type, in form of \code{$T$.'default}. 
+
 
 
 
@@ -1137,7 +1156,7 @@ Simple_Type ::= 'Aml/Language.Dynamic'
 
 This type does not represent a single concrete value type\footnote{This type is similar to what ~\lstinline[language={[Sharp]C}]!dynamic!~ is to C\#.}, but any concrete type, very much like \code{Any} or \code{Auto}. 
 
-In runtime, this type is always dynamically replaced by the type of the actual referenced value -- e.g., if a variable is typed with \code{Dynamic} type, assigned a value, and used in a function application, the type of that value is used, not \code{Dynamic}, unless it would be typed with \code{Any} again (\sref{sec:typed-expressions}). Nonetheless, this does not imply that a value of another type can not be assigned to that same variable -- such variable is still bound to \code{Dynamic} and accepts \code{Any} type. 
+In runtime, this type is always dynamically replaced by the type of the actual referenced value -- e.g., if a variable is typed with \code{Dynamic} type (\sref{sec:type-consistency}), assigned a value, and used in a function application, the type of that value is used, not \code{Dynamic}, unless it would be typed with \code{Any} again (\sref{sec:typed-expressions}). Nonetheless, this does not imply that a value of another type can not be assigned to that same variable -- such variable is still bound to \code{Dynamic} and accepts \code{Any} type. 
 
 Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Dynamic} is used as a trait type.\footnote{Thus, if \code{Dynamic} is used in a compound type, the compound type can contain a class type that is not \code{Dynamic}. This is different from \code{Any}, which can only appear as a class type.}
 
@@ -1301,13 +1320,13 @@ if one has $T \conforms T'$, and $L_i \conforms L'_i$ and $U_i \conforms U'_i$ f
 \end{itemize}
 
 A declaration or definition in some compound type of class type $C$ {\em subsumes} another declaration of the same name in some compound type or class type $C'$, if one of the following conditions holds. 
-  \begin{itemize}
+\begin{itemize}
   \item A value declaration or definition that defines a name $x$ with type $T$ subsumes a value or method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
   \item A method declaration or definition that defines a name $x$ with type $T$ subsumes a method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
   \item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T'$!~ if $T \equiv T'$. 
   \item A type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!~ subsumes a type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L'$ <: $U'$!, if $L' \conforms L$ and $U \conforms U'$. 
   \item A type or class definition that binds a type name $t$ subsumes an abstract type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!, if $L \conforms t \conforms U$. 
-  \end{itemize}
+\end{itemize}
 
 The ($\conforms$) relation forms partial order between types, i.e. it is transitive, antisymmetric and reflexive. The terms {\em least upper bound} and {\em greatest lower bound} of a set of types are understood to be relative to that order. 
 
@@ -1347,6 +1366,25 @@ For now, {\em weak conformance} is a relation defined on members of the \code{Nu
 
 A {\em weak least upper bound} is a least upper bound with respect to weak conformance. 
 
+
+
+
+
+\subsection{Type Consistency}
+\label{sec:type-consistency}
+
+Type consistency is a relation between types, and a part of Aml's {\em gradual typing}. 
+
+Consistency ($\sim$) relation allows an implicit conversion between two types. By writing $T_1 \sim T_2$, we say that $T_1$ is consistent with $T_2$ and vice versa. We will denote the \code{Dynamic} type as $?$ (not to be confused with the existential type placeholder). 
+
+\begin{itemize}
+  \item For any type $T$, we have that $T \sim ?$ and also $? \sim T$. 
+  \item For every type $T$, we have $T \sim T$. 
+  \item A tuple type $(T_1, T_2)$ is consistent with another tuple type $(S_1, S_2)$ if $T_1 \sim S_1$ and $T_2 \sim S_2$, and so on for tuple types of any other arbitrary size. 
+  \item A function type \lstinline!$P_1$ -> $R_1$! is consistent with another function type \lstinline!$P_2$ -> $R_2$! if $P_1 \sim P_2$ and $R_1 \sim R_2$. 
+\end{itemize}
+
+% TBD: if a rule is found missing from here, add it
 
 
 
