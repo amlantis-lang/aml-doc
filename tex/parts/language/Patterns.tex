@@ -945,15 +945,7 @@ A type pattern contributes the type itself to type of parameter, when used in fu
 
 \section{Pattern Matching Expressions}
 
-\syntax\begin{lstlisting}
-Match_Expr     ::= Pat_Match_Expr
-Pat_Match_Expr ::= 'match' Value_Expr Match_Body
-Match_Body     ::= semi When_Clauses 'end' ['match']
-                 | '{' When_Clauses '}'
-When_Clauses   ::= When_Clause {semi When_Clause} 
-                   [semi Else Cond_Block]
-When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
-\end{lstlisting}
+For grammar, refer to (\sref{sec:case-exprs}).
 
 A pattern matching expression 
 \begin{lstlisting}
@@ -985,11 +977,7 @@ A when clause that is not the first appearing may be prefixed with \code{next} o
 \section{Pattern Matching Anonymous Functions}
 \label{sec:pattern-matching-anon-fun}
 
-\syntax\begin{lstlisting}
-Block_Expr ::= '{' When_Clauses '}'
-Anon_Fun   ::= 'function' When_Clauses 'end' ['function']
-             | 'function' '{' When_Clauses '}'
-\end{lstlisting}
+For grammar, refer to (\sref{sec:anonymous-functions}).
 
 An anonymous pattern matching function can be defined by the form
 \begin{lstlisting}
@@ -1066,6 +1054,8 @@ Note that the fold-left operation ~\lstinline!/:!~ is an operator ending in a co
 }  . 
 \end{lstlisting}
 \end{minipage}
+
+An anonymous pattern matching function can also be defined with a single atomic pattern and more simple syntax. 
 
 
 

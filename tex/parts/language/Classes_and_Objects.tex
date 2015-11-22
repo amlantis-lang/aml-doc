@@ -17,11 +17,11 @@ Tmpl_Def             ::= Class_Definition
                        | Aspect_Definition
                        | Annotation_Definition
                        | Type_Definition
-Class_Definition     ::= [Mutability] ['case'] 'class' Class_Def
-Object_Definition    ::= [Mutability] ['case'] 'object' Object_Def
+Class_Definition     ::= [Mutability] ['monitored'] ['case'] 'class' Class_Def
+Object_Definition    ::= [Mutability] ['monitored'] ['case'] 'object' Object_Def
 Trait_Definition     ::= [Mutability] 'trait' Trait_Def
-Protocol_Definition  ::= 'protocol' Pro_Def
-Interface_Definition ::= [Mutability] ['case'] 'interface' Ifc_Def
+Protocol_Definition  ::= ['monitored'] 'protocol' Pro_Def
+Interface_Definition ::= [Mutability] ['monitored'] Ifc_Kind 'interface' Ifc_Def
 \end{lstlisting}
 
 Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
@@ -716,7 +716,7 @@ This is just for the sake of completeness, since change from public to public is
 \label{sec:class-definitions}
 
 \syntax\begin{lstlisting}
-Class_Definition    ::= [Mutability] 'class' Class_Def
+Class_Definition    ::= [Mutability] ['monitored'] 'class' Class_Def
 Class_Def           ::= id [Type_Param_Clause] [Given_Clauses]
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
@@ -1056,7 +1056,7 @@ UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
 \label{sec:case-classes}
 
 \syntax\begin{lstlisting}
-Class_Definition ::= [Mutability] 'case' 'class' Class_Def
+Class_Definition ::= [Mutability] ['monitored'] 'case' 'class' Class_Def
 \end{lstlisting}
 
 If a class definition is prefixed with \code{case}, the class is said to be a {\em case class}. 
@@ -1205,7 +1205,7 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 \label{sec:protocols}
 
 \syntax\begin{lstlisting}
-Protocol_Definition ::= 'protocol' Pro_Def
+Protocol_Definition ::= ['monitored'] 'protocol' Pro_Def
 Pro_Def             ::= id [Type_Param_Clause] [Given_Clauses]
                         Pro_Tmpl_Env
 Pro_Tmpl_Env        ::= Tmpl_Env_With_Pars ['protocol']
@@ -1236,7 +1236,7 @@ Protocol references are preferred to traits to be used by library designers to d
 \label{sec:interfaces}
 
 \syntax\begin{lstlisting}
-Interface_Definition ::= [Mutability] Ifc_Kind 'interface' Ifc_Def
+Interface_Definition ::= [Mutability] ['monitored'] Ifc_Kind 'interface' Ifc_Def
 Ifc_Kind             ::= ['case'] 'class' 
                        | ['case'] 'object'
                        | 'trait'
@@ -1293,7 +1293,7 @@ Every trait applied to a class object does not affect the associated class itsel
 \label{sec:case-objects}
 
 \syntax\begin{lstlisting}
-Object_Definition ::= [Mutability] 'case' 'object' Object_Def
+Object_Definition ::= [Mutability] ['monitored'] 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 

@@ -661,7 +661,7 @@ In every case, a range may be optionally given to constrain the generated sequen
 
 The Aml Standard Runtime Library offers more functions to manipulate and create sequences. 
 
-A sequence comprehension expression ~\lstinline!seq { $e$ }!~ is equivalent to ~\lstinline!lazy seq { $e$ }!, whereas ~\lstinline!eager seq { $e$ }!~ is implicitly cached, but eagerly evaluated -- and thus can't use \code{Method_Expr}, because there is no known range of keys or indexes.\footnote{The GSRL offers functions to overcome this issue.}
+A sequence comprehension expression ~\lstinline!seq { $e$ }!~ is equivalent to ~\lstinline!lazy seq { $e$ }!, whereas ~\lstinline!eager seq { $e$ }!~ is implicitly cached, but eagerly evaluated -- and thus can't use \code{Method_Expr}, because there is no known range of keys or indexes.
 
 
 
@@ -688,7 +688,7 @@ end protocol
 
 A not-nullable or strictly not-nullable value type may implement the protocol \code{Aml/Language.Nil_Literal_Convertible}, and then it accepts both \code{nil} and \code{undefined} values without error -- the expression that assigns these values to a variable of such a type $T$ is converted into application of \code{$T$.new(nil)}. The conversion is applied also dynamically, and also before any attempts of view applications. 
 
-In GSRL, the \code{Aml/Language.Option[T]} type implements this protocol. 
+The \code{Aml/Language.Option[T]} type implements this protocol. 
 
 % \subsubsection{String Literal Convertible}
 % TBD: finish this after API is ready
@@ -906,22 +906,15 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 
 \syntax\begin{lstlisting}
 Anon_Fun        ::= Anon_Params '->' '{' Block '}'
-                  | 'def' Anon_Params '->' Expr
-                  | 'def' {Params_Clause} '->' Expr
+                  | 'def' {Params_Clause}+ [Guard] '->' Expr
                   | 'function' When_Clauses 'end' ['function']
                   | 'function' '{' When_Clauses '}'
-                  | 'function' Atomic_Pattern '->' Value_Expr
+                  | 'function' Atomic_Pattern [Guard] '->' Expr
 Result_Expr     ::= Anon_Params '->' Block 
-Anon_Params     ::= Bindings {'->' Bindings}
-                  | Param_Clause
-                  | id [':' Type]
-                  | '(' ['implicit'] id ')'
-                  | '(' [Nameless_Params] ')'
-                  | Nameless_Param
-Bindings        ::= '(' Binding {',' Binding} ')'
-Binding         ::= (id | '_') [':' Type]
-Nameless_Params ::= Nameless_Param {',' Nameless_Param}
-Nameless_Param  ::= '_' [':' Type]
+Anon_Params     ::= Params_Clause {'->' Params_Clause}
+                    (* Atomic_Pattern in Params_Clause requires parentheses around 
+                      a root Var_Pattern pattern in order to contain 'implicit', 
+                      'val' or 'var' explicitly *)
 \end{lstlisting}
 
 The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
@@ -1475,7 +1468,7 @@ It is indeed possible to write custom ~\lstinline[deletekeywords={new}]!$T$#new!
 
 There is one more way to create an instance of a class, and that is to use a syntax construct of the \code{New_Expr} syntax category. This construct has multiple forms for different use cases. Note that there is also a syntax construct for anonymous classes (\sref{sec:anonymous-classes}), which is related, but has slightly different semantics -- most notably, anonymous classes can be reused and bound to a name, because they do not create any new instance (just yet), and can define class parameters, including type parameters. 
 
-A simple instance creation expression is of the form ~\lstinline!new $c$!, where $c$ is a constructor invocation (\sref{sec:constructor-invocations}). Let $T$ be the type of $c$, then $T$ must denote a type instance of a non-abstract subtype of \code{Any}. $T$ must also conform to the {\em self type} of the class denoted by $T$. The expression is evaluated by invoking ~\lstinline[deletekeywords={new}]!Class#new!, where the method is invoked with \code{self} being $T$, thus skipping any custom overrides of the method. Note that $c$ might be an instantiated type variable, in which case it might not be entirely possible to guarantee that the expression will be evaluated successfully -- no matching and accessible constructor might be available in the instantiated type. 
+A simple instance creation expression is of the form ~\lstinline!new $c$!, where $c$ is a constructor invocation (\sref{sec:constructor-invocations}). Let $T$ be the type of $c$, then $T$ must denote a type instance of a non-abstract subtype of \code{Any}. $T$ must also conform to the {\em self type} of the class denoted by $T$. The expression is equivalent to ~\lstinline[deletekeywords={new}]!$T$.new!~ with the same arguments as those occurring in $c$. Note that $c$ might be an instantiated type variable, in which case it might not be entirely possible to guarantee that the expression will be evaluated successfully -- no matching and accessible constructor might be available in the instantiated type. 
 
 A general instance creation expression is of the form ~\lstinline!new $t$!~ for some class template $t$. Such an expression is equivalent to the following block:
 \begin{lstlisting}
@@ -2446,15 +2439,15 @@ However, the loop construct has built-in support for loop control expressions.
 
 \syntax\begin{lstlisting}
 Match_Expr     ::= Pat_Match_Expr | Case_Expr | Switch_Expr
-Pat_Match_Expr ::= 'match' Simple_Expr1 Match_Body
+Pat_Match_Expr ::= 'match' Value_Expr Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {semi When_Clause} 
                    [semi Else Cond_Block]
                    {semi ('rescue' | 'catch') When_Clause}
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
-Case_Expr      ::= 'case' Simple_Expr1 Case_Body
-Switch_Expr    ::= 'switch' Simple_Expr1 Switch_Body
+Case_Expr      ::= 'case' Value_Expr Case_Body
+Switch_Expr    ::= 'switch' Value_Expr Switch_Body
 Case_Body      ::= semi Case_Clauses 'end' ['case']
                  | '{' Case_Clauses '}'
 Switch_Body    ::= semi Switch_Clauses 'end' ['switch']
@@ -2920,6 +2913,8 @@ Template_Stat  ::= Use
                  | 'implements' Stable_Id [Cond_Modifier]
                  | Expr
                  | Alias_Expr
+                 | Struct_Expr
+                 | Struct_Spec
                  | ()
                  | Opt_Req [id {',' id} | symbol_ids]
                  | Access_Modifier [id {',' id} | symbol_ids]

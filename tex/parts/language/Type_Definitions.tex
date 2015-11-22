@@ -302,7 +302,7 @@ Struct_Type       ::= Struct_Type_Path
                     | '(' Struct_Type ')'
                     | 'signature' 'of' Struct_Expr
 Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
-                    | Type_Definition (* containing Type_Abstract *)
+                    | Type_Definition (* containing Type_Abstract, or type class/family *)
                     | 'throwable' Type_Constr_Dcl 'end' ['throwable']
                     | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
                     | Interface_Definition
@@ -597,6 +597,58 @@ end type
 type Salary is Money digits 10 
 end type
 \end{lstlisting}
+
+
+
+
+
+\section{Type Classes \& Type Families}
+\label{sec:type-classes}
+
+\syntax\begin{lstlisting}
+Typedef           ::= 'class' [Implicit_Types] id [Type_Param_Clause] 
+                      [Given_Clauses] Type_Class_Def
+                    | 'class' [Implicit_Types] Type_Param_Clause2 id 
+                      [Given_Clauses] Type_Class_Def
+                    | 'family' [Implicit_Types] id [Type_Param_Clause] 
+                      [Given_Clauses] Type_Family_Def
+                    | 'family' [Implicit_Types] Type_Param_Clause2 id 
+                      [Given_Clauses] Type_Family_Def
+                    | 'instance' [Implicit_Types] id [Type_Param_Clause] 
+                      [Given_Clauses] Type_Instance_Def 
+                    | 'instance' [Implicit_Types] Type_Param_Clause2 id 
+                      [Given_Clauses] Type_Instance_Def
+Type_Class_Def    ::= 'with' [Struct_Spec {semi Struct_Spec}]
+                    | ['with'] '{' [Struct_Spec {semi Struct_Spec}] '}'
+                    | Type_Equation
+Type_Family_Def   ::= [Type_Abstract] Type_Class_Def
+                    | Type_Equation
+Type_Instance_Def ::= 'with' Template_Stat {semi Template_Stat}
+                    | ['with'] '{' Template_Stat {semi Template_Stat} '}'
+                    | Type_Equation
+\end{lstlisting}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

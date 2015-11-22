@@ -51,7 +51,7 @@ Dcl          ::= Val_Dcl
 Val_Dcl      ::= [S_Modifier] 'val' id {',' id} ':' Type
 Val_Def      ::= [S_Modifier] ('val' | 'let') ['rec']
                  Let_Binding {'and' Let_Binding}
-Let_Binding  ::= Pattern ':=' Expr {',' Expr}
+Let_Binding  ::= Pattern [':' Type_Param_Clause] ':=' Expr {',' Expr}
                | fun_id [Type_Param_Clause] Param_Clauses [':' Type]
                  ':=' Expr
 \end{lstlisting}
@@ -408,12 +408,13 @@ Aml/Language.Soft_Reference.is_supported?
 
 \syntax\begin{lstlisting}
 Type_Param_Clause  ::= '[' Variant_Type_Param 
-                       {',' Variant_Type_Param} ']'
+                       {',' Variant_Type_Param} [',' '*'] ']'
+                     | '[' '*' ']'
 Type_Param_Clause2 ::= Variant_Type_Param
                      | '(' Variant_Type_Param 
                        {',' Variant_Type_Param} ')'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
-                     | '<' (id | '_') ['<:' id] '>'
+                     | '<' id ['<:' id] '>'
 Type_Param         ::= (['''] id | '_') [Type_Param_Clause]
                        ['>:' Type] ['<:' Type]
                        {'<%' Type} {':' Type}
@@ -425,11 +426,15 @@ The most general form of a first-order type parameter is ~\lstinline!$a_1 \ldots
 
 The names of all type parameters must be pairwise different in their enclosing type parameter clause. The scope of a type parameter includes in each case the whole type parameter clause, and all type parameter clauses that it is nested within. Therefore, it is possible that a type parameter appears as part of its own bounds or the bounds of other type parameters in the same clause. However, a type parameter may not be bounded directly or indirectly by itself. 
 
+Type parameters are also named, unless a single type parameter name for some reason denotes several actual type parameters (which can be achieved by using explicit universal or existential quantifications). 
+
 Bounds defined for a particular type parameter extend to all of its nested usages, thus it is only necessary and possible to define the bounds once, preferably on the first occurrence of the type parameter. 
 
 A type parameter may also contain a nested type parameter. This is for cases when the expected type argument is a type constructor. 
 
 If the names of higher-order type parameters are irrelevant, they may be denoted with a ``\lstinline!_!'', which is nowhere visible and represents a single type parameter that is independent of all other type parameters. 
+
+A type parameters clause may also contain \code{*} as the last pseudo type parameter, which means that the compiler is allowed to add more type parameters during automatic type inference. 
 
 As a consequence of having type parameters visible across nested type parameter clauses, using the same type parameter name gives additional constraint on the parameterized type, requiring the type argument to be physically equivalent among all occurrences of the type parameter. 
 
@@ -1081,64 +1086,6 @@ sequence of function definitions
 If two member or entity definitions bind to the same name, but do not override each other at the same time, the member or entity is said to be {\em overloaded}, each member or entity is said to be an {\em alternative}, and overloading resolution (\sref{sec:value-conversions}) needs to be applied to select a unique alternative. 
 
 Overloaded members do not need to appear in the same scope, an overloading member may appear e.g. in a subclass and never in the parent class. Overloaded entities however need to appear in the same scope (e.g. two local function definitions -- because the names are shadowed in enclosing scopes). 
-
-
-
-
-
-\section{Function \& Method Preference Declarations}
-\label{sec:func-method-preference-decl}
-
-\syntax\begin{lstlisting}
-Dcl            ::= Prefer_Fun
-                 | Prefer_Message
-                 | Prefer_Op
-Prefer_Fun     ::= 'def' 'prefer' Preference_Id 'with' Preference_Dcl 
-                   'to' Preference_Dcls 'end' ['def']
-Prefer_Message ::= 'prefer' 'message' Preference_Id 'with' Preference_Dcl 
-                   'to' Preference_Dcls 'end' ['message']
-Prefer_Op      ::= 'prefer' 'operator' Preference_Op_Id 'with' Preference_Dcl 
-                   'to' Preference_Dcls 'end' ['operator']
-
-Preference_Id      ::= id 
-                     | '(' id {',' id} ')' 
-                     | regular_expression_literal
-Preference_Op_Id   ::= op_id 
-                     | '(' op_id {',' op_id} ')'
-Preference_Dcl     ::= Pref_Args_Dcl 
-                     | Pref_Result_Dcl 
-                     | Pref_Args_Dcl ('and' | 'or') Pref_Result_Dcl
-Preference_Dcls    ::= Preference_Dcl {',' Preference_Dcl}
-Pref_Args_Dcl      ::= 'arguments' Pref_Args_Sections
-Pref_Args_Sections ::= Pref_Args_Section {Pref_Args_Section}
-Pref_Args_Section  ::= '(' Pref_Arg_Dcl {',' Pref_Arg_Dcl} ')'
-Pref_Arg_Dcl       ::= ['*' | '**' | '&'] [id ':'] Type
-                     | Literal
-                     | Stable_Id
-Pref_Result_Dcl    ::= 'returning' [Type]
-\end{lstlisting}
-
-Preference declaration is a simple tool to resolve ambiguities in function and method overloading resolution (\sref{sec:overloading-resolution}). 
-
-Preference declaration declares that a function or method of a given name, multiple given names, or a name matching a regular expression, which passes the filter of arguments and/or result type, is more specific than the overloaded alternative that passes the filter of arguments and/or result type. 
-
-Arguments filter does not include implementation details, such as evaluation strategy or external/internal parameter name distinction, which has no influence on overriding. It also ignores optional parameters and thus optional arguments. It says that if the overloaded alternative, stripped of the ignored implementation details, has equivalent parameters as the given filter, it passes the filter.
-
-Result type filter is passed by overloaded alternative, if the result types are equivalent. 
-
-A preference declaration can use arguments filter, result type filter, or both. It is an error if a preference declaration prefers two or more alternatives to each other. 
-
-If there are multiple preference declarations with equivalent filters of the preferred alternative, then the alternatives to which this alternative is preferred are unified, i.e., their order is insignificant, and the alternative is still preferred just once to the other alternatives. 
-
-\paragraph{Note}
-Preference declarations take into account all parameter lists, not individual parameter lists, of each overloaded alternative. A preference declaration may also appear in a function or method body, to resolve ambiguities of local functions. 
-
-\paragraph{Inheritance}
-Preference declarations are inherited to subtypes, without regard of visibility. This does not affect overloading resolution, which only counts with alternatives that are visible in the scope. 
-
-% an idea: extend the filters with some context-sensitive concepts from aspect's pointcuts
-
-
 
 
 
