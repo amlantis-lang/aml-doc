@@ -1,7 +1,7 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
-\chapter{Introduction to Amlantis System Language}
+\chapter[Introduction to The Amlantis System Language]{Introduction to \\The Amlantis System Language}
 
 \minitoc
 
@@ -11,9 +11,32 @@
 
 \section{About The Amlantis System Language}
 
-\AmlSystem is a language that targets a more low-level runtime: the System Runtime. It has syntax mostly similar to that of \Aml, with minor adjustments, regarding the static-ness of the System Runtime, which is not a dynamic runtime. 
+\AmlSystem is a language that targets a more low-level runtime: the System Runtime. It has syntax equivalent to that of \Aml. 
 
-The differences from \Aml are described in this part. The different library and runtime are described in separate parts. % TBD: add links to the new parts
+\AmlSystem is different from \Aml in their libraries, along with minor language differences, which are described in this part. 
+
+The main purpose of \AmlSystem is to be a language in which a dynamic runtime and compiler for \Aml can be implemented, which would make \Aml almost self-hosted. This specification does not require implementation of \AmlSystem to be self-hosted in any way, and the same applies to \Aml.
+
+The System Runtime is nothing but a fancy name for whichever operating system is hosting the implementation of \AmlSystem. It can talk directly to the OS, it can indeed make use of \code{libc}, \code{libc++}, \code{libstdc++}, or any other library that would make the talking easier. 
+
+
+
+
+
+\section{Stock Implementations}
+
+The ``stock'' implementation of \AmlSystem is a self-hosted one, using bootstrapping.
+
+\begin{itemize}
+  \item \code{Stage 0}~ \AmlSystem compiler is written in a different language\footnote{At the time of writing this, Rust 1.6 was chosen.}, and its sole purpose is to be able to compile a subset of \AmlSystem features -- a particular subset needed to compile a \code{stage 1} compiler. 
+  \item \code{Stage 1}~ \AmlSystem compiler is written in a subset of the \AmlSystem language, and written so that it can compile every feature of \AmlSystem that \code{stage 2} compiler. 
+  \item \code{Stage 2}~ \AmlSystem compiler is a self-hosted compiler, written in \AmlSystem without limitations (\code{stage 1} compiler must compile every feature that it uses), and can compile every \AmlSystem program, including its full library and indeed, itself. Which is what makes it self-hosted. 
+  \item \code{Stage 3}~ \AmlSystem compiler is practically the same compiler as \code{stage 2}, and is just compiled by itself, no extra code is required for this compiler, it's just a name for the output of \code{stage 2} applied to its own source. 
+\end{itemize}
+
+The specification of \AmlSystem only requires a \code{stage 3}~-like compiler, not necessarily self-hosted. The existence of the previously mentioned stages is not mandatory. 
+
+The ``stock'' implementation of \Aml and \AmlS is an almost self-hosted one, using basically the same language (\AmlSystem), but targeting a different runtime, which it implements.\footnote{Originally, C++14 and Rust were chosen as the most likely candidates, but both failed, thus leading to creation of \AmlSystem.}
 
 
 

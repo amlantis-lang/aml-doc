@@ -1,0 +1,54 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter[Differences between The Amlantis System \& Core Languages]{Differences between The Amlantis \\System \& Core Languages}
+
+\minitoc
+
+\newpage
+
+\section{Dynamic Features}
+
+\AmlSystem is a low-level runtime programming language, and as such, it relies heavily on the target platform, unlike \Aml, which is intended to be platform-agnostic as much as reasonable. 
+
+Major platforms at the time of its creation, Mac OS X, Windows, GNU/Linux and BSD, do not support at low-enough-level some dynamic features of \Aml. This is mostly due to the calling conventions of having classic call stack, not saguaro ones. Of course, if \AmlSystem is ever ported to a platform that does support these, the feature can be incorporated into it as well, provided that code can branch on its availability during compilation and runtime. 
+
+Another feature that \AmlSystem handles differently is the type system. While for \Aml, no particular memory representation is required by this specification, \AmlSystem is different. To support unified type system, some values might need extra wrapping\footnote{Similar to, but not the same as Java's \lstinline[language=Java]!int! vs \lstinline[language=Java]!java.lang.Integer!.} in order to achieve the expected result, and for that reason, it is more reasonable to use more specific types in \AmlSystem than needed in \Aml. 
+
+Another major difference is that the \AmlSystem runtime does not allow for the same level of dynamic name lookups as \Aml has: all name references are resolved at compile time. 
+
+
+
+
+
+\section{Classes \& Objects Differences}
+
+While \Aml has an elaborate class system with metaclasses, eigenclasses and so on, \AmlSystem only allows class instance members and class members, which are all defined at compile time and never change in runtime. 
+
+The same applies to other class-based concepts from \Aml: once defined, a binding for a name in the same lexical context never changes. 
+
+This has some implications on the internal representation of objects and class objects in \AmlSystem: 
+\begin{itemize}
+  \item Layout of both objects and class objects is predictable, the compiler may (and definitely should) count with that. 
+  \item Instance variables will never be added at runtime, ever. 
+  \item Methods will also never change at runtime. 
+\end{itemize}
+
+
+
+
+
+\section{Integration of The Amlantis System, Core \& Other Languages}
+
+\AmlSystem can be used to implement native methods in \Aml. In fact, the dynamic runtime of \Aml can even use \AmlSystem while compiling optimized native versions of its otherwise interpreted methods. 
+
+While \AmlSystem may use a custom linkage on a given target platform, other languages that can be used to implement native methods in \Aml have to use a C-style linkage for \code{ffi}. This includes (but is not limited to) languages like 
+C (obviously), 
+OCaml (\lstinline[language={[Objective]Caml}]!external!), 
+C++ (\lstinline[language=C++]!extern "C"!), 
+D (\lstinline[language=C++]!extern (C)!), 
+Haskell (\lstinline[language=Haskell]!foreign export ccall!) or 
+Rust (\lstinline[language=C++]!extern "C"!). 
+
+
+
