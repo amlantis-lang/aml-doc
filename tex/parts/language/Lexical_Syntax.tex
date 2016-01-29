@@ -43,9 +43,8 @@ upper           ::= (letter_char - lower)
 var_id   ::= lower id_rest
 plain_id ::= upper id_rest
            | var_id
-id       ::= ['@' | '@@'] (plain_id
-             | '`' plain_id '`'
-             | '``' {any_id}+ '``')
+id       ::= ['@' | '@@'] (plain_id | '``' {any_id}+ '``')
+           | '`' plain_id '`'
            | '`' {op_char}+ '`'
 impl_par ::= '%' {digit_char}+
 id_char  ::= letter_char
@@ -60,7 +59,7 @@ any_id   ::= ? any Unicode chars except for two backquotes: '``' ?
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
 
-An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Aml keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Aml keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any Unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
 Aml programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
 
@@ -155,29 +154,31 @@ Symbolic or partially symbolic character sequences can be treated as keywords, i
 \label{sec:symbolic-operators}
 
 \syntax\begin{lstlisting}[deletekeywords={of,and,for}]
-op_id       ::= Symbolic_Op
-Symbolic_Op ::= {op_char}+
-              | '`' {op_char}+ '`'
-op_char     ::= ? Unicode char of classes Sm and So except for 0x0060 ?
-              | '!'
-              | '#'
-              | '%'
-              | '&'
-              | '*'
-              | '+'
-              | '-'
-              | '.'
-              | '/'
-              | ':'
-              | '<'
-              | '='
-              | '>'
-              | '?'
-              | '@'
-              | '\'
-              | '^'
-              | '|'
-              | '~'
+op_id        ::= Symbolic_Op
+               | Qualified_Op
+Symbolic_Op  ::= {op_char}+
+Qualified_Op   | '`' (Stable_Id - Type_Var) '.' {op_char}+ '`'
+               | '`' [(Stable_Id - Type_Var)] '.' id '`'
+op_char      ::= ? Unicode char of classes Sm and So except for 0x0060 ?
+               | '!'
+               | '#'
+               | '%'
+               | '&'
+               | '*'
+               | '+'
+               | '-'
+               | '.'
+               | '/'
+               | ':'
+               | '<'
+               | '='
+               | '>'
+               | '?'
+               | '@'
+               | '\'
+               | '^'
+               | '|'
+               | '~'
 \end{lstlisting}
 
 Symbolic operators are sequences of characters as shown above, except where the sequence of characters is a symbolic keyword (\sref{sec:symbolic-keywords}) and is used by the corresponding grammar as such.\footnote{In another words, symbolic keywords have a precedence over symbolic operators, if a grammar would be otherwise ambiguous.}
@@ -548,7 +549,7 @@ char_escape_seq ::=
 named_char ::= 'a' | $\cdots$ | 'z' | 'A' | $\cdots$ | 'Z'
 \end{lstlisting}
 
-The named character reference (\code{named_char}) is defined by HTML5 (\url{http://www.w3.org/TR/html5/syntax.html#named-character-references}); valid Unicode character names are specified by Unicode 7.0 (\url{http://www.unicode.org/versions/Unicode7.0.0/})\footnote{Will be updated to newer Unicode versions as ICU components are updated.}. 
+The named character reference (\code{named_char}) is defined by HTML5 (\url{http://www.w3.org/TR/html5/syntax.html#named-character-references}); valid Unicode character names are specified by Unicode 8.0 (\url{http://www.unicode.org/versions/Unicode8.0.0/})\footnote{Will be updated to newer Unicode versions as ICU components are updated.}. 
 
 
 
