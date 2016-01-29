@@ -1629,7 +1629,7 @@ Expressions can be constructed from operands and operators.
 
 \subsubsection{Prefix Operations}
 
-A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, but must not be followed by any whitespace, only identifiers or parentheses (except for the special operator \code{not}, which has to be separated by a space from the expression that it prefixes). The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!~ (i.e., prefix operators are right-binding). If such method does not exist, it is equivalent to the function application ~\lstinline!$\op$($e$)!, and if such function does not exist either, implicit conversions on $e$ are attempted. 
+A prefix operation $\op\ e$ consists of a prefix operator $\op$, which may be any operator identifier, but must not be followed by any whitespace, only identifiers or parentheses (except for the special operator \code{not}, which has to be separated by a space from the expression that it prefixes). The expression $\op\ e$ is equivalent to the method application ~\lstinline!$e$.$\op$()!. If such method does not exist, it is equivalent to the function application ~\lstinline!$\op$($e$)!, and if such function does not exist either, implicit conversions on $e$ are attempted. 
 
 There is also a keyword prefix operator: \code{not}, which must be followed by a whitespace and is always prefix.
 
@@ -1652,11 +1652,17 @@ Apart from standard function applications (\sref{sec:function-applications}) tha
 \subsubsection{Infix Operations}
 \label{sec:infix-operations}
 
-An infix operator can be an arbitrary identifier, usually an operator identifier. Infix operators have static {\em precedence}, {\em associativity} and {\em binding direction} defined as follows:
+An infix operator can be an arbitrary identifier, usually an operator identifier. Infix operators have static {\em precedence} and {\em associativity} defined as follows:
 
 Infix operators have to be separated from both sides by whitespace from the expressions that they connect. If the following whitespace is a newline character, then precedence rules can not be followed (due to line-by-line parsing and evaluation) and usual behaviour described in (\sref{sec:newlinecharacters}) is followed. The only infix operator that can be separated either from both sides or from neither side by whitespace is ``\code{^}'' (power), and this exception is applied only to this particular operator, not to operators derived from it. 
 
-Infix operations and $n$-ary operations may alternatively appear in the form $(\op)\ e_1 \commadots e_n$, which is equivalent to a function application with poetry-style arguments passing (unless $e_1$ is a tuple expression with more than 1 elements, then it's regular-style arguments passing). 
+Infix operations and $n$-ary operations may alternatively appear in the form $(\op)\ e_1 \ldots e_n$, which is equivalent to a function application. 
+
+After associativity of an infix operation is determined and a form ~\lstinline!$e_1$.`$\op$`($e_2$)!~ is known:
+\begin{enumerate}
+  \item If type of $e_1$ defines $\op$, that definition is used. 
+  \item Otherwise, if the type of $e_1$ is a class, and the class object defines $\op$, that definition is used. 
+\end{enumerate}
 
 The {\em precedence} of an infix operator is determined by the operator's first character. Characters are listed below in increasing order of precedence, with characters on the same line having the same precedence.
 
@@ -1690,20 +1696,22 @@ A number of left-associative alphanumeric operators with different precedence ex
   \item \code{quot}, with precedence of ~\lstinline!/!.   
 \end{itemize}
 
-The {\em associativity} and {\em binding direction} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, unless they are $n$-ary (\sref{sec:nary-infix-expressions}); operator ``\lstinline!=~!'' is right-binding and is furthermore not associative in any direction; and operators ending in a greater-than sign ``\lstinline!>!'' are right-binding, if they both consist of more than one operator character. All other operators are left-associative and left-binding. No operator is right-associative and right-binding at the same time, as right-binding operators are in fact left-associative. 
+The {\em associativity} of an operator is determined by the operator's last character. Operators ending in a colon ``\lstinline!:!'' are right-associative, unless they are $n$-ary (\sref{sec:nary-infix-expressions}); operator ``\lstinline!=~!'' is right-associative and is furthermore not associative in any direction; and operators ending in a greater-than sign ``\lstinline!>!'' are right-associative, if they both consist of more than one operator character. All other operators are left-associative and left-binding. 
 
-Precedence, associativity and binding direction of operators determine the grouping of parts of an expression as follows.
+Precedence and associativity of operators determine the grouping of parts of an expression as follows.
 
 \begin{itemize}
   \item If there are several infix operations in an expression, then operators with higher precedence bind more closely than operators with lower precedence. 
+  
+  \item 
 
   \item If there are consecutive infix operations $e_0\ \op_1\ e_1\ \op_2 \ldots \op_n\ e_n$ with operators $\op_1 \ldots \op_n$ of the same precedence, then all those operators must have the same associativity (i.e. it is an error if they don't). If all operators are left-associative, then the sequence is interpreted as ~\lstinline!(($e_0\ \op_1\ e_1$) $\op_2 \ldots$) $\op_n\ e_n$!. Otherwise, if all operators are right-associative, the sequence is interpreted as ~\lstinline!$e_0\ \op_1$ ($e_1\ \op_2$ ($\ldots \op_n\ e_n$))!.
 
-  \item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative or right-binding, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
+  \item A left-associative binary operation $e_1\ \op\ e_2$ is interpreted as ~\lstinline!$e_1$.`$\op$`($e_2$)!. If $\op$ is right-associative, the same operation is interpreted as ~\lstinline!{ val x := $e_1$; $e_2$.`$\op$`($x$) }!, where $x$ is a fresh name. 
 
   \item The right-hand operand of a left-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!$e\ \op$ ($e_1 \commadots e_n$)!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
 
-  \item The left-hand operand of a right-associative or right-binding operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!($e_1 \commadots e_n$) $\op\ e$!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
+  \item The left-hand operand of a right-associative operator may consist of several arguments enclosed in parentheses, e.g. ~\lstinline!($e_1 \commadots e_n$) $\op\ e$!. This expression is then interpreted as ~\lstinline!$e$.`$\op$`($e_1 \commadots e_n$)!. 
   
   \item If $e_0$ in $e_0\ \op_1\ e_1$ does not implement the operator, then the infix operation is equivalent to function application $\op_1(e_0,\ e_1)$, and if such function does not exist either, then implicit conversions are attempted on $e_0$. This is also applied recursively to consecutive infix operations. 
 \end{itemize}
