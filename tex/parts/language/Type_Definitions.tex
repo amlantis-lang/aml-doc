@@ -313,8 +313,9 @@ Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
                     | 'signature' id [Is Struct_Type] 'end' ['signature']
                     | 'structure' 'rec' id ':' Struct_Type
                       {'and' id ':' Struct_Type}+ 'end' ['structure']
-                    | 'open' Struct_Path
-                    | 'open!' Struct_Path
+                    | ['public'] 'open' Struct_Path
+                    | ['public'] 'open!' Struct_Path
+                    | ['public'] Use
                     | 'include' Struct_Type
                     | Use
                     | {Annotation} Struct_Spec
@@ -346,8 +347,9 @@ Struct_Def        ::= [Access_Modifier] Val_Def
                     | [Access_Modifier] 'structure' 'rec' id [Struct_Ascription Struct_Type] 
                       Is Struct_Expr
                       {'and' id [Struct_Ascription Struct_Type] Is Struct_Expr}+
-                    | 'open' Struct_Path
-                    | 'open!' Struct_Path
+                    | ['public'] 'open' Struct_Path
+                    | ['public'] 'open!' Struct_Path
+                    | ['public'] Use
                     | 'include' Struct_Expr
                     | Use
                     | {Annotation} Struct_Def
