@@ -65,6 +65,7 @@ type My_Collection <: Iterable end
 \label{sec:aspects}
 
 \syntax\begin{lstlisting}
+Type_Definition   ::= Aspect_Definition
 Aspect_Definition ::= 'aspect' [Aspect_Clause] Aspect_Def
 Aspect_Def        ::= id ['extends' Class_Parents] Aspect_Tmpl_Env
 Aspect_Tmpl_Env   ::= '{' Aspect_Body '}'
@@ -75,35 +76,36 @@ Aspect_Stat       ::= Advice_Def
                     | Template_Stat
 Pointcut_Def      ::= 'pointcut' id
                       ['(' [id [':' Type]] {',' [id [':' Type]]} ')']
-                      'is' Pointcut_Type 'end' ['pointcut']
+                      Is Pointcut_Type 'end' ['pointcut']
 Pointcut_Type     ::= 'invoke' (id | regular_expression_literal)
                     | 'get' (id | regular_expression_literal)
                     | 'set' (id | regular_expression_literal)
                     | 'handler' Type
-                    | 'returning' [id [':' Type] | Type]
-                    | 'throwing' [id [':' Type] | Type]
-                    | 'raising' [id [':' Type] | Type]
-                    | 'yielding' [id [':' Type] | Type]
+                    | 'returning' [Id_Or_Type]
+                    | 'throwing' [Id_Or_Type]
+                    | 'raising' [Id_Or_Type]
+                    | 'yielding' [Id_Or_Type]
                     | 'advice-execution' 
                       [(id | regular_expression_literal)]
                     | 'self' (id | Type)
                     | 'target' (id | Type)
-                    | 'arguments' '(' id [':' Type] | Type 
-                      {',' (id [':' Type] | Type)} ')'
-                    | 'if' (Infix_Expr | '(' Infix_Expr ')')
+                    | 'arguments' {'(' Id_Or_Type {',' Id_Or_Type} ')'}+
+                    | 'arguments' '(' ')'
+                    | 'if' Value_Expr
                     | 'not' Pointcut_Ref
                     | Pointcut_Ref 'and' Pointcut_Ref
                     | Pointcut_Ref 'or' Pointcut_Ref
                     | '(' Pointcut_Ref ')'
-                    | 'retain' [id [':' Type] | Type]
-                    | 'release' [id [':' Type] | Type]
+                    | 'retain' [Id_Or_Type]
+                    | 'release' [Id_Or_Type]
 Pointcut_Ref      ::= id ['(' id {',' id} ')'] | Pointcut_Type
 Advice_Def        ::= 'advice' 
                       Advice_Spec (Pointcut_Ref | Pointcut_Type)
                       Block_Expr
+Id_Or_Type        ::= id [':' Type] | Type
 Advice_Spec       ::= 'before' 
-                    | 'after' [('returning' | 'throwing' | 'raising'
-                              | 'yielding') [id [':' Type] | Type]]
+                    | 'after' [('returning' | 'throwing' | 'raising' | 'yielding') 
+                               [Id_Or_Type]]
                     | 'around'
 Aspect_Clause     ::= 'per-self' [Pointcut_Ref] 
                     | 'per-target' [Pointcut_Ref] 
