@@ -1095,10 +1095,9 @@ Overloaded members do not need to appear in the same scope, an overloading membe
 \label{sec:use-clauses}
 
 \syntax\begin{lstlisting}
-Use           ::= 'use' ['lazy'] (Type | Stable_Id) 
-                  '.' Import_Expr
-                | 'open' (Type | Stable_Id)
-                | 'open!' (Type | Stable_Id)
+Use           ::= 'use' ['lazy'] (Type | Stable_Id) ['.' Import_Expr]
+                | 'open' (Type | Stable_Id) ['.' Import_Expr]
+                | 'open!' (Type | Stable_Id) ['.' Import_Expr]
 Import_Expr   ::= Single_Import
                 | '{' Import_Exprs '}'
                 | '_'
@@ -1121,6 +1120,8 @@ The scope of a binding introduced by an import-clause starts immediately after t
 Several shorthands exists. An import selector may be just a simple name $x$, in which case, $x$ is imported without renaming, so the import selector is equivalent to \lstinline!$x$ as $y$!. Furthermore, it is possible to replace the whole import selector list by a single identifier of wildcard. The use clause \lstinline!use $p$.$x$! is equivalent to \lstinline!use $p$.{$x$}!, i.e. it makes available without qualification the member $x$ of $p$. The use clause \lstinline!use $p$._! is equivalent to \lstinline!use $p$.{_}!, i.e. it makes available without qualification all importable members of $p$ (this is analogous to \lstinline[language=Java]!import $p$.*! in Java or \lstinline[language=Java]!import $p$._! in Scala). 
 
 The use clause \lstinline!open $p$! is similar to \lstinline!use $p$.{_}!, just the precedence of bindings introduced by it is the same that of explicit \code{use} clauses. It is an error if any of those bindings shadow names that are already present in the scope -- for which the alternative form \lstinline@open! $p$@ shadows those names without any error. 
+
+The use clause \lstinline!open $p$.$I$! then expands into the form without import expression for every imported name from $p$, including those imported by wildcard import. The \lstinline@open!@ form of it can again shadow names that are already present in the scope, but it must not shadow any name it itself imports into the scope. 
 
 \example Consider the object definition:
 \begin{lstlisting}
