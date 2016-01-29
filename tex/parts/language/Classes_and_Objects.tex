@@ -924,9 +924,9 @@ The following lists present the order in which object construction occurs.
   \item Somebody calls the \code{new} instance method of \code{Class} with arguments for the desired constructor. 
   \item A constructor is picked up with a 1:1 mapping to the arguments of \code{new}. 
   \item A memory is allocated for the new object. The memory is not yet initialized, and so is not the object. 
-  \item Runtime keeps track of all declared instance variables and their defined-ness during object construction.\footnote{This is again relaxation from Swift by Apple. The object might be fully initialized earlier, or later.} 
+  \item Constructors are applied. Runtime keeps track of all declared instance variables and their defined-ness during object construction.\footnote{This is again relaxation from Swift by Apple. The object might be fully initialized earlier, or later.} 
   \item As soon as every instance variable is properly defined, the \code{self} object becomes available for regular use. 
-  \item After this point, the object is considered fully initialized, and the phase is complete. 
+  \item After this point, the object is considered fully initialized, and the phase is complete. Instance values may no longer be modified after this point. 
 \end{enumerate}
 
 {\bfseries Phase 2}
@@ -942,6 +942,7 @@ Constructors may have modified accessibility, so that only certain functions can
 \example An example of a designated constructor of class $C$.
 \begin{lstlisting}
 class $C$
+begin
   constructor (param)
     val @resource := param
     super()
@@ -952,6 +953,7 @@ end class
 \example An example of a pair of constructors of class $C$. 
 \begin{lstlisting}
 class $C$
+begin
   constructor (param)
     val @resource := param
     super()
@@ -975,12 +977,34 @@ Destructors, unlike constructors, can not have any accessibility modifiers. They
 \example An example of an explicit destructor of class $C$. 
 \begin{lstlisting}
 class $C$
+begin
   destructor
     @resource.close unless @resource.closed?
     (* super is invoked implicitly here *)
   end destructor
 end class
 \end{lstlisting}
+
+\paragraph{Process of object destruction}
+
+\begin{enumerate}
+  \item An object becomes eligible for destruction (see below). 
+  \item Strong retain count drops to zero. 
+  \item All weak references within the object are removed. Includes weak references, unowned references and soft references. If any of the referenced objects then become eligible for destruction, their destruction happens in the same order as soon as this object's destruction finishes. 
+  \item The object's destructor is applied. When that finishes, the destructor from its superclass is applied and so on. 
+  \item After the root destructor is applied, strong reference count to the destructed object is checked. If it is non-zero, a runtime error is raised (\code{Object_Resurrection_Error}).
+  \item All strong references within the object are removed. If any of the referenced objects then become eligible for destruction, their destruction happens in the same order as soon as this object's destruction finishes. 
+  \item Memory is reclaimed. 
+\end{enumerate}
+
+\paragraph{Objects eligible for destruction}
+An object {\em eligible for destruction} must meet the following conditions:
+\begin{itemize}
+  \item Strong reference count has dropped to zero. 
+  \item There are no soft references to the object. 
+  \item If there are soft references to the object, the runtime is allowed to drop all of them in case of low memory. Definition of such condition is implementation-specific. 
+  \item The object is eligible for destruction regardless of any weak references remaining. 
+\end{itemize}
 
 
 
@@ -998,9 +1022,9 @@ Clone_Block   ::= [semi Constr_Block3] 'end' ['clone']
                 | Constr_Block2
 \end{lstlisting}
 
-Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by ~\lstinline[deletekeywords={clone}]!clone!~ on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
+Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but with the ~\lstinline[deletekeywords={clone}]!clone!~ attribute on the cloned instance (\lstinline[deletekeywords={clone}]!obj_to_clone.'clone!). Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
 
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self[origin]}, \code{this[origin]} and \code{super[origin]} constructs (the latter being only useful as prefix in function applications), the new cloned object is available with the \code{self[cloned]}, \code{this[cloned]} and \code{super[cloned]} constructs. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, but the original object still has to be accessed with the defined construct. 
+Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self[origin]}, \code{this[origin]} and \code{super[origin]} constructs (the latter being only useful as prefix in function applications), the new cloned object is available with the \code{self[cloned]}, \code{this[cloned]} and \code{super[cloned]} constructs. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, but the original object still has to be accessed with the defined construct. The \code{self} value reference does not exist within context of clone constructors, to prevent accidental confusion between the two objects. 
 
 Clone constructors have the ability to modify immutable instance variables, but only of the new cloned object (\code{self[cloned]}) -- the original object is already constructed. 
 
