@@ -1732,7 +1732,7 @@ Identifiers are then resolved with the following precedence:
 \end{enumerate}
 
 \example Distinction between infix operations and function applications. 
-\begin{lstlisting}
+\begin{lstlisting}[deletekeywords={open}]
 (* function application *)
 file.open "hello_world.txt"
 (* is equivalent to function application *)
@@ -2888,7 +2888,7 @@ Block_Stat     ::= Use
                  | 'super'
                  | 'assert' Value_Expr
                  | ()
-Template_Stat  ::= Use
+Template_Stat  ::= ['public'] Use
                    (* no 'implicit' directly in Def_Expr *)
                  | {Annotation} {Modifier} (Def_Expr - 'implicit')
                  | {Annotation} {Modifier} Val_Def
@@ -3006,6 +3006,8 @@ The \code{Capture_Usage} syntax construct (of the forms ~\lstinline{use $\id_1 \
 When \code{optional} or \code{requires} appear in a template, the following message declarations are either optional or required. When a message declaration is optional, then its result type is always nullable. No restriction is put on required messages. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
 
 When \code{public}, \code{protected} or \code{private} appear in a template, the following member declarations have their accessibility affected. When those keywords appear alone on a line, then all following message members are affected. When the keywords directly precede a message member declaration, then only that member is affected. If the keyword precedes a list of identifiers or symbols, message members of those names are affected. 
+
+The \code{public Use} combination, besides importing names into scope as per (\sref{sec:use-clauses}), also defines the imported names. Another way to see that is to say that the combination re-exports the imported names. 
 
 Constraint definitions, of the form ~\lstinline!constraint $\id$ as $T$ := $b$!, define argument-less methods ($\id$), whose names are then available as local variables inside of constraint blocks ($b$). A type $T$ can be used to specify explicitly the result type of such methods. The instance variables of the owning object that are read by such methods are observed for changes, so that constrained types can be consistent. Constraints may be aliased. If at runtime the object changes in a way that breaks the constraint condition, then \code{Broken_Constraint} is raised upon next read of a variable typed with a constrained type. 
 
