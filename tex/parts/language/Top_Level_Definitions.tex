@@ -141,7 +141,7 @@ The module object should not define a member with the same name as one of the to
 
 The module object has also a special role in defining entry points of the module. An entry point is a method of the module object that can be invoked from the outside, to actually run the module as a program (\sref{sec:programs}). 
 
-Annotations and pragmas (\sref{sec:annotations}) specified for the module object\footnote{Annotations precede the object module directly, and pragmas are defined within the module object's template.} apply to the whole module object across source files. 
+Annotations and pragmas (\sref{sec:annotations}) specified for the module object within the \code{module.aml} file (\sref{sec:module-structure}) apply to the whole module object across source files. Annotations and pragmas specified elsewhere for the module object are applied as usual, without special treatment. 
 
 
 

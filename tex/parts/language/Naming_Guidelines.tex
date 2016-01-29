@@ -30,6 +30,7 @@ They are important to programmers for many reasons:
 
 
 \section{Module Structure \& File Names}
+\label{sec:module-structure}
 
 This section lists commonly used module structure and file suffixes and names. 
 
@@ -67,7 +68,7 @@ A directory holding a module must have the same name as the module, contained in
     /binaries (* or `bin` *)
         /an_executable.a
         /run_your_module (* some executable file 
-                            using #! to run a Aml VM *)
+                            using #! to run an Aml VM *)
     /protocols (* or `pro` *)
         /Plugin.amlp
     /resources (* or `res` *)
@@ -98,7 +99,11 @@ A common name for this directory is \code{com}, or \code{compiled}.
 
 Aml compiled files (bytecode) have the suffix \code{.amlb} for bytecode and \code{.amlpsi} for extracted Program Structure Information. Readme files might be copied into it, if needed. Note that Aml VM will refuse to execute module's entry point if the module is not compiled including all native method implementations. 
 
+Aml native compiled files have suffix defined by the implementation. Could be \code{.dylib}, \code{.so}, \code{.dll}, or whichever the implementation uses. 
+
 Note that files compiled from other languages, if not bound to Aml environment via native method definitions, may be still used with \code{FFI} mechanisms. 
+
+Compiled files do not need to be checked into a VCS, unless they can't be generated from sources (usually applies to files compiled from external sources). 
 
 \paragraph{Binary files}
 A common name for this directory is \code{bin}, or very less commonly \code{binaries}. It is intended to contain any necessary binary files that are not to be compiled during build of the software, but rather just included in it as they are. May include executable binary files, or even shell scripts that start up a Aml VM with a specific entry point. 
