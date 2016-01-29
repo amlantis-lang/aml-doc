@@ -65,11 +65,11 @@ The actual arguments that are eligible to be passed to an implicit parameter of 
 % TBD: base classes
 The {\em implicit scope} of a type $T$ consists of the type $T$ itself and all classes and class objects that are associated with the type $T$. Here, we say a class $C$ is {\em associated} with a type $T$, if it is a base class of some part of $T$. The {\em parts} of a type $T$ are:
 \begin{itemize}
-  \item If $T$ is a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, the union of the parts of $T_1 \commadots T_n$, as well as $T$ itself.
+  \item If $T$ is a compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, the union of the parts of $T_1 \commadots T_n$, as well as $T$ itself. The same for intersection type. 
   \item If $T$ is a parameterized type ~\lstinline!$S$[$T_1 \commadots T_n$]!, the union of the parts of $S$ and $T_1 \commadots T_n$. 
   \item If $T$ is a singleton type \code{$p$.type}, the parts of the type of $p$. 
   \item If $T$ is a type projection ~\lstinline!$S$#$U$!, the parts of $S$ as well as $T$ itself.
-  \item If $T$ is a union type ~\lstinline!union of ($T_1$; $\ldots$; $T_n$)!, the union of all types $T_1 \commadots T_n$. 
+  \item If $T$ is a union type ~\lstinline!($T_1$ or $\ldots$ or $T_n$)!, the union of all types $T_1 \commadots T_n$. 
   \item In all other cases, just $T$ itself. 
 \end{itemize}
 
