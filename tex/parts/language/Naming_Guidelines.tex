@@ -40,14 +40,14 @@ A module is a directory located in your system at a location unspecified by this
 A directory holding a module must have the same name as the module, contained in a directory of the vendor name. If it is standalone, so that no other modules of the same name share the same parent directory, the vendor part including the leading dot can be omitted.
 
 \example Such directories may look like:
-\begin{lstlisting}[deletekeywords={module},mathescape=false]
+\begin{lstlisting}[deletekeywords={module,native},mathescape=false]
 /Aml/Language
 /Example/Your_Module
     /source (* or `src` *)
         /aml
             /Some_Submodule 
             /macros
-                /some_macro.amlm
+                /some_macro.aml
             /some_source_file.aml
             /module.aml
             /build.aml
@@ -86,7 +86,7 @@ Aml source files have the suffix \code{.aml}. Readme files are not source files,
 
 Aml source directory (\code{/src} or \code{/src/aml}) might also contain a build file (or multiple build files, and even along with the language-specific directories in \code{/src} directly -- some may be generated during compilation to provide skeletons for implementation of native methods and functions), which, for Aml, is named \code{build.aml}, and can make use of other files as needed. 
 
-Macros should be placed in a \code{/macros} directory inside of a directory with Aml sources, so e.g. \code{/src/macros} or \code{/src/aml/macros}. Those files may also use other files as needed. A file that contains solely Aml macro definitions may be optionally named with suffix \code{.amlm}, but that is not a requirement. 
+Macros should be placed in a \code{/macros} directory inside of a directory with Aml sources, so e.g. \code{/src/macros} or \code{/src/aml/macros}. Those files may also use other files as needed. Macro definitions may appear outside of that directory too. 
 
 A module file may be placed in a Aml sources directory, and is named \code{module.aml}. This file is important in the fact that it defines the module and vendor name for the module, and the vendor name for all nested submodules. Along with this file, a \code{module.dependencies.aml} and \code{module.dependencies.lock} files may be present, to define the module's dependencies on other modules, where the latter is a generated file, supposed to be checked into your VCS\footnote{Version Control System.}.
 
