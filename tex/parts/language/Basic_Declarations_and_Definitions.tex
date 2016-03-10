@@ -836,10 +836,7 @@ Also known as {\em pass-by-reference}, the function can modify the original argu
 The argument is not evaluated until accessed, and is re-evaluated each time it is accessed, providing another tool to create DSLs. Those are described in (\sref{sec:by-name-parameters}). 
 
 \paragraph{Call-by-need, non-strict}
-Also known as {\em lazy evaluation}, this is a memoized version of {\em call-by-name} strategy. The difference is, {\em call-by-need} parameters are not re-evaluated, once they are evaluated. Those are described in (\sref{sec:by-need-parameters}). 
-
-\paragraph{Call-by-future, non-deterministic}
-This is a rather experimental feature of Aml, depending on whether the Aml VM is capable of parallelization and whether there are defined standard tools for ``system'' parallelization. These are described in (\sref{sec:by-future-parameters}).
+Also known as {\em lazy evaluation}, this is a memoized version of {\em call-by-name} strategy. The difference is, {\em call-by-need} parameters are not re-evaluated, once they are evaluated. Those are described in (\sref{sec:by-need-parameters}).
 
 
 
@@ -877,27 +874,7 @@ The by-need modifier is disallowed for implicit parameters (\sref{sec:implicit-p
 
 By-need parameters with default value expressions evaluate the default value expression the first time the parameter is accessed, like optional parameters that evaluate the default value expression only once. 
 
-If a parameter is prefixed with \code{eager} instead, it can't be prefixed with \code{lazy}, or be by-need, by-name or by-future. 
-
-
-
-
-
-
-\subsubsection{By-Future Parameters}
-\label{sec:by-future-parameters}
-
-The type of a value parameter may be prefixed by ``\lstinline@->>@'', e.g. \lstinline@$x$: ->> $T$@. This indicates that the corresponding argument is not evaluated exactly at the point of function application, but instead is evaluated at some point in the future, but definitely before its first use.
-
-By-future uses a concurrent evaluation strategy: the value of a future expression is computed concurrently with the flow of the rest of the program (on a new thread/worker). When the value of the future is needed, the invoking thread blocks until the future finishes computing, if it has not already completed by then. 
-
-This strategy is non-deterministic, as the evaluation can occur at any time between when the future is created (when the function is applied) and when the value of the future is read. 
-
-The by-future modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
-
-By-future parameters with default value expressions evaluate the default value also as a future value, if the argument is not explicitly given. 
-
-By-future parameter prefix is omitted from examples of valid parameter definitions, but it's allowed occurrence is the same as of by-name parameters (\sref{sec:by-name-parameters}). 
+If a parameter is prefixed with \code{eager} instead, it can't be prefixed with \code{lazy}, or be by-need or by-name. 
 
 
 
@@ -923,7 +900,7 @@ The second form is augmented by means of the \code{Param_Extra} and \code{Param_
   \item Whether the bound variable is itself mutable (\code{var}) or immutable (\code{val}), or whether its type is implicitly wrapped in a \code{Reference_Cell} (then \code{val} is implied for the variable that holds the reference cell). 
 \end{enumerate}
 
-\code{Param_Type} can specify whether the parameter is evaluated in a by-name strategy, by-future strategy, or another strategy (by-value, by-reference, by-need). 
+\code{Param_Type} can specify whether the parameter is evaluated in a by-name strategy, or another strategy (by-value, by-reference, by-need). 
 
 \paragraph{Note}
 No two parameters (of any kind, not just positional) can bind their input argument or a value nested in the argument to the same variable name. 
