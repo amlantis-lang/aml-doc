@@ -1063,43 +1063,6 @@ A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is usef
 
 
 
-\subsection{Attribute Selection Expressions}
-\label{sec:attribute-selection}
-
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= Value_Expr '.'' Simple_Selection
-\end{lstlisting}
-
-An attribute is a special function that has at least one parameter, and optionally more than one parameter. 
-
-An attribute selection ~\lstinline!$x$.'$a$!~ is then viewed as function application ~\lstinline!$a$($x$)!. An attribute selection ~\lstinline!$x$.'$a$($\args$)!~ is then viewed as function application ~\lstinline!$a$($x$)($\args$)!~ etc. (\sref{sec:function-applications}). 
-
-\paragraph{Note}
-Attribute selections are similar to function composition operators, but allow for a bit more concise code\footnote{Done by not requiring whitespace around the symbolic keyword, unlike whitespace being required around most infix operators.}, resembling designator selections (\sref{sec:designators}):
-\begin{lstlisting}
-let y := x.'a in
-let z := x |> a in
-y = z
-\end{lstlisting}
-The main difference between attribute selections and function compositions shows up when more arguments are needed or multiple functions are composed and attributes chained, compare: 
-\begin{lstlisting}
-{
-  let y := x.'a(b) in    (* a(x)(b) *)
-  let z := x |> a(b) in  (* a(b)(x) *)
-  y /= z
-}
-\end{lstlisting}
-\begin{lstlisting}
-{
-  let y := x.'a(b).'c(d) in      (* c(a(x)(b))(d) *)
-  let z := x |> a(b) |> c(d) in  (* c(d)(a(b)(x)) *)
-  y /= z
-}
-\end{lstlisting}
-
-
-
-
 \subsection{Self, This, Super, Outer \& Module}
 \label{sec:self-this-super}
 
@@ -1169,17 +1132,16 @@ Use expressions of the form ~\lstinline!use $v$ := $a$ in $e$!~ are droppable ex
 
 
 
-
 \subsection{Function Applications}
 \label{sec:function-applications}
 
 \syntax\begin{lstlisting}[mathescape=false]
 Value_Expr  ::= App_Expr
-App_Expr    ::= Value_Expr '(' [Arguments] ')' [Block_Argument]
+App_Expr    ::= Value_Expr ['(' [Arguments] ')'] [Block_Argument]
               | Value_Expr '.' '(' [Arguments] ')' [Block_Argument]
               | Value_Expr Arguments [Block_Expr2 | Method_Expr]
-              | Value_Expr Block_Argument
-              | 'super' [Arguments]
+              | 'super' ['(' [Arguments] ')'] [Block_Argument]
+              | 'super' [Arguments] [Block_Expr2 | Method_Expr]
 Arguments   ::= {Argument}+
 Argument    ::= Positional_Argument
               | Labelled_Argument
@@ -1357,10 +1319,10 @@ Method_Expr ::= '&' Value_Expr ['(' Partially_Applied_Arguments ')']
                 [Partially_Applied_Block_Argument] ')'
               | '&(' Value_Expr Partially_Applied_Arguments
                 [Partially_Applied_Block_Argument2] ')'
-              | '&(' op_id ')' ['(' Partially_Applied_Arguments ')']
-              | '&(' nary_op_id ')' ['(' Partially_Applied_Arguments ')']
+              | '&(' (op_id | nary_op_id) ')' ['(' Partially_Applied_Arguments ')']
+              | '&(' (op_id | nary_op_id) Partially_Applied_Arguments ')'
               | '(' op_id ')'
-              | '(~' op_id ')' (* requires space after `(~` *)
+              | '(~' ? whitespace ? op_id ')'
 Partially_Applied_Arguments
             ::= {Partially_Applied_Argument} 
 Partially_Applied_Argument
@@ -1427,6 +1389,45 @@ Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T
 If $e$ resolves to an overloaded member, then the type of the expression is a type projection to that member, constrained to the matching alternatives. 
 
 If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_ as $T$!'', called {\em argument placeholders}, then the method value contains only those overloaded alternatives that are applicable to the given sub-expressions, including the argument placeholders. Such an expression is then partially applied and resolves to an anonymous function, where the argument placeholders become parameters of the anonymous function. 
+
+
+
+
+
+
+\subsection{Attribute Selection Expressions}
+\label{sec:attribute-selection}
+
+\syntax\begin{lstlisting}
+Simple_Expr1 ::= Value_Expr '.'' Simple_Selection
+\end{lstlisting}
+
+Every function that has at least one parameter can be used as an attribute. 
+
+An attribute selection ~\lstinline!$x$.'$a$!~ is then viewed as function application ~\lstinline!$a$($x$)!. An attribute selection ~\lstinline!$x$.'$a$($\args$)!~ is then viewed as function application ~\lstinline!$a$($x$)($\args$)!~ etc. (\sref{sec:function-applications}). 
+
+\paragraph{Note}
+Attribute selections are similar to function composition operators, but allow for a bit more concise code\footnote{Done by not requiring whitespace around the symbolic keyword, unlike whitespace being required around most infix operators.}, resembling designator selections (\sref{sec:designators}):
+\begin{lstlisting}
+let y := x.'a in
+let z := x |> a in
+y = z
+\end{lstlisting}
+The main difference between attribute selections and function compositions shows up when more arguments are needed or multiple functions are composed and attributes chained, compare: 
+\begin{lstlisting}
+{
+  let y := x.'a(b) in    (* a(x)(b) *)
+  let z := x |> a(b) in  (* a(b)(x) *)
+  y /= z
+}
+\end{lstlisting}
+\begin{lstlisting}
+{
+  let y := x.'a(b).'c(d) in      (* c(a(x)(b))(d) *)
+  let z := x |> a(b) |> c(d) in  (* c(d)(a(b)(x)) *)
+  y /= z
+}
+\end{lstlisting}
 
 
 
@@ -1607,7 +1608,9 @@ Infix_Expr   ::= Prefix_Expr
                | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
                | Range_Expr
 Simple_Expr1 ::= '(' op_id ')' Arguments
+               | '(' op_id Arguments ')'
                | '(' nary_op_id ')' Argument Arguments
+               | '(' nary_op_id Argument Arguments ')'
 Infix_Op     ::= op_id 
                | 'and' ['also']
                | 'or' ['else']
