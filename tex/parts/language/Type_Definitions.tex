@@ -315,9 +315,9 @@ Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
                       {'and' id ':' Struct_Type}+ 'end' ['structure']
                     | ['public'] 'open' Struct_Path
                     | ['public'] 'open!' Struct_Path
-                    | ['public'] Use
+                    | ['public'] Use_Clause
                     | 'include' Struct_Type
-                    | Use
+                    | Use_Clause
                     | {Annotation} Struct_Spec
 Def               ::= Struct_Def
 Struct_Expr       ::= Struct_Path
@@ -349,9 +349,9 @@ Struct_Def        ::= [Access_Modifier] Val_Def
                       {'and' id [Struct_Ascription Struct_Type] Is Struct_Expr}+
                     | ['public'] 'open' Struct_Path
                     | ['public'] 'open!' Struct_Path
-                    | ['public'] Use
+                    | ['public'] Use_Clause
                     | 'include' Struct_Expr
-                    | Use
+                    | Use_Clause
                     | {Annotation} Struct_Def
 Struct_Ascription ::= ':' | ':>'
 Struct_Constraint ::= 'type' Type_Path [Type_Param_Clause] Type_Equation

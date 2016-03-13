@@ -1111,9 +1111,9 @@ Use_Expr       ::= Use_Expr_As
                  | Use_Refinement
                  | Use_Droppable
 Use_Expr_As    ::= 'use' Value_Expr ('as' | 'as!' | 'as?')
-                   [['var' | 'val'] id ':'] Type [Do_Block | In_Sep Expr]
-Use_Aspect     ::= 'use' 'aspect' Stable_Id [Do_Block | In_Sep Expr]
-Use_Refinement ::= 'use' 'refinement' Stable_Id [Do_Block | In_Sep Expr]
+                   [['var' | 'val'] id ':'] Type [Do_Block | In_Sep Expr ['end']]
+Use_Aspect     ::= 'use' 'aspect' Stable_Id [Do_Block | In_Sep Expr ['end']]
+Use_Refinement ::= 'use' 'refinement' Stable_Id [Do_Block | In_Sep Expr ['end']]
 Use_Droppable  ::= [S_Modifier] 'use' Let_Binding In_Sep Expr ['end']
 \end{lstlisting}
 
@@ -2884,14 +2884,14 @@ A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, bu
 \label{sec:statements}
 
 \syntax\begin{lstlisting}
-Block_Stat     ::= Use
+Block_Stat     ::= Use_Clause
                  | Expr
                  | Alias_Expr
                  | Capture_Usage
                  | 'super'
                  | 'assert' Value_Expr
                  | ()
-Template_Stat  ::= ['public'] Use
+Template_Stat  ::= ['public'] Use_Clause
                    (* no 'implicit' directly in Def_Expr *)
                  | {Annotation} {Modifier} (Def_Expr - 'implicit')
                  | {Annotation} {Modifier} Val_Def

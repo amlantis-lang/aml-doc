@@ -28,7 +28,7 @@ Impl_Packaging1          ::= semi [Impl_Pkg_Seq] ['end' ['module']]
 Impl_Packaging2          ::= '{' [Impl_Pkg_Seq] '}'
 Impl_Pkg_Seq             ::= Impl_Pkg_Stat {semi Impl_Pkg_Stat}
 Impl_Pkg_Stat            ::= {Annotation} {Modifier} Tmpl_Def
-                           | Use
+                           | Use_Clause
                            | Module_Object
                            | Expr
                            | Struct_Def
@@ -37,7 +37,7 @@ Sig_Packaging2           ::= '{' [Sig_Pkg_Seq] '}'
 Sig_Packaging3           ::= [Sig_Pkg_Seq]
 Sig_Pkg_Seq              ::= Sig_Pkg_Stat {semi Sig_Pkg_Stat}
 Sig_Pkg_Stat             ::= Struct_Spec
-                           | Use
+                           | Use_Clause
 Script_Stat              ::= Impl_Pkg_Stat
                            | Sig_Pkg_Stat
 \end{lstlisting}
