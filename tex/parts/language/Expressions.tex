@@ -1125,7 +1125,7 @@ Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified as
 
 Use expressions of the form ~\lstinline!use refinement $T$!~ enable the specified refinement, either in the scope defined by the given block, or if no block is given, then from that point onward, up to the scope end. If the expression is used as a template statement, then the refinement is enabled for the whole template anywhere, unless it has the block part.
 
-Use expressions of the form ~\lstinline!use $v$ := $a$ in $e$!~ are droppable expressions -- on every value $v_i$ bound in variable sub-patterns of $v$\footnote{Or, if $v$ is a variable pattern, than the value bound from such pattern.} has \code{$v_i$.drop()} applied on them right after evaluation of the expression $e$ ends (or \code{drop($v_i$)}, in case the type of $v_i$ does not implement \code{Droppable} and neither an implicit conversion to a \code{Droppable} exists in the scope). The exact behaviour of that application is obviously defined by the implementation of such method.\footnote{Usually, such value should be considered unusable.}
+Use expressions of the form ~\lstinline!use $v$ := $a$ in $e$!~ are droppable expressions -- on every value $v_i$ bound in variable sub-patterns of $v$\footnote{Or, if $v$ is a variable pattern, than the value bound from such pattern.} has \code{$v_i$.drop()} sent to them right after evaluation of the expression $e$ ends (or \code{drop($v_i$)}, in case the type of $v_i$ does not implement \code{Droppable} and such function exists in the scope). The exact behaviour of that application is obviously defined by the implementation of such method.\footnote{Usually, such value should be considered unusable.}
 
 
 
@@ -2949,7 +2949,7 @@ Fun_Dec_Expr   ::= {Annotation} Dcl
                  | 'native' [Expr]
                  | ('immutable' | 'mutable')
                  | 'implicit' id
-                 | {Annotation} 'in'  '{'              Block '}'
+                 | {Annotation} 'in'  '{' Block '}'
                  | {Annotation} 'out' '{' ['|' id '|'] Block '}'
                  | Expr
                  | ()
