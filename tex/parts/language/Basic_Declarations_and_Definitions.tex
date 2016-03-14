@@ -1100,6 +1100,8 @@ The use clause \lstinline!open $p$! is similar to \lstinline!use $p$.{_}!, just 
 
 The use clause \lstinline!open $p$.$I$! then expands into the form without import expression for every imported name from $p$, including those imported by wildcard import. The \lstinline@open!@ form of it can again shadow names that are already present in the scope, but it must not shadow any name it itself imports into the scope. 
 
+In case the imported member is a function, its name does not shadow any already imported functions, instead, it adds itself to the scope as an overloaded variant of that name. It is still possible to shadow the same name with a following import though, if that name would not be a function. 
+
 \example Consider the object definition:
 \begin{lstlisting}
 object M
