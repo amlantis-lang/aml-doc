@@ -16,7 +16,7 @@
 \section{The Implicit Modifier}
 \label{sec:implicit-modifier}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Local_Modifier  ::= 'implicit'
 Implicit_Params ::= 'implicit' ':' Atomic_Pattern
                   | '(' 'implicit' ':' (Atomic_Pattern | Params) ')'
@@ -129,7 +129,7 @@ If there are multiple implicit scopes searched in order, we mean that the follow
 \label{sec:view-bounds}
 \label{sec:context-bounds}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Param ::= (id | '_') [Type_Param_Clause]
                ['>:' Type] ['<:' Type]
                {'<%' Type} {':' Type}
@@ -168,7 +168,7 @@ def f [T] (t: T) (implicit: $w_1$: T -> String) := $\ldots$
 \section{Multi-Methods \& Multiple Dispatch}
 \label{sec:multi-methods}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Dcl               ::= Multi_Fun_Dcl
                     | Multi_Op_Dcl
                     | Multi_Message_Dcl

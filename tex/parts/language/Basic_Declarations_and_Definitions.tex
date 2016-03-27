@@ -7,11 +7,12 @@
 
 \newpage
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 R_Modifier  ::= 'weak' | 'soft' | 'unowned'
 M_Modifier  ::= 'constant' | 'mutable' | 'immutable'
-S_Modifier  ::= M_Modifier [R_Modifier]
-              | R_Modifier
+S_Modifier  ::= [Eagerness] M_Modifier [R_Modifier]
+              | [Eagerness] R_Modifier
+                (* Eagerness only when not present in preceding Modifier *)
 In_Sep      ::= [nl] 'in' [nl] | semi
 \end{lstlisting}
 
@@ -46,7 +47,7 @@ This is to keep up consistency with pattern matching, where the type will usuall
 \section{Value Declarations \& Definitions}
 \label{sec:value-dcl-def}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Dcl          ::= Val_Dcl
 Val_Dcl      ::= [S_Modifier] 'val' id {',' id} ':' Type
 Val_Def      ::= [S_Modifier] ('val' | 'let') ['rec']
@@ -169,7 +170,7 @@ The following shorthands are recognized:
 \section{Variable Declarations \& Definitions}
 \label{sec:variable-dcl-def}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Dcl         ::= Var_Dcl
 Var_Dcl     ::= [S_Modifier] 'var' id {',' id} ':' Type
 Var_Def     ::= [S_Modifier] 'var' Var_Binding
@@ -183,7 +184,7 @@ A variable definition \lstinline@var $x$: $T$ := $e$@ defines $x$ as a name of t
 
 Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ := $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dcl-def}) as a value definition \lstinline@val $p$ := $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
 
-A variable definition ~\lstinline!var $x$: $T$ := _!~ introduces a mutable variable with type $T$ and a default initial value. The default value depends on the type $T$ as follows:
+A variable definition ~\lstinline!var $x$: $T$ := _!~ introduces a mutable variable with type $T$ and a default initial value. The default value is defined by the ~\lstinline!Default[$T$]!~ trait, defined for some standard types as follows:
 \begin{quote}\begin{tabular}{ll}
   \code{0} & if $T$ is \code{Integer} or one of its subrange types, \\
   \lstinline@0.0f@ & if $T$ is \code{Float} or \code{Half_Float},\\
@@ -220,7 +221,7 @@ shorthand for the sequence of variable declarations ~\lstinline@var $x_1$: $T$; 
 \section{Property Declarations \& Definitions}
 \label{sec:property-dec-dfn}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Prop_Dcl   ::= 'property' ['(' Prop_Specs ')'] id 
                [':' Type]
 Prop_Specs ::= Prop_Spec {',' Prop_Spec}
@@ -312,7 +313,7 @@ If a property setter (\code{set}) does not specify return type, then it is infer
 \section{Reference Types}
 \label{sec:ref-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 R_Modifier ::= 'weak' | 'soft' | 'unowned'
 \end{lstlisting}
 
@@ -331,7 +332,7 @@ Non-\code{strong} references are intended to break strong reference cycles that 
 \subsection{Mutable \& Immutable Storage}
 \label{sec:mutable-immutable-storage}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 M_Modifier ::= 'constant' | 'mutable' | 'immutable'
 \end{lstlisting}
 
@@ -341,7 +342,7 @@ Mutability modifiers are applied to any values or variables, unlike reference ty
 
 The \code{mutable} modifier implicitly adds the \code{@[mutable]} annotation to the type of the value or variable, and likewise, the \code{immutable} modifier implicitly adds the \code{@[immutable]} annotation to the type of the value or variable; both if not already present in the value's or variable's type. Values returned from function applications are not transitively mutable or immutable based on this modifier, but may be based on the function's declaration. 
 
-The \code{constant} modifier does not add any annotation to the value's or variable's type. Marking a value or variable with \code{constant} means that the runtime will not be able modify the object referred to by the value or variable, thus the referred object is seen as if it were \code{immutable}, but other references to the same object are still able to mutate the object. A {\em constant value} or a {\em constant variable} is then a {\em constant view} of the referred object. Values returned from function applications, where a constant view is the target, are then transitively constant as well. 
+The \code{constant} modifier does not add any annotation to the value's or variable's type. Marking a value or variable with \code{constant} means that the runtime will not be able modify the object referred to by the value or variable, thus the referred object is seen as if it were \code{immutable}, but other references to the same object (not created from this constant reference) are still able to mutate the object. A {\em constant value} or a {\em constant variable} is then a {\em constant view} of the referred object. Values returned from function applications, where a constant view is the target, are then transitively constant as well. It is not possible to convert a constant view of a value to a mutable reference. 
 
 An exception to immutability is presented by the \code{R_Modifier} syntax category and weak, soft and unowned references to objects, where indeed the runtime is allowed to discard the value, and thus the immutability or mutability is transitively applied to the contained type, but not the reference itself. 
 
@@ -406,7 +407,7 @@ Aml/Language.Soft_Reference.is_supported?
 
 \section{Type Parameters}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Param_Clause  ::= '[' Variant_Type_Param 
                        {',' Variant_Type_Param} [',' '*'] ']'
                      | '[' '*' ']'
@@ -414,8 +415,8 @@ Type_Param_Clause2 ::= Variant_Type_Param
                      | '(' Variant_Type_Param 
                        {',' Variant_Type_Param} ')'
 Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
-                     | '<' id ['<:' id] '>'
-Type_Param         ::= (['''] id | '_') [Type_Param_Clause]
+                     | '<' (Type_Var | id) ['<:' id] '>'
+Type_Param         ::= (Type_Var | '_') [Type_Param_Clause]
                        ['>:' Type] ['<:' Type]
                        {'<%' Type} {':' Type}
 \end{lstlisting}
@@ -580,7 +581,7 @@ Now type of \code{x + 1} is required to be polymorphic. The type of the expressi
 \section{Locally Abstract Types}
 \label{sec:locally-abstract-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Param_Clause     ::= LAT_Param_Clause
 LAT_Param_Clause ::= '(' 'type' id [Type_Equation | Type_Abstract] ')'
 \end{lstlisting}
@@ -594,7 +595,7 @@ A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named 
 \section[Explicitly Polymorphic Locally Abstract Types]{Explicitly Polymorphic \\ Locally Abstract Types}
 \label{sec:locally-abstract-polymorphic-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Variant_Type_Param ::= {Annotation} 'type' ['+' | '-'] Type_Param
 \end{lstlisting}
 
@@ -609,7 +610,7 @@ The locally abstract type syntax form by itself does not make polymorphic the ty
 \section{Type Class Constrained Types}
 \label{sec:type-class-constrained-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Class_Param_Clause 
            ::= '(' Given_Clauses ')'
              | '(' 'given' Given_Dcl {semi Given_Dcl} ')'
@@ -631,7 +632,7 @@ Then, every application of operations defined by the type class $T$ to values of
 \section{Function Declarations \& Definitions}
 \label{sec:function-decls-defs}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 (* every *_Dcl here require the `':' Type` part inside *_Sig *)
 Dcl           ::= Fun_Dcl
                 | Op_Dcl
@@ -670,10 +671,10 @@ Att_Sig       ::= Function_Path [Type_Param_Clause] [Given_Clauses]
                      only accepts Unit *)
 Function_Path ::= fun_id
                 | 'self' '.' fun_id
-                | Stable_Id '.' fun_id
+                | Long_Id '.' fun_id
 Op_Path       ::= op_id
                 | 'self' '.' op_id
-                | Stable_Id '.' op_id
+                | Long_Id '.' op_id
 Param_Clauses ::= {Param_Clause} [Variadic_Param]
                   [Block_Capture_Param] [Implicit_Params]
 Param_Clause  ::= Atomic_Pattern
@@ -683,10 +684,10 @@ Param_Clause  ::= Atomic_Pattern
                 | '~' Param_Extra id ':' 
                   '(' Pattern [':' Type] ')'
                 | '~?' Param_Extra id
-                | '~?(' Param_Extra id [':' Param_Type] [':=' Value_Expr] ')'
+                | '~?(' Param_Extra id [':' Param_Type] [':=' Expr] ')'
                 | '~?' Param_Extra id ':' Atomic_Pattern
                 | '~?' Param_Extra id ':' 
-                  '(' Pattern [':' Type] [':=' Value_Expr] ')'
+                  '(' Pattern [':' Type] [':=' Expr] ')'
                 | '(' [Params] ')'
                 | LAT_Param_Clause (* locally abstract type *)
                 | Type_Class_Param_Clause
@@ -698,7 +699,7 @@ Block_Capture_Param
                 | '&(' ['val' | 'var'] id [':' Type] ')'
                 | '~&' id ':' Type ['as' Var_Pattern]
                 | '~&' id ':' 
-                  '(' Type ['as' Var_Pattern] [':=' Value_Expr] ')'
+                  '(' Type ['as' Var_Pattern] [':=' Expr] ')'
 Variadic_Param 
               ::= Positional_Variadic_Param [Capture_Variadic_Param]
                 | Capture_Variadic_Param
@@ -735,13 +736,13 @@ Labelled_Param
                 | '~(' Param_Extra id [':' Param_Type] ')'
                 | '~' Param_Extra id ':' Pattern
                 | '~?' Param_Extra id
-                | '~?(' Param_Extra id [':' Param_Type] [':=' Value_Expr] ')'
+                | '~?(' Param_Extra id [':' Param_Type] [':=' Expr] ')'
                 | '~?' Param_Extra id ':' Pattern
                 | '~?' Param_Extra id ':' 
-                  '(' Pattern [':' Param_Type] [':=' Value_Expr] ')'
-Param_Extra   ::= ['lazy' | 'eager'] [M_Modifier] [Param_Rw]
+                  '(' Pattern [':' Param_Type] [':=' Expr] ')'
+Param_Extra   ::= [Eagerness] [M_Modifier] [Param_Rw]
 Param_Rw      ::= 'val' | 'var' | 'ref'
-Param_Type    ::= ['->' | '->>'] Type
+Param_Type    ::= ['->'] Type
 \end{lstlisting}
 
 A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's path, $\psig$ is its parameter signature and $T$ is its result type. 
@@ -767,7 +768,7 @@ A {\em function path} is a reference to the function being declared or defined. 
 \begin{enumerate}
   \item Function identifier (\code{fun_id}), which references a name in the directly enclosing scope.\footnote{Such scope is usually in a (class) template body, or nested in another function's body.}
   \item Self function identifier (\code{self.fun_id}), which references a name in the metaclass of whatever \code{self} references in the scope.\footnote{E.g., in a class template definition, it references a class object function name.} 
-  \item Free function identifier (\code{Stable_Id.fun_id}), which references a name in the metaclass of any object referenced by the \code{Stable_Id} part.
+  \item Free function identifier (\code{Long_Id.fun_id}), which references a name in the metaclass of any object referenced by the \code{Long_Id} part.
 \end{enumerate}
 
 
@@ -1071,7 +1072,7 @@ Overloaded members do not need to appear in the same scope, an overloading membe
 \section{Use Clauses}
 \label{sec:use-clauses}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Use_Clause    ::= 'use' ['lazy'] (Type | Stable_Id) ['.' Import_Expr]
                 | 'open' (Type | Stable_Id) ['.' Import_Expr]
                 | 'open!' (Type | Stable_Id) ['.' Import_Expr]

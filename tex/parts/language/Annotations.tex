@@ -10,21 +10,29 @@
 
 \newpage
 
-% TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits lik Function_n may use it in its type parameters to apply the parameter extras to the apply method
+% TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits like Function[...] may use it in its type parameters to apply the parameter extras to the apply method
 
-\syntax\begin{lstlisting}
-Annotation            ::= '@[' Simple_Type [Arguments] ']'
-Tmpl_Def              ::= Annotation_Definition
+\grammar\begin{lstlisting}
+Dcl                   ::= ...
+                        | Macro_Dcl
+Def                   ::= ...
+                        | Macro_Def
+Tmpl_Def              ::= ...
+                        | Annotation_Definition
+Expr                  ::= ...
+                        | Pragma
 Annotation_Definition ::= 'annotation' Class_Def
-Expr                  ::= Pragma
-Pragma                ::= 'pragma' Simple_Type [NB_Arg_Exprs]
-Dcl                   ::= Macro_Dcl
 Macro_Dcl             ::= 'def' 'macro' Fun_Sig 'end' ['def']
-Def                   ::= Macro_Def
 Macro_Def             ::= 'def' 'macro' Fun_Sig [Fun_Dec] 
                           [semi Fun_Stats] 'end' ['def']
                         | 'def' 'macro' Fun_Sig ':=' [Fun_Dec2] Expr
+Annotation            ::= '@[' Long_Id [Arguments] ']'
+                        | '@[' Long_Id '(' [Arguments] ')' ']'
+Pragma                ::= 'pragma' Long_Id [Arguments]
+                        | 'pragma' Long_Id '(' [Arguments] ')'
 \end{lstlisting}
+
+% TBD: define also postfix annotations? [@ Stable_Id Arguments]
 
 Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Aml, possibly affecting the resulting bytecode and abstract syntax trees. 
 

@@ -14,7 +14,7 @@
 \section{Patterns}
 \label{sec:patterns}
 
-\syntax\begin{lstlisting}[deletekeywords={as,with}]
+\grammar\begin{lstlisting}[deletekeywords={as,with}]
 Pattern             ::= Atomic_Pattern
                       | Non_Atomic_Pattern
 Atomic_Pattern      ::= Var_Pattern
@@ -55,7 +55,7 @@ Infix_Pattern       ::= Pattern (id | op_id) Pattern
 Or_Pattern          ::= Pattern '|' Pattern
 And_Pattern         ::= Pattern '&' Pattern
 Named_Pattern       ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
-                      | '.' Stable_Id [Tuple_Extractions]
+                      | '.' Long_Id [Tuple_Extractions]
 Tag_Pattern         ::= Tag_Name [Tuple_Extractions]
 Tuple_Pattern       ::= Pattern {',' Pattern}+
                       | Tuple_Extractions
@@ -80,7 +80,7 @@ Rest_Extracts       ::= Optional_Extract {',' Optional_Extract}
 Optional_Extract    ::= '?' Pattern
                       | '?' ['val' | 'var'] id ':' Type
                       | '?' '_' ':' Type
-                      | '?(' Pattern ':=' Value_Expr ')'
+                      | '?(' Pattern ':=' Expr ')'
 Rest_Extract        ::= '*' ['val' | 'var'] id [':' Type]
                       | '*' '_' [':' Type]
 Labelled_Extracts   ::= Labelled_Pattern {',' Labelled_Pattern} 
@@ -92,10 +92,10 @@ Labelled_Pattern    ::= '~' ['val' | 'var'] id
                       | '~' ['val' | 'var'] id ':' 
                         '(' Pattern [':' Type] ')'
                       | '~?' ['val' | 'var'] id
-                      | '~?(' ['val' | 'var'] id [':' Type] [':=' Value_Expr] ')'
+                      | '~?(' ['val' | 'var'] id [':' Type] [':=' Expr] ')'
                       | '~?' ['val' | 'var'] id ':' Pattern
                       | '~?' ['val' | 'var'] id ':' 
-                        '(' Pattern [':' Type] [':=' Value_Expr] ')'
+                        '(' Pattern [':' Type] [':=' Expr] ')'
 Capture_Extract     ::= '**' var_id [':' Type]
                       | '**' '_' [':' Type]
 Seq_Extractions     ::= Pattern {semi Pattern} [semi Seq_Rest_Extracts] 
@@ -109,15 +109,14 @@ Dict_Extractions    ::= Dict_Extraction {semi Dict_Extraction}
                       | Capture_Extract
                       | Seq_Extractions
 Dict_Extraction     ::= Dict_Key '=>' Pattern
-Dict_Key            ::= Literal
-                      | '_'
-                      | Value_Expr
+Dict_Key            ::= '_'
+                      | Expr
 Record_Pattern      ::= 'record' '{' Field_Patterns '}'
 Field_Patterns      ::= Field_Pattern {semi Field_Pattern} [semi '_']
                       | '_'
 Field_Pattern       ::= Stable_Id '=>' Pattern
 Struct_Pattern      ::= 'structure' Pkg_Type
-Pattern_Param       ::= Value_Expr
+Pattern_Param       ::= Expr
 \end{lstlisting}
 
 \begin{table}[h!]
@@ -155,7 +154,7 @@ We call {\em atomic patterns} those of pattern forms that can appear consecutive
 \subsection{Constant Patterns}
 \label{sec:constant-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Constant_Pattern ::= Constant
 \end{lstlisting}
 
@@ -179,7 +178,7 @@ A constant pattern contributes the type of the constant to type of parameter, wh
 \subsubsection{Regular Expression Patterns}
 \label{sec:regexp-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Pattern ::= Constant
 \end{lstlisting}
 
@@ -197,7 +196,7 @@ Regular expression patterns contribute the \code{String_Like} type to type of pa
 \subsection{Variable Patterns}
 \label{sec:variable-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Var_Pattern      ::= ['implicit'] ['val' | 'var'] var_id
 \end{lstlisting}
 
@@ -219,7 +218,7 @@ A variable pattern contributes the type \code{Aml/Language.Any} to type of param
 \subsection{Wildcard Patterns}
 \label{sec:wildcard-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Wildcard_Pattern ::= '_'
 \end{lstlisting}
 
@@ -251,12 +250,12 @@ Wildcard patterns may also be used in extractions to ignore the input at the giv
 \subsection{Named Patterns}
 \label{sec:named-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Named_Pattern ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
-                | '.' Stable_Id [Tuple_Extractions]
+                | '.' Long_Id [Tuple_Extractions]
 \end{lstlisting}
 
-In a named pattern, the \code{Stable_Id} part must not start with a lowercase letter as defined in \code{var_id}, otherwise it would be interpreted as a variable pattern. 
+In a named pattern, the \code{Stable_Id} (or \code{Long_Id}) part must not start with a lowercase letter as defined in \code{var_id}, otherwise it would be interpreted as a variable pattern. 
 
 Due to the syntactic overlap regarding variable patterns, Aml offers a simple solution to interpret an identifier starting with a lowercase letter as a value instead of a variable pattern, and that is to enclose the identifier in backquotes, so that ``\code{id}'' is ``\code{`id`}''. Such an identifier is never considered to be a variable pattern. 
 
@@ -286,7 +285,7 @@ After the \code{Stable_Id} is resolved, the named pattern is treated according t
 
 If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an enumeration element, the pattern is an enumeration pattern. Such pattern then matches inputs that are equal to the enumeration element. The form \code{Stable_Id} is used if the corresponding enumeration element takes no arguments or if arguments are to be ignored, and the form \code{Stable_Id Tuple_Extractions} is used if it takes arguments, which are then matched according to the \code{Tuple_Extractions} (\sref{sec:extractions-in-patterns}). 
 
-Shortcuts are provided for enumeration elements, which are relative to the enumeration type: \code{.Stable_Id} and \code{.Stable_Id Tuple_Extractions}. The \code{Stable_Id} is then searched in the enumeration type instead of the current scope. 
+Shortcuts are provided for enumeration elements, which are relative to the enumeration type: \code{.Long_Id} and \code{.Long_Id Tuple_Extractions}. The \code{Long_Id} is then searched in the enumeration type instead of the current scope. 
 
 An enumeration pattern contributes the enumeration type to type of parameter, when used in function parameter list. 
 
@@ -370,7 +369,7 @@ A case class pattern contributes the class associated with the class object to t
 \subsubsection{Active Patterns}
 \label{sec:active-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Active_Pattern_Ids ::= '(|' id {'|' id} ['|' '_'] '|)'
 \end{lstlisting}
 
@@ -494,7 +493,7 @@ A constructor pattern contributes the class associated with the class object to 
 \subsection{Polymorphic Variant Patterns}
 \label{sec:polymorphic-variant-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Tag_Pattern ::= Tag_Name [Tuple_Extractions]
 \end{lstlisting}
 
@@ -507,7 +506,7 @@ Polymorphic variant type case patterns ~\lstinline!`$t$ $p$! matches all polymor
 \subsection{Pattern Binders}
 \label{sec:pattern-binders}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Bound_Pattern ::= Pattern 'as' Var_Pattern
 \end{lstlisting}
 
@@ -529,7 +528,7 @@ end match
 \subsection{Disjunctive ``Or'' Patterns}
 \label{sec:disjunctive-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Or_Pattern ::= Pattern '|' Pattern
 \end{lstlisting}
 
@@ -552,7 +551,7 @@ Disjunctive patterns contribute union of types contributed by both sub-patterns 
 \subsection{Conjunctive ``And'' Patterns}
 \label{sec:conjunctive-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 And_Pattern ::= Pattern '&' Pattern
 \end{lstlisting}
 
@@ -571,7 +570,7 @@ Conjunctive patterns contribute intersection of types contributed by both sub-pa
 \subsection{Typed Patterns}
 \label{sec:typed-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Typed_Pattern      ::= '(' Type_Bound_Pattern ')'
 Type_Bound_Pattern ::= Pattern ':' Type
 Type_Pattern       ::= ['type' 'is' | ':?'] Type
@@ -597,7 +596,7 @@ A typed pattern contributes the type $T$ to type of parameter, when used in func
 \subsection{List Patterns}
 \label{sec:list-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 List_Pattern ::= '%[' [Seq_Extractions] ']'
 \end{lstlisting}
 
@@ -651,7 +650,7 @@ Note that in the example, the type that would be inferred for \code{list} is \co
 \subsection{``Cons'' Patterns}
 \label{sec:cons-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Cons_Pattern ::= Pattern '::' Pattern
 \end{lstlisting}
 
@@ -672,7 +671,7 @@ Cons patterns contribute the same type as list patterns to parameters.
 \subsection{Array Patterns}
 \label{sec:array-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Array_Pattern ::= '%[|' [Seq_Extractions] '|]'
 \end{lstlisting}
 
@@ -702,7 +701,7 @@ Note that in the example, the type that would be inferred for \code{vector} is \
 \subsection{Dictionary Patterns}
 \label{sec:dict-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Dict_Pattern ::= '%{' [Dict_Extractions] '}'
 \end{lstlisting}
 
@@ -734,7 +733,7 @@ A dictionary pattern contributes \code{Dictionary[$K$, $T$]} to type of paramete
 \subsection{Multimap Patterns}
 \label{sec:multimap-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Multimap_Pattern ::= '%{{' [Dict_Extractions] '}}'
 \end{lstlisting}
 
@@ -747,7 +746,7 @@ Multimap patterns are very much like dictionary patterns (\sref{sec:dict-pattern
 \subsection{Bag Patterns}
 \label{sec:bag-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Bag_Pattern ::= '%(' [Seq_Extractions] ')'
 \end{lstlisting}
 
@@ -764,7 +763,7 @@ A bag pattern contributes \code{Bag[$T$]} to type of parameter, when used in fun
 \subsection{Record Patterns}
 \label{sec:record-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Record_Pattern ::= 'record' '{' Field_Patterns '}'
 \end{lstlisting}
 
@@ -781,7 +780,7 @@ The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$
 \subsection{Structure Patterns}
 \label{sec:structure-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Struct_Pattern ::= 'structure' Pkg_Type
 \end{lstlisting}
 
@@ -800,7 +799,7 @@ A structure pattern ~\lstinline!structure $T$!~ matches a structure with type $T
 \subsection{Tuple Patterns}
 \label{sec:tuple-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Tuple_Pattern ::= Pattern {',' Pattern}+
                 | Tuple_Extractions
 \end{lstlisting}
@@ -852,7 +851,7 @@ The sequence of matched elements depends on which kinds of extractions are prese
 \subsection{Infix Operation Patterns}
 \label{sec:infix-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Infix_Pattern ::= Pattern (id | op_id) Pattern
 \end{lstlisting}
 
@@ -867,7 +866,7 @@ An infix operation pattern ~\lstinline!$p$ $\op$ ($q_1 \commadots q_n$)!~ is a s
 \subsection{Grouped Patterns}
 \label{sec:grouped-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Grouped_Pattern ::= '(' Pattern ')'
 \end{lstlisting}
 
@@ -882,7 +881,7 @@ Grouped patterns contribute the least upper bound of all types contributed by th
 \subsection{Annotated Patterns}
 \label{sec:annotated-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Annotated_Pattern ::= {Annotation}+ Pattern
 \end{lstlisting}
 
@@ -912,7 +911,7 @@ An irrefutable pattern is a pattern that always matches its input (hence irrefut
 \section{Type Patterns}
 \label{sec:type-patterns}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Pat ::= Type
 \end{lstlisting}
 

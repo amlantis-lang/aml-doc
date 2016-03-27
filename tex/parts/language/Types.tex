@@ -7,7 +7,7 @@
 
 \newpage
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type                   ::= Function_Type Quantification_Clauses
                          | Infix_Type Quantification_Clauses
 Function_Type          ::= [Implicit_Types] Function_Args {'->' Function_Args} 
@@ -92,15 +92,16 @@ Types in Aml are represented by objects that are members of the \code{Type} type
 \section{Paths}
 \label{sec:type-paths}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Path             ::= Stable_Id
                    | [id '.'] 'self'
                    | 'self' '[' ('cloned' | 'origin') ']'
                    | 'outer' Class_Qualifier
-Stable_Id        ::= [Path '.'] id
+Long_Id        ::= [Path '.'] id
                    | [id '.'] 'super' [Class_Qualifier] '.' id
                    | 'outer' Class_Qualifier '.' id
-                   | Module_Path '.' Stable_Id
+                   | Module_Path '.' Long_Id
+Stable_Id        ::= Long_Id
                    | Type_Var
 Class_Qualifier  ::= '[' (id | Simple_Type) ']'
 Module_Path      ::= [Root] Module_Selector {'.' id}
@@ -108,7 +109,6 @@ Module_Selector  ::= [Vendor] id
 Root             ::= '@Root' '.'
 Vendor           ::= id '/'
 Type_Var         ::= ''' id
-Type_Id          ::= id | Type_Var
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Aml's type system. 
@@ -162,7 +162,7 @@ Every value in Aml has a type which is of one of the following forms.
 \subsection{Singleton Type}
 \label{sec:singleton-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type ::= Path '.' 'type'
 \end{lstlisting}
 
@@ -177,7 +177,7 @@ A {\em stable type} is either a singleton type or a type which is declared to be
 \subsection{Cloned Type}
 \label{sec:cloned-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type ::= Path '.' 'cloned' '.' 'type'
 \end{lstlisting}
 
@@ -192,7 +192,7 @@ A {\em stable type} is either a cloned type or a type which is declared to be a 
 \subsection{Literal-Based Singleton Type}
 \label{sec:literal-based-singleton-type}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type ::= Literal ['.' 'type']
 \end{lstlisting}
 
@@ -209,7 +209,7 @@ In contexts where a type is expected\footnote{Most notably type arguments or typ
 \subsection{Type Projection}
 \label{sec:type-projection}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type ::= Simple_Type '#' id
 \end{lstlisting}
 
@@ -242,7 +242,7 @@ This is due to the fact that the \code{class B} is defined as a class instance m
 \subsection{Type Designators}
 \label{sec:type-designators}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type ::= Stable_Id
 \end{lstlisting}
 
@@ -285,22 +285,27 @@ class A_Class {
 \subsection{Parameterized Types}
 \label{sec:parameterized-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type         ::= Simple_Type [Type_Args]
                       | Postfix_Simple_Type
 Postfix_Simple_Type ::= Type Stable_Id
-Type_Args           ::= '[' Types ']'
-Types               ::= Type_Arg {',' Type_Arg}
-Type_Arg            ::= [['~'] id ':'] Type 
-                      | '<' uom_expr '>'
+Type_Args           ::= '[' [Type_Arg {',' Type_Arg} [',' '...' id]] ']'
+                      | '[' '...' id ']'
+Type_Arg            ::= Type_Arg_Value
+                      | Measure_Arg_Value
+                      | Static_Arg_Value
+Type_Arg_Value      ::= ['~' id ':'] Type
                       | '_'
+Measure_Arg_Value   ::= ['~' id ':'] '<' uom_expr '>'
+Static_Arg_Value    ::= Constant
+                      | 'constant' '(' Expr ')'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
 
 Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline!$A$ <: Comparable[$A$]!~ is substituted into ~\lstinline!$C$ <: Comparable[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfill the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
 
-Each type parameter may be given a name $n$, which is done by prepending it with an id immediately followed by a colon, which itself may be prepended with a tilde ``\lstinline!~!''. The first case is a shorthand for adding an annotation ~\lstinline!@[named :$n$]!, the second is a shorthand for adding the previous annotation and also ~\lstinline!@[purely_named]!. 
+Each type argument may be given a name $n$, using the form ``\lstinline!~$n$: $T$!''. This attaches the annotation ~\lstinline!@[labelled :$n$]!~ to the type argument. 
 
 \example
 \label{example:parameterized-types}
@@ -370,7 +375,7 @@ Boolean List List    (* equivalent to List[List[Boolean]] *)
 \subsection{Polymorphic Variant Types}
 \label{sec:polymorphic-variant-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type              ::= Polymorphic_Variant_Type
 Polymorphic_Variant_Type ::= '[[' Tag_Spec {semi Tag_Spec} ']]'
                            | '[[>' [Tag_Spec {semi Tag_Spec}] ']]'
@@ -400,7 +405,7 @@ Intersection-like types may be given in closed polymorphic variant types, likely
 \subsection{Tuple Types}
 \label{sec:tuple-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type ::= '(' Types ')'
 Types       ::= Named_Subtype {',' Named_Subtype}
 Infix_Type  ::= Named_Subtype {'*' Named_Subtype}
@@ -425,7 +430,7 @@ Tuple type with single type parameter is an alias for the type parameter itself.
 
 \subsection{Annotated Types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Annot_Type ::= {Annotation} Simple_Type
 \end{lstlisting}
 
@@ -439,7 +444,7 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations (\sref{sec:annotations
 \subsection{Compound Types}
 \label{sec:compound-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type} 
                   ['with' ['refinement'] Refine_Stats]
                 | ['refinement'] Refine_Stats
@@ -472,7 +477,7 @@ The \code{refinement} keyword may also be omitted from a compound type that cons
 \subsection{Infix Types}
 \label{sec:infix-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Infix_Type ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
              | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
                {':' Postfix_Type}
@@ -489,7 +494,7 @@ Infix type may also result from an infix expression (\sref{sec:prefix-infix-ops}
 \subsection{Function Types}
 \label{sec:function-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Function_Type ::= [Implicit_Types] Function_Args {'->' Function_Args}
                   '->' Type
 Function_Args ::= Infix_Type
@@ -540,7 +545,7 @@ def h (x: Integer, y: Integer, z: Integer) end
 
 \subsection{Type Class Constraints}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Implicit_Types ::= Infix_Type '=>'
                  | '(' Types ')' '=>'
 Given_Dcl      ::= ['class'] Type
@@ -567,7 +572,7 @@ A good style is to not combine the two syntaxes in one function type, however, i
 
 \subsection{Functional Dependencies}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Given_Dcl ::= Simple_Type '~>' Simple_Type
 \end{lstlisting}
 
@@ -579,10 +584,10 @@ A functional dependency expresses dependencies between type parameters of a func
 
 \subsection{Type Dependencies \& Equations}
 
-\syntax\begin{lstlisting}
-Given_Dcl ::= Type_Id Type_Equation
-            | Type_Id '>:' Type ['<:' Type]
-            | Type_Id '<:' Type
+\grammar\begin{lstlisting}
+Given_Dcl ::= Type_Var Type_Equation
+            | Type_Var '>:' Type ['<:' Type]
+            | Type_Var '<:' Type
 \end{lstlisting}
 
 A type dependency or equation expresses additional relations between different type components (usually type variables used as type parameters) that make up a type that uses the \code{given} declarations. It can equate two types (e.g. ~\lstinline!given {'a := 'b}!), or declare that two or three types have a conformance relation (e.g. ~ \lstinline!given {'a >: 'b <: 'c}!).
@@ -594,7 +599,7 @@ A type dependency or equation expresses additional relations between different t
 \subsection{Existentially Quantified Types}
 \label{sec:existential-types}
 
-\syntax\begin{lstlisting}[escapechar=@]
+\grammar\begin{lstlisting}[escapechar=@]
 Type                   ::= Infix_Type Quantification_Clauses
 Quantification_Clauses ::= {'for-some' '{' Quantification_Dcl
                            {semi Quantification_Dcl} '}'}
@@ -707,7 +712,7 @@ Since this \code{List} type is covariant in its type parameter, then e.g. ~\lsti
 \subsection{Explicitly Universally Quantified Types}
 \label{sec:universal-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type              ::= Infix_Type Quantification_Clauses
 Universal_Clauses ::= {'for-all' '{' Quantification_Dcl
                       {semi Quantification_Dcl} '}'}
@@ -722,7 +727,7 @@ A type variable bound in $T$ is also explicitly polymorphic.
 \subsection{Nullable Types}
 \label{sec:nullable-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Annot_Type    ::= {Annotation} Simple_Type Nullable_Mod
 Nullable_Mod  ::= '?' | '!'
 \end{lstlisting}
@@ -779,7 +784,7 @@ Then, the value returned by it replaces occurrences of \code{nil} or \code{undef
 \subsection{Unions}
 \label{sec:unions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is Union
 Union               ::= 'union' 'of' Type {semi Type}
 Infix_Type          ::= Type {'or' Type}
@@ -819,7 +824,7 @@ Union types also employ the following set of rules, given some types \code{X}, \
 \subsection{Intersection Types}
 \label{sec:intersection-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is 'intersection' 'of'
                         Type {semi Type}
 Infix_Type          ::= Type {'and' Type}
@@ -856,7 +861,7 @@ Intersection types also employ the following set of rules, given some types \cod
 \subsection{Constrained Types}
 \label{sec:constrained-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Postfix_Type     ::= Compound_Type 
                      'with' 'constraint' Constraint_Block
 Constraint_Block ::= '{' Block '}'
@@ -908,28 +913,23 @@ If a mutable or immutable type is seen as a constrained type, but $T$ is already
 \subsection{Foreign Types}
 \label{sec:foreign-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Simple_Type  ::= Foreign_Type
-Foreign_Type ::= 'foreign' lang_name '{' 
-                 printable_char_or_space {',' printable_char_or_space}
-                 '}'
+Foreign_Type ::= 'foreign' lang_name string_literal
 lang_name    ::= id
 \end{lstlisting}
 
 A {\em foreign type} is a tool that helps Aml programs integrate with other languages written for the same VM, the Aml VM. It is viewed as extending the type \code{Any}, can be given an alias name and be a part of a compound type with another foreign types or Aml types. 
-
-\paragraph{Syntax note}
-If an opening delimiter ``\lstinline!{!'' appears within the foreign language type name, then it is properly paired with the next ``\lstinline!}!'' by Aml and not treated as closing delimiter, but this is done without any knowledge of the foreign language, only presuming that these delimiters are paired. 
 
 \paragraph{Parameterized foreign types}
 If the foreign type is parameterized, it can be a part of a type application as well, but its type parameters are not declared neither defined on the Aml side. Also, the foreign language defines how the parameterization works -- e.g., Java does type erasure with its type parameters.
 
 \example A foreign type aliases for a few foreign types:
 \begin{lstlisting}
-type Java_Object is foreign java {java.lang.Object} end type
-type Java_int is foreign java {int} end type
-type CS_Object is foreign `c#` {System.Object} end type
-type Rb_Proc_Status is foreign ruby {Process::Status} end type
+type Java_Object is foreign Java "java.lang.Object" end type
+type Java_int is foreign Java "int" end type
+type CS_Object is foreign `C#` "System.Object" end type
+type Rb_Proc_Status is foreign Ruby "Process::Status" end type
 \end{lstlisting}
 
 
@@ -1103,7 +1103,7 @@ The definition of a type projection ~\lstinline!$S$#$t$!~ is the member binding 
 \section{Any-Value Type}
 \label{sec:any-value-type}
 
-\syntax\begin{lstlisting}[morekeywords={Any},deletekeywords={also}]
+\grammar\begin{lstlisting}[morekeywords={Any},deletekeywords={also}]
 Simple_Type ::= 'Any'
 (* also: *)
 Simple_Type ::= 'Aml/Language.Any'
@@ -1126,7 +1126,7 @@ The \code{Any} virtual type is the actual root of the type system of Aml, althou
 \section{Automatically Inferred Type}
 \label{sec:auto-type}
 
-\syntax\begin{lstlisting}[morekeywords={Auto},deletekeywords={also}]
+\grammar\begin{lstlisting}[morekeywords={Auto},deletekeywords={also}]
 Simple_Type ::= 'Auto'
 (* also: *)
 Simple_Type ::= 'Aml/Language.Auto'
@@ -1152,7 +1152,7 @@ By default, when a type annotation is missing in a function declaration, then it
 \section{Dynamic Type}
 \label{sec:dynamic-type}
 
-\syntax\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
+\grammar\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
 Simple_Type ::= 'Dynamic'
 (* also: *)
 Simple_Type ::= 'Aml/Language.Dynamic'

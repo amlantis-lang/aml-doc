@@ -13,7 +13,7 @@
 \subsection{Modules}
 \label{sec:modules}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Implementation_File      ::= Implementation_Packaging
 Signature_File           ::= Signature_Packaging
 Script_File              ::= Expr
@@ -131,7 +131,7 @@ Top-level definitions outside a packaging are assumed to be injected into the \c
 
 \subsection{Module Object}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Module_Object ::= {Annotation} 'module' 'object' Object_Def
 \end{lstlisting}
 
@@ -151,7 +151,7 @@ Annotations and pragmas (\sref{sec:annotations}) specified for the module object
 \subsection{Module References}
 \label{sec:module-refs}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Path ::= Module_Path
 \end{lstlisting}
 
@@ -207,7 +207,7 @@ A {\em program} is a module that has 1 or more entry points. An entry point is a
 
 \example The following example will create a hello world program by defining a module entry point in module \code{Test}. 
 
-\syntax\begin{lstlisting}[morekeywords={entry}]
+\grammar\begin{lstlisting}[morekeywords={entry}]
 module Example/Test
 module object {
   entry def main (args: Sequence[String]) := {

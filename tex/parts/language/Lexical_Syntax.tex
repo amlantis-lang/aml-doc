@@ -69,46 +69,47 @@ A set of identifiers is reserved for language features instead of for user ident
 
 The following names are the reserved words. Identifiers that match any of the specified reserved word carry the extra property of being a possible keyword, which is used in syntactic grammar. 
 
-\syntax\begin{lstlisting}[deletekeywords={of}]
-Identifier_Keyword ::= ? id, one of: ?
-\end{lstlisting}
-\begin{lstlisting}
+\syntax\begin{lstlisting}
 abstract      advice        advice-execution            after
 alias         also          and           annotation    arguments
 around        as            aspect        assert        atomic
 attribute     begin         before        bitfield      break
 broken        case          catch         class         clone
 cloned        constant      constraint    constructor   declare
-def           delta         destructor    digits        dispatch
-do            done          eager         else          elsif
-end           ensure        enum          execution     exhausted
-extends       family        final         for           for-all
-for-some      foreign       function      functor       get
-given         goto          handler       if            immutable
-implements    implicit      in            include       inherit
-instance      interface     intersection  invariant     invoke
-is            joinpoint     label         lazy          let
-loop          macro         match         measure       member
-memoize       message       method        module        monitored
-multi         mutable       native        next          nil
-no            not           object        of            opaque
+def           defer         delta         destructor    digits
+dispatch      do            done          downto        eager
+else          elsif         end           ensure        enum
+execution     exhausted     exit          extends       family
+failure       final         for           for-all       for-some
+foreign       function      functor       get           given
+goto          handle        handler       if            immutable
+implements    implicit      in            include       infix
+infixl        infixr        inherit       instance      interface
+intersection  invariant     invoke        is            joinpoint
+label         lazy          let           loop          macro
+match         measure       member        memoize       message
+method        module        monitored     multi         mutable
+native        new           next          nil           no
+not           object        of            opaque        open
 operator      optional      or            origin        otherwise
 out           outer         override      parallel      per-self
 per-target    pointcut      pragma        prefer        prepend
 private       property      protected     protocol      public
-pure          raise         raiseable     raising       range
-rec           recursive     record        redo          ref
-refine        refinement    release       reraise       rescue
-retain        rethrow       retry         return        returning
-requires      reverse       sealed        self          set
-seq           sig           skip          soft          step
-struct        super         switch        synchronized  tailcall
-target        then          this          throw         throwable
-throwing      to            trait         transparent   tuple
-type          undefined     unless        unowned       until
-union         upgrade       use           val           var
-variant       yes           weak          when          while
-with          xor           yield         yielding
+pure          raise         raiseable     raises        raising
+range         rec           recursive     record        redo
+ref           refine        refinement    release       reraise
+reraises      rescue        resignal      resignals     retain
+rethrow       rethrows      retry         return        returning
+requires      reverse       scope         sealed        self
+set           seq           sig           signal        signaling
+signals       skip          soft          step          struct
+super         switch        synchronized  tailcall      target
+then          this          throw         throws        throwable
+throwing      to            trait         transparent   try
+tuple         type          undefined     unless        unowned
+until         union         upgrade       use           val
+var           variant       yes           weak          when
+while         with          xor           yield         yielding
 \end{lstlisting}
 
 Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backticks: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backticks (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
@@ -136,7 +137,7 @@ Function identifiers specify how a function can be named. Usually, it will be th
 
 \syntax\begin{lstlisting}[deletekeywords={of}]
 Symbolic_Keyword ::= ? one of: ?
-let!  yield!  return!  as?  as!  is!  not!
+let!  yield!  return!  as?  as!  is!  not!  open!  try?  try!
 |  .  .?  .!  .'  :  (  )  [  ]  <  >  >:  <:  :>
 %[|  |]  %[  %(  {  %{  }  %/  /
 '  #  ..  ..<  ...  :=  ==  /==  =~  ;  ;;  ->  <-  ~>
@@ -156,9 +157,10 @@ Symbolic or partially symbolic character sequences can be treated as keywords, i
 \syntax\begin{lstlisting}[deletekeywords={of,and,for}]
 op_id        ::= Symbolic_Op
                | Qualified_Op
+nary_op_id   ::= '?' {op_char}
 Symbolic_Op  ::= {op_char}+
-Qualified_Op   | '`' (Stable_Id - Type_Var) '.' {op_char}+ '`'
-               | '`' [(Stable_Id - Type_Var)] '.' id '`'
+Qualified_Op   | '`' Long_Id '.' {op_char}+ '`'
+               | '`' Long_Id '.' id '`'
 op_char      ::= ? Unicode char of classes Sm and So except for 0x0060 ?
                | '!'
                | '#'
@@ -259,11 +261,11 @@ There are literals for numbers (including integer, floating point and complex), 
 Literal ::= number_literal
           | percent_literal
           | annotated_number
-	        | character_literal
-	        | boolean_literal
-	        | string_literal
-	        | symbol_literal
-	        | regexp_literal
+          | character_literal
+          | boolean_literal
+          | string_literal
+          | symbol_literal
+          | regexp_literal
 \end{lstlisting}
 
 
@@ -300,11 +302,12 @@ duodecimal_numeral
 ddec_digit      ::= digit 
                   | 'a' | 'b'
                   | 'A' | 'B'
-hex_prefix      ::= '0x'
-bin_prefix      ::= '0b'
-oct_prefix      ::= '0o'
-sxgs_prefix     ::= '0s'
-ddec_prefix     ::= '0d'
+(* in prefixes, the alternative with lowercase letter is preferred *)
+hex_prefix      ::= '0x' | '0X' 
+bin_prefix      ::= '0b' | '0B'
+oct_prefix      ::= '0o' | '0O'
+sxgs_prefix     ::= '0s' | '0S'
+ddec_prefix     ::= '0d' | '0D'
 sign            ::= '+' | '-'
 int_suffix      ::= ('G' | 'I' | 'M' | 'N' | 'T' | 'Q' | 'R' | 'Z') {digit}
 \end{lstlisting}
@@ -494,8 +497,7 @@ Aml offers a way to represent numbers as fractions of 100 (in case of ``\,\lstin
 Aml has an addition to number handling, called {\em units of measure} (\sref{sec:units-of-measure}). Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
 
 \syntax\begin{lstlisting}
-annotated_number ::= number_literal '[<' uom_expr '>]'
-uom_expr         ::= Unit_Conv {',' Unit_Conv}
+annotated_number ::= number_literal '[<' measure_literal '>]'
 \end{lstlisting}
 
 \example Some number literals annotated with units of measure:
@@ -515,7 +517,7 @@ min_motorway_speed := distance // time
 \subsection{Character Literals}
 \label{sec:characterliterals}
 
-\syntax\begin{lstlisting}
+\syntax\begin{lstlisting}[deletekeywords={and}]
 printable_char    ::= ? all visible and printable UTF-8 characters ? 
 character_literal ::= '%'' (printable_char | char_escape_seq) '''
 \end{lstlisting}
@@ -666,12 +668,12 @@ Whitespace tokens and comments are not discarded during lexical analysis, but in
 \section{Conditional Compilation}
 \label{sec:conditional-compilation}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}[deletekeywords={if,unless}]
 Pragma           ::= If_Directive 
                    | Else_Directive 
                    | End_If_Directive 
-If_Directive     ::= 'pragma' 'if' id {'.' id}
-Else_Directive   ::= 'pragma' 'else'
+If_Directive     ::= 'pragma' ('if' | 'unless') Arguments
+Else_Directive   ::= 'pragma' Else
 End_If_Directive ::= 'pragma' 'end-if'
 \end{lstlisting}
 

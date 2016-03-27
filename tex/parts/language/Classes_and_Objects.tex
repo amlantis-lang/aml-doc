@@ -7,7 +7,7 @@
 
 \newpage
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Tmpl_Def             ::= Class_Definition
                        | Object_Definition
                        | Trait_Definition
@@ -19,7 +19,7 @@ Tmpl_Def             ::= Class_Definition
                        | Type_Definition
 Class_Definition     ::= [Mutability] ['monitored'] ['case'] 'class' Class_Def
 Object_Definition    ::= [Mutability] ['monitored'] ['case'] 'object' Object_Def
-Trait_Definition     ::= [Mutability] 'trait' Trait_Def
+Trait_Definition     ::= [Mutability] ['monitored'] 'trait' Trait_Def
 Protocol_Definition  ::= ['monitored'] 'protocol' Pro_Def
 Interface_Definition ::= [Mutability] ['monitored'] Ifc_Kind 'interface' Ifc_Def
 \end{lstlisting}
@@ -33,7 +33,7 @@ Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}
 \section{Templates}
 \label{sec:templates}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Class_Parents  ::= Constr {['prepend'] 'with' Annot_Type} 
 Trait_Parents  ::= Annot_Type {['prepend'] 'with' Annot_Type}
 Template_Body  ::= [Self_Type] Template_Stat {semi Template_Stat}
@@ -126,8 +126,8 @@ With explicit autoloading, the runtime is allowed to keep track of templates tha
 \subsection{Constructor Invocations}
 \label{sec:constructor-invocations}
 
-\syntax\begin{lstlisting}
-Constr ::= Annot_Type {'(' [Exprs] ')'}
+\grammar\begin{lstlisting}
+Constr ::= Annot_Type {'(' [Arguments] ')'}
          | '(' ')'
 \end{lstlisting}
 
@@ -193,7 +193,7 @@ Another way to access an eigenclass is to use the \lstinline!class << obj; $\ldo
 \paragraph{\em Metaclass Access}
 Metaclasses of classes may be accessed using the following language construct. 
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Metaclass_Access ::= 'class' '<<' Metaclass_Obj semi 
                      [Template_Body] 'end'
 Metaclass_Obj    ::= Type | Path | 'self' | id
@@ -524,7 +524,7 @@ It is an error if the inheritance closure of a class type consists of an infinit
 \subsection{Early Definitions}
 \label{sec:early-defs}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Early_Defs ::= '{' [Early_Def {semi Early_Def}] '}' 
                'with'
 Early_Def  ::= {Annotation} {Modifier} (Var_Def | Val_Def)
@@ -551,12 +551,12 @@ Any reference to \code{self} in the right-hand side of an early definition refer
 \section{Modifiers}
 \label{sec:modifiers}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Modifier         ::= Local_Modifier
                    | Access_Modifier
                    | 'override' [Class_Qualifier]
 Local_Modifier   ::= 'implicit'
-                   | 'lazy'
+                   | Eagerness
                    | 'final'
                    | 'sealed'
                    | 'abstract'
@@ -715,7 +715,7 @@ This is just for the sake of completeness, since change from public to public is
 \section{Class Definitions}
 \label{sec:class-definitions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Class_Definition    ::= [Mutability] ['monitored'] 'class' Class_Def
 Class_Def           ::= id [Type_Param_Clause] [Given_Clauses]
                         [Class_Param_Clauses] Class_Tmpl_Env
@@ -861,7 +861,7 @@ These are expressions inside the class template (\sref{sec:templates}) that refe
 \paragraph{\em Explicit primary constructor body}
 If a primary constructor should do something more than simply map parameters to instance values, then its explicit body comes in. It may co-exist with explicit primary constructor fields, which are then executed right after a call to the super-constructor (either in implicit position, or an explicit one). 
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Def             ::= PCtor_Def
 PCtor_Def       ::= 'constructor' PCtor_Fun_Def
 PCtor_Fun_Def   ::= 'do' (Constr_Expr | Constr_Block)
@@ -882,7 +882,7 @@ Constr_Block3   ::= [[Block_Stat {semi Block_Stat} semi]
 \paragraph{Auxiliary constructors}
 Besides the primary constructor, a class may define additional constructors with different parameter sections, that form together with the primary constructor an overloaded constructor definition. Every auxiliary constructor is constrained in means that it has to either invoke another constructor defined before itself, or any superclass constructor. Therefore classes in Aml have multiple entry points, but with great power comes great responsibility: user must ensure that every constructor path defines all necessary members. It is an error if a constructor invocation leads to an instance with abstract members. If a constructor does not explicitly invoke another constructor, an invocation of the implicit constructor is inserted implicitly as the first invocation in the constructor. 
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Ctor_Def     ::= ['convenience'] 'constructor' Ctor_Fun_Def
 Ctor_Fun_Def ::= [Param_Clauses] (':=' Constr_Expr | Constr_Block)
 
@@ -1014,7 +1014,7 @@ An object {\em eligible for destruction} must meet the following conditions:
 \subsection{Clone Constructor Definitions}
 \label{sec:clone-def}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 CCtor_Def     ::= ['convenience'] 'clone' CCtor_Fun_Def
 CCtor_Fun_Def ::= [Type_Param_Clause] [Given_Clauses] [Param_Clauses] 
                   (':=' Constr_Expr | Clone_Block)
@@ -1063,7 +1063,7 @@ end class
 \subsection{Upgrade Constructor Definitions}
 \label{sec:upgrade-def}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 UCtor_Def     ::= ['convenience'] 'upgrade' 'constructor' 
                   UCtor_Fun_Def
 UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
@@ -1079,7 +1079,7 @@ UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
 \subsection{Case Classes}
 \label{sec:case-classes}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Class_Definition ::= [Mutability] ['monitored'] 'case' 'class' Class_Def
 \end{lstlisting}
 
@@ -1157,7 +1157,7 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 \section{Trait Definitions}
 \label{sec:traits}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Trait_Definition ::= [Mutability] 'trait' Trait_Def
 Trait_Def        ::= id [Type_Param_Clause] [Given_Clauses]
                      Trait_Tmpl_Env
@@ -1198,7 +1198,7 @@ There are two separate branches of refinements in Aml, both are quite similar, b
   \item[] Second, refinements that are basically traits designed to be locally prepended to classes. The second branch is described here. 
 \end{itemize}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Refinement_Definition ::= 'refinement' Refinement_Def
 Refinement_Def        ::= id 'refine' Type {'and' Type} 
                           Refinement_Tmpl_Env
@@ -1228,7 +1228,7 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 \section{Protocol Definitions}
 \label{sec:protocols}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Protocol_Definition ::= ['monitored'] 'protocol' Pro_Def
 Pro_Def             ::= id [Type_Param_Clause] [Given_Clauses]
                         Pro_Tmpl_Env
@@ -1259,7 +1259,7 @@ Protocol references are preferred to traits to be used by library designers to d
 \section{Interface Definitions}
 \label{sec:interfaces}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Interface_Definition ::= [Mutability] ['monitored'] Ifc_Kind 'interface' Ifc_Def
 Ifc_Kind             ::= ['case'] 'class' 
                        | ['case'] 'object'
@@ -1281,7 +1281,7 @@ Interfaces are filtered versions of classes and traits with only declarations an
 \section{Object Definitions}
 \label{sec:object-definitions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Object_Definition ::= [Mutability] 'object' Object_Def
 Object_Def        ::= id Object_Tmpl_Env
 Object_Tmpl_Env   ::= Tmpl_Env_With_Pars ['object']
@@ -1316,7 +1316,7 @@ Every trait applied to a class object does not affect the associated class itsel
 \subsection{Case Objects}
 \label{sec:case-objects}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Object_Definition ::= [Mutability] ['monitored'] 'case' 'object' Object_Def
 \end{lstlisting}
 

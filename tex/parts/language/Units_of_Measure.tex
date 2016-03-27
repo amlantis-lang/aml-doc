@@ -11,15 +11,47 @@
 \section{Units of Measure}
 
 \syntax\begin{lstlisting}
-Const_Type_Def ::= Unit_Name 'is' ['abstract'] 'measure' 
-                   [semi Unit_Convs {semi Unit_Convs}]
-Unit_Name      ::= id - Unit_Op ['extends' id - Unit_Op]
-Unit_Convs     ::= Unit_Name ':=' Unit_Conv
-Unit_Conv      ::= '(' Unit_Conv ')'
-                 | Unit_Elem [Unit_Op Unit_Elem]
-                 | Unit_Conv Unit_Op Unit_Conv
-Unit_Elem      ::= number_literal | id |
-Unit_Op        ::= '*' | '/' | '^'
+Typedef 
+    ::= ...
+      | id 'is' 'abstract' 'measure' 
+      | id 'is' 'measure' [semi] measure_def
+      
+measure_def 
+    ::= '_' (* anonymous measure, inferrable by compiler *)
+      | measure_simple
+measure_simple
+    ::= measure_sequence
+      | measure_simple '*' measure_simple  (* product, e.g. "'U * 'V" *)
+      | measure_simple '/' measure_simple  (* quotient, e.g. "'U / 'V" *)
+      | '/' measure_simple  (* reciprocal, e.g. "/'U" *)
+      | '1'  (* dimensionless *)
+measure_sequence
+    ::= measure_power [measure_sequence]
+measure_power
+    ::= measure_atom
+      | measure_atom '^' rational_literal  (* power of measure, e.g. "m^2" *)
+measure_atom
+    ::= Type_Var  (* variable measure, e.g. "'U" *)
+      | Long_Id  (* named measure, e.g. "ft" *)
+      | '(' measure_simple ')'  (* parenthesized measure, e.g. "(N m)" *)
+      
+measure_literal
+    ::= '_'  (* anonymous measure, inferrable by compiler *)
+      | measure_literal_simple
+measure_literal_simple
+    ::= measure_literal_sequence  (* implicit product, e.g. "m s^-3" *)
+      | measure_literal_simple '*' measure_literal_simple  (* product, e.g. "m * s^4" *)
+      | measure_literal_simple '/' measure_literal_simple  (* quotient, e.g. "m/s^3" *)
+      | '/' measure_literal_simple  (* reciprocal, e.g. "/s" *)
+      | '1'  (* dimensionless *)
+measure_literal_sequence
+    ::= measure_literal_power [measure_literal_sequence]
+measure_literal_power
+    ::= measure_literal_atom
+      | measure_literal_atom '^' rational_literal  (* power of measure, e.g. "m^2" *)
+measure_literal_atom
+    ::= Long_Id  (* named measure, e.g. "ft" *)
+      | '(' measure_literal_simple ')'  (* parenthesized measure, e.g. "(N m)" *)
 \end{lstlisting}
 
 Numbers in Aml can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 

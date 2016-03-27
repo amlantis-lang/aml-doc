@@ -10,7 +10,7 @@
 \section{Type Definitions}
 \label{sec:type-decls-aliases}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Def              ::= Type_Definition
 Type_Definition  ::= 'type' Typedef {'and' Typedef} 'end' ['type']
 Typedef          ::= id [Type_Param_Clause] [Given_Clauses] [Type_Information]
@@ -64,7 +64,7 @@ type My_Collection <: Iterable end
 \section{Aspect Definitions}
 \label{sec:aspects}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Definition   ::= Aspect_Definition
 Aspect_Definition ::= 'aspect' [Aspect_Clause] Aspect_Def
 Aspect_Def        ::= id ['extends' Class_Parents] Aspect_Tmpl_Env
@@ -91,7 +91,7 @@ Pointcut_Type     ::= 'invoke' (id | regular_expression_literal)
                     | 'target' (id | Type)
                     | 'arguments' {'(' Id_Or_Type {',' Id_Or_Type} ')'}+
                     | 'arguments' '(' ')'
-                    | 'if' Value_Expr
+                    | ('if' | 'unless') '(' Expr ')'
                     | 'not' Pointcut_Ref
                     | Pointcut_Ref 'and' Pointcut_Ref
                     | Pointcut_Ref 'or' Pointcut_Ref
@@ -101,7 +101,7 @@ Pointcut_Type     ::= 'invoke' (id | regular_expression_literal)
 Pointcut_Ref      ::= id ['(' id {',' id} ')'] | Pointcut_Type
 Advice_Def        ::= 'advice' 
                       Advice_Spec (Pointcut_Ref | Pointcut_Type)
-                      Block_Expr
+                      Block_Argument
 Id_Or_Type        ::= id [':' Type] | Type
 Advice_Spec       ::= 'before' 
                     | 'after' [('returning' | 'throwing' | 'raising' | 'yielding') 
@@ -111,9 +111,9 @@ Aspect_Clause     ::= 'per-self' [Pointcut_Ref]
                     | 'per-target' [Pointcut_Ref] 
 \end{lstlisting}
 
-Only for \code{Block_Expr} inside of \code{Advice_Def}:
+Only for \code{Block_Argument} inside of \code{Advice_Def}:
 \begin{lstlisting}
-Simple_Expr1    ::= 'joinpoint' ['.' Selection]
+Simple_Expr       ::= 'joinpoint' ['.' Selection]
 \end{lstlisting}
 
 % https://eclipse.org/aspectj/doc/released/progguide/semantics-pointcuts.html
@@ -130,21 +130,21 @@ Simple_Expr1    ::= 'joinpoint' ['.' Selection]
 \section{Enumeration Type Definitions}
 \label{sec:enums}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is ['bitfield'] 
                         'enum' ('{' Enum_Field {semi Enum_Field} '}'
-                        | Enum_Field {semi Enum_Field})
+                          | Enum_Field {semi Enum_Field})
                         [Record_Extensions]
-Enum_Field          ::= id ':=' Literal
-                      | id ':=' Value_Expr
+Enum_Field          ::= id ':=' Expr
                       | id
+                      | {Annotation}+ Enum_Field
 \end{lstlisting}
 
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class, or a case class nested in the enum class. 
 
 An enum constant can be enhanced with custom parameters, which are then passed to the appropriate custom constructor. Enum definitions should only appear in three forms, called {\em constant enum constructors}
 \begin{itemize}
-  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type and numeric literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear.
+  \item Initialized with a scalar literal. Each enum constant then have a method \code{value}, which corresponds to the passed literal. Each literal passed has to be of the same type, and numeric and character literals get an auto-incremented value for every following enum constant definition that omits its explicit value. At least the first enum constant has to be initialized with a scalar literal. The comparison operators (e.g. ``\code{<}'') are automatically added and their implementations reflect the order in which the enum constants appear.
   \item Initialized with nothing, then each enum constant is by itself the ordering, no implicit literal value is added. The comparison operators are automatically added and their implementations reflect the order in which the enum constants appear. 
   \item Initialized with custom expression. The argument expression can be extracted with pattern matching as a contained single value, or if the argument expression is a tuple, as a tuple. It is highly recommended for every enum constant to be immutable, but it is not mandatory. This form can't extend any parent class and has the same implicit ordering as the previous form. 
 \end{itemize}
@@ -164,14 +164,14 @@ If an enum type is specified with the \code{bitfield} modifier, then the contain
 \section{Variant Type Definitions}
 \label{sec:variant-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is 'variant' [nl]
                         (Variant1 | Variant2)
                         [Record_Extensions]
 Variant1            ::= Variant_Field {semi Variant_Field}
 Variant2            ::= '{' Variant_Field {semi Variant_Field} '}'
 Variant_Field       ::= Type_Constr_Dcl
-Type_Constr_Dcl     ::= id ['of' Types]
+Type_Constr_Dcl     ::= {Annotation} id ['of' Types]
 \end{lstlisting}
 
 Variant types are similar to a simplified form for a series of case classes (\sref{sec:case-classes}) and case objects (\sref{sec:case-objects}), with shared interface and a common ancestor. Pattern matching is possible on variant types, as it would be done on case classes and case objects. 
@@ -227,13 +227,13 @@ Unlike enumeration types (\sref{sec:enums}), variant types do not enumerate a li
 \subsection{Generalized Algebraic Datatype Definitions}
 \label{sec:gadt-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is 'variant' [nl]
                         (Gadt1 | Gadt2)
                         [Record_Extensions]
 Gadt1               ::= Gadt_Field {semi Gadt_Field}
 Gadt2               ::= '{' Gadt_Field {semi Gadt_Field} '}'
-Gadt_Field          ::= id [Type_Param_Clause] ':' [Type '->'] Type
+Gadt_Field          ::= {Annotation}+ id [Type_Param_Clause] ':' [Type '->'] Type
 \end{lstlisting}
 
 
@@ -243,7 +243,7 @@ Gadt_Field          ::= id [Type_Param_Clause] ':' [Type '->'] Type
 \subsection{Extensible Variant Types}
 \label{sec:extensible-variant-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is 'open' 'variant' [nl]
                         (Variant1 | Variant2)
                         [Record_Extensions]
@@ -263,24 +263,27 @@ Type_Constr_Def     ::= Type_Constr_Dcl
 \section{Record Type Definitions}
 \label{sec:record-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is 'record' (Record1 | Record2)
 Record1             ::= Record_Components [Record_Extensions]
 Record2             ::= '{' Record_Components '}' [Record_Extensions]
 Record_Components   ::= Record_Component {semi Record_Component}
-Record_Component    ::= ['val' | 'var'] id ':' (Type | id)
+Record_Component    ::= {Annotation} {Record_Modifier} ['val' | 'var'] id ':' (Type | id)
                       | 'case' id Record_Cases
                         {'when' id 
                         ('then' | nl) 
                         Record_Components} 'end' ['case']
 Record_Cases        ::= semi Record_Case {semi Record_Case} 'end' ['case']
                       | '{' Record_Case {semi Record_Case} '}'
-Record_Case         ::= 'when' ['.'] Stable_Id ['(' [Extractions] ')']
+Record_Case         ::= 'when' ('.' Long_Id | Stable_Id) ['(' [Extractions] ')']
                         ('then' | semi) Record_Components
 Record_Extensions   ::= [nl] 'with' Record_Extension {'and' Record_Extension}
 Record_Extension    ::= Tmpl_Member
                       | Tmpl_Ifc_Impl
                       | Tmpl_Ifc_Dcl
+                      | {Annotation}+ Record_Extension
+Record_Modifier     ::= Access_Modifier 
+                      | Mutability
 \end{lstlisting}
 
 Record extension members, if given, are added to the type object, unless they are specified with \code{member} keyword, then they are added to the type instances. Implementations and declarations of interfaces are automatically added to the type instances. 
@@ -292,7 +295,7 @@ Record extension members, if given, are added to the type object, unless they ar
 \section{Structure, Signature \& Functor Type Definitions}
 \label{sec:struct-types}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Dcl               ::= Struct_Spec
 Struct_Type       ::= Struct_Type_Path
                     | 'sig' [Struct_Spec {semi Struct_Spec}] 'end'
@@ -318,7 +321,7 @@ Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
                     | ['public'] Use_Clause
                     | 'include' Struct_Type
                     | Use_Clause
-                    | {Annotation} Struct_Spec
+                    | {Annotation}+ Struct_Spec
 Def               ::= Struct_Def
 Struct_Expr       ::= Struct_Path
                     | 'struct' [Struct_Items] 'end' ['struct']
@@ -514,7 +517,7 @@ functor (Element_Type: Ordered_Type) ->
 \section{Range, Floating \& Fixed Point Subtype Definitions}
 \label{sec:fl-fi-subtypes}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Type_Representation ::= Is FP_Type_Def 
                       | Is FP_Subtype_Def 
                       | Is FP_Range_Def
@@ -529,10 +532,10 @@ FiP_Type_Def        ::= FP_Delta [FP_Range]
 FiP_Subtype_Def     ::= FP_Delta [FP_Digits] [FP_Range]
                       | FP_Digits [FP_Range]
                       | FP_Range
-FP_Digits           ::= 'digits' Infix_Expr
-FP_Delta            ::= 'delta' Infix_Expr
-FP_Range            ::= 'range' Infix_Expr 
-                        ('..' | '...' | '..<') Infix_Expr
+FP_Digits           ::= 'digits' Expr
+FP_Delta            ::= 'delta' Expr
+FP_Range            ::= 'range' Expr 
+                        ('..' | '...' | '..<') Expr
                       | 'range' Type
 \end{lstlisting}
 
@@ -609,7 +612,7 @@ end type
 \section{Type Classes \& Type Families}
 \label{sec:type-classes}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Typedef           ::= 'class' [Implicit_Types] id [Type_Param_Clause] 
                       [Given_Clauses] Type_Class_Def
                     | 'class' [Implicit_Types] Type_Param_Clause2 id 

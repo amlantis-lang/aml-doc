@@ -7,16 +7,30 @@
 
 \newpage
 
-\syntax\begin{lstlisting}
-Expr        ::= Value_Expr
+\grammar\begin{lstlisting}
+Expr        ::= Simple_Expr
+              | Application_Expr
+              | Type_Application_Expr
+              | '(' Expr ')'
+              | Infix_Expr
+              | Cond_Expr
+              | Match_Expr
+              | 'begin' Expr 'end'
+              | Quasiquote_Expr
+              | Quote_Expr
+              | Metaclass_Access
+              | Workflow_Expr
+              | Rescue_Expr
+              | Catch_Expr
+              | Type_Expr
               | Loop_Expr
-              | Raise_Expr 
+              | Signal_Expr
+              | Raise_Expr
               | Throw_Expr
               | Return_Expr
               | Assign_Expr
               | Update_Expr
               | Yield_Expr
-              | Infix_Expr
               | Annot_Expr
               | Cast_Expr
               | Use_Expr
@@ -28,26 +42,8 @@ Expr        ::= Value_Expr
               | Def_Expr
               | New_Expr
               | Tuple_Exprs
-              | Expr semi Expr
-Value_Expr  ::= Simple_Expr
-              | App_Expr
-              | Cond_Expr
-              | Match_Expr
-              | '(' Expr ')'
-              | 'begin' Expr 'end'
-              | Quasiquote_Expr
-              | Quote_Expr
-              | Metaclass_Access
-              | Workflow_Expr
-              | Rescue_Expr
-              | Catch_Expr
-              | Type_Expr
-Type_Expr   ::= 'type' '{' Type '}'
-              | Annot_Type - (Nullable_Mod, Type_Var, Postfix_Simple_Type)
-Simple_Expr ::= Block_Expr
-              | Simple_Expr1
               | Method_Expr
-              | TT_Expr
+              | Expr semi Expr
 Exprs       ::= Expr {',' Expr}
 \end{lstlisting}
 
@@ -85,9 +81,9 @@ What we call ``statement'', in context of Aml is in fact yet another kind of an 
 \subsection{Simple Constant Expressions}
 \label{sec:literal-expr}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= Constant
-Constant     ::= Literal
+\grammar\begin{lstlisting}
+Simple_Expr ::= Constant
+Constant    ::= Literal
 \end{lstlisting}
 
 Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate. 
@@ -102,7 +98,7 @@ Aml guarantees that methods of numeric literals (the class \code{Number}) always
 
 \subsection{The Nil and Undefined Values}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Constant ::= 'nil'
            | 'undefined'
 \end{lstlisting}
@@ -134,17 +130,16 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 \subsection{Tuple Expressions}
 \label{sec:tuples}
 
-\syntax\begin{lstlisting}
-Value_Expr        ::= '(' [Tuple_Exprs] ')'
+\grammar\begin{lstlisting}
 Tuple_Exprs       ::= Exprs {',' [nl] Named_Exprs}
                     | Named_Exprs
                     | ['mutable' | 'immutable'] 'tuple' [nl] 
                       '{' [nl] Tuple_Fields_Init [nl] '}'
 Named_Exprs       ::= Named_Expr {',' [nl] Named_Expr}
-Named_Expr        ::= [['~'] id ':'] Value_Expr
+Named_Expr        ::= [['~'] id ':'] Expr
 Constant          ::= '()'
 Tuple_Fields_Init ::= Tuple_Field_Init {semi Tuple_Field_Init}
-Tuple_Field_Init  ::= (id | {digit}+) '=>' Value_Expr
+Tuple_Field_Init  ::= (id | decimal_numeral) '=>' Expr
 \end{lstlisting}
 
 A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 1$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is usually only the value itself, without being wrapped in a tuple.  
@@ -181,9 +176,13 @@ The compiler should by default issue a warning when different combinations are e
 \subsection{Tuple Clone Expressions}
 \label{sec:tuple-clone}
 
-\syntax\begin{lstlisting}
-Value_Expr ::= ['mutable' | 'immutable'] 'tuple' [nl] 
-               '{' [nl] Value_Expr 'with' Tuple_Fields_Init [nl] '}'
+\grammar\begin{lstlisting}
+Tuple_Exprs ::= ['mutable' | 'immutable'] 'tuple' [nl] 
+                '{' [nl] Expr 'with' Tuple_Fields_Clone [nl] '}'
+Tuple_Fields_Clone 
+            ::= Tuple_Field_Clone {semi Tuple_Field_Clone}
+Tuple_Field_Clone
+            ::= (id | decimal_numeral) ['=>' Expr]
 \end{lstlisting}
 
 An expression of the form 
@@ -199,15 +198,15 @@ is a tuple clone expression.
 \subsection{List Expressions}
 \label{sec:list-expressions}
 
-\syntax\begin{lstlisting}
-Words        ::= Word {{? Unicode whitespace ?}+ Word}
-Word         ::= {id_char}+
-Simple_Expr1 ::= List_Expr
-List_Expr    ::= '%' List_Flags '[' [Value_Expr {semi Value_Expr}] ']'
-               | '%w' List_Flags '[' [Words] ']'
-List_Flags   ::= [['i' | (* immutable *)
-                   'm']  (* mutable *)
-                  ['l']] (* double linked *)]
+\grammar\begin{lstlisting}
+Words       ::= Word {{? Unicode whitespace ?}+ Word}
+Word        ::= {id_char}+
+Simple_Expr ::= List_Expr
+List_Expr   ::= '%' List_Flags '[' [Expr {semi Expr}] ']'
+              | '%w' List_Flags '[' [Words] ']'
+List_Flags  ::= [['i' | (* immutable *)
+                  'm']  (* mutable *)
+                 ['l']] (* double linked *)]
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%[$e_1$; $\ldots$; $e_n$]! is a list expression. 
@@ -238,12 +237,12 @@ The ``\code{i}'' and ``\code{m}'' flags can be inferred from the expected type, 
 \subsection{Array Expressions}
 \label{sec:array-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= Array_Expr
-Array_Expr   ::= '%' Array_Flags '[|' [Value_Expr {semi Value_Expr}] '|]'
-               | '%w' Array_Flags '[|' Words '|]'
-Array_Flags  ::= [['i' | (* immutable *)
-                   'm']] (* mutable *)
+\grammar\begin{lstlisting}
+Simple_Expr ::= Array_Expr
+Array_Expr  ::= '%' Array_Flags '[|' [Expr {semi Expr}] '|]'
+              | '%w' Array_Flags '[|' Words '|]'
+Array_Flags ::= [['i' | (* immutable *)
+                  'm']] (* mutable *)
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]! is an array expression. 
@@ -267,12 +266,12 @@ An expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]! is an array e
 \subsection{Dictionary Expressions}
 \label{sec:dict-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1    ::= Dictionary_Expr
+\grammar\begin{lstlisting}
+Simple_Expr     ::= Dictionary_Expr
 Dictionary_Expr ::= '%' Dict_Flags '{' [Dict_Mapping1 {semi Dict_Mapping1}] '}'
                   | '%' Dict_Flags '{' [Dict_Mapping2 {semi Dict_Mapping2}] '}'
-Dict_Mapping1   ::= Simple_Expr1 '=>' Value_Expr
-Dict_Mapping2   ::= ['~'] id ':' Value_Expr
+Dict_Mapping1   ::= Expr '=>' Expr
+Dict_Mapping2   ::= ['~'] id ':' Expr
 Dict_Flags      ::= [['i' | (* immutable *)
                       'm']  (* mutable *)
                      ['l']] (* linked *)
@@ -305,8 +304,8 @@ An expression of the form ~\lstinline!%{$e_1$; $\ldots$; $e_n$}! is a dictionary
 \subsection{Multimap Expressions}
 \label{sec:multimap-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1  ::= Multimap_Expr
+\grammar\begin{lstlisting}
+Simple_Expr   ::= Multimap_Expr
 Multimap_Expr ::= '%' Dict_Flags '{{' [Dict_Mapping1 {semi Dict_Mapping1}] '}}'
                 | '%' Dict_Flags '{{' [Dict_Mapping2 {semi Dict_Mapping2}] '}}'
 \end{lstlisting}
@@ -337,13 +336,13 @@ An expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}! is a multimap
 \subsection{Bag Expressions}
 \label{sec:bag-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= Bag_Expr
-Bag_Expr     ::= '%' Bag_Flags '(' [Value_Expr {semi Value_Expr}] ')'
-Bag_Flags    ::= [['i' | (* immutable *)
-                   'm']  (* mutable *)
-                  ['l']  (* linked *)
-                  ['s']] (* set instead of bag (tally-less bag) *)
+\grammar\begin{lstlisting}
+Simple_Expr ::= Bag_Expr
+Bag_Expr    ::= '%' Bag_Flags '(' [Expr {semi Expr}] ')'
+Bag_Flags   ::= [['i' | (* immutable *)
+                  'm']  (* mutable *)
+                 ['l']  (* linked *)
+                 ['s']] (* set instead of bag (tally-less bag) *)
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expression. 
@@ -382,8 +381,8 @@ An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expres
 \subsection{Polymorphic Variant Expressions}
 \label{sec:polymorphic-variant-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= Tag_Name Value_Expr
+\grammar\begin{lstlisting}
+Simple_Expr ::= Tag_Name Expr
 \end{lstlisting}
 
 The expression ~\lstinline!`$\id$ $e$! evaluates to the polymorphic variant value whose tag is $\id$, and whose argument is the value of evaluated expression $e$. 
@@ -395,11 +394,11 @@ The expression ~\lstinline!`$\id$ $e$! evaluates to the polymorphic variant valu
 \subsection{Record Expressions}
 \label{sec:record-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1       ::= Record_Expr
+\grammar\begin{lstlisting}
+Simple_Expr        ::= Record_Expr
 Record_Expr        ::= 'record' [nl] '{' [nl] Record_Fields_Init [nl] '}'
 Record_Fields_Init ::= Record_Field_Init {semi Record_Field_Init}
-Record_Field_Init  ::= Stable_Id '=>' Value_Expr
+Record_Field_Init  ::= Stable_Id '=>' Expr
 \end{lstlisting}
 
 An expression of the form
@@ -416,10 +415,12 @@ is a record expression.
 \subsection{Record Clone Expressions}
 \label{sec:record-clone-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1       ::= Record_Clone_Expr
-Record_Clone_Expr  ::= 'record' [nl] 
-                       '{' [nl] Value_Expr 'with' Record_Fields_Init [nl] '}'
+\grammar\begin{lstlisting}
+Simple_Expr         ::= Record_Clone_Expr
+Record_Clone_Expr   ::= 'record' [nl] 
+                        '{' [nl] Expr 'with' Record_Fields_Clone [nl] '}'
+Record_Fields_Clone ::= Record_Field_Clone {semi Record_Field_Clone}
+Record_Field_Clone  ::= Stable_Id ['=>' Expr]
 \end{lstlisting}
 
 An expression of the form
@@ -435,11 +436,11 @@ is a record clone expression.
 \subsection{Object Clone Expressions}
 \label{sec:object-clone-expressions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1      ::= Object_Clone_Expr
+\grammar\begin{lstlisting}
+Simple_Expr       ::= Object_Clone_Expr
 Object_Clone_Expr ::= '{<' Object_Ivars_Init '>}'
 Object_Ivars_Init ::= Object_Ivar_Init {semi Object_Ivar_Init}
-Object_Ivar_Init  ::= id '=>' Value_Expr
+Object_Ivar_Init  ::= id ['=>' Expr]
 \end{lstlisting}
 
 An expression of the form
@@ -455,7 +456,7 @@ is an object clone expression.
 \subsection{Delayed Expressions}
 \label{sec:delayed-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Delayed_Expr ::= 'lazy' [nl] Expr
 \end{lstlisting}
 
@@ -474,7 +475,7 @@ The \code{Aml/Language.Lazy} instance is not automatically unboxed, unlike lazy 
 \subsection{Ref Expressions}
 \label{sec:ref-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Ref_Expr ::= 'ref' [nl] Expr
 \end{lstlisting}
 
@@ -510,7 +511,7 @@ a.value := 128
 \subsection{Arguments Expressions}
 \label{sec:arguments-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Args_Expr ::= 'arguments' [nl] '(' Arguments ')' [Block_Argument]
             | 'arguments' [nl] Arguments [Block_Expr2 | Method_Expr]
             | 'arguments' [nl] Block_Argument
@@ -525,81 +526,71 @@ Arguments expressions of the form ~\lstinline!arguments $a_1 \ldots a_n$!~ gener
 \subsection{Workflows}
 \label{sec:workflows}
 
-\syntax\begin{lstlisting}
-Workflow_Expr          ::= Expr ['do'] '{' Workflow_or_Range_Expr '}'
+\grammar\begin{lstlisting}[deletekeywords={is,with,or,is,and}]
+Workflow_Expr          ::= Expr '{' Workflow_or_Range_Expr '}'
 Workflow_or_Range_Expr ::= Workflow | Short_Workflow | Range_Expr
 
 Workflow ::= 'let!' Let_Binding semi Workflow
-           | Val_Def In_Sep Workflow ['end']
-           | Var_Def In_Sep Workflow ['end']
-           | Fun_Def In_Sep Workflow ['end']
-           | Op_Def In_Sep Workflow ['end']
-           | Multi_Fun_Def In_Sep Workflow ['end']
-           | Multi_Op_Def In_Sep Workflow ['end']
-           | 'type' Type_Def 'end' ['type'] semi Workflow
-           | Tmpl_Def In_Sep Workflow ['end']
+           | ['implicit'] Val_Def In_Sep Workflow ['end']
+           | ['implicit'] Var_Def In_Sep Workflow ['end']
+           | ['implicit'] Val_Dcl In_Sep Workflow ['end']
+           | ['implicit'] Var_Dcl In_Sep Workflow ['end']
+           | ['implicit'] Fun_Def In_Sep Workflow ['end']
+           | ['implicit'] Op_Def In_Sep Workflow ['end']
+           | ['implicit'] Fun_Dcl In_Sep Workflow ['end']
+           | ['implicit'] Op_Dcl In_Sep Workflow ['end']
+           | ['implicit'] Multi_Fun_Def In_Sep Workflow ['end']
+           | ['implicit'] Multi_Op_Def In_Sep Workflow ['end']
+           | ['implicit'] Multi_Fun_Dcl In_Sep Workflow ['end']
+           | ['implicit'] Multi_Op_Dcl In_Sep Workflow ['end']
+           | {Local_Modifier} Tmpl_Def In_Sep Workflow ['end']
            | Struct_Def In_Sep Workflow ['end']
+           
+             (* because Do_Binding can't be the last element of a workflow: *)
+           | 'do' Expr In_Sep Workflow [Done] 
+           | 'do!' Expr In_Sep Workflow [Done]
+           
+           | 'use!' [S_Modifier] Let_Binding In_Sep Workflow ['end']
+           | 'use' [S_Modifier] Let_Binding In_Sep Workflow ['end']
            | 'yield!' Expr
            | Yield_Expr
            | 'return!' Expr
            | Return_Expr
-           | 'if' Condition ('then' | semi) Workflow 'end' ['if']
-           | 'if' Condition ('then' | semi) Cond_Block 
-             {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
-             Else Workflow 'end' ['if']
-           | 'match' Simple_Expr1 semi Wf_When {semi Wf_When}
-             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_When} 
-             'end' ['match']
-           | 'match' Simple_Expr1 '{' Wf_When {semi Wf_When}
-             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_When} '}'
-           | 'case' Simple_Expr1 semi Wf_Case {semi Wf_Case}
-             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_Case} 'end' ['case']
-           | 'case' Simple_Expr1 '{' Wf_Case {semi Wf_Case}
-             [semi Else Workflow] {semi ('rescue' | 'catch') Wf_Case} '}'
-           | 'switch' Simple_Expr semi Wf_Switch {semi Wf_Switch}
-             [semi Else Workflow] 'end' ['switch']
-           | 'switch' Simple_Expr '{' Wf_Switch {semi Wf_Switch}
-             [semi Else Workflow] '}'
-           | 'begin' Workflow 
-             'catch' [nl] Wf_When {semi Wf_When} [semi Else Workflow]
-             ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
-           | '{' Workflow '}' 'catch' 
-             '{' Wf_When {semi Wf_When} [semi Else Workflow] '}'
-             'ensure' '{' Block_Stat {semi Block_Stat} '}'
-           | 'begin' Workflow 
-             'rescue' [Pattern [Guard]] semi Workflow
-             {'rescue' [Pattern [Guard]] semi Workflow }
-             ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
-           | '{' Workflow '}' 'rescue' 
-             'rescue' [Pattern [Guard]] '{' Workflow '}'
-             {'rescue' [Pattern [Guard]] '{' Workflow '}' }
-             'ensure' '{' Block_Stat {semi Block_Stat} '}'
-           | Rethrow_Expr (* only between 'catch' .. 'end' *)
-           | Reraise_Expr (* only between 'rescue' .. 'end' *)
-           | ('while' | 'until') Condition 
-             'loop' Workflow 'end' ['loop']
-           | ('while' | 'until') Condition 
-             '{' Workflow '}'
-           | Workflow ('while' | 'until') Condition
-           | 'for' Val_Dcls 'in' ['reverse'] Expr
-             ['step' Expr] 'loop' Workflow 'end' ['loop']
-           | 'for' Val_Dcls 'in' ['reverse'] Expr
-             ['step' Expr] '{' Workflow '}'
-           | Workflow semi Workflow
-           | Expr
            
+           | 'if' Wf_Condition ('then' | semi) Wf_Cond_Block
+             {[semi] 'elsif' Wf_Condition ('then' | semi) Wf_Cond_Block} 
+             [[semi] Else Wf_Cond_Block] 'end' ['if']
+           | 'unless' Wf_Condition ('then' | semi) Wf_Cond_Block
+             {[semi] 'elsif' Wf_Condition ('then' | semi) Wf_Cond_Block} 
+             [[semi] Else Wf_Cond_Block] 'end' ['unless']
+             
+           | ? Match_Expr where Cond_Block is extended with Wf_Cond_Block ?
+           | ? Catch_Expr or Rescue_Expr, where initial Block is extended with Workflow_Block
+               and Handle_Block, Catch_Block and Rescue_Block with Workflow ?
+           
+           | 'for' Val_Dcls 'in' ['reverse'] Expr
+             ['step' Expr] Wf_For_Loop
+           | ('while' | 'until') Condition Wf_For_Loop
+           | 'for' id ':=' Expr ('to' | 'downto') Expr Wf_For_Loop
+           | Workflow ('while' | 'until') Condition
+           
+           | Workflow semi Workflow
+           | Annot_Workflow
+           | Expr
+
+Annot_Workflow ::= {Annotation}+ Workflow           
 Short_Workflow ::= 'for' Generator_Expr
                  | [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
                    ['step' Expr] Wf_For_Loop
-           
-Wf_When       ::= 'when' Pattern [Guard] ('then' | semi) Workflow
-Wf_Case       ::= 'when' Case_Patterns ('then' | semi) Workflow
-Wf_Switch     ::= 'when' Switches ('then' | semi) Workflow
-Wf_For_Loop   ::= 'loop' Wf_Loop_Block 'end' ['loop']
-                | 'do' Wf_Loop_Block Done
-                | '{' Wf_Loop_Block '}'
-Wf_Loop_Block ::= {Wf_Yield | Block_Stat | Loop_Ctrl_Expr}
-Wf_Yield      ::= Yield Expr
+
+Wf_For_Loop    ::= 'loop' Wf_Loop_Block 'end' ['loop']
+                 | 'do' Wf_Loop_Block Done
+                 | '{' Wf_Loop_Block '}'
+Wf_Loop_Block  ::= {Workflow_Block | Loop_Ctrl_Expr}
+Workflow_Block ::= ? Block where Block_Stat and Expr are extended with Workflow ?
+Wf_Cond_Block  ::= Expr 
+                 | Workflow_Block
+Wf_Condition   ::= (Workflow - Cond_Expr)
 \end{lstlisting}
 
 % TODO: finish Workflow, continue with loop, while, for
@@ -611,7 +602,7 @@ Wf_Yield      ::= Yield Expr
 \subsection{Collection Comprehensions}
 \label{sec:collection-comprehensions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 List_Literal       ::= '%' [CF] '['  Collection_Gen  ']'
 Array_Literal      ::= '%' [CF] '[|' Collection_Gen '|]'
 Dictionary_Literal ::= '%' [CF] '{'  Collection_Gen  '}'
@@ -638,7 +629,7 @@ If the expression that generates values would create an infinite collection, the
 \subsection{Sequence Comprehensions}
 \label{sec:sequence-comprehensions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Collection_Literal ::= Seq_Literal
 Eagerness          ::= ['eager' | 'lazy']
 Seq                ::= Eagerness 'seq'
@@ -715,7 +706,7 @@ Any type may implement the protocol \code{Aml/Language.List_Literal_Convertible}
 \subsection{Generator Expressions}
 \label{sec:generator-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Loop_Expr      ::= 'for' (Generator_Expr | Generator_Iter)
 Generator_Iter ::= '(' Enumerators ')' {nl} (Expr | For_Loop)
 Yield          ::= 'yield' | 'yield!'
@@ -904,7 +895,7 @@ def transpose[A](xss: List[List[A]]): List[List[A]] :=
 \subsection{Anonymous Functions}
 \label{sec:anonymous-functions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Anon_Fun        ::= Anon_Params '->' '{' Block '}'
                   | 'def' {Params_Clause}+ [Guard] '->' Expr
                   | 'function' When_Clauses 'end' ['function']
@@ -963,8 +954,8 @@ _ -> { 5 }
 \subsubsection{Placeholder Syntax for Anonymous Functions}
 \label{sec:placeholder-functions}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= impl_par
+\grammar\begin{lstlisting}
+Simple_Expr ::= impl_par
 \end{lstlisting}
 
 An expression (\code{Expr}) may contain embedded percent symbols ``\lstinline!%!'' followed by a number at places where identifiers are legal. Such an expression represents an anonymous function, where each numbered percent symbol denotes the corresponding positional parameter, and the zero-numbered symbol denotes the anonymous function itself.\footnote{This is different from Scala where the parameters are referenced with an underscore and not numbered -- they are successive.}
@@ -999,7 +990,7 @@ Note that \code{Function.self} in the last example refers to the anonymous funct
 \subsection{Anonymous Classes}
 \label{sec:anonymous-classes}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Anon_Class      ::= ['class' [Class_Param_Clauses] 'extends'] 
                     [Early_Defs] Anon_Class_Tmpl
 Anon_Class_Tmpl ::= Class_Parents 'with' '{' [Template_Body] '}'
@@ -1027,15 +1018,15 @@ Optionally, the anonymous class may define its own primary constructor parameter
 \subsection{Designator Expressions}
 \label{sec:designators}
 
-\syntax\begin{lstlisting}
-Simple_Expr1       ::= Path
+\grammar\begin{lstlisting}
+Simple_Expr        ::= Path
                      | '(' Anon_Class ')' '.' Selection
-                     | Value_Expr '.' Selection
+                     | Expr '.' Selection
 Selection          ::= Simple_Selection
                      | Tuple_Selection
                      | Optional_Selection
 Simple_Selection   ::= id
-Tuple_Selection    ::= {digit}+
+Tuple_Selection    ::= decimal_numeral
 Optional_Selection ::= '?' (Simple_Selection | Tuple_Selection)
 \end{lstlisting}
 
@@ -1089,20 +1080,20 @@ The distinctive form in which instance and class instance value or variable sele
 \subsection{Self, This, Super, Outer \& Module}
 \label{sec:self-this-super}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= [id '.'] 'self' ['[' ('cloned' | 'origin') ']']
-                 ['.' Selection]
-               | [id '.'] 'this' ['[' ('cloned' | 'origin') ']']
-                 '.' Selection
-               | [id '.'] 'super' ['[' ('cloned' | 'origin') ']']
-                 [Class_Qualifier] 
-                 ['.' Selection]
-               | 'outer' Class_Qualifier 
-                 ['.' 'super' [Class_Qualifier]] 
-                 ['.' Selection]
-               | 'outer' Class_Qualifier
-                 '.' 'this' '.' Selection
-               | 'module' [Class_Qualifier] '.' Selection
+\grammar\begin{lstlisting}
+Simple_Expr ::= [id '.'] 'self' ['[' ('cloned' | 'origin') ']']
+                ['.' Selection]
+              | [id '.'] 'this' ['[' ('cloned' | 'origin') ']']
+                '.' Selection
+              | [id '.'] 'super' ['[' ('cloned' | 'origin') ']']
+                [Class_Qualifier] 
+                ['.' Selection]
+              | 'outer' Class_Qualifier 
+                ['.' 'super' [Class_Qualifier]] 
+                ['.' Selection]
+              | 'outer' Class_Qualifier
+                '.' 'this' '.' Selection
+              | 'module' [Class_Qualifier] '.' Selection
 \end{lstlisting}
 
 The expression \code{self} stands always for the current instance in the context (and in function resolution searches in the actual class of the instance) in the innermost template containing the reference (thus excluding blocks and anonymous functions). 
@@ -1128,16 +1119,16 @@ Class qualifier may be a simple name referring to name of an enclosing type or s
 \subsection{Use Expressions}
 \label{sec:use-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Use_Expr       ::= Use_Expr_As 
                  | Use_Aspect
                  | Use_Refinement
                  | Use_Droppable
-Use_Expr_As    ::= 'use' Value_Expr ('as' | 'as!' | 'as?')
+Use_Expr_As    ::= 'use' Expr ('as' | 'as!' | 'as?')
                    [['var' | 'val'] id ':'] Type [Do_Block | In_Sep Expr ['end']]
 Use_Aspect     ::= 'use' 'aspect' Stable_Id [Do_Block | In_Sep Expr ['end']]
 Use_Refinement ::= 'use' 'refinement' Stable_Id [Do_Block | In_Sep Expr ['end']]
-Use_Droppable  ::= [S_Modifier] 'use' Let_Binding In_Sep Expr ['end']
+Use_Droppable  ::= 'use' [S_Modifier] Let_Binding In_Sep Expr ['end']
 \end{lstlisting}
 
 Use expressions of the form ~\lstinline!use $e$ as $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
@@ -1158,24 +1149,32 @@ Use expressions of the form ~\lstinline!use $v$ := $a$ in $e$!~ are droppable ex
 \subsection{Function Applications}
 \label{sec:function-applications}
 
-\syntax\begin{lstlisting}[mathescape=false]
-Value_Expr  ::= App_Expr
-App_Expr    ::= Value_Expr ['(' [Arguments] ')'] [Block_Argument]
-              | Value_Expr '.' '(' [Arguments] ')' [Block_Argument]
-              | Value_Expr Arguments [Block_Expr2 | Method_Expr]
-              | 'super' ['(' [Arguments] ')'] [Block_Argument]
+\grammar\begin{lstlisting}[mathescape=false]
+Expr        ::= Application_Expr
+Application_Expr 
+            ::= Regular_Precedence_Application_Expr 
+              | High_Precedence_Application_Expr
+              | Op_Application_Expr
+Regular_Precedence_Application_Expr
+            ::= Expr Arguments [Block_Expr2 | Method_Expr]
               | 'super' [Arguments] [Block_Expr2 | Method_Expr]
+High_Precedence_Application_Expr
+            ::= Expr ['(' [Arguments] ')'] [Block_Argument]
+              | Expr '.' '(' [Arguments] ')' [Block_Argument]
+              | 'super' ['(' [Arguments] ')'] [Block_Argument]
 Arguments   ::= {Argument}+
 Argument    ::= Positional_Argument
               | Labelled_Argument
 Positional_Argument 
-            ::= ['?' | '*' | '**'] Value_Expr
+            ::= ['?' | '*' | '**'] Expr
               | '$'
               | Tuple_Argument
               | '(' Tuple_Argument ')'
+              | Slice_Expr (* only when enclosed in parentheses or within Tuple_Argument *)
+              | Target_Type_Expr (* only when not following an Expr directly *)
 Labelled_Argument
-            ::= ['~' | '~?'] id ':' Value_Expr
-              | ['~']        id ':' TT_Expr
+            ::= ['~' | '~?'] id ':' Expr
+              | ['~']        id ':' Target_Type_Expr
               | ['~']        id ':' Slice_Expr
               | ['~' | '~?'] id ':' '$'
               | ['~']        id ':' Tuple_Argument
@@ -1188,14 +1187,14 @@ Positional_Tuple_Arguments
             ::= Positional_Tuple_Argument {',' Positional_Tuple_Argument}
 Positional_Tuple_Argument 
             ::= Positional_Argument
-              | '*' Value_Expr
+              | '*' Expr
 Named_Tuple_Arguments
             ::= Named_Tuple_Argument {',' Named_Tuple_Argument}
 Named_Tuple_Argument
             ::= Labelled_Argument
-              | '**' Value_Expr
+              | '**' Expr
 Block_Argument
-            ::= Block_Expr 
+            ::= Block_Expr
               | Method_Expr
 \end{lstlisting}
 
@@ -1335,12 +1334,12 @@ The receiver universal shortcut is defined for Aml's collection types as an alia
 \subsubsection{Method Values \& Explicit Partial Applications}
 \label{sec:method-values}
 
-\syntax\begin{lstlisting}
-Method_Expr ::= '&' Value_Expr ['(' Partially_Applied_Arguments ')']
+\grammar\begin{lstlisting}
+Method_Expr ::= '&' Expr ['(' Partially_Applied_Arguments ')']
                 [Partially_Applied_Block_Argument]
-              | '&(' Value_Expr ['(' Partially_Applied_Arguments ')']
+              | '&(' Expr ['(' Partially_Applied_Arguments ')']
                 [Partially_Applied_Block_Argument] ')'
-              | '&(' Value_Expr Partially_Applied_Arguments
+              | '&(' Expr Partially_Applied_Arguments
                 [Partially_Applied_Block_Argument2] ')'
               | '&(' (op_id | nary_op_id) ')' ['(' Partially_Applied_Arguments ')']
               | '&(' (op_id | nary_op_id) Partially_Applied_Arguments ')'
@@ -1421,8 +1420,8 @@ If $e$ contains sub-expressions of the forms ``\lstinline!_!'' or ``\lstinline!_
 \subsection{Attribute Selection Expressions}
 \label{sec:attribute-selection}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= Value_Expr '.'' Simple_Selection
+\grammar\begin{lstlisting}
+Attribute_Expr ::= Expr '.'' Simple_Selection
 \end{lstlisting}
 
 Every function that has at least one parameter can be used as an attribute. 
@@ -1459,8 +1458,8 @@ The main difference between attribute selections and function compositions shows
 \subsection{Type Applications}
 \label{sec:type-applications}
 
-\syntax\begin{lstlisting}
-Simple_Expr1 ::= Simple_Expr Type_Args
+\grammar\begin{lstlisting}
+Type_Application_Expr ::= Expr Type_Args
 \end{lstlisting}
 
 A type application ~\lstinline!$e$[$T_1 \commadots T_n$]!~ instantiates a polymorphic value $e$ of type ~\lstinline![$a_1$ >: $L_1$ <: $U_1$ $\commadots$ $a_n$ >: $L_n$ <: $U_n$] $\mapsto\ S$!~ with argument types $T_1 \commadots T_n$. Every argument type $T_i$ must obey the corresponding bounds $L_i$ and $U_i$. That is, for each $i = 1 \commadots n$, we must have $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$. The type of the application is $\sigma S$. 
@@ -1476,7 +1475,7 @@ Type applications can be omitted if local type inference (\sref{sec:local-type-i
 \subsection{Instance Creation Expressions}
 \label{sec:instance-creation-exprs}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 New_Expr ::= 'new' [Early_Defs] Class_Parents 
              ['begin' [Template_Body] 'end']
            | 'new' [Early_Defs] Class_Parents 
@@ -1522,8 +1521,8 @@ where $a$ is a freshly created name.
 \subsection{Blocks}
 \label{sec:blocks}
 
-\syntax\begin{lstlisting}
-Block_Expr      ::= Block_Expr1 | Block_Expr2
+\grammar\begin{lstlisting}
+Block_Expr      ::= Do_Block | Block_Expr1 | Block_Expr2
 Block_Expr1     ::= '{' [Block_Args] Block '}'
 Block_Expr2     ::= 'do' [Block_Args] Block Done
 Block_Args      ::= '|' [Params] [Block_Shadowing] '|' 
@@ -1533,6 +1532,7 @@ Shad_Val_Dcl    ::= Val_Dcl | Var_Dcl
 Block           ::= {Block_Stat semi} [Result_Expr]
 Do_Block        ::= '{' Block '}' 
                   | 'do' Block Done
+Do_Binding      ::= 'do' Expr [In_Sep Expr] [Done]
 Done            ::= 'end' | 'done'
 \end{lstlisting}
 
@@ -1598,8 +1598,8 @@ A block expression may opt-in to {\em shadow variables} that it would otherwise 
 \subsection{Yield Expressions}
 \label{sec:yield-expressions}
 
-\syntax\begin{lstlisting}
-Yield_Expr ::= [id '.'] 'yield' [Parens_Args | Poetry_Args]
+\grammar\begin{lstlisting}
+Yield_Expr ::= [id '.'] 'yield' [Arguments]
 \end{lstlisting}
 
 A yield expression ~\lstinline!yield $a_1 \commadots a_n$!~ is an universal \code{yield} operation:
@@ -1624,27 +1624,36 @@ A yield expression ~\lstinline!$T$.yield $a_1 \commadots a_n$!~ is a specialized
 \subsection{Prefix \& Infix Operations}
 \label{sec:prefix-infix-ops}
 
-\syntax\begin{lstlisting}[mathescape=false]
-nary_op_id   ::= '?' {op_char}
+\grammar\begin{lstlisting}[mathescape=false]
 Infix_Expr   ::= Prefix_Expr
-               | Infix_Expr [Infix_Op Infix_expr]
-               | Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
+               | Expr Infix_Op Expr
+               | Expr nary_op_id Expr {':' Expr}
                | Range_Expr
-Simple_Expr1 ::= '(' op_id ')' Arguments
-               | '(' op_id Arguments ')'
+Op_Application_Expr
+             ::= '(' op_id ')' Arguments
                | '(' nary_op_id ')' Argument Arguments
+               | '(' op_id Arguments ')'
                | '(' nary_op_id Argument Arguments ')'
 Infix_Op     ::= op_id 
                | 'and' ['also']
                | 'or' ['else']
                | 'xor'
                | id
-Prefix_Expr  ::= [op_id | 'not'] Simple_Expr1
-Range_Expr   ::= Infix_Expr ('..' | '...' | '..<') Infix_Expr
+Prefix_Expr  ::= [op_id | 'not' | Try_Op] Expr
+Range_Expr   ::= Expr ('..' | '...' | '..<') Expr
                  [FP_Delta [FP_Digits]]
-Slice_Expr   ::= Infix_Expr ('..' | '...' | '..<') [Infix_Expr]
-               | ('..' | '...' | '..<') Infix_Expr
-               | [Infix_Expr] ('..' | '...' | '..<') '$'
+Slice_Expr   ::= (* slice of 1 element *)
+                 Expr 
+                 (* slice defined by receiver universal shortcut *)
+               | '$'
+                 (* slice from index (or $) to last *)
+               | (Expr | '$') '..'
+                 (* slice from first to index (or $) *)
+               | ('..' | '...' | '..<') (Expr | '$')
+                 (* slice from index (or $) to index (or $) *)
+               | (Expr | '$') ('..' | '...' | '..<') (Expr | '$')
+                 (* slice from first to last (identity view) *)
+               | '*'
 \end{lstlisting}
 
 Expressions can be constructed from operands and operators. 
@@ -1963,7 +1972,7 @@ a := (let b := c)
 \subsubsection{$N$-ary Infix Expressions}
 \label{sec:nary-infix-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 nary_op_id  ::= '?' {op_char}
 Infix_Expr  ::= Infix_Expr nary_op_id Infix_Expr {':' Infix_Expr}
 \end{lstlisting}
@@ -2031,8 +2040,8 @@ If the found operator does not accept $n$ arguments, but instead has $n$ type pa
 \subsection{Target Type Expressions}
 \label{sec:target-type-expressions}
 
-\syntax\begin{lstlisting}[mathescape=false]
-TT_Expr ::= ['$'] '.' id ['(' [Arguments] ')']
+\grammar\begin{lstlisting}[mathescape=false]
+Target_Type_Expr ::= ['$'] '.' id ['(' [Arguments] ')']
 \end{lstlisting}
 
 Target type expression $e$ with expected type $\exptype$ is a shorthand for the selection and/or application (either function, type or both) ~\lstinline!$\exptype$.$e$!. 
@@ -2048,11 +2057,11 @@ Target type expressions are limited to a simple selection, optionally followed b
 
 \subsection{Assignments}
 
-\syntax\begin{lstlisting}
-Assign_Expr ::= [Value_Expr '.'] id ':=' Rvalue_Expr
-              | Value_Expr '.' Selection ::= Rvalue_Expr
-Update_Expr ::= Value_Expr '(' [Arguments] ')' ':=' Rvalue_Expr
-Rvalue_Expr ::= Expr | TT_Expr
+\grammar\begin{lstlisting}
+Assign_Expr ::= [Expr '.'] id ':=' Rvalue_Expr
+              | Expr '.' Selection ::= Rvalue_Expr
+Update_Expr ::= Expr '(' [Arguments] ')' ':=' Rvalue_Expr
+Rvalue_Expr ::= Expr | Target_Type_Expr
 \end{lstlisting}
 
 The interpretation of an assignment to a simple variable ~\lstinline!$x$ := $e$!~ depends on the definitions of $x$. If $x$ denotes a mutable variable, then the assignment changes the current value of $x$ to the result of evaluating the expression $e$. The type of $e$ is expected to conform to the type of $x$. 
@@ -2093,22 +2102,22 @@ f(i, j) := (e_1, e_2)        f.update(i, j)((e_1, e_2))
 \section{Definition Expressions}
 \label{sec:def-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Expr ::= Def_Expr
 Def_Expr ::= ['implicit'] Val_Def In_Sep Expr ['end']
            | ['implicit'] Var_Def In_Sep Expr ['end']
            | ['implicit'] Val_Dcl In_Sep Expr ['end']
            | ['implicit'] Var_Dcl In_Sep Expr ['end']
-           | ['implicit'] Fun_Dcl In_Sep Expr ['end']
-           | ['implicit'] Op_Dcl  In_Sep Expr ['end']
            | ['implicit'] Fun_Def In_Sep Expr ['end']
            | ['implicit'] Op_Def  In_Sep Expr ['end']
-           | ['implicit'] Multi_Fun_Dcl In_Sep Expr ['end']
-           | ['implicit'] Multi_Op_Dcl  In_Sep Expr ['end']
+           | ['implicit'] Fun_Dcl In_Sep Expr ['end']
+           | ['implicit'] Op_Dcl  In_Sep Expr ['end']
            | ['implicit'] Multi_Fun_Def In_Sep Expr ['end']
            | ['implicit'] Multi_Op_Def  In_Sep Expr ['end']
-           | Macro_Dcl In_Sep Expr ['end']
-           | Macro_Def In_Sep Expr ['end']
+           | ['implicit'] Multi_Fun_Dcl In_Sep Expr ['end']
+           | ['implicit'] Multi_Op_Dcl  In_Sep Expr ['end']
+           | ['implicit'] Macro_Dcl In_Sep Expr ['end']
+           | ['implicit'] Macro_Def In_Sep Expr ['end']
            | {Local_Modifier} Tmpl_Def In_Sep Expr ['end']
            | Struct_Def In_Sep Expr ['end']
 \end{lstlisting}
@@ -2125,13 +2134,12 @@ Def_Expr ::= ['implicit'] Val_Def In_Sep Expr ['end']
 \subsection{Typed Expressions}
 \label{sec:typed-expressions}
 
-\syntax\begin{lstlisting}
-Cast_Expr  ::= Infix_Expr ('as' | 'as!' | 'as?') (Type | Simple_Expr1)
-Infix_Expr ::= Infix_Expr ('is' ['not'] | 'is!' | 'is' 'not!') 
-               (Type | Simple_Expr1)
+\grammar\begin{lstlisting}
+Cast_Expr  ::= Expr ('as' | 'as!' | 'as?') Type
+Infix_Expr ::= Expr ('is' ['not'] | 'is!' | 'is' 'not!') Type
 \end{lstlisting}
 
-The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. The conversion can take these forms, preferred in the following order:
+The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. If the type conversion fails, a runtime error is raised. The conversion can take these forms, preferred in the following order:
 \begin{enumerate}
   \item No conversion, if $e$ conforms to $T$ directly. 
   \item If an implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope, then the conversion is of the form ~\lstinline!$c$($e$)!. 
@@ -2170,7 +2178,7 @@ Typed expressions do not allow checks against target type expressions (\sref{sec
 \subsection{Type Reference Expressions}
 \label{sec:type-ref-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Expr      ::= Type_Expr
 Type_Expr ::= 'type' '{' Type '}'
             | Annot_Type - (Nullable_Mod, Type_Var, Postfix_Simple_Type)
@@ -2186,8 +2194,8 @@ A type reference expression is a way to refer to a type and use it as a first-cl
 \subsection{Annotated Expressions}
 \label{sec:annotated-exprs}
 
-\syntax\begin{lstlisting}
-Annot_Expr ::= {Annotation}+ Infix_Expr
+\grammar\begin{lstlisting}
+Annot_Expr ::= {Annotation}+ Expr
 \end{lstlisting}
 
 An annotated expression $a_1\ \ldots\ a_n\ e$ attaches annotations $a_1\ \ldots\ a_n$ to the expression $e$ (\sref{sec:annotations}). 
@@ -2205,16 +2213,14 @@ An annotated expression $a_1\ \ldots\ a_n\ e$ attaches annotations $a_1\ \ldots\
 \subsection{Conditional Expressions}
 \label{sec:conditional-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Cond_Expr        ::= Cond_Block_Expr | Cond_Mod_Expr
 Cond_Block_Expr  ::= Cond_Block_Expr1 | Cond_Block_Expr2
 Cond_Block_Expr1 ::= 'if' Condition ('then' | semi) Cond_Block 
-                     {[semi] 'elsif' Condition 
-                      ('then' | semi) Cond_Block}
+                     {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
                      [[semi] Else Cond_Block] 'end' ['if']
 Cond_Block_Expr2 ::= 'unless' Condition ('then' | semi) Cond_Block 
-                     {[semi] 'elsif' Condition 
-                      ('then' | semi) Cond_Block}
+                     {[semi] 'elsif' Condition ('then' | semi) Cond_Block}
                      [[semi] Else Cond_Block] 'end' ['unless']
 Cond_Mod_Expr    ::= Expr Cond_Modifier
 Cond_Modifier    ::= Cond_Modifier1
@@ -2222,7 +2228,10 @@ Cond_Modifier    ::= Cond_Modifier1
 Cond_Modifier1   ::= ('if' | 'unless') Condition 
 Cond_Block       ::= Expr | Block
 Else             ::= 'else' | 'otherwise'
-Condition        ::= (Value_Expr - Cond_Expr) | Val_Def | Var_Def
+Condition        ::= Condition1
+                   | Condition2
+Condition1       ::= (Expr - Cond_Expr) 
+Condition2       ::= Val_Def | Var_Def
 \end{lstlisting}
 
 The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. The \code{nil} and \code{undefined} objects convert always to \code{no}. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
@@ -2278,7 +2287,7 @@ Aml has an elaborate support for loop expressions. Not all structures known from
 \subsubsection{Loop Control Expressions}
 \label{sec:loop-control-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Loop_Ctrl_Expr ::= Break_Expr
                  | Skip_Expr
                  | Next_Expr
@@ -2318,7 +2327,7 @@ The standard library provides loop-like methods, where these loop control struct
 \subsubsection{Iterable For Expressions}
 \label{sec:iterable-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Loop_Expr       ::= [Label_Dcl] 'for' Val_Dcls 'in' ['reverse'] Expr 
                     ['step' Expr] For_Loop
 For_Loop        ::= 'loop' Loop_Block_Expr 'end' ['loop']
@@ -2399,7 +2408,7 @@ Analogously, other combinations of \code{reverse}, \code{skip} and labeled loops
 
 \subsubsection{While \& Until Loop Expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Loop_Expr     ::= [Label_Dcl] ('while' | 'until') Condition For_Loop
                 | Loop_Mod_Expr
 Loop_Mod_Expr ::= Expr Loop_Modifier
@@ -2430,7 +2439,7 @@ A while loop expression with variable definition works like a regular while loop
 \subsubsection{Pure Loops}
 \label{sec:pure-loops}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Loop_Expr  ::= [Label_Dcl] 'loop'
                (semi Loop_Block_Expr 'end' ['loop'] | 
                '{' Loop_Block_Expr '}')
@@ -2466,38 +2475,54 @@ However, the loop construct has built-in support for loop control expressions.
 
 
 
+\subsubsection{Counter Loops}
+
+\grammar\begin{lstlisting}
+Loop_Expr ::= 'for' id ':=' Expr ('to' | 'downto') Expr For_Loop
+\end{lstlisting}
+
+The {\em counter loop expressions} ~\lstinline!for $i$ := $e_1$ to $e_2$ loop $e_3$ end!~ is typed as \code{Unit}, same as ~\lstinline!for $i$ := $e_1$ downto $e_2$ loop $e_3$ end!~, so there is no point in using their value. 
+
+The expression ~\lstinline!for $i$ := $e_1$ to $e_2$ loop $e_3$ end!~ first evaluates the expressions $e_1$ and $e_2$ (boundaries) as \code{Integer_Like} values $a$ and $b$. Types of both must be equivalent, and the value $i$ is typed with their type. The loop body $e_3$ is then evaluated in an environment where $i$ is successively bound to the values $a, a+1 \commadots b-1, b$. The loop body is never evaluated if $a > b$. It is an error if ~\lstinline!e_1 as? Integer_Like!~ or ~\lstinline!e_2 as? Integer_Like!~ results in \code{nil}. 
+
+The expression ~\lstinline!for $i$ := $e_1$ downto $e_2$ loop $e_3$ end!~ evaluates similarly, except that $i$ is successively bound to the values $a, a-1 \commadots b+1, b$, and the loop body is also never evaluated if $a < b$. 
+
+
+
+
+
+
+
 \subsection[Pattern Matching, Case Expressions \& Switch Expressions]{Pattern Matching, Case Expressions \\\& Switch Expressions}
 \label{sec:case-exprs}
 
 % TBD: add use of `parallel`
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Match_Expr     ::= Pat_Match_Expr | Case_Expr | Switch_Expr
-Pat_Match_Expr ::= 'match' Value_Expr Match_Body
+Pat_Match_Expr ::= 'match' Expr Match_Body
 Match_Body     ::= semi When_Clauses 'end' ['match']
                  | '{' When_Clauses '}'
 When_Clauses   ::= When_Clause {semi When_Clause} 
-                   [semi Else Cond_Block]
-                   {semi ('rescue' | 'catch') When_Clause}
+                   [semi Else [nl] Cond_Block]
+                   [semi 'rescue' [nl] Rescue_Clauses]
 When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
-Case_Expr      ::= 'case' Value_Expr Case_Body
-Switch_Expr    ::= 'switch' Value_Expr Switch_Body
+Case_Expr      ::= 'case' Expr Case_Body
+Switch_Expr    ::= 'switch' Expr Switch_Body
 Case_Body      ::= semi Case_Clauses 'end' ['case']
                  | '{' Case_Clauses '}'
 Switch_Body    ::= semi Switch_Clauses 'end' ['switch']
                  | '{' Switch_Clauses '}'
 Case_Clauses   ::= Case_Clause {['next'] semi Case_Clause}
                    [['next'] semi Else Cond_Block]
-                   {semi ('rescue' | 'catch') Case_Clause}
+                   [semi 'rescue' [nl] Rescue_Clauses]
 Switch_Clauses ::= Switch_Clause {['next'] semi Switch_Clause}
                    [['next'] semi Else Cond_Block]
 Case_Clause    ::= 'when' Case_Patterns ('then' | semi) Cond_Block
 Switch_Clause  ::= 'when' Switches ('then' | semi) Cond_Block
 Case_Patterns  ::= Case_Pattern {',' Case_Pattern}
 Switches       ::= Switch {',' Switch}
-Case_Pattern   ::= Stable_Id
-                 | id
-                 | Infix_Expr
+Case_Pattern   ::= Expr
 Switch_Scalar  ::= (Literal - Collection_Literal)
 Switch         ::= Switch_Scalar [('..' | '...' | '..<') Switch_Scalar]
 \end{lstlisting}
@@ -2575,8 +2600,8 @@ Unconditional expressions change the flow of programs without a condition.
 \paragraph{Implicit return expressions}
 Implicit return expression is always the value of the last expression in a code execution path. 
 
-\syntax\begin{lstlisting}
-Result_Expr ::= ['memoize'] Value_Expr
+\grammar\begin{lstlisting}
+Result_Expr ::= ['memoize'] Expr
               | ['memoize'] 'tailcall' Arguments [Block_Argument]
               | ['memoize'] 'tailcall' '(' [Arguments] ')' [Block_Argument]
               | ['memoize'] 'tailcall' Block_Argument
@@ -2585,7 +2610,7 @@ Result_Expr ::= ['memoize'] Value_Expr
 \paragraph{Explicit return expressions}
 Explicit return expressions unconditionally change the flow of programs by making the enclosing function definition return a value early (or return no value). 
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Return_Expr ::= ['memoize'] 'return' [Expr] [Cond_Modifier1]
 \end{lstlisting}
 
@@ -2605,7 +2630,7 @@ A returned expression may optionally be memoized, by using the keyword \code{mem
 
 \subsubsection{Structured Return Expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Return_Expr ::= ['memoize'] 'return' Var_Def 'do' 
                 Block_Stat {semi Block_Stat} 
                 'end' ['return']
@@ -2621,7 +2646,7 @@ A structured return expression is practically the same as explicit return expres
 \subsubsection{Local Jump Expressions}
 \label{sec:local-jump-expressions}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Jump_Expr  ::= Goto_Expr | Label_Dcl
 Goto_Expr  ::= 'goto' label_name [Cond_Modifier1]
 Label_Dcl  ::= 'label' label_name 
@@ -2748,24 +2773,109 @@ Aml uses saguaro stack mechanisms instead of code conversions to actually implem
 
 
 
-\subsection{Throw, Catch \& Ensure Expressions}
+\subsection[Conditions, Throwables, Raiseables \& Abandonments]{Conditions, Throwables, Raiseables\\\& Abandonments}
+
+Aml includes an elaborate system for handling various situations that can happen while executing a program: the {\em condition system}, inspired by the one found in Common Lisp (\url{http://clhs.lisp.se/Body/09_a.htm}). 
+
+A situation is the evaluation of an expression in a specific context, in a specific thread. A condition is an object that represents a specific situation that was detected. Condition objects are instances of the \code{Condition} trait. A hierarchy of classes of such instances is predefined in Aml, and can be indeed extended with new ones. A condition is not necessarily an error, as can be seen from the variety of use cases of the instances, including, but not limited to custom flow control operators. 
+
+The principal traits that comprise the condition system in Aml are: 
+\begin{itemize}
+  \item \code{Condition}, the root condition trait. 
+  \item \code{Throwable}, which extends \code{Condition}. 
+  \item \code{Raiseable}, which extends \code{Throwable}. Instances of this trait represent various errors that may occur. 
+  \item \code{Abandonment}, which extends \code{Raiseable}. Instances of this trait represent such conditions in program's execution, that its execution is no longer possible.\footnote{A similar thing is called fatal error or logic exception in other languages.}
+\end{itemize}
+
+An error is a situation in which normal program execution path can no longer continue correctly without some form of intervention, either interactive or under program's control. All errors are conditions, but not all conditions are errors. 
+
+Signalling is the process by which a detected condition can alter the flow control of a program. The condition then can be handled. Aml defines \code{signal} as the major low-level function (a keyword in fact) used to signal conditions, and also a few more functions that make use of it: \code{warn} and \code{error}. 
+
+The process of signalling involves the selection and evaluation of a handler from a list of active handlers in the thread that performs the evaluation. There are multiple ways to define a handler. One such way is to use one of the predefined functions provided by Aml that define a handler as a function of one argument (the condition object). Signalling a condition has no side-effects on the condition object. 
+
+An invoked handler can address the situation in one of these ways: 
+\begin{description}
+  \item[Decline] \hfill \\
+    It can decline to handle the condition, by simply returning rather than transferring control elsewhere. When this happens, any values returned by the handler are discarded and the next handler in line is invoked instead. If there is no such handler, the \code{signal} expression simply returns (with result type of \code{Unit}, the ``\,\lstinline!()!\,'' value). The function that signalled the condition may make use of that. 
+  \item[Handle] \hfill \\
+    It can handle the condition by performing transfer of control. There are many ways to do that, including raising an exception or invoking a restart. 
+  \item[Defer] \hfill \\
+    It can put off the decision, by many different ways, e.g. signalling another condition, resignalling the same condition, or even entering the debugger. 
+\end{description}
+
+
+
+
+
+\subsubsection{Signal Expressions}
+\label{sec:signal-expressions}
+
+\grammar\begin{lstlisting}
+Signal_Expr ::= 'signal' Expr
+\end{lstlisting}
+
+A signal expression ~\lstinline!signal $e$!~ evaluates the expression $e$. The type of this expression must conform to \code{Condition}. It is an error if $e$ evaluates to \code{nil} or ~\lstinline!()!.
+
+Signalling a condition does not unwind the call stack.\footnote{Yes, you read it correctly. No stack unwinding when signalling a condition. Implementations of Aml may achieve this by registering handlers in thread-local storage.}
+
+
+
+
+
+\subsubsection{Try Operator}
+\label{sec:try-operator}
+
+\grammar\begin{lstlisting}
+Prefix_Expr ::= Try_Op Expr
+Try_Op      ::= 'try' | 'try?' | 'try!'
+\end{lstlisting}
+
+The {\em try operator} is required to be applied on expressions, where the expressions contains a function application, one such that the function to be applied are statically known to possibly raise errors (instances of \code{Raiseable}), or reraise them. 
+
+The ~\lstinline!try!~ form is the basic form that simply allows one to use a raising function. 
+
+The ~\lstinline!try?!~ form returns \code{nil} in case of any raised error (except for abandonments, as specified). If the result type of the applied function is default-nullable or not nullable, it is made locally nullable.\footnote{Whether the result type does not allow \code{nil} values is not important, because that only applies to the type itself without nullability specification.}
+
+The ~\lstinline@try!@~ form works like the basic form, but does not expect the applied function to ever raise, and if it does, a runtime error is raised -- an abandonment. This has implications on the surrounding context -- the application does not need to be surrounded in \code{begin}-\code{rescue} block and the function in which the application appears does not need to declare itself as raising the unexpected error. 
+
+The purpose of the try operator is to allow readers of the code to quickly spot the place where things can go south.
+
+
+
+
+
+\subsubsection{Throw, Handle, Catch \& Ensure Expressions}
 \label{sec:throw-catch-expressions}
 
-\syntax\begin{lstlisting}
-Catch_Expr    ::= Catch_Expr1 | Catch_Expr2
-Catch_Expr1   ::= 'begin' Block 
-                  'catch' [nl] Catch_Clauses
-                  ['ensure' [nl] Block_Stat {semi Block_Stat}] 'end'
-Catch_Expr2   ::= '{' Block '}'
-                  'catch' '{' Catch_Clauses '}'
-                  ['ensure' '{' Block_Stat {semi Block_Stat} '}']
-Throw_Expr    ::= 'throw' Expr
-Catch_Clauses ::= Catch_Clause {semi Catch_Clause}
-                  [semi Else Catch_Block]
-Catch_Clause  ::= 'when' Pattern [Guard] ('then' | semi) Catch_Block
-Catch_Block   ::= Expr | {Catch_Stat semi} [Result_Expr]
-Catch_Stat    ::= Block_Stat | Rethrow_Expr
-Rethrow_Expr  ::= 'rethrow' [Cond_Modifier1]
+\grammar\begin{lstlisting}
+Catch_Expr     ::= Catch_Expr1 | Catch_Expr2 | Handle_Expr1 | Handle_Expr2
+Catch_Expr1    ::= 'begin' Block 
+                   ['handle' [nl] Handle_Clauses]
+                   'catch' [nl] Catch_Clauses
+                   ['ensure' [nl] Block_Stat {semi Block_Stat}] 'end'
+Catch_Expr2    ::= '{' Block '}'
+                   ['handle' '{' Handle_Clauses '}']
+                   'catch' '{' Catch_Clauses '}'
+                   ['ensure' '{' Block_Stat {semi Block_Stat} '}']
+Handle_Expr1   ::= 'begin' Block 
+                   'handle' [nl] Handle_Clauses
+                   ['ensure' [nl] Block_Stat {semi Block_Stat}] 'end'
+Handle_Expr2   ::= '{' Block '}'
+                   'handle' '{' Handle_Clauses '}'
+                   ['ensure' '{' Block_Stat {semi Block_Stat} '}']
+Throw_Expr     ::= 'throw' Expr
+Catch_Clauses  ::= Catch_Clause {semi Catch_Clause}
+                   [semi Else Catch_Block]
+Catch_Clause   ::= 'when' Pattern [Guard] ('then' | semi) Catch_Block
+Catch_Block    ::= Expr | {Catch_Stat semi} [Result_Expr]
+Catch_Stat     ::= Block_Stat | Rethrow_Expr
+Rethrow_Expr   ::= 'rethrow' [Cond_Modifier1]
+Handle_Clauses ::= Handle_Clause {semi Handle_Clause}
+                   [semi Else Handle_Block]
+Handle_Clause  ::= 'when' Pattern [Guard] ('then' | semi) Handle_Block
+Handle_Block   ::= Expr | {Handle_Stat semi} [Result_Expr]
+Handle_Stat    ::= Block_Stat | Resignal_Expr
+Resignal_Expr  ::= 'resignal' [Cond_Modifier1]
 \end{lstlisting}
 
 A throw expression ~\lstinline!throw $e$!~ evaluates the expression $e$. The type of this expression must conform to \code{Throwable}. It is an error if $e$ evaluates to \code{nil} or ~\lstinline!()!. If there is an active \code{begin}-\code{catch} expression that handles the thrown value, evaluation is resumed with the handler, otherwise a thread executing the \code{throw} is aborted. The type of a \code{throw} expression is \code{Nothing}. 
@@ -2792,13 +2902,36 @@ An expression ~\lstinline!{ $b$ } catch $e_1$ ensure { $e_2$ }!~ is a shorthand 
 
 
 
-\subsubsection{Raise Expressions}
 
-\syntax\begin{lstlisting}
-Raise_Expr ::= 'raise' Raiseable
-Raiseable  ::= string_literal
-             | Stable_Id [',' string_literal]
-             | Expr
+\subsubsection{Raise, Handle \& Rescue Expressions}
+
+\grammar\begin{lstlisting}
+Raise_Expr     ::= 'raise' Raiseable
+Raiseable      ::= string_literal
+                 | Stable_Id [',' string_literal]
+                 | Expr
+Rescue_Expr    ::= [Label_Dcl] (Rescue_Expr1 | Rescue_Expr2)
+Rescue_Expr1   ::= 'begin' Block 
+                   ['handle' [nl] Handle_Clauses]
+                   ['catch' [nl] Catch_Clauses]
+                   'rescue' [nl] Rescue_Clauses
+                   ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
+Rescue_Expr2   ::= '{' Block '}' 
+                   ['handle' '{' Handle_Clauses '}']
+                   ['catch' '{' Catch_Clauses '}']
+                   'rescue' '{' Rescue_Clauses '}'
+                   ['ensure' '{' Block_Stat {semi Block_Stat} '}']
+Fun_Stats      ::= Block
+                   ['handle' [nl] Handle_Clauses]
+                   ['catch' [nl] Catch_Clauses]
+                   ['rescue' [nl] Rescue_Clauses]
+                   ['ensure' semi Block_Stat {semi Block_Stat}]
+Rescue_Clauses ::= Rescue_Clause {semi Rescue_Clause}
+Rescue_Clause  ::= 'when' Pattern [Guard] ('then' | semi) Rescue_Block
+Rescue_Block   ::= {Rescue_Stat semi} [Result_Expr]
+Rescue_Stat    ::= Block_Stat | Retry_Expr | Reraise_Expr
+Retry_Expr     ::= 'retry' [label_name] [Cond_Modifier1]
+Reraise_Expr   ::= 'reraise' [Cond_Modifier1]
 \end{lstlisting}
 
 A raise expression ~\lstinline!raise $e$!~ is similar to ~\lstinline!throw $e$! (\sref{sec:throw-catch-expressions}), it throws a value (raises an error) that is expected to be of type \code{Raiseable}. It has three variants: 
@@ -2810,33 +2943,6 @@ A raise expression ~\lstinline!raise $e$!~ is similar to ~\lstinline!throw $e$! 
 \end{itemize}
 
 \code{Raiseable} is a subtype of \code{Throwable}. 
-
-
-
-
-
-
-
-\subsubsection{Rescue Expressions}
-
-\syntax\begin{lstlisting}
-Rescue_Expr  ::= [Label_Dcl] (Rescue_Expr1 | Rescue_Expr2)
-Rescue_Expr1 ::= 'begin' Block 
-                 'rescue' [Pattern [Guard]] semi Rescue_Block
-                 {'rescue' [Pattern [Guard]] semi Rescue_Block }
-                 ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
-Rescue_Expr2 ::= '{' Block '}' 
-                 'rescue' [Pattern [Guard]] '{' Rescue_Block '}'
-                 {'rescue' [Pattern [Guard]] '{' Rescue_Block '}'}
-                 ['ensure' '{' Block_Stat {semi Block_Stat} '}']
-Fun_Stats    ::= Block
-                 {'rescue' [Pattern [Guard]] semi Rescue_Block }
-                 ['ensure' semi Block_Stat {semi Block_Stat}]
-Rescue_Block ::= {Rescue_Stat semi} [Result_Expr]
-Rescue_Stat  ::= Block_Stat | Retry_Expr | Reraise_Expr
-Retry_Expr   ::= 'retry' [label_name] [Cond_Modifier1]
-Reraise_Expr ::= 'reraise' [Cond_Modifier1]
-\end{lstlisting}
 
 Rescue expression ~\lstinline!rescue $h$!~ is similar to catch expression (\sref{sec:throw-catch-expressions}), with two major differences: First, each \code{rescue} is followed by \code{when} clause; second, all \code{rescue} expressions in the same scope form together a handler $h$, where rules from catch expressions apply, only that $h$ is expected to conform to type ~\lstinline!Partial_Function[Raiseable, $T$]!, where $T$ is the expected type of the whole \code{begin}-\code{rescue} expression. 
 
@@ -2864,11 +2970,11 @@ The keyword ~\lstinline[language=Java]!try!~ is not available in Aml -- in Aml, 
 \subsection{Quasi-quotation}
 \label{sec:quasi-quotation}
 
-\syntax\begin{lstlisting}[mathescape=false]
+\grammar\begin{lstlisting}[mathescape=false]
 Quasiquote_Expr ::= '<@' Expr '@>'
 Splice_Expr     ::= '#{' Expr '}'
                   | '${' Expr '}'
-                  | '%%' Simple_Expr1 (* as prefix operator *)
+                  | '%%' Expr (* as prefix operator *)
 \end{lstlisting}
 
 Quasi-quote expression ``~\lstinline!<@ $e$ @>!~'' is basically a well-formed piece of Aml source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
@@ -2893,7 +2999,7 @@ An interpolating (splice or unquote) expression (like ``~\lstinline!#{ $e$ }!~''
 \subsection{Quotation}
 \label{sec:quotation}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Quote_Expr      ::= '<@@' Expr '@@>'
 \end{lstlisting}
 
@@ -2906,61 +3012,64 @@ A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, bu
 \section{Statements}
 \label{sec:statements}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}[deletekeywords={for}]
 Block_Stat     ::= Use_Clause
                  | Expr
                  | Alias_Expr
                  | Capture_Usage
                  | 'super'
-                 | 'assert' Value_Expr
+                 | 'assert' Expr
                  | ()
-Template_Stat  ::= ['public'] Use_Clause
-                   (* no 'implicit' directly in Def_Expr *)
-                 | {Annotation} {Modifier} (Def_Expr - 'implicit')
-                 | {Annotation} {Modifier} Val_Def
-                 | {Annotation} {Modifier} Var_Def
-                 | {Annotation} {Modifier} Fun_Def
-                 | {Annotation} {Modifier} Op_Def
-                 | {Annotation} {Modifier} Method_Def
-                 | {Annotation} {Modifier} Att_Def
-                 | {Annotation} {Modifier} Multi_Fun_Def
-                 | {Annotation} {Modifier} Multi_Op_Def
-                 | {Annotation} {Modifier} Multi_Method_Def
-                 | {Annotation} {Modifier} Multi_Att_Def
-                 | {Annotation} {Modifier - 'implicit'} Macro_Def
-                 | {Annotation} {Modifier} Ctor_Def
-                 | {Annotation} {Modifier} PCtor_Def
-                 | {Annotation} {Modifier} CCtor_Def
-                 | {Annotation} {Modifier} UCtor_Def
-                 | {Annotation} {Modifier} Dtor_Def
-                 | {Annotation} {Modifier - Local_Modifier} Struct_Def
+Template_Stat  ::= ? Expr, which includes the following extra elements for Expr:  ?
+                   ['public'] Use_Clause
+                 | [Opt_Req] {Modifier} Dcl
+                 | Opt_Req [id {',' id} | symbol_ids]
+                 | {Modifier} (Def_Expr - ('implicit', Local_Modifier))
+                 | {Modifier} Val_Def
+                 | {Modifier} Var_Def
+                 | {Modifier} Fun_Def
+                 | {Modifier} Op_Def
+                 | {Modifier} Method_Def
+                 | {Modifier} Att_Def
+                 | {Modifier} Multi_Fun_Def
+                 | {Modifier} Multi_Op_Def
+                 | {Modifier} Multi_Method_Def
+                 | {Modifier} Multi_Att_Def
+                 | {Modifier - 'implicit'} Macro_Def
+                 | {Modifier} Ctor_Def
+                 | {Modifier} PCtor_Def
+                 | {Modifier} CCtor_Def
+                 | {Modifier} UCtor_Def
+                 | {Modifier} Dtor_Def
+                 | {Modifier - Local_Modifier} Struct_Def
                  | Tmpl_Member [In_Sep Block_Stat ['end']]
                  | Tmpl_Ifc_Impl
                  | Tmpl_Ifc_Dcl
-                 | {Annotation} [Opt_Req] {Modifier} Dcl
-                 | {Annotation} {Modifier} Struct_Spec
-                 | {Annotation} {Modifier} Prop_Dcl
-                 | {Annotation} {Modifier} Prop_Def
-                 | 'inherit' Stable_Id [Cond_Modifier]
-                 | 'include' Stable_Id [Cond_Modifier]
-                 | ['inherit' 'and'] 'prepend' Stable_Id [Cond_Modifier]
-                 | 'implements' Stable_Id [Cond_Modifier]
+                 | {Modifier} Struct_Spec
+                 | {Modifier} Prop_Dcl
+                 | {Modifier} Prop_Def
+                 | {Modifier} Constraint_Dcl
+                 | {Modifier} Constraint_Def
+                 | 'inherit' Long_Id [Cond_Modifier]
+                 | 'include' Long_Id [Cond_Modifier]
+                 | ['inherit' 'and'] 'prepend' Long_Id [Cond_Modifier]
+                 | 'implements' Long_Id [Cond_Modifier]
                  | Expr
                  | Alias_Expr
                  | Struct_Expr
                  | Struct_Spec
                  | ()
-                 | Opt_Req [id {',' id} | symbol_ids]
                  | Access_Modifier [id {',' id} | symbol_ids]
-                 | {Annotation} {Modifier} Constraint_Dcl
-                 | {Annotation} {Modifier} Constraint_Def
-                 | {Annotation} 'invariant' '{' Block '}'
+                 | 'invariant' '{' Block '}'
+                 | Do_Binding
 Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                  | Block
-                   {'rescue' [Pattern [Guard]] semi Block }
+                   ['handle' [nl] Handle_Clauses]
+                   ['catch' [nl] Catch_Clauses]
+                   ['rescue' [nl] Rescue_Clauses]
                    ['ensure' semi Block_Stat {semi Block_Stat}]
 Fun_Stat       ::= Block_Stat
-Tmpl_Member    ::= {Annotation} {Modifier} ['member'] Def
+Tmpl_Member    ::= {Modifier} ['member'] Def
 Tmpl_Ifc_Impl  ::= 'interface' (Annot_Type - Nullable_Mod) 
                    'with' Record_Extension {'and' Record_Extension} 
                    'end' ['interface']
@@ -2989,7 +3098,7 @@ Opt_Req        ::= 'optional' | 'requires'
 symbol_ids     ::= symbol_literal {',' symbol_literal}
 \end{lstlisting}
 
-Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{nil}, or the empty statement/expression, whose value is again \code{nil}. 
+Statements occur as parts of blocks and templates. Despite their name, they are actually generally expressions as well, except that for some statements, their value is not much of a use, i.e. use clauses, whose value is a \code{()}, or the empty statement/expression, whose value is again \code{()}. Within template statements, the \code{Expr} element includes elements defined for the statement element. 
 
 
 
