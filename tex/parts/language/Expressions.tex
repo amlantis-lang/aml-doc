@@ -3193,7 +3193,7 @@ Every type can have only up to one own invariant contract. There is no limit on 
 
 \subsection{Scope Guard Statements}
 
-A {\em scope guard statement} ~\lstinline!scope ($l$ $x$) do $e$ done!~ executes the immediately following block or expression ($e$) at the end of an enclosing scope, rather than at the point where it appears. Values defined at the point of its appearance are available also in the executed block or expression. A scope guard statements comprise also a scope ending identifier. 
+A {\em scope guard statement} ~\lstinline!scope ($l$ $x$) do $e$ done!~ executes the immediately following block or expression ($e$) at the end of an enclosing scope, rather than at the point where it appears. Values defined at the point of its appearance are available also in the executed block or expression. A scope guard statements comprise also a scope ending identifier (combination of optional label $l$ and required ending type $x$). 
 
 \begin{itemize}
   \item \lstinline!scope (exit)!~ executes no matter how the enclosing scope ended. 
