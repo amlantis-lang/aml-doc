@@ -3017,6 +3017,7 @@ Block_Stat     ::= Use_Clause
                  | Expr
                  | Alias_Expr
                  | Capture_Usage
+                 | Scope_Stat
                  | 'super'
                  | 'assert' Expr
                  | ()
@@ -3069,6 +3070,10 @@ Fun_Stats      ::= [Fun_Stat {semi Fun_Stat}] Return_Expr
                    ['rescue' [nl] Rescue_Clauses]
                    ['ensure' semi Block_Stat {semi Block_Stat}]
 Fun_Stat       ::= Block_Stat
+Scope_Stat     ::= 'scope' '(' Scope_Id ')' (Do_Block | Expr)
+                 | 'defer' (Do_Block | Expr)
+Scope_Id       ::= [label_name] Scope_Ending
+Scope_Ending   ::= 'exit' | 'success' | 'failure' | 'throws' | 'raises'
 Tmpl_Member    ::= {Modifier} ['member'] Def
 Tmpl_Ifc_Impl  ::= 'interface' (Annot_Type - Nullable_Mod) 
                    'with' Record_Extension {'and' Record_Extension} 
@@ -3181,6 +3186,29 @@ The evaluation order of contracts code is:
 Applications of public methods on the object tested for invariant that are nested in any contract's code do not repeat invariant contract evaluations, instead, only the first and last are evaluated. Preconditions and postconditions are evaluated for every such nested application. 
 
 Every type can have only up to one own invariant contract. There is no limit on inheritance of invariant contracts -- there is always only up to one from each parent type. 
+
+
+
+
+
+\subsection{Scope Guard Statements}
+
+A {\em scope guard statement} ~\lstinline!scope ($l$ $x$) do $e$ done!~ executes the immediately following block or expression ($e$) at the end of an enclosing scope, rather than at the point where it appears. Values defined at the point of its appearance are available also in the executed block or expression. A scope guard statements comprise also a scope ending identifier. 
+
+\begin{itemize}
+  \item \lstinline!scope (exit)!~ executes no matter how the enclosing scope ended. 
+  \item \lstinline!scope (success)!~ executes if the enclosing scope ended normally. 
+  \item \lstinline!scope (failure)!~ and ~\lstinline!scope (raises)!~ executes if the enclosing scope ended due to stack unwinding caused by a raised error.\footnote{It is possible that a particularly annotated \code{goto} may be treated as scope failure, then the former one executes.}
+  \item \lstinline!scope (throws)!~ executes if the enclosing scope ended due to stack unwinding caused by a thrown value, including raised errors.
+\end{itemize}
+
+A scope guard statement with a specified label is executed always at end of the closest enclosing scope that has the same label.\footnote{Useful to execute scope guards conditionally.} If no label is specified, then the directly enclosing scope is taken. 
+
+Scope guard statements are executed in reverse order of their lexical appearance (like if they were stacked). 
+
+Scope guard statements are not allowed to exit by throwing a value, jumping out with a \code{goto}, using loop control expressions (such as \code{continue} or \code{break}) or return expressions, nor they may be entered with a \code{goto}.
+
+The scope guard statement ~\lstinline!defer do $e$ done!~ is equivalent to ~\lstinline!scope (exit)!.
 
 
 
