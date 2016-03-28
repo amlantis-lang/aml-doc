@@ -1385,8 +1385,8 @@ Partially_Applied_Block_Argument2
               | '&_' ['as' Type]
 Partial_Slice_Expr
             ::= Slice_Expr
-              | '_' ['as' Type] ('..' | '...' | '..<') ['_' ['as' Type]]
-              | ('..' | '...' | '..<') '_' ['as' Type]
+              | '_' ['as' Type] ('..' | '..<') ['_' ['as' Type]]
+              | ('..' | '..<') '_' ['as' Type]
 \end{lstlisting}
 
 The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
@@ -1639,8 +1639,8 @@ Infix_Op     ::= op_id
                | 'or' ['else']
                | 'xor'
                | id
-Prefix_Expr  ::= [op_id | 'not' | Try_Op] Expr
-Range_Expr   ::= Expr ('..' | '...' | '..<') Expr
+Prefix_Expr  ::= [op_id | 'not' | '...' | Try_Op] Expr
+Range_Expr   ::= Expr ('..' | '..<') Expr
                  [FP_Delta [FP_Digits]]
 Slice_Expr   ::= (* slice of 1 element *)
                  Expr 
@@ -1649,9 +1649,9 @@ Slice_Expr   ::= (* slice of 1 element *)
                  (* slice from index (or $) to last *)
                | (Expr | '$') '..'
                  (* slice from first to index (or $) *)
-               | ('..' | '...' | '..<') (Expr | '$')
+               | ('..' | '..<') (Expr | '$')
                  (* slice from index (or $) to index (or $) *)
-               | (Expr | '$') ('..' | '...' | '..<') (Expr | '$')
+               | (Expr | '$') ('..' | '..<') (Expr | '$')
                  (* slice from first to last (identity view) *)
                | '*'
 \end{lstlisting}

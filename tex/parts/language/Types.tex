@@ -48,6 +48,7 @@ Simple_Type            ::= Simple_Type [Type_Args]
                          | Literal ['.' 'type']
                          | '(' [Types] ')'
                          | Foreign_Type
+                         | '...' Type_Var
 Postfix_Simple_Type    ::= Type Stable_Id
 Types                  ::= Named_Subtype {',' Named_Subtype}
 Named_Subtype          ::= ['~' id ':'] Type
@@ -290,8 +291,7 @@ class A_Class {
 Simple_Type         ::= Simple_Type [Type_Args]
                       | Postfix_Simple_Type
 Postfix_Simple_Type ::= Type Stable_Id
-Type_Args           ::= '[' [Type_Arg {',' Type_Arg} [',' '...' id]] ']'
-                      | '[' '...' id ']'
+Type_Args           ::= '[' [Type_Arg {',' Type_Arg}] ']'
 Type_Arg            ::= Type_Arg_Value
                       | Measure_Arg_Value
                       | Static_Arg_Value
