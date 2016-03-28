@@ -35,7 +35,8 @@ Compound_Type          ::= Annot_Type {['prepend'] 'with' Annot_Type}
                          | ['refinement'] Refine_Stats
 Postfix_Type           ::= Compound_Type 
                            ['with' 'constraint' Constraint_Block]
-Infix_Type             ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
+Infix_Type             ::= Postfix_Type 
+                           {[nl] (Infix_Op - 'also', 'else') [nl] Postfix_Type}
                          | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
                            {':' Postfix_Type}
 Annot_Type             ::= {Annotation} Simple_Type [Nullable_Mod]
@@ -478,7 +479,8 @@ The \code{refinement} keyword may also be omitted from a compound type that cons
 \label{sec:infix-types}
 
 \grammar\begin{lstlisting}
-Infix_Type ::= Postfix_Type {[nl] Infix_Op [nl] Postfix_Type}
+Infix_Type ::= Postfix_Type 
+               {[nl] (Infix_Op - 'also', 'else') [nl] Postfix_Type}
              | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
                {':' Postfix_Type}
 \end{lstlisting}
