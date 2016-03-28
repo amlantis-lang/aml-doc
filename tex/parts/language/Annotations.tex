@@ -28,8 +28,8 @@ Macro_Def             ::= 'def' 'macro' Fun_Sig [Fun_Dec]
                         | 'def' 'macro' Fun_Sig ':=' [Fun_Dec2] Expr
 Annotation            ::= '@[' Long_Id [Arguments] ']'
                         | '@[' Long_Id '(' [Arguments] ')' ']'
-Pragma                ::= 'pragma' Long_Id [Arguments]
-                        | 'pragma' Long_Id '(' [Arguments] ')'
+Pragma                ::= 'pragma' Long_Id [Arguments] (Do_Block | In_Sep Expr ['end'])
+                        | 'pragma' Long_Id '(' [Arguments] ')' (Do_Block | In_Sep Expr ['end'])
 \end{lstlisting}
 
 % TBD: define also postfix annotations? [@ Stable_Id Arguments]
