@@ -12,7 +12,6 @@ Tmpl_Def             ::= Class_Definition
                        | Object_Definition
                        | Trait_Definition
                        | Protocol_Definition
-                       | Interface_Definition
                        | Refinement_Definition
                        | Aspect_Definition
                        | Annotation_Definition
@@ -21,7 +20,6 @@ Class_Definition     ::= [Mutability] ['monitored'] ['case'] 'class' Class_Def
 Object_Definition    ::= [Mutability] ['monitored'] ['case'] 'object' Object_Def
 Trait_Definition     ::= [Mutability] ['monitored'] 'trait' Trait_Def
 Protocol_Definition  ::= ['monitored'] 'protocol' Pro_Def
-Interface_Definition ::= [Mutability] ['monitored'] Ifc_Kind 'interface' Ifc_Def
 \end{lstlisting}
 
 Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
@@ -34,12 +32,11 @@ Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}
 \label{sec:templates}
 
 \grammar\begin{lstlisting}
-Class_Parents  ::= Constr {['prepend'] 'with' Annot_Type} 
+Class_Parents  ::= Base_Call {['prepend'] 'with' Annot_Type} 
 Trait_Parents  ::= Annot_Type {['prepend'] 'with' Annot_Type}
 Template_Body  ::= [Self_Type] Template_Stat {semi Template_Stat}
-Self_Type      ::= 'requires' 'self' ':' Type semi
-                 | 'requires' [id ':'] Type semi
-                 | 'use' ['self'] 'as' id [':' Type] semi
+Self_Type      ::= 'use' 'self' 'as' 'val' id [':' Type] In_Sep
+                 | 'use' 'self' 'as' Type In_Sep
 \end{lstlisting}
 
 A template defines the type signature, behaviour and initial state of a trait, class of objects or of a single object. Templates for part of instance creation expressions (constructors, see \sref{sec:constructor-invocations} \& \sref{sec:constructor-destructor-def}), class definitions and object definitions. A template ~\lstinline!$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }!~ consists of constructor invocation $sc$, which defines the template's {\em superclass}, trait references $mt_1 \commadots mt_n$ $(n \geq 0)$, which statically define the template's included traits\footnote{Including protocols, which are also traits.}, and a statement sequence $\stats$, which contains initialization code and additional member definitions \& declarations for the template. Unlike in Scala, all trait references in class/trait parents need not to be exhaustive, as more prepended/included traits may be defined as a part of the template body. Trait references declared using \code{prepend with} are prepended to the template body instead of included (\sref{sec:include-classes}). 
@@ -52,13 +49,9 @@ The {\em least proper supertype} of a template is the class type or compound typ
 
 The statement sequence $\stats$ contain member definitions that define new members or overwrite members in the parent classes. It is called also the {\em class-level block}, as it does not need to contain only member definitions for the template, but also arbitrary other expressions that construct the class object and that are executed while the class is being loaded, in the context of the class. If the template forms part of an abstract class or trait definition, the statement part $\stats$ may also contain declarations of abstract members. If the template forms part of a concrete class definition, $\stats$ may still contain declarations of abstract type members, but not of abstract term members. Unlike in Scala, the expressions in $\stats$ are not forming the primary constructor of the class, but a multi-constructor\footnote{The classes are open in Aml, a single class may have its statements spread across multiple source files (\sref{sec:open-templates}).} of the class itself. 
 
-The sequence of template statements may be prefixed with a formal parameter definition prefixed with \code{requires} or \code{use}, i.e. ~\lstinline!use self as $x$!, ~\lstinline!use self as $x$: $T$!, ~\lstinline!requires $T$!~ or ~\lstinline!requires $x$: $T$!. If a formal parameter $x$ is given, it can be used as an alias for the reference \code{self} throughout the body of the template, including any nested types. If the formal parameter $x$ comes with a type $T$, this definition affects the {\em self type} $S$ of the underlying class or objects as follows: Let $C$ be the type of the class or trait or object defining the template. If a type $T$ is given for the formal self parameter, $S$ is the greatest lower bound of $T$ and $C$. If no type $T$ is given, $S$ is simply $C$. Inside the template, the type of \code{self} is assumed to be $S$. 
+The sequence of template statements may be prefixed with a formal parameter definition prefixed with \code{use}, i.e. ~\lstinline!use self as val $x$ in $t$!, ~\lstinline!use self as val $x$: $T$ in $t$!~ or ~\lstinline!use self as $T$ in $t$!, where $x$ is an alias for \code{self}, $T$ is the prescribed type for $x$ (or \code{self} if no $x$ given), and $t$ is the rest of the template in which the formal parameter definition appears. If a formal parameter $x$ is given, it can be used as an alias for the reference \code{self} throughout the body of the template, including any nested types. If the formal parameter $x$ comes with a type $T$, this definition affects the {\em self type} $S$ of the underlying class or objects as follows: Let $C$ be the type of the class or trait or object defining the template. If a type $T$ is given for the formal self parameter, $S$ is the greatest lower bound of $T$ and $C$. If no type $T$ is given, $S$ is simply $C$. Inside the template, the type of \code{self} is assumed to be $S$. 
 
 The self type of a class or object must conform to the self types of all classes which are inherited by the template $t$. 
-
-A second form of self type definition reads just ~\lstinline!requires self: $S$!~. It prescribes the type $S$ for \code{self} without introducing an alias name for it. 
-
-% TBD: add distinction between use/requires to Aml naming guidelines (use-rename, requires-affect self type)
 
 \example Consider the following class definitions:
 \begin{lstlisting}
@@ -127,8 +120,8 @@ With explicit autoloading, the runtime is allowed to keep track of templates tha
 \label{sec:constructor-invocations}
 
 \grammar\begin{lstlisting}
-Constr ::= Annot_Type {'(' [Arguments] ')'}
-         | '(' ')'
+Base_Call 
+    ::= Annot_Type {'(' [Argument] ')'}
 \end{lstlisting}
 
 Constructor invocations define the type, members and initial state of objects created by an instance creation expression, or of parts of an object's definition, which are inherited by a class or object definition. A constructor invocation is a function application ~\lstinline!$c$[$\targs$]($\args_1$)$\ldots$($\args_n$)!~, where $c$ is a path to the superclass or an alias for the superclass, $\targs$ is a type argument list, $\args_1 \commadots \args_n$ are argument lists, and there is a constructor of that class which is applicable to the given arguments. 
@@ -1129,7 +1122,7 @@ A method named \code{copy} is implicitly added to every case class, unless the c
 def copy [$\tps$]($\ps'_1$)$\ldots$($\ps'_n$): $c$[$\tps$] :=
     $c$[$\Ts$].new($xs_1$)$\ldots$($xs_n$)
 \end{lstlisting}
-$\Ts$ stands for the vector of types defined in the type parameter section $\tps$. Each $xs_i$ denotes the parameter names of the parameter section $\ps'_i$.  Each value parameter of the first parameter list $\ps'_1$ has the form ~\lstinline!:$x_{1,j}$ : $T_{1,j}$ := self.$x_{1,j}$!, and the other parameters $\ps'_{i,j}$ of the clone constructor are defined as ~\lstinline!:$x_{1,j}$ : $T_{1,j}$!. Note that these parameters are defined as named parameters (\sref{sec:named-parameters}), and that the parameters of the first value parameter section have default values using \code{self}, which is available, since the copied object is already ``complete''. 
+$\Ts$ stands for the vector of types defined in the type parameter section $\tps$. Each $xs_i$ denotes the parameter names of the parameter section $\ps'_i$.  Each value parameter of the first parameter list $\ps'_1$ has the form ~\lstinline!:$x_{1,j}$ : $T_{1,j}$ := self.$x_{1,j}$!, and the other parameters $\ps'_{i,j}$ of the clone constructor are defined as ~\lstinline!:$x_{1,j}$ : $T_{1,j}$!. Note that these parameters are defined as named parameters (\sref{sec:labelled-parameters}), and that the parameters of the first value parameter section have default values using \code{self}, which is available, since the copied object is already ``complete''. 
 
 A clone constructor is also implicitly added to every case class, but limited to the first value parameter section. The following definition of the implicitly added clone constructor shares the definition of parameters: 
 \begin{lstlisting}
@@ -1141,14 +1134,6 @@ end clone
 \end{lstlisting}
 Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) parameter section. All instance variables are shallow-copied into the new cloned object. 
 
-Every case class implicitly overrides some method definitions of class \code{Object}, unless a definition of the same method is already given in the case class itself or a concrete definition of the same method is given in some base class (including traits) of the case class, different from \code{Object}. Namely: 
-\begin{itemize}
-  \item[] Method ~\lstinline!equals: (Object) $\mapsto$ Boolean!~ (equivalent to operator ``\lstinline!=!'') is structural equality, where two instances are equal if they both belong to the case class in question and they have equal (with respect to \code{equals}) elements. 
-
-  \item[] Method ~\lstinline!hash_code: () $\mapsto$ Number.Integer_Unsigned!~ computes a hash code. 
-
-  \item[] Method ~\lstinline!to_string: () $\mapsto$ String!~ returns a string representation which contains the name of the case class and its elements. 
-\end{itemize}
 
 
 
@@ -1174,15 +1159,13 @@ If $D$ is not a trait, then its actual supertype is simply its least proper supe
 
 \example The following trait defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The trait also requires the self-type to be \code{T}. 
 \begin{lstlisting}
-trait Comparable[T <: Comparable[T]] {
-  requires T
-  operator < (that: T): Boolean end
-  operator <=(that: T): Boolean := self < that or self = that
-  operator > (that: T): Boolean := that < self
-  operator >=(that: T): Boolean := that <= self
+trait Comparable['T <: Comparable['T]] {
+  operator < (a: 'T) (b: 'T): Boolean end
+  operator <=(a: 'T) (b: 'T): Boolean := not (a < b) and not (a > b)
+  operator > (a: 'T) (b: 'T): Boolean := b < a
+  operator >=(a: 'T) (b: 'T): Boolean := b <= a
 }
 \end{lstlisting}
-
 
 
 
@@ -1251,28 +1234,6 @@ Protocols are basically traits (\sref{sec:traits}) that are stripped of some fea
 \end{itemize}
 
 Protocol references are preferred to traits to be used by library designers to declare contracts for the code that uses them. 
-
-
-
-
-
-\section{Interface Definitions}
-\label{sec:interfaces}
-
-\grammar\begin{lstlisting}
-Interface_Definition ::= [Mutability] ['monitored'] Ifc_Kind 'interface' Ifc_Def
-Ifc_Kind             ::= ['case'] 'class' 
-                       | ['case'] 'object'
-                       | 'trait'
-                       | 'refinement'
-Ifc_Def              ::= id [Type_Param_Clause] [Given_Clauses]
-                         [Class_Param_Clauses] Ifc_Tmpl_Env
-Ifc_Tmpl_Env         ::= Tmpl_Env_With_Pars ['interface']
-                       | Tmpl_Env_Brackets
-                       | Tmpl_Env_No_Pars ['interface']
-\end{lstlisting}
-
-Interfaces are filtered versions of classes and traits with only declarations and without early definitions or any definitions at all, except for auxiliary constructor definitions that become empty constructor declarations (without function bodies). Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols are. 
 
 
 

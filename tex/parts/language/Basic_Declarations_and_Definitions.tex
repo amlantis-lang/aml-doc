@@ -48,13 +48,15 @@ This is to keep up consistency with pattern matching, where the type will usuall
 \label{sec:value-dcl-def}
 
 \grammar\begin{lstlisting}
-Dcl          ::= Val_Dcl
-Val_Dcl      ::= [S_Modifier] 'val' id {',' id} ':' Type
-Val_Def      ::= [S_Modifier] ('val' | 'let') ['rec']
-                 Let_Binding {'and' Let_Binding}
-Let_Binding  ::= Pattern [':' Type_Param_Clause] ':=' Expr {',' Expr}
-               | fun_id [Type_Param_Clause] Param_Clauses [':' Type]
-                 ':=' Expr
+Dcl ::= ...
+      | Val_Dcl
+Val_Dcl 
+    ::= [S_Modifier] 'val' id {',' id} ':' Type
+Val_Def 
+    ::= [S_Modifier] ('val' | 'let') ['rec'] Let_Binding {'and' Let_Binding}
+Let_Binding
+    ::= Pattern [Type_Param_Clause] [':' Type] ':=' Expr {',' Expr}
+      | fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses [':' Type] ':=' Expr
 \end{lstlisting}
 
 A value declaration \lstinline@val $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
@@ -171,11 +173,15 @@ The following shorthands are recognized:
 \label{sec:variable-dcl-def}
 
 \grammar\begin{lstlisting}
-Dcl         ::= Var_Dcl
-Var_Dcl     ::= [S_Modifier] 'var' id {',' id} ':' Type
-Var_Def     ::= [S_Modifier] 'var' Var_Binding
-Var_Binding ::= Let_Binding
-              | id {',' id} ':' Type ':=' '_'
+Dcl ::= ...
+      | Var_Dcl
+Var_Dcl 
+    ::= [S_Modifier] 'var' id {',' id} ':' Type
+Var_Def 
+    ::= [S_Modifier] 'var' Var_Binding
+Var_Binding 
+    ::= Let_Binding
+      | id {',' id} ':' Type ':=' '_'
 \end{lstlisting}
 
 A variable declaration \lstinline@var $x$: $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$: $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$: $T$+ introduces a mutable class instance variable of type $T$. 
@@ -222,21 +228,25 @@ shorthand for the sequence of variable declarations ~\lstinline@var $x_1$: $T$; 
 \label{sec:property-dec-dfn}
 
 \grammar\begin{lstlisting}
-Prop_Dcl   ::= 'property' ['(' Prop_Specs ')'] id 
-               [':' Type]
-Prop_Specs ::= Prop_Spec {',' Prop_Spec}
-Prop_Spec  ::= ([Access_Modifier] ('get' | 'set')) 
-             | ['optional'] 'weak'
-             | 'unowned'
-             | ['optional'] 'soft'
-Prop_Def   ::= 'property' ['(' Prop_Specs ')'] id 
-               [':' Type] Prop_Impls
-Prop_Impls ::= '{' Prop_Impl {semi Prop_Impl} '}'
-             | [nl] 'with' Prop_Impl {[nl] 'and' Prop_Impl}
-Prop_Impl  ::= ([Access_Modifier] 'get' Prop_Get_Impl)
-             | ([Access_Modifier] 'set' Prop_Set_Impl)
-             | ([Access_Modifier] 'val' ':=' Expr)
-             | ([Access_Modifier] 'var' ':=' Expr)
+Prop_Dcl
+    ::= 'property' ['(' Prop_Specs ')'] id [':' Type]
+Prop_Specs 
+    ::= Prop_Spec {',' Prop_Spec}
+Prop_Spec 
+    ::= ([Access_Modifier] ('get' | 'set')) 
+      | ['optional'] 'weak'
+      | 'unowned'
+      | ['optional'] 'soft'
+Prop_Def   
+    ::= 'property' ['(' Prop_Specs ')'] id [':' Type] Prop_Impls
+Prop_Impls 
+    ::= '{' Prop_Impl {semi Prop_Impl} '}'
+      | [nl] 'with' Prop_Impl {[nl] 'and' Prop_Impl}
+Prop_Impl 
+    ::= ([Access_Modifier] 'get' Prop_Get_Impl)
+      | ([Access_Modifier] 'set' Prop_Set_Impl)
+      | ([Access_Modifier] 'val' ':=' Expr)
+      | ([Access_Modifier] 'var' ':=' Expr)
 \end{lstlisting}
 
 A property declaration \lstinline@property $x$: $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
@@ -408,17 +418,22 @@ Aml/Language.Soft_Reference.is_supported?
 \section{Type Parameters}
 
 \grammar\begin{lstlisting}
-Type_Param_Clause  ::= '[' Variant_Type_Param 
-                       {',' Variant_Type_Param} [',' '*'] ']'
-                     | '[' '*' ']'
-Type_Param_Clause2 ::= Variant_Type_Param
-                     | '(' Variant_Type_Param 
-                       {',' Variant_Type_Param} ')'
-Variant_Type_Param ::= {Annotation} ['+' | '-'] Type_Param
-                     | '<' (Type_Var | id) ['<:' id] '>'
-Type_Param         ::= (Type_Var | '_') [Type_Param_Clause]
-                       ['>:' Type] ['<:' Type]
-                       {'<%' Type} {':' Type}
+Type_Param_Clause 
+    ::= '[' [Variant_Type_Param {',' Variant_Type_Param}] ']'
+Type_Param_Clause2 
+    ::= Variant_Type_Param
+      | Atomic_Type_Param_Clause2
+Atomic_Type_Param_Clause2
+    ::= '(' Variant_Type_Param {',' Variant_Type_Param} ')'
+Variant_Type_Param 
+    ::= {Annotation} ['+' | '-'] ['...'] Type_Param
+      | '<' (Type_Var | id) ['<:' id] '>'
+Type_Param 
+    ::= (Type_Var | '_') [Type_Param_Clause]
+        Type_Param_Constraints
+Type_Param_Constraints
+    ::= ['>:' Type] ['<:' Type]
+        {'<%' Type} {':' Type}
 \end{lstlisting}
 
 Type parameters appear in type definitions, class definitions and function definitions. In this section we consider only type parameter definitions with lower bounds ~\lstinline!>: $L$!~ and upper bounds ~\lstinline!<: $U$!, whereas a discussion of context bounds ~\lstinline!: $T$!~ and view bounds ~\lstinline!<% $T$!~ is deferred to chapter about implicit parameters and views (\sref{sec:implicit-params-views}).
@@ -433,9 +448,9 @@ Bounds defined for a particular type parameter extend to all of its nested usage
 
 A type parameter may also contain a nested type parameter. This is for cases when the expected type argument is a type constructor. 
 
-If the names of higher-order type parameters are irrelevant, they may be denoted with a ``\lstinline!_!'', which is nowhere visible and represents a single type parameter that is independent of all other type parameters. 
+If the names of higher-order type parameters are irrelevant, they may be denoted with a ``\lstinline!_!'', which is nowhere visible and represents a single type parameter that is independent of all other type parameters, including other type parameters that are denoted the same way. 
 
-A type parameters clause may also contain \code{*} as the last pseudo type parameter, which means that the compiler is allowed to add more type parameters during automatic type inference. 
+A type parameters clause may contain a variadic type parameter, denoted by the prefix ``\,\lstinline!...!\,'', which may appear up to once per one type parameter list, preferably as the last type parameter, and may also appear in the nested type parameter clauses (but always up to once per one list). Such a type parameter clause then captures a tuple of given type arguments (including no type arguments at all -- Unit), and in order to expand it, the same prefix operator has to be used. A variadic type parameter may capture arguments of different types (unlike variadic function parameters, which share a common upper bound) -- and may be used as a tuple type (not just expanded). 
 
 As a consequence of having type parameters visible across nested type parameter clauses, using the same type parameter name gives additional constraint on the parameterized type, requiring the type argument to be physically equivalent among all occurrences of the type parameter. 
 
@@ -582,8 +597,11 @@ Now type of \code{x + 1} is required to be polymorphic. The type of the expressi
 \label{sec:locally-abstract-types}
 
 \grammar\begin{lstlisting}
-Param_Clause     ::= LAT_Param_Clause
-LAT_Param_Clause ::= '(' 'type' id [Type_Equation | Type_Abstract] ')'
+Param_Clause 
+    ::= ...
+      | Locally_Abstract_Type_Param_Clause
+Locally_Abstract_Type_Param_Clause 
+    ::= '(' 'type' id [Type_Equation | Type_Abstract] ')'
 \end{lstlisting}
 
 A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named $x$, which is considered abstract in the scope of the function or method it appears in, but then replaced by a fresh type variable of the form ~\lstinline!'$x$!~ outside the function or method, and which is unifiable by (\sref{sec:automatic-inference}).
@@ -596,7 +614,11 @@ A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named 
 \label{sec:locally-abstract-polymorphic-types}
 
 \grammar\begin{lstlisting}
-Variant_Type_Param ::= {Annotation} 'type' ['+' | '-'] Type_Param
+Variant_Type_Param 
+    ::= ...
+      | {Annotation} 'type' ['+' | '-'] Locally_Abstract_Type_Param
+Locally_Abstract_Type_Param
+    ::= id [Type_Param_Clause] Type_Param_Constraints
 \end{lstlisting}
 
 Explicitly polymorphic locally abstract types are a combination of (\sref{sec:explicit-polymorphic-type-annotations}) and (\sref{sec:locally-abstract-types}).
@@ -611,9 +633,9 @@ The locally abstract type syntax form by itself does not make polymorphic the ty
 \label{sec:type-class-constrained-types}
 
 \grammar\begin{lstlisting}
-Type_Class_Param_Clause 
-           ::= '(' Given_Clauses ')'
-             | '(' 'given' Given_Dcl {semi Given_Dcl} ')'
+Given_Param_Clause 
+    ::= '(' Given_Clauses ')'
+      | '(' 'given' Given_Dcl {semi Given_Dcl} ')'
 \end{lstlisting}
 
 Type class constrained types are used in function definitions and declarations. A {\em type class constraint} of a form ~\lstinline!(given class $T$['$a$])!~ restricts the type $a$ to have an instance of the type class $T$ (\sref{sec:type-classes}) in the scope of the function's application. The type $a$ is then said to be a {\em type class constrained type}. 
@@ -634,115 +656,125 @@ Then, every application of operations defined by the type class $T$ to values of
 
 \grammar\begin{lstlisting}
 (* every *_Dcl here require the `':' Type` part inside *_Sig *)
-Dcl           ::= Fun_Dcl
-                | Op_Dcl
-                | Message_Dcl 
-                | Att_Dcl
-Fun_Dcl       ::= 'def' Fun_Sig 'end' ['def']
-Op_Dcl        ::= 'operator' Op_Sig 'end' ['operator']
-Message_Dcl   ::= 'message' Fun_Sig 'end' ['message']
-Att_Dcl       ::= 'attribute' Att_Sig 'end' ['attribute']
-
-Def           ::= Fun_Def
-                | Op_Def
-                | Method_Def
-                | Att_Def
-Fun_Def       ::= 'def' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['def']
-                | 'def' Fun_Sig ':=' [Fun_Dec2] Expr
-Op_Def        ::= 'operator' Op_Sig [Fun_Dec] [semi Fun_Stats] 'end' 
-                  ['operator']
-                | 'operator' Op_Sig ':=' [Fun_Dec2] Expr
-Method_Def    ::= 'method' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' 
-                  ['method']
-                | 'method' Fun_Sig ':=' [Fun_Dec2] Expr
-Att_Def       ::= 'attribute' Att_Sig [Fun_Dec] [semi Fun_Stats] 'end' 
-                  ['attribute']
-                | 'attribute' Att_Sig ':=' [Fun_Dec2] Expr
-Fun_Dec       ::= [nl] 'declare' Fun_Dec_Exprs [semi] ('begin' | 'in')
-Fun_Dec2      ::= [nl] 'declare' Fun_Dec_Exprs [semi] 'in'
-Fun_Dec_Exprs ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
-Fun_Sig       ::= Function_Path [Type_Param_Clause] [Given_Clauses]
-                  Param_Clauses [':' Type]
-Op_Sig        ::= Op_Path [Type_Param_Clause] [Given_Clauses]
-                  Param_Clauses [':' Type]
-Att_Sig       ::= Function_Path [Type_Param_Clause] [Given_Clauses]
-                  Param_Clause Param_Clauses [':' Type]
-                  (* it is an error if the first param clause
-                     only accepts Unit *)
-Function_Path ::= fun_id
-                | 'self' '.' fun_id
-                | Long_Id '.' fun_id
-Op_Path       ::= op_id
-                | 'self' '.' op_id
-                | Long_Id '.' op_id
-Param_Clauses ::= {Param_Clause} [Variadic_Param]
-                  [Block_Capture_Param] [Implicit_Params]
-Param_Clause  ::= Atomic_Pattern
-                | '~' Param_Extra id
-                | '~(' Param_Extra id [':' Type] ')'
-                | '~' Param_Extra id ':' Atomic_Pattern
-                | '~' Param_Extra id ':' 
-                  '(' Pattern [':' Type] ')'
-                | '~?' Param_Extra id
-                | '~?(' Param_Extra id [':' Param_Type] [':=' Expr] ')'
-                | '~?' Param_Extra id ':' Atomic_Pattern
-                | '~?' Param_Extra id ':' 
-                  '(' Pattern [':' Type] [':=' Expr] ')'
-                | '(' [Params] ')'
-                | LAT_Param_Clause (* locally abstract type *)
-                | Type_Class_Param_Clause
+Dcl ::= Fun_Dcl
+      | Op_Dcl
+      | Message_Dcl 
+      | Att_Dcl
+Fun_Dcl 
+    ::= 'def' Fun_Sig 'end' ['def']
+Op_Dcl 
+    ::= 'operator' Op_Sig 'end' ['operator']
+Message_Dcl 
+    ::= 'message' Fun_Sig 'end' ['message']
+Att_Dcl 
+    ::= 'attribute' Att_Sig 'end' ['attribute']
+Def ::= Fun_Def
+      | Op_Def
+      | Method_Def
+      | Att_Def
+Fun_Def
+    ::= 'def' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['def']
+      | 'def' Fun_Sig ':=' [Fun_Dec2] Expr
+Op_Def  
+    ::= 'operator' Op_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['operator']
+      | 'operator' Op_Sig ':=' [Fun_Dec2] Expr
+Method_Def 
+    ::= 'method' Fun_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['method']
+      | 'method' Fun_Sig ':=' [Fun_Dec2] Expr
+Att_Def
+    ::= 'attribute' Att_Sig [Fun_Dec] [semi Fun_Stats] 'end' ['attribute']
+      | 'attribute' Att_Sig ':=' [Fun_Dec2] Expr
+Fun_Dec 
+    ::= [nl] 'declare' Fun_Dec_Exprs [semi] ('begin' | 'in')
+Fun_Dec2 
+    ::= [nl] 'declare' Fun_Dec_Exprs [semi] 'in'
+Fun_Dec_Exprs 
+    ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
+Fun_Sig 
+    ::= Function_Path [Type_Param_Clause] [Given_Clauses]
+        Param_Clauses [':' Type]
+Op_Sig 
+    ::= Op_Path [Type_Param_Clause] [Given_Clauses]
+        Param_Clauses [':' Type]
+Att_Sig 
+    ::= Function_Path [Type_Param_Clause] [Given_Clauses]
+        Param_Clause Param_Clauses [':' Type]
+        (* it is an error if the first param clause only accepts Unit *)
+Function_Path 
+    ::= fun_id
+      | 'self' '.' fun_id
+      | Long_Id '.' fun_id
+Op_Path 
+    ::= op_id
+      | 'self' '.' op_id
+      | Long_Id '.' op_id
+Param_Clauses 
+    ::= {Param_Clause} [Variadic_Param] [Block_Capture_Param] [Implicit_Params]
+Param_Clause  
+    ::= Atomic_Pattern
+      | '~' Param_Extra id
+      | '~(' Param_Extra id [':' Type] ')'
+      | '~' Param_Extra id ':' Atomic_Pattern
+      | '~' Param_Extra id ':' '(' Pattern [':' Type] ')'
+      | '~?' Param_Extra id
+      | '~?(' Param_Extra id [':' Param_Type] [':=' Expr] ')'
+      | '~?' Param_Extra id ':' Atomic_Pattern
+      | '~?' Param_Extra id ':' '(' Pattern [':' Type] [':=' Expr] ')'
+      | '(' [Params] ')'
+      | Locally_Abstract_Type_Param_Clause
+      | Reflected_Param_Clause
+      | Given_Param_Clause
 Implicit_Params 
-              ::= 'implicit' ':' Atomic_Pattern
-                | '(' 'implicit' ':' (Atomic_Pattern | Params) ')'
+    ::= 'implicit' ':' Atomic_Pattern
+      | '(' 'implicit' ':' (Atomic_Pattern | Params) ')'
 Block_Capture_Param
-              ::= '&' ['val' | 'var'] id
-                | '&(' ['val' | 'var'] id [':' Type] ')'
-                | '~&' id ':' Type ['as' Var_Pattern]
-                | '~&' id ':' 
-                  '(' Type ['as' Var_Pattern] [':=' Expr] ')'
+    ::= '&' ['val' | 'var'] id
+      | '&(' ['val' | 'var'] id [':' Type] ')'
+      | '~&' id ':' Type ['as' Var_Pattern]
+      | '~&' id ':' '(' Type ['as' Var_Pattern] [':=' Expr] ')'
 Variadic_Param 
-              ::= Positional_Variadic_Param [Capture_Variadic_Param]
-                | Capture_Variadic_Param
+    ::= Positional_Variadic_Param [Capture_Variadic_Param]
+      | Capture_Variadic_Param
 Positional_Variadic_Param
-              ::= '*(' [M_Modifier] ['val' | 'var'] var_id [':' Type] ')'
-                | '*' [M_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
+    ::= '*(' [M_Modifier] ['val' | 'var'] var_id [':' Type] ')'
+      | '*'  [M_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
 Capture_Variadic_Param
-              ::= '**(' [M_Modifier] ['val' | 'var'] var_id [':' Type] ')'
-                | '**' [M_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
-Params        ::= Positional_Params {',' Labelled_Params}
-                | Labelled_Params
+    ::= '**(' [M_Modifier] ['val' | 'var'] var_id [':' Type] ')'
+      | '**'  [M_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
+Params 
+    ::= Positional_Params {',' Labelled_Params}
+      | Labelled_Params
 Positional_Params
-              ::= Positional_Param {',' Positional_Param}
-                  [',' Rest_Params {',' Positional_Param}]
-                | Rest_Params {',' Positional_Param}
+    ::= Positional_Param {',' Positional_Param} [',' Rest_Params {',' Positional_Param}]
+      | Rest_Params {',' Positional_Param}
 Positional_Param
-              ::= Pattern
-                | Param_Extra id [':' Param_Type]
-Rest_Params   ::= Optional_Param {',' Optional_Param}
-                  [',' Rest_Extract]
-                | Rest_Extract
+    ::= Pattern
+      | Param_Extra id [':' Param_Type]
+Rest_Params 
+    ::= Optional_Param {',' Optional_Param} [',' Rest_Extract]
+      | Rest_Extract
 Optional_Param 
-              ::= Optional_Extract
-                | '?' Param_Extra id [':' Param_Type]
-              ::= Param_Extra var_id
-                  [':' Param_Type] [':=' Expr]
+    ::= Optional_Extract
+      | '?' Param_Extra id [':' Param_Type]
+      | '?(' Param_Extra id [':' Param_Type] [':=' Expr] ')'
 Labelled_Params 
-              ::= Labelled_Param {',' Labelled_Param}
-                  [',' Capture_Extract]
-                | Capture_Extract
+    ::= Labelled_Param {',' Labelled_Param} [',' Capture_Extract]
+      | Capture_Extract
 Labelled_Param 
-              ::= Labelled_Pattern
-                | '~' Param_Extra id 
-                | '~(' Param_Extra id [':' Param_Type] ')'
-                | '~' Param_Extra id ':' Pattern
-                | '~?' Param_Extra id
-                | '~?(' Param_Extra id [':' Param_Type] [':=' Expr] ')'
-                | '~?' Param_Extra id ':' Pattern
-                | '~?' Param_Extra id ':' 
-                  '(' Pattern [':' Param_Type] [':=' Expr] ')'
-Param_Extra   ::= [Eagerness] [M_Modifier] [Param_Rw]
-Param_Rw      ::= 'val' | 'var' | 'ref'
-Param_Type    ::= ['->'] Type
+    ::= Labelled_Pattern
+      | '~' Param_Extra id 
+      | '~(' Param_Extra id [':' Param_Type] ')'
+      | '~' Param_Extra id ':' Pattern
+      | '~?' Param_Extra id
+      | '~?(' Param_Extra id [':' Param_Type] [':=' Expr] ')'
+      | '~?' Param_Extra id ':' Pattern
+      | '~?' Param_Extra id ':' '(' Pattern [':' Param_Type] [':=' Expr] ')'
+Param_Extra 
+    ::= [Eagerness] [M_Modifier] [Param_Rw]
+Param_Rw 
+    ::= 'val' | 'var' | 'ref'
+Param_Type
+    ::= ['->'] Type
 \end{lstlisting}
 
 A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's path, $\psig$ is its parameter signature and $T$ is its result type. 
@@ -812,7 +844,7 @@ Value parameters are of these forms:
 
 Value parameter kinds may be freely reordered to the extent allowed by the \code{Param_Clauses} grammar element: positional, labelled and optional parameters may appear in any order, followed by variadic, block capture and implicit parameters, in that order. 
 
-Locally abstract types (the \code{LAT_Param_Clause} grammar element, \sref{sec:locally-abstract-types}) are not real parameters and do not play such role in function applications (\sref{sec:function-applications}), but instead, they influence the typing of the other parameters. 
+Locally abstract types (the \code{Locally_Abstract_Type_Param_Clause} grammar element, \sref{sec:locally-abstract-types}) are not real parameters and do not play such role in function applications (\sref{sec:function-applications}), but instead, they influence the typing of the other parameters. 
 
 
 
@@ -976,6 +1008,22 @@ A block capture parameter binds a block argument to a variable. The block argume
 
 
 
+\subsection{Reflected Parameter}
+\label{sec:reflected-parameter}
+
+\grammar\begin{lstlisting}
+Param_Clause
+    ::= ...
+      | Reflected_Param_Clause
+Reflected_Param_Clause
+    ::= '(' 'reflect' Positional_Param ')'
+      | '(' 'reflect' Optional_Param ')'
+\end{lstlisting}
+
+
+
+
+
 \subsection{Implicit Parameter}
 \label{sec:implicit-parameter}
 
@@ -1080,7 +1128,7 @@ Import_Expr   ::= Single_Import
                 | '{' Import_Exprs '}'
                 | '_'
 Import_Exprs  ::= Single_Import {',' Single_Import} [',' '_']
-Single_Import ::= id ['as' [id | '_']]
+Single_Import ::= id ['as' (id | '_')]
 \end{lstlisting}
 
 A use clause has the form ~\lstinline!use $p$.$I$!, where $p$ is a path to the containing type of the imported entity, and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}

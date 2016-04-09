@@ -11,17 +11,26 @@
 \label{sec:type-decls-aliases}
 
 \grammar\begin{lstlisting}
-Def              ::= Type_Definition
-Type_Definition  ::= 'type' Typedef {'and' Typedef} 'end' ['type']
-Typedef          ::= id [Type_Param_Clause] [Given_Clauses] [Type_Information]
-                   | Type_Param_Clause2 id [Given_Clauses] [Type_Information]
-Type_Information ::= [ Type_Equation 
-                     | Type_Abstract 
-                     | Type_Representation] {semi Type_Constraint}
-Type_Equation    ::= Is ['alias'] Type
-Type_Abstract    ::= ['>:' Type] ['<:' Type]
-Type_Constraint  ::= 'constraint' Stable_Id '=' Type
-Is               ::= 'is' [nl] | ':=' [nl]
+Def ::= ...
+      | Type_Definition
+Type_Definition 
+    ::= 'type' Typedef {'and' Typedef} 'end' ['type']
+Typedef 
+    ::= [Implicit_Types] id [Type_Param_Clause] [Given_Clauses] [Type_Information]
+      | Implicit_Types [Atomic_Type_Param_Clause2] id [Given_Clauses] [Type_Information]
+      | Type_Param_Clause2 id [Given_Clauses] [Type_Information]
+Type_Information
+    ::= [ Type_Equation 
+        | Type_Abstract 
+        | Type_Representation] {semi Type_Constraint}
+Type_Equation 
+    ::= Is_Op ['alias'] Type
+Type_Abstract 
+    ::= ['>:' Type] ['<:' Type]
+Type_Constraint 
+    ::= 'constraint' Type '=' Type
+Is_Op
+    ::= 'is' [nl] | ':=' [nl]
 \end{lstlisting}
 
 A {\em type declaration} \lstinline!type $t$[$\tps$] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
@@ -40,9 +49,10 @@ It is an error if a type alias refers recursively to the defined type constructo
 \begin{lstlisting}
 type Integer_List := List[Integer] end
 type T <: Comparable[T] end
-type Two[A] := Tuple_2[A, A] end
-type My_Collection[+X] <: Iterable[X] end
+type Two['a] := Tuple_2['a, 'a] end
+type My_Collection[+'x] <: Iterable['x] end
 \end{lstlisting}
+
 The following are illegal:
 \begin{lstlisting}
 type Abs := Comparable[Abs] end (* recursive type alias *)
@@ -65,50 +75,65 @@ type My_Collection <: Iterable end
 \label{sec:aspects}
 
 \grammar\begin{lstlisting}
-Type_Definition   ::= Aspect_Definition
-Aspect_Definition ::= 'aspect' [Aspect_Clause] Aspect_Def
-Aspect_Def        ::= id ['extends' Class_Parents] Aspect_Tmpl_Env
-Aspect_Tmpl_Env   ::= '{' Aspect_Body '}'
-                    | 'begin' Aspect_Body 'end' ['aspect']
-Aspect_Body       ::= Aspect_Stat {semi Aspect_Stat}
-Aspect_Stat       ::= Advice_Def
-                    | Pointcut_Def
-                    | Template_Stat
-Pointcut_Def      ::= 'pointcut' id
-                      ['(' [id [':' Type]] {',' [id [':' Type]]} ')']
-                      Is Pointcut_Type 'end' ['pointcut']
-Pointcut_Type     ::= 'invoke' (id | regular_expression_literal)
-                    | 'get' (id | regular_expression_literal)
-                    | 'set' (id | regular_expression_literal)
-                    | 'handler' Type
-                    | 'returning' [Id_Or_Type]
-                    | 'throwing' [Id_Or_Type]
-                    | 'raising' [Id_Or_Type]
-                    | 'yielding' [Id_Or_Type]
-                    | 'advice-execution' 
-                      [(id | regular_expression_literal)]
-                    | 'self' (id | Type)
-                    | 'target' (id | Type)
-                    | 'arguments' {'(' Id_Or_Type {',' Id_Or_Type} ')'}+
-                    | 'arguments' '(' ')'
-                    | ('if' | 'unless') '(' Expr ')'
-                    | 'not' Pointcut_Ref
-                    | Pointcut_Ref 'and' Pointcut_Ref
-                    | Pointcut_Ref 'or' Pointcut_Ref
-                    | '(' Pointcut_Ref ')'
-                    | 'retain' [Id_Or_Type]
-                    | 'release' [Id_Or_Type]
-Pointcut_Ref      ::= id ['(' id {',' id} ')'] | Pointcut_Type
-Advice_Def        ::= 'advice' 
-                      Advice_Spec (Pointcut_Ref | Pointcut_Type)
-                      Block_Argument
-Id_Or_Type        ::= id [':' Type] | Type
-Advice_Spec       ::= 'before' 
-                    | 'after' [('returning' | 'throwing' | 'raising' | 'yielding') 
-                               [Id_Or_Type]]
-                    | 'around'
-Aspect_Clause     ::= 'per-self' [Pointcut_Ref] 
-                    | 'per-target' [Pointcut_Ref] 
+Type_Definition 
+    ::= ...
+      | Aspect_Definition
+Aspect_Definition 
+    ::= 'aspect' [Aspect_Clause] Aspect_Def
+Aspect_Def
+    ::= id ['extends' Class_Parents] Aspect_Tmpl_Env
+Aspect_Tmpl_Env 
+    ::= '{' Aspect_Body '}'
+      | 'begin' Aspect_Body 'end' ['aspect']
+Aspect_Body
+    ::= Aspect_Stat {semi Aspect_Stat}
+Aspect_Stat 
+    ::= Advice_Def
+      | Pointcut_Def
+      | Template_Stat
+Pointcut_Def 
+    ::= 'pointcut' id
+        ['(' [id [':' Type]] {',' [id [':' Type]]} ')']
+        Is_Op Pointcut_Type 'end' ['pointcut']
+Pointcut_Type 
+    ::= 'invoke' (id | regular_expression_literal)
+      | 'get' (id | regular_expression_literal)
+      | 'set' (id | regular_expression_literal)
+      | 'handler' Type
+      | 'returning' [Id_Or_Type]
+      | 'signalling' [Id_Or_Type]
+      | 'throwing' [Id_Or_Type]
+      | 'raising' [Id_Or_Type]
+      | 'yielding' [Id_Or_Type]
+      | 'advice-execution' [(id | regular_expression_literal)]
+      | 'self' (id | Type)
+      | 'target' (id | Type)
+      | 'arguments' {'(' Id_Or_Type {',' Id_Or_Type} ')'}+
+      | 'arguments' '(' ')'
+      | ('if' | 'unless') '(' Expr ')'
+      | 'not' Pointcut_Ref
+      | Pointcut_Ref 'and' Pointcut_Ref
+      | Pointcut_Ref 'or' Pointcut_Ref
+      | '(' Pointcut_Ref ')'
+      | 'retain' [Id_Or_Type]
+      | 'release' [Id_Or_Type]
+Pointcut_Ref 
+    ::= id ['(' id {',' id} ')'] 
+      | Pointcut_Type
+Advice_Def 
+    ::= 'advice' Advice_Spec (Pointcut_Ref | Pointcut_Type) Block_Argument
+Id_Or_Type
+    ::= id [':' Type] 
+      | Type
+Advice_Spec 
+    ::= 'before' 
+      | 'after' 
+        [('returning' | 'throwing' | 'raising' | 'yielding' | 'signalling') 
+         [Id_Or_Type]]
+      | 'around'
+Aspect_Clause
+    ::= 'per-self' [Pointcut_Ref] 
+      | 'per-target' [Pointcut_Ref] 
 \end{lstlisting}
 
 Only for \code{Block_Argument} inside of \code{Advice_Def}:
@@ -131,13 +156,14 @@ Simple_Expr       ::= 'joinpoint' ['.' Selection]
 \label{sec:enums}
 
 \grammar\begin{lstlisting}
-Type_Representation ::= Is ['bitfield'] 
-                        'enum' ('{' Enum_Field {semi Enum_Field} '}'
-                          | Enum_Field {semi Enum_Field})
-                        [Record_Extensions]
-Enum_Field          ::= id ':=' Expr
-                      | id
-                      | {Annotation}+ Enum_Field
+Type_Representation
+    ::= Is_Op ['bitfield'] 
+        'enum' ('{' Enum_Field {semi Enum_Field} '}' | Enum_Field {semi Enum_Field})
+        [Record_Extensions]
+Enum_Field 
+    ::= id ':=' Expr
+      | id
+      | {Annotation}+ Enum_Field
 \end{lstlisting}
 
 Enums (short for Enumerations) are types that contain constants. Bitfield enums may be combined to still produce a single enum value. Every enum constant is a singleton instance of the enum class, or a case class nested in the enum class. 
@@ -165,13 +191,20 @@ If an enum type is specified with the \code{bitfield} modifier, then the contain
 \label{sec:variant-types}
 
 \grammar\begin{lstlisting}
-Type_Representation ::= Is 'variant' [nl]
-                        (Variant1 | Variant2)
-                        [Record_Extensions]
-Variant1            ::= Variant_Field {semi Variant_Field}
-Variant2            ::= '{' Variant_Field {semi Variant_Field} '}'
-Variant_Field       ::= Type_Constr_Dcl
-Type_Constr_Dcl     ::= {Annotation} id ['of' Types]
+Type_Representation
+    ::= ...
+      | Variant_Type_Def
+Variant_Type_Def
+    ::= Is_Op 'variant' [nl] (Variant1 | Variant2) [Record_Extensions]
+Variant1 
+    ::= Variant_Field {semi Variant_Field}
+Variant2 
+    ::= '{' Variant_Field {semi Variant_Field} '}'
+Variant_Field
+    ::= Type_Constr_Dcl
+Type_Constr_Dcl
+    ::= id ['of' Types]
+      | {Annotation}+ Type_Constr_Dcl
 \end{lstlisting}
 
 Variant types are similar to a simplified form for a series of case classes (\sref{sec:case-classes}) and case objects (\sref{sec:case-objects}), with shared interface and a common ancestor. Pattern matching is possible on variant types, as it would be done on case classes and case objects. 
@@ -193,10 +226,10 @@ Record extension members, if given, are added to the type object, unless they ar
 
 \example An example of a variant type. 
 \begin{lstlisting}
-type B-tree[T] is case enum 
+type B-tree['t] is case enum 
 {
   Empty
-  Node of T * B-tree[T] * B-tree[T]
+  Node of 't * B-tree['t] * B-tree['t]
 }
 with def is_member? x b-tree :=
   match b-tree
@@ -228,31 +261,16 @@ Unlike enumeration types (\sref{sec:enums}), variant types do not enumerate a li
 \label{sec:gadt-types}
 
 \grammar\begin{lstlisting}
-Type_Representation ::= Is 'variant' [nl]
-                        (Gadt1 | Gadt2)
-                        [Record_Extensions]
-Gadt1               ::= Gadt_Field {semi Gadt_Field}
-Gadt2               ::= '{' Gadt_Field {semi Gadt_Field} '}'
-Gadt_Field          ::= {Annotation}+ id [Type_Param_Clause] ':' [Type '->'] Type
-\end{lstlisting}
-
-
-
-
-
-\subsection{Extensible Variant Types}
-\label{sec:extensible-variant-types}
-
-\grammar\begin{lstlisting}
-Type_Representation ::= Is 'open' 'variant' [nl]
-                        (Variant1 | Variant2)
-                        [Record_Extensions]
-Struct_Spec         ::= 'type' id [Type_Param_Clause] 
-                        '+=' Type_Constr_Dcl
-Struct_Def          ::= 'type' id [Type_Param_Clause] 
-                        '+=' Type_Constr_Def
-Type_Constr_Def     ::= Type_Constr_Dcl 
-                      | id ':=' Stable_Id
+Variant_Type_Def 
+    ::= ...
+      | Is_Op 'variant' [nl] (Gadt1 | Gadt2) [Record_Extensions]
+Gadt1 
+    ::= Gadt_Field {semi Gadt_Field}
+Gadt2 
+    ::= '{' Gadt_Field {semi Gadt_Field} '}'
+Gadt_Field 
+    ::= id ':' [Type '->'] Type  (* ':' instead of 'of' is important here *)
+      | {Annotation}+ Gadt_Field
 \end{lstlisting}
 
 
@@ -264,26 +282,35 @@ Type_Constr_Def     ::= Type_Constr_Dcl
 \label{sec:record-types}
 
 \grammar\begin{lstlisting}
-Type_Representation ::= Is 'record' (Record1 | Record2)
-Record1             ::= Record_Components [Record_Extensions]
-Record2             ::= '{' Record_Components '}' [Record_Extensions]
-Record_Components   ::= Record_Component {semi Record_Component}
-Record_Component    ::= {Annotation} {Record_Modifier} ['val' | 'var'] id ':' (Type | id)
-                      | 'case' id Record_Cases
-                        {'when' id 
-                        ('then' | nl) 
-                        Record_Components} 'end' ['case']
-Record_Cases        ::= semi Record_Case {semi Record_Case} 'end' ['case']
-                      | '{' Record_Case {semi Record_Case} '}'
-Record_Case         ::= 'when' ('.' Long_Id | Stable_Id) ['(' [Extractions] ')']
-                        ('then' | semi) Record_Components
-Record_Extensions   ::= [nl] 'with' Record_Extension {'and' Record_Extension}
-Record_Extension    ::= Tmpl_Member
-                      | Tmpl_Ifc_Impl
-                      | Tmpl_Ifc_Dcl
-                      | {Annotation}+ Record_Extension
-Record_Modifier     ::= Access_Modifier 
-                      | Mutability
+Type_Representation 
+    ::= Is_Op 'record' (Record1 | Record2)
+Record1
+    ::= Record_Components [Record_Extensions]
+Record2 
+    ::= '{' Record_Components '}' [Record_Extensions]
+Record_Components 
+    ::= Record_Component {semi Record_Component}
+Record_Component 
+    ::= {Annotation} {Record_Modifier} ['val' | 'var'] id ':' (Type | id)
+      | 'case' id Record_Cases
+        {'when' id ('then' | nl) Record_Components} 
+        'end' ['case']
+Record_Cases 
+    ::= semi Record_Case {semi Record_Case} 'end' ['case']
+      | '{' Record_Case {semi Record_Case} '}'
+Record_Case  
+    ::= 'when' ('.' Long_Id | Stable_Id) ['(' [Extractions] ')']
+        ('then' | semi) Record_Components
+Record_Extensions 
+    ::= [nl] 'with' Record_Extension {'and' Record_Extension}
+Record_Extension 
+    ::= Tmpl_Member
+      | Tmpl_Ifc_Impl
+      | Tmpl_Ifc_Dcl
+      | {Annotation}+ Record_Extension
+Record_Modifier 
+    ::= Access_Modifier 
+      | Mutability
 \end{lstlisting}
 
 Record extension members, if given, are added to the type object, unless they are specified with \code{member} keyword, then they are added to the type instances. Implementations and declarations of interfaces are automatically added to the type instances. 
@@ -296,80 +323,88 @@ Record extension members, if given, are added to the type object, unless they ar
 \label{sec:struct-types}
 
 \grammar\begin{lstlisting}
-Dcl               ::= Struct_Spec
-Struct_Type       ::= Struct_Type_Path
-                    | 'sig' [Struct_Spec {semi Struct_Spec}] 'end'
-                    | 'functor' 
-                      {'(' [id ':' Struct_Type] ')'}+
-                      '->' Struct_Type
-                    | Struct_Type 'with' Struct_Constraint 
-                      {'and' Struct_Constraint}
-                    | '(' Struct_Type ')'
-                    | 'signature' 'of' Struct_Expr
-Struct_Spec       ::= 'val' id [Type_Param_Clause] ':' Type
-                    | Type_Definition (* containing Type_Abstract, or type class/family *)
-                    | 'throwable' Type_Constr_Dcl 'end' ['throwable']
-                    | 'raiseable' Type_Constr_Dcl 'end' ['raiseable']
-                    | Interface_Definition
-                    | Protocol_Definition
-                    | 'structure' id ':' Struct_Type 'end' ['structure']
-                    | 'signature' id [Is Struct_Type] 'end' ['signature']
-                    | 'structure' 'rec' id ':' Struct_Type
-                      {'and' id ':' Struct_Type}+ 'end' ['structure']
-                    | ['public'] 'open' Struct_Path
-                    | ['public'] 'open!' Struct_Path
-                    | ['public'] Use_Clause
-                    | 'include' Struct_Type
-                    | Use_Clause
-                    | {Annotation}+ Struct_Spec
-Def               ::= Struct_Def
-Struct_Expr       ::= Struct_Path
-                    | 'struct' [Struct_Items] 'end' ['struct']
-                    | 'struct' '{' [Struct_Items] '}'
-                    | 'functor' 
-                      {'(' [id ':' Struct_Type] ')'}+
-                      '->' Struct_Expr
-                    | Struct_Expr {'(' [Struct_Expr] ')'}+
-                    | '(' Struct_Expr ')'
-                    | '(' Struct_Expr 'as' Struct_Type ')'
-                    | '(' Struct_Expr Struct_Ascription Struct_Type ')'
-                    | '(' 'val' Expr ['as' Pkg_Type] ')'
-Struct_Items      ::= Struct_Item {semi Struct_Item} 
-Struct_Item       ::= Struct_Def | Expr
-Struct_Def        ::= [Access_Modifier] Val_Def
-                    | [Access_Modifier] Type_Definition
-                    | [Access_Modifier] 'throwable' Type_Constr_Dcl 
-                      'end' ['throwable']
-                    | [Access_Modifier] 'throwable' id Is Stable_Id
-                    | [Access_Modifier] 'raiseable' Type_Constr_Dcl 
-                      'end' ['raiseable']
-                    | [Access_Modifier] 'raiseable' id Is Stable_Id
-                    | {Modifier} Tmpl_Def
-                    | [Access_Modifier] 'structure' id [Struct_Ascription Struct_Type] 
-                      Is Struct_Expr
-                    | [Access_Modifier] 'structure' 'rec' id [Struct_Ascription Struct_Type] 
-                      Is Struct_Expr
-                      {'and' id [Struct_Ascription Struct_Type] Is Struct_Expr}+
-                    | ['public'] 'open' Struct_Path
-                    | ['public'] 'open!' Struct_Path
-                    | ['public'] Use_Clause
-                    | 'include' Struct_Expr
-                    | Use_Clause
-                    | {Annotation} Struct_Def
-Struct_Ascription ::= ':' | ':>'
-Struct_Constraint ::= 'type' Type_Path [Type_Param_Clause] Type_Equation
-                    | 'type' Type_Path [Type_Param_Clause] ':=' Type
-                    | 'struct' Struct_Path '=' Extended_Struct_Path
-                    | 'struct' Struct_Path ':=' Extended_Struct_Path
-Type              ::= 'structure' Pkg_Type
-Pkg_Type          ::= Type_Path 
-                      ['with' Pkg_Constraint {'and' Pkg_Constraint}]
-Pkg_Constraint    ::= 'type' Type_Path Type_Equation 
-
-Struct_Path          ::= Module_Path
-Extended_Struct_Path ::= Extended_Struct_Name {'.' Extended_Struct_Name}
-Extended_Struct_Name ::= id {'(' Extended_Struct_Path {',' Extended_Struct_Path} ')'}
-Type_Path            ::= [Extended_Struct_Path '.'] id
+Dcl ::= ...
+      | Struct_Spec
+Struct_Type 
+    ::= Struct_Type_Path
+      | 'sig' [Struct_Spec {semi Struct_Spec}] 'end'
+      | 'functor' {'(' [id ':' Struct_Type] ')'}+ '->' Struct_Type
+      | Struct_Type 'with' Struct_Constraint {'and' Struct_Constraint}
+      | '(' Struct_Type ')'
+      | 'signature' 'of' Struct_Expr
+Struct_Spec 
+    ::= 'val' id [Type_Param_Clause] ':' Type
+      | Type_Definition (* containing Type_Abstract, 
+                           or type class/family declaration *)
+      | Protocol_Definition
+      | 'structure' id ':' Struct_Type 'end' ['structure']
+      | 'signature' id [Is_Op Struct_Type] 'end' ['signature']
+      | 'structure' 'rec' id ':' Struct_Type 
+        {'and' id ':' Struct_Type}+ 'end' ['structure']
+      | ['public'] 'open' Struct_Path
+      | ['public'] 'open!' Struct_Path
+      | ['public'] Use_Clause
+      | 'include' Struct_Type
+      | Use_Clause
+      | {Annotation}+ Struct_Spec
+Def ::= ...
+      | Struct_Def
+Struct_Expr 
+    ::= Struct_Path
+      | 'struct' [Struct_Items] 'end' ['struct']
+      | 'struct' '{' [Struct_Items] '}'
+      | 'functor' {'(' [id ':' Struct_Type] ')'}+ '->' Struct_Expr
+      | Struct_Expr {'(' [Struct_Expr] ')'}+
+      | '(' Struct_Expr ')'
+      | '(' Struct_Expr 'as' Struct_Type ')'
+      | '(' Struct_Expr Struct_Ascription Struct_Type ')'
+      | '(' 'val' Expr ['as' Pkg_Type] ')'
+Struct_Items 
+    ::= Struct_Item {semi Struct_Item} 
+Struct_Item 
+    ::= Struct_Def 
+      | Do_Binding
+Struct_Def 
+    ::= [Access_Modifier] Val_Def
+      | [Access_Modifier] Type_Definition
+      | {Modifier} Tmpl_Def
+      | [Access_Modifier] 'structure' id [Struct_Ascription Struct_Type] 
+        Is_Op Struct_Expr
+      | [Access_Modifier] 'structure' 'rec' id [Struct_Ascription Struct_Type] 
+        Is_Op Struct_Expr 
+        {'and' id [Struct_Ascription Struct_Type] Is_Op Struct_Expr}
+      | ['public'] 'open' Struct_Path
+      | ['public'] 'open!' Struct_Path
+      | ['public'] Use_Clause
+      | 'include' Struct_Expr
+      | Use_Clause
+      | {Annotation}+ Struct_Def
+Struct_Ascription 
+    ::= ':' 
+      | ':>'
+Struct_Constraint 
+    ::= 'type' Type_Path [Type_Param_Clause] Type_Equation
+      | 'type' Type_Path [Type_Param_Clause] ':=' Type
+      | 'struct' Struct_Path '=' Extended_Struct_Path
+      | 'struct' Struct_Path ':=' Extended_Struct_Path
+Type 
+    ::= ...
+      | '(' 'structure' Pkg_Type ')'
+Pkg_Type 
+    ::= Type_Path ['with' Pkg_Constraint {'and' Pkg_Constraint}]
+Pkg_Constraint
+    ::= 'type' Type_Path Type_Equation 
+Struct_Path
+    ::= Module_Path
+Extended_Struct_Path 
+    ::= Extended_Struct_Name {'.' Extended_Struct_Name}
+Extended_Struct_Name 
+    ::= id {'(' Extended_Struct_Path {',' Extended_Struct_Path} ')'}
+Type_Path 
+    ::= [Extended_Struct_Path '.'] id
+Stable_Id
+    ::= ...
+      | Type_Path
 \end{lstlisting}
 
 
@@ -390,9 +425,9 @@ A structure is usually given a name with the \code{structure} or \code{module} b
 structure Priority_Queue is
 struct
   type Priority := Number.Integer end type
-  type 'A Queue is variant 
+  type 'a Queue is variant 
     Empty
-    Node of Priority * 'A * 'A Queue * 'A Queue
+    Node of Priority * 'a * 'a Queue * 'a Queue
   end type
   let empty := Empty
   let rec insert queue priority element :=
@@ -404,21 +439,21 @@ struct
       else Node(p, e, (insert right priority element), left)
       end if
     end match
-  raiseable Queue_is_Empty end raiseable
+  class Queue_is_empty extends Raiseable end class
   let rec remove_top := function
-    when Empty then raise Queue_is_Empty
+    when Empty then raise Queue_is_empty
     when Node(_, _, left, Empty) then left
     when Node(_, _, Empty, right) then right
-    when Node(_, _, left @ Node(l_prio, l_elt, _, _), 
-                    right @ Node(r_prio, r_elt, _, _)) then
+    when Node(_, _, Node(l_prio, l_elt, _, _) as left, 
+                    Node(r_prio, r_elt, _, _) as right) then
       if l_prio <= r_prio
       then Node(l_prio, l_elt, (remove_top left), right)
       else Node(r_prio, r_elt, left, (remove_top right))
       end if
     end function
   let extract := function
-    when Empty then raise Queue_is_Empty
-    when queue @ Node(priority, element, _, _) then
+    when Empty then raise Queue_is_empty
+    when Node(priority, element, _, _) as queue then
       (priority, element, remove_top queue)
     end function
 end struct
@@ -445,10 +480,10 @@ Signatures are interfaces of structures. A signature specifies which components 
 signature A_Priority_Queue is
 sig
   type Priority := Number.Integer end type (* concrete type *)
-  type 'A Queue end type                  (* abstract type *)
-  val empty: 'A Queue
-  val insert: 'A Queue -> Number.Integer -> 'A -> 'A Queue
-  val extract: 'A Queue -> Number.Integer * 'A * 'A Queue
+  type 'a Queue end type                   (* abstract type *)
+  val empty: 'a Queue
+  val insert: 'a Queue -> Number.Integer -> 'a -> 'a Queue
+  val extract: 'a Queue -> Number.Integer * 'a * 'a Queue
   raiseable Queue_is_Empty end raiseable
 end sig
 \end{lstlisting}
@@ -514,29 +549,65 @@ functor (Element_Type: Ordered_Type) ->
 
 
 
+\subsection{Extensible Variant Types}
+\label{sec:extensible-variant-types}
+
+\grammar\begin{lstlisting}
+Type_Representation 
+    ::= ...
+      | Is_Op 'open' 'variant' [nl] [(Variant1 | Variant2)] [Record_Extensions]
+Struct_Spec
+    ::= ...
+      | 'type' id [Type_Param_Clause] 
+        '+=' Type_Constr_Dcl {semi Type_Constr_Dcl}
+Struct_Def
+    ::= ...
+      | 'type' id [Type_Param_Clause] 
+        '+=' Type_Constr_Def {semi Type_Constr_Def}
+Type_Constr_Def
+    ::= Type_Constr_Dcl 
+      | id ':=' Long_Id
+\end{lstlisting}
+
+
+
+
+
+
 \section{Range, Floating \& Fixed Point Subtype Definitions}
 \label{sec:fl-fi-subtypes}
 
 \grammar\begin{lstlisting}
-Type_Representation ::= Is FP_Type_Def 
-                      | Is FP_Subtype_Def 
-                      | Is FP_Range_Def
-FP_Type_Def         ::= (FiP_Type_Def | FlP_Type_Def) 
-FP_Subtype_Def      ::= Type (FiP_Subtype_Def | FlP_Subtype_Def) 
-FP_Range_Def        ::= FP_Range
-FlP_Type_Def        ::= FP_Digits [FP_Range]
-FlP_Subtype_Def     ::= FP_Digits [FP_Range]
-                      | FP_Range
-FiP_Type_Def        ::= FP_Delta [FP_Range] 
-                      | FP_Delta FP_Digits [FP_Range]
-FiP_Subtype_Def     ::= FP_Delta [FP_Digits] [FP_Range]
-                      | FP_Digits [FP_Range]
-                      | FP_Range
-FP_Digits           ::= 'digits' Expr
-FP_Delta            ::= 'delta' Expr
-FP_Range            ::= 'range' Expr 
-                        ('..' | '...' | '..<') Expr
-                      | 'range' Type
+Type_Representation 
+    ::= ...
+      | Is_Op FP_Type_Def
+      | Is_Op FP_Subtype_Def 
+      | Is_Op FP_Range_Def
+FP_Type_Def
+    ::= (FiP_Type_Def | FlP_Type_Def) 
+FP_Subtype_Def 
+    ::= Type (FiP_Subtype_Def | FlP_Subtype_Def) 
+FP_Range_Def
+    ::= FP_Range
+FlP_Type_Def 
+    ::= FP_Digits [FP_Range]
+FlP_Subtype_Def 
+    ::= FP_Digits [FP_Range]
+      | FP_Range
+FiP_Type_Def 
+    ::= FP_Delta [FP_Range] 
+      | FP_Delta FP_Digits [FP_Range]
+FiP_Subtype_Def
+    ::= FP_Delta [FP_Digits] [FP_Range]
+      | FP_Digits [FP_Range]
+      | FP_Range
+FP_Digits
+    ::= 'digits' Expr
+FP_Delta 
+    ::= 'delta' Expr
+FP_Range 
+    ::= 'range' Expr ('..' | '..<') Expr
+      | 'range' Type
 \end{lstlisting}
 
 The described syntaxes are for definitions of 4 special types of values:
@@ -613,26 +684,60 @@ end type
 \label{sec:type-classes}
 
 \grammar\begin{lstlisting}
-Typedef           ::= 'class' [Implicit_Types] id [Type_Param_Clause] 
-                      [Given_Clauses] Type_Class_Def
-                    | 'class' [Implicit_Types] Type_Param_Clause2 id 
-                      [Given_Clauses] Type_Class_Def
-                    | 'family' [Implicit_Types] id [Type_Param_Clause] 
-                      [Given_Clauses] Type_Family_Def
-                    | 'family' [Implicit_Types] Type_Param_Clause2 id 
-                      [Given_Clauses] Type_Family_Def
-                    | 'instance' [Implicit_Types] id [Type_Param_Clause] 
-                      [Given_Clauses] Type_Instance_Def 
-                    | 'instance' [Implicit_Types] Type_Param_Clause2 id 
-                      [Given_Clauses] Type_Instance_Def
-Type_Class_Def    ::= 'with' [Struct_Spec {semi Struct_Spec}]
-                    | ['with'] '{' [Struct_Spec {semi Struct_Spec}] '}'
-                    | Type_Equation
-Type_Family_Def   ::= [Type_Abstract] Type_Class_Def
-                    | Type_Equation
-Type_Instance_Def ::= 'with' Template_Stat {semi Template_Stat}
-                    | ['with'] '{' Template_Stat {semi Template_Stat} '}'
-                    | Type_Equation
+Typedef
+    ::= ...
+      | Type_Class_Dcl
+      | Type_Family_Dcl
+      | Type_Instance_Def
+Type_Class_Dcl
+    ::= 'class' [Implicit_Types] id [Type_Param_Clause] [Given_Clauses] 
+        Type_Class_Dcl_Body
+      | 'class' Implicit_Types [Atomic_Type_Param_Clause2] id [Given_Clauses] 
+        Type_Class_Dcl_Body
+      | 'class' Type_Param_Clause2 id [Given_Clauses] 
+        Type_Class_Dcl_Body
+Type_Family_Dcl
+    ::= 'family' [Implicit_Types] id [Type_Param_Clause] [Given_Clauses]
+        [Type_Family_Closed_Def] 
+      | 'family' Implicit_Types [Atomic_Type_Param_Clause2] id [Given_Clauses] 
+        [Type_Family_Closed_Def] 
+      | 'family' Type_Param_Clause2 id [Given_Clauses]
+        [Type_Family_Closed_Def] 
+Type_Instance_Def
+    ::= Type_Class_Instance_Def
+      | Type_Family_Instance_Def
+Type_Class_Dcl_Body 
+    ::= 'with' [Type_Class_Spec {semi Type_Class_Spec}]
+      | ['with'] '{' [Type_Class_Spec {semi Type_Class_Spec}] '}'
+      | Type_Equation
+Type_Class_Spec
+    ::= Struct_Spec
+      | Struct_Def  (* to define "default" implementations if instance omits it *)
+Type_Class_Instance_Def
+    ::= ['class'] 'instance' [Implicit_Types] id [Type_Param_Clause] [Given_Clauses] 
+        Type_Class_Instance_Body
+      | ['class'] 'instance' Implicit_Types [Atomic_Type_Param_Clause2] id [Given_Clauses] 
+        Type_Class_Instance_Body
+      | ['class'] 'instance' Type_Param_Clause2 id [Given_Clauses] 
+        Type_Class_Instance_Body
+Type_Class_Instance_Body 
+    ::= 'with' Template_Stat {semi Template_Stat}
+      | ['with'] '{' Template_Stat {semi Template_Stat} '}'
+      | Type_Equation
+Type_Family_Closed_Def
+    ::= 'with' [Type_Family_Instance_Def {semi Type_Family_Instance_Def}]
+      | ['with'] '{' [Type_Family_Instance_Def {semi Type_Family_Instance_Def}] '}'
+      | Type_Equation
+Type_Family_Instance_Def
+    ::= ['family'] 'instance' [Implicit_Types] id [Type_Param_Clause] [Given_Clauses]
+        Type_Family_Instance_Body
+      | ['family'] 'instance' Implicit_Types [Atomic_Type_Param_Clause2] id [Given_Clauses] 
+        Type_Family_Instance_Body
+      | ['family'] 'instance' Type_Param_Clause2 id [Given_Clauses]
+        Type_Family_Instance_Body
+Type_Family_Instance_Body
+    ::= Type_Equation
+      | Variant_Type_Def
 \end{lstlisting}
 
 

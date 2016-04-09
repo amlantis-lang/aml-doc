@@ -10,13 +10,14 @@
 \grammar\begin{lstlisting}
 Type                   ::= Function_Type Quantification_Clauses
                          | Infix_Type Quantification_Clauses
+                         | Type_Pack
 Function_Type          ::= [Implicit_Types] Function_Args {'->' Function_Args} 
-                           '->' Type
+                           ['->' Signalling_Types] '->' Type
 Function_Args          ::= Infix_Type
                          | '(' [Function_Arg {',' Function_Arg}] ')'
                          | '(' Function_Arg {'*' Function_Arg} ')'
 Function_Arg           ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Type
-Implicit_Types         ::= Infix_Type '=>'
+Implicit_Types         ::= Simple_Type '=>'
                          | '(' Types ')' '=>'
 Quantification_Clauses ::= Quantification_Clause {'and' Quantification_Clause}
 Quantification_Clause  ::= Existential_Clauses
@@ -30,7 +31,7 @@ Given_Clauses          ::= 'given' Simple_Type
                          | 'given' '{' Given_Dcl {semi Given_Dcl} '}'
 Quantification_Dcl     ::= Type_Definition (* containing Type_Abstract *)
                          | Val_Dcl
-Compound_Type          ::= Annot_Type {['prepend'] 'with' Annot_Type} 
+Compound_Type          ::= Annot_Type [Nullable_Mod] {['prepend'] 'with' Annot_Type} 
                            ['with' ['refinement'] Refine_Stats]
                          | ['refinement'] Refine_Stats
 Postfix_Type           ::= Compound_Type 
@@ -39,7 +40,7 @@ Infix_Type             ::= Postfix_Type
                            {[nl] (Infix_Op - 'also', 'else') [nl] Postfix_Type}
                          | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
                            {':' Postfix_Type}
-Annot_Type             ::= {Annotation} Simple_Type [Nullable_Mod]
+Annot_Type             ::= {Annotation} Simple_Type
 Simple_Type            ::= Simple_Type [Type_Args]
                          | Postfix_Simple_Type
                          | Simple_Type '#' id
@@ -48,11 +49,11 @@ Simple_Type            ::= Simple_Type [Type_Args]
                          | Literal ['.' 'type']
                          | '(' [Types] ')'
                          | Foreign_Type
-                         | '...' Type_Var
 Postfix_Simple_Type    ::= Type Stable_Id
 Types                  ::= Named_Subtype {',' Named_Subtype}
 Named_Subtype          ::= ['~' id ':'] Type
 Type_Equation          ::= '=' Type
+Type_Pack              ::= '...' Type
 \end{lstlisting}
 
 When we say \textit{type} in the context of Aml, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Aml is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
@@ -95,22 +96,31 @@ Types in Aml are represented by objects that are members of the \code{Type} type
 \label{sec:type-paths}
 
 \grammar\begin{lstlisting}
-Path             ::= Stable_Id
-                   | [id '.'] 'self'
-                   | 'self' '[' ('cloned' | 'origin') ']'
-                   | 'outer' Class_Qualifier
-Long_Id        ::= [Path '.'] id
-                   | [id '.'] 'super' [Class_Qualifier] '.' id
-                   | 'outer' Class_Qualifier '.' id
-                   | Module_Path '.' Long_Id
-Stable_Id        ::= Long_Id
-                   | Type_Var
-Class_Qualifier  ::= '[' (id | Simple_Type) ']'
-Module_Path      ::= [Root] Module_Selector {'.' id}
-Module_Selector  ::= [Vendor] id
-Root             ::= '@Root' '.'
-Vendor           ::= id '/'
-Type_Var         ::= ''' id
+Path 
+    ::= Stable_Id
+      | [id '.'] 'self'
+      | 'self' '[' ('cloned' | 'origin') ']'
+      | 'outer' Class_Qualifier
+Long_Id 
+    ::= [Path '.'] id
+      | [id '.'] 'super' [Class_Qualifier] '.' id
+      | 'outer' Class_Qualifier '.' id
+      | Module_Path '.' Long_Id
+Stable_Id
+    ::= Long_Id
+      | Type_Var
+Class_Qualifier 
+    ::= '[' (id | Simple_Type) ']'
+Module_Path 
+    ::= [Root_Module] Module_Selector {'.' id}
+Module_Selector 
+    ::= [Vendor] id
+Root_Module
+    ::= '@Root' '.'
+Vendor
+    ::= id '/'
+Type_Var 
+    ::= ''' id
 \end{lstlisting}
 
 Paths are not types themselves, but they can be a part of named types and in that function form a role in Aml's type system. 
@@ -144,7 +154,7 @@ Paths introduce also {\em path dependent types}, if the referenced member is a t
 \subsection{Type Variables}
 \label{sec:type-variables}
 
-A type \lstinline!'$x$! stands for a type variable named $x$. The associated type is \code{Aml/Language.Auto}, for use with automatic inference (\sref{sec:automatic-inference}).
+A type \lstinline!'$x$! stands for a type variable named $x$.
 
 Type variables, unlike type parameters, may also be unified with a specific type by the automatic type inference, and may be made explicitly polymorphic. 
 
@@ -297,7 +307,7 @@ Type_Arg            ::= Type_Arg_Value
                       | Static_Arg_Value
 Type_Arg_Value      ::= ['~' id ':'] Type
                       | '_'
-Measure_Arg_Value   ::= ['~' id ':'] '<' uom_expr '>'
+Measure_Arg_Value   ::= ['~' id ':'] '<' measure_literal '>'
 Static_Arg_Value    ::= Constant
                       | 'constant' '(' Expr ')'
 \end{lstlisting}
@@ -307,6 +317,8 @@ A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ a
 Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline!$A$ <: Comparable[$A$]!~ is substituted into ~\lstinline!$C$ <: Comparable[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfill the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
 
 Each type argument may be given a name $n$, using the form ``\lstinline!~$n$: $T$!''. This attaches the annotation ~\lstinline!@[labelled :$n$]!~ to the type argument. 
+
+A type may be parameterized by at most two type parameter clauses, although the second one is managed by the Aml system and can't be passed type arguments explicitly. Such a second type parameter clause is called {\em shadow type parameter clause} and can't be written in user programs explicitly, but may examined in runtime using reflection. 
 
 \example
 \label{example:parameterized-types}
@@ -497,12 +509,24 @@ Infix type may also result from an infix expression (\sref{sec:prefix-infix-ops}
 \label{sec:function-types}
 
 \grammar\begin{lstlisting}
-Function_Type ::= [Implicit_Types] Function_Args {'->' Function_Args}
-                  '->' Type
-Function_Args ::= Infix_Type
-                | '(' [Function_Arg {',' Function_Arg}] ')'
-                | '(' Function_Arg {'*' Function_Arg} ')'
-Function_Arg  ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Type
+Function_Type 
+    ::= [Implicit_Types] Function_Args {'->' Function_Args}
+        ['->' Signalling_Types] '->' Type
+Function_Args 
+    ::= Infix_Type
+      | '(' [Function_Arg {',' Function_Arg}] ')'
+      | '(' Function_Arg {'*' Function_Arg} ')'
+Function_Arg
+    ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Type
+Signalling_Types
+    ::= Signalling_Kind {'and' Signalling_Kind}  (* each kind at most once *)
+Signalling_Kind
+    ::= 'signals' (Simple_Type | '(' Type {',' Type} ')')
+      | 'throws'  (Simple_Type | '(' Type {',' Type} ')')
+      | 'raises'  (Simple_Type | '(' Type {',' Type} ')')
+      | 'resignals'
+      | 'rethrows'
+      | 'reraises'
 \end{lstlisting}
 
 The type \lstinline@($T_1 \commadots T_n$) -> $R$@ represents the set of function values that take arguments of types $T_1 \commadots T_n$ and yield results of type $R$. In the case of exactly one argument, type \lstinline@$T$ -> $R$@ is a shorthand for \lstinline@($T$) -> $R$@. 
@@ -548,7 +572,7 @@ def h (x: Integer, y: Integer, z: Integer) end
 \subsection{Type Class Constraints}
 
 \grammar\begin{lstlisting}
-Implicit_Types ::= Infix_Type '=>'
+Implicit_Types ::= Simple_Type '=>'
                  | '(' Types ')' '=>'
 Given_Dcl      ::= ['class'] Type
 \end{lstlisting}
@@ -575,7 +599,8 @@ A good style is to not combine the two syntaxes in one function type, however, i
 \subsection{Functional Dependencies}
 
 \grammar\begin{lstlisting}
-Given_Dcl ::= Simple_Type '~>' Simple_Type
+Given_Dcl ::= ...
+            | Simple_Type '~>' Simple_Type
 \end{lstlisting}
 
 A functional dependency expresses dependencies between type parameters of a function type. A functional dependency in form of ~\lstinline!'a ~> 'b!~ expresses the fact that type variable \code{'a} determines the type variable \code{'b}. Note that the involved type variables are still unifiable at that point, unless made explicitly polymorphic. 
@@ -584,12 +609,27 @@ A functional dependency expresses dependencies between type parameters of a func
 
 
 
-\subsection{Type Dependencies \& Equations}
+\subsection{Type Dependencies, Constraints \& Equations}
 
 \grammar\begin{lstlisting}
-Given_Dcl ::= Type_Var Type_Equation
+Given_Dcl ::= ...
+            | Type_Var Type_Equation
             | Type_Var '>:' Type ['<:' Type]
             | Type_Var '<:' Type
+            | Type_Var ':' 'nil'
+            | Type_Vars ':' '(' Member_Signature ')'
+            | Type_Var ':' '(' Constructor_Signature ')'
+Type_Vars ::= Type_Var
+            | '(' Type_Var {'or' Type_Var} ')'
+Member_Signature
+          ::= ['class'] 'member' fun_id ':' Type
+            | ['class'] 'operator' op_id ':' Type
+            | ['class'] 'property' id ':' Type ['with' Property_Signature_Extra]
+Constructor_Signature
+          ::= ('new' | 'constructor') ':' Type  (* just type of parameters, no result type *)
+Property_Signature_Extra
+          ::= 'get' ['and' 'set']
+            | 'set' ['and' 'get']
 \end{lstlisting}
 
 A type dependency or equation expresses additional relations between different type components (usually type variables used as type parameters) that make up a type that uses the \code{given} declarations. It can equate two types (e.g. ~\lstinline!given {'a := 'b}!), or declare that two or three types have a conformance relation (e.g. ~ \lstinline!given {'a >: 'b <: 'c}!).
@@ -602,12 +642,20 @@ A type dependency or equation expresses additional relations between different t
 \label{sec:existential-types}
 
 \grammar\begin{lstlisting}[escapechar=@]
-Type                   ::= Infix_Type Quantification_Clauses
-Quantification_Clauses ::= {'for-some' '{' Quantification_Dcl
-                           {semi Quantification_Dcl} '}'}
-Quantification_Dcl     ::= Type_Definition (* containing Type_Abstract *)
-                         | Val_Dcl
-Type_Arg               ::= '?' ['>:' Type] ['<:' Type] 
+Type
+    ::= ...
+      | Infix_Type Quantification_Clauses
+Quantification_Clauses 
+    ::= {'for-some' '{' Quantification_Dcl
+        {semi Quantification_Dcl} '}'}
+Quantification_Dcl
+    ::= Type_Definition (* containing Type_Abstract *)
+      | Val_Dcl
+Type_Arg
+    ::= ...
+      | Wildcard_Type_Arg
+Wildcard_Type_Arg
+    ::= '?' ['>:' Type] ['<:' Type] 
 \end{lstlisting}
 
 An existential type has the form ~\lstinline@$T$ for-some { $Q$ }@, where $Q$ is a sequence of type declarations (\sref{sec:type-decls-aliases}). Let ~\lstinline@$t_1$[$\tps_1$] >: $L_1$ <: $U_1\ \commadots\ t_n$[$\tps_n$] >: $L_n$ <: $U_n$@~ be the types declared in $Q$ (any of the type parameter sections ~\lstinline![$\tps_i$]!~ might be missing). The scope of each type $t_i$ includes the type $T$ and the existential clause $Q$. The type variables $t_i$ (occurring in the sequence $Q$) are said to be {\em bound} in the type ~\lstinline!$T$ for-some { $Q$ }!. Type variables that occur in a type $T$, but which are not bound in $T$, are said to be {\em free} in $T$. 
@@ -730,8 +778,8 @@ A type variable bound in $T$ is also explicitly polymorphic.
 \label{sec:nullable-types}
 
 \grammar\begin{lstlisting}
-Annot_Type    ::= {Annotation} Simple_Type Nullable_Mod
-Nullable_Mod  ::= '?' | '!'
+Nullable_Mod 
+    ::= '?' | '!'
 \end{lstlisting}
 
 A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Aml types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
@@ -1125,32 +1173,6 @@ The \code{Any} virtual type is the actual root of the type system of Aml, althou
 
 
 
-\section{Automatically Inferred Type}
-\label{sec:auto-type}
-
-\grammar\begin{lstlisting}[morekeywords={Auto},deletekeywords={also}]
-Simple_Type ::= 'Auto'
-(* also: *)
-Simple_Type ::= 'Aml/Language.Auto'
-\end{lstlisting}
-
-This type does represent a single concrete value type: a compound type with usually just the refinement part. However, it does not explicitly state what the refinement is. Instead, the refinement is inferred from the context in which it is used. The inference algorithm is very different from local type inference (\sref{sec:local-type-inference}). 
-
-Structural constraints may be appended to this type as with any other type by using a new compound type (\sref{sec:compound-types}), where \code{Auto} is used as a class type (never a trait type) and its parts of the inferred refinement are merged with any given refinement from the compound type. 
-
-The \code{Auto} identifier is not reserved for the language as a keyword, instead, it gets usually automatically imported with the \code{Language} module, and therefore can be shadowed and aliased (e.g. to \code{Inferred}). 
-
-If a type variable of the form ~\lstinline!'$x$! is not present in the type parameters list, then it is a placeholder for the \code{Auto} type with a name $x$, also generating type equality constraints, if used more than once across parameters or result type -- for every type parameter name $x_i$, an equivalent type has to be inferred for every occurrence of $x_i$. 
-
-See (\sref{sec:automatic-inference}) for details on (non-local) automatic type inference. 
-
-By default, when a type annotation is missing in a function declaration, then it is either inherited (based on overriding), or taken to be \code{Auto}. A pragma (\sref{sec:pragmas}) exists to modify this default behaviour: to use other type in place of missing type annotation, use ~\lstinline!pragma missing_type $T$!, where $T$ can be also \code{Any}, or any other type, like \code{Object} and even \code{Dynamic} (\sref{sec:dynamic-type}). 
-
-
-
-
-
-
 \section{Dynamic Type}
 \label{sec:dynamic-type}
 
@@ -1160,7 +1182,7 @@ Simple_Type ::= 'Dynamic'
 Simple_Type ::= 'Aml/Language.Dynamic'
 \end{lstlisting}
 
-This type does not represent a single concrete value type\footnote{This type is similar to what ~\lstinline[language={[Sharp]C}]!dynamic!~ is to C\#.}, but any concrete type, very much like \code{Any} or \code{Auto}. 
+This type does not represent a single concrete value type\footnote{This type is similar to what ~\lstinline[language={[Sharp]C}]!dynamic!~ is to C\#.}, but any concrete type, very much like \code{Any}. 
 
 In runtime, this type is always dynamically replaced by the type of the actual referenced value -- e.g., if a variable is typed with \code{Dynamic} type (\sref{sec:type-consistency}), assigned a value, and used in a function application, the type of that value is used, not \code{Dynamic}, unless it would be typed with \code{Any} again (\sref{sec:typed-expressions}). Nonetheless, this does not imply that a value of another type can not be assigned to that same variable -- such variable is still bound to \code{Dynamic} and accepts \code{Any} type. 
 

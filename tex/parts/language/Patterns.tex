@@ -14,7 +14,7 @@
 \section{Patterns}
 \label{sec:patterns}
 
-\grammar\begin{lstlisting}[deletekeywords={as,with}]
+\grammar\begin{lstlisting}
 Pattern             ::= Atomic_Pattern
                       | Non_Atomic_Pattern
 Atomic_Pattern      ::= Var_Pattern
@@ -43,6 +43,7 @@ Non_Atomic_Pattern  ::= Type_Pattern
                       | Tuple_Pattern
                       | Cons_Pattern
                       | Annotated_Pattern
+                      | Lazy_Pattern
 Var_Pattern         ::= ['implicit'] ['val' | 'var'] var_id
 Bound_Pattern       ::= Pattern 'as' Var_Pattern
 Wildcard_Pattern    ::= '_'
@@ -78,8 +79,8 @@ Rest_Extracts       ::= Optional_Extract {',' Optional_Extract}
                         [',' Rest_Extract]
                       | Rest_Extract
 Optional_Extract    ::= '?' Pattern
-                      | '?' ['val' | 'var'] id ':' Type
-                      | '?' '_' ':' Type
+                      | '?' ['val' | 'var'] id [':' Type]
+                      | '?' '_' [':' Type]
                       | '?(' Pattern ':=' Expr ')'
 Rest_Extract        ::= '*' ['val' | 'var'] id [':' Type]
                       | '*' '_' [':' Type]
@@ -111,11 +112,11 @@ Dict_Extractions    ::= Dict_Extraction {semi Dict_Extraction}
 Dict_Extraction     ::= Dict_Key '=>' Pattern
 Dict_Key            ::= '_'
                       | Expr
-Record_Pattern      ::= 'record' '{' Field_Patterns '}'
+Record_Pattern      ::= '(' 'record' '{' Field_Patterns '}' ')'
 Field_Patterns      ::= Field_Pattern {semi Field_Pattern} [semi '_']
                       | '_'
 Field_Pattern       ::= Stable_Id '=>' Pattern
-Struct_Pattern      ::= 'structure' Pkg_Type
+Struct_Pattern      ::= '(' 'structure' id ['as' Pkg_Type] ')'
 Pattern_Param       ::= Expr
 \end{lstlisting}
 
@@ -772,6 +773,17 @@ A record pattern enables values of record types to be decomposed into a number o
 The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$ }!~ matches records that define exactly the fields $f_1$ to $f_n$, and such that the value associated with $f_i$ matches the pattern $p_i$, for $i = 1 \commadots n$. If there are multiple record types that have the same fields, then at least one of $f_i$ have to specify the field with a path to the intended type\footnote{The first field should be used for this.}: \code{$T$.$f$}, where $T$ is a path to the record type, and $f$ is the field. 
 
 The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$; _ }!~ matches records that define at least the fields $f_1$ to $f_n$, with the same rules as the previous record pattern, where the extra fields, if any, are simply discarded.\footnote{Such a pattern is more prone to ambiguous record types. In such a case, the record type has to be resolved by specifying the path to it in at least one of the fields.}
+
+
+
+
+
+\subsection{Lazy Patterns}
+\label{sec:lazy-patterns}
+
+\grammar\begin{lstlisting}
+Lazy_Pattern ::= 'lazy' Pattern
+\end{lstlisting}
 
 
 

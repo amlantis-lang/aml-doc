@@ -52,7 +52,7 @@ object Monoids {
 \section{Implicit Parameters}
 \label{sec:implicit-parameters}
 
-An implicit parameter ~\lstinline!(implicit: $p$)!~ of a method marks the variables that bind arguments by $p$ as implicit, both for the outside world, and for the method's scope. A method or constructor can have at most one implicit parameter, and it must be the last parameter defined. 
+An implicit parameter ~\lstinline!(implicit: $p$)!~ of a method marks the variables that bind arguments by $p$ as implicit, both for the outside world, and for the method's scope. Any function (including constructors) can have at most one explicitly defined implicit parameter, and it must be the last parameter defined. Any function can have up to two implicit parameters, but the second one is managed by the Aml system. Such a second implicit parameter is called {\em shadow implicit parameter} and can't be written explicitly in user programs, but may be examined in runtime using reflection. 
 
 A method with implicit parameter can be applied to arguments just like normal method. In this case the \code{implicit} label has no effect. However, if such a method misses argument for its implicit parameter, such argument will be automatically provided, if possible. If a tuple extraction is used as the implicit parameter, then an argument will be automatically provided for each defined tuple element, but those extractions can only define positional non-optional extractions at the top level. 
 
