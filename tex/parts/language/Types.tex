@@ -99,24 +99,16 @@ Types in Aml are represented by objects that are members of the \code{Type} type
 Path 
     ::= Stable_Id
       | [id '.'] 'self'
-      | 'self' '[' ('cloned' | 'origin') ']'
       | 'outer' Class_Qualifier
 Long_Id 
     ::= [Path '.'] id
       | [id '.'] 'super' [Class_Qualifier] '.' id
       | 'outer' Class_Qualifier '.' id
-      | Module_Path '.' Long_Id
 Stable_Id
     ::= Long_Id
       | Type_Var
 Class_Qualifier 
     ::= '[' (id | Simple_Type) ']'
-Module_Path 
-    ::= [Root_Module] Module_Selector {'.' id}
-Module_Selector 
-    ::= [Vendor] id
-Root_Module
-    ::= '@Root' '.'
 Vendor
     ::= id '/'
 Type_Var 
@@ -133,10 +125,6 @@ A path is one of the following:
   \item \code{this}, which references the directly enclosing class. 
 
   \item \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Aml's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
-
-  \item \lstinline@self[cloned]@, which references the directly enclosing class of a clone (a cloned instance, see \sref{sec:clone-def}). 
-
-  \item \lstinline@self[origin]@, which references the directly enclosing class of an original object (an instance being cloned, see \sref{sec:clone-def}). 
 
   \item \lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$.. 
 

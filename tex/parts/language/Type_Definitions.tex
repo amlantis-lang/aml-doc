@@ -383,28 +383,28 @@ Struct_Ascription
     ::= ':' 
       | ':>'
 Struct_Constraint 
-    ::= 'type' Type_Path [Type_Param_Clause] Type_Equation
-      | 'type' Type_Path [Type_Param_Clause] ':=' Type
+    ::= 'type' Simple_Type Type_Equation
       | 'struct' Struct_Path '=' Extended_Struct_Path
-      | 'struct' Struct_Path ':=' Extended_Struct_Path
-Type 
+        (* substituting inside signature: *)
+      | 'type' Simple_Type ':=' Type
+      | 'struct' id ':=' Extended_Struct_Path
+Simple_Type 
     ::= ...
       | '(' 'structure' Pkg_Type ')'
+      | '(' 'structure' Expr ')'
 Pkg_Type 
-    ::= Type_Path ['with' Pkg_Constraint {'and' Pkg_Constraint}]
+    ::= Extended_Struct_Path '.' id ['with' Pkg_Constraint {'and' Pkg_Constraint}]
 Pkg_Constraint
-    ::= 'type' Type_Path Type_Equation 
+    ::= 'type' Extended_Struct_Path '.' id Type_Equation 
 Struct_Path
     ::= Module_Path
 Extended_Struct_Path 
     ::= Extended_Struct_Name {'.' Extended_Struct_Name}
 Extended_Struct_Name 
-    ::= id {'(' Extended_Struct_Path {',' Extended_Struct_Path} ')'}
-Type_Path 
-    ::= [Extended_Struct_Path '.'] id
-Stable_Id
+    ::= id {'(' [Extended_Struct_Path] ')'}
+Long_Id
     ::= ...
-      | Type_Path
+      | Extended_Struct_Path
 \end{lstlisting}
 
 
