@@ -8,12 +8,18 @@
 \newpage
 
 \grammar\begin{lstlisting}
-R_Modifier  ::= 'weak' | 'soft' | 'unowned'
-M_Modifier  ::= 'constant' | 'mutable' | 'immutable'
-S_Modifier  ::= [Eagerness] M_Modifier [R_Modifier]
-              | [Eagerness] R_Modifier
-                (* Eagerness only when not present in preceding Modifier *)
-In_Sep      ::= [nl] 'in' [nl] | semi
+Reference_Modifier
+    ::= 'weak'
+      | 'unowned'
+Mutability_Modifier  
+    ::= 'constant'
+Storage_Modifier
+    ::= [Eagerness] Mutability_Modifier [Reference_Modifier]
+      | [Eagerness] Reference_Modifier
+        (* Eagerness only when not present in preceding Modifier *)
+In_Sep
+    ::= [nl] 'in' [nl] 
+      | semi
 \end{lstlisting}
 
 A {\em declaration} introduces names and assigns them types. Using another words, declarations are abstract members, working sort of like header files in C. 
@@ -51,9 +57,9 @@ This is to keep up consistency with pattern matching, where the type will usuall
 Dcl ::= ...
       | Val_Dcl
 Val_Dcl 
-    ::= [S_Modifier] 'val' id {',' id} ':' Type
+    ::= [Storage_Modifier] 'val' id {',' id} ':' Type
 Val_Def 
-    ::= [S_Modifier] ('val' | 'let') ['rec'] Let_Binding {'and' Let_Binding}
+    ::= [Storage_Modifier] ('val' | 'let') ['rec'] Let_Binding {'and' Let_Binding}
 Let_Binding
     ::= Pattern [Type_Param_Clause] [':' Type] ':=' Expr {',' Expr}
       | fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses [':' Type] ':=' Expr
@@ -176,9 +182,9 @@ The following shorthands are recognized:
 Dcl ::= ...
       | Var_Dcl
 Var_Dcl 
-    ::= [S_Modifier] 'var' id {',' id} ':' Type
+    ::= [Storage_Modifier] 'var' id {',' id} ':' Type
 Var_Def 
-    ::= [S_Modifier] 'var' Var_Binding
+    ::= [Storage_Modifier] 'var' Var_Binding
 Var_Binding 
     ::= Let_Binding
       | id {',' id} ':' Type ':=' '_'
@@ -200,8 +206,7 @@ A variable definition ~\lstinline!var $x$: $T$ := _!~ introduces a mutable varia
   \lstinline@0 / 1r@ & if $T$ is \code{Rational},\\
   \lstinline@0 + 0i@ & if $T$ is \code{Complex},\\
   \code{no} & if $T$ is \code{Boolean},\\
-  \lstinline@()@ & if $T$ is \code{Unit}, \\
-  \code{nil} & for all other types $T$.
+  \lstinline@()@ & if $T$ is \code{Unit}
 \end{tabular}\end{quote}
 It is an error if the type $T$ is not nullable and is expected to have a default value of \code{nil} at the same time. 
 
@@ -323,11 +328,7 @@ If a property setter (\code{set}) does not specify return type, then it is infer
 \section{Reference Types}
 \label{sec:ref-types}
 
-\grammar\begin{lstlisting}
-R_Modifier ::= 'weak' | 'soft' | 'unowned'
-\end{lstlisting}
-
-Reference type modifiers are the syntax category \code{R_Modifier} (stands for Reference Modifier). The implicit modifier would be \code{strong}, but it does not have a corresponding keyword.\footnote{This may or may not change in the future.} 
+Reference type modifiers are the syntax category \code{Reference_Modifier}. The implicit modifier would be \code{strong}, but it does not have a corresponding keyword.\footnote{This may or may not change in the future.} 
 
 Reference type modifiers are applied to variables, whose \code{id} begins with ``\lstinline!@!'' (class instance variables) or with ``\lstinline!@@!'' (class object variables). Such variable may appear as a part of pattern matching, in that case, the modifier is applied as well. By default, all other declared or defined variables are inferred to be \code{strong}. If a variable is declared with a non-\code{strong} reference type, then it does not have to be explicitly defined with the same reference type, and it is an error if it is defined with a different reference type. 
 
@@ -342,11 +343,7 @@ Non-\code{strong} references are intended to break strong reference cycles that 
 \subsection{Mutable \& Immutable Storage}
 \label{sec:mutable-immutable-storage}
 
-\grammar\begin{lstlisting}
-M_Modifier ::= 'constant' | 'mutable' | 'immutable'
-\end{lstlisting}
-
-Mutability modifiers are the syntax category \code{M_Modifier} (stands for Mutability Modifier). The implicit modifier would be \code{unspecified}, but there is not a corresponding keyword. 
+Mutability modifiers are the syntax category \code{Mutability_Modifier}. The implicit modifier would be \code{unspecified}, but there is not a corresponding keyword. 
 
 Mutability modifiers are applied to any values or variables, unlike reference type modifiers. 
 
@@ -354,7 +351,7 @@ The \code{mutable} modifier implicitly adds the \code{@[mutable]} annotation to 
 
 The \code{constant} modifier does not add any annotation to the value's or variable's type. Marking a value or variable with \code{constant} means that the runtime will not be able modify the object referred to by the value or variable, thus the referred object is seen as if it were \code{immutable}, but other references to the same object (not created from this constant reference) are still able to mutate the object. A {\em constant value} or a {\em constant variable} is then a {\em constant view} of the referred object. Values returned from function applications, where a constant view is the target, are then transitively constant as well. It is not possible to convert a constant view of a value to a mutable reference. 
 
-An exception to immutability is presented by the \code{R_Modifier} syntax category and weak, soft and unowned references to objects, where indeed the runtime is allowed to discard the value, and thus the immutability or mutability is transitively applied to the contained type, but not the reference itself. 
+An exception to immutability is presented by the \code{Reference_Modifier} syntax category and weak, soft and unowned references to objects, where indeed the runtime is allowed to discard the value, and thus the immutability or mutability is transitively applied to the contained type, but not the reference itself. 
 
 
 
@@ -376,7 +373,7 @@ A {\em strong reference} is a reference that does keep a strong hold on the valu
 
 This reference type is represented in Aml by the type \code{Weak_Reference[$T$]}. 
 
-A {\em weak reference} is a reference that does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it behaves as a nullable type. 
+A {\em weak reference} is a reference that does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it implies nullable type. 
 
 Retrieving the referenced value can end in two different scenarios (and the same applies to all other non-strong reference types): either the value was already destructed (or is being destructed) and \code{nil} is returned, or the value has been retained and the returned value is a strong reference to it. 
 
@@ -390,7 +387,7 @@ Weak reference type is required to be provided by every proper Aml VM implementa
 
 This reference type is represented in Aml by the type \code{Unowned_Reference[$T$]}. 
 
-Like weak references, an {\em unowned reference} does not keep a strong hold on the value it refers to, but it assumes that it will always refer to a non-\code{nil} value until itself released. It is an error if the value is accessed in runtime via this reference type and it is already released. 
+Like weak references, an {\em unowned reference} does not keep a strong hold on the value it refers to, but it assumes that it will always refer to a non-\code{nil} value until itself released, therefore it implies the implicitly unwrapped nullable type. It is an error if the value is accessed in runtime via this reference type and it is already released. 
 
 Unowned reference type is required to be provided by every proper Aml VM implementation, and may reuse internal representation of weak references. 
 
@@ -601,10 +598,16 @@ Param_Clause
     ::= ...
       | Locally_Abstract_Type_Param_Clause
 Locally_Abstract_Type_Param_Clause 
-    ::= '(' 'type' id [Type_Equation | Type_Abstract] ')'
+    ::= '(' 'type' Locally_Abstract_Type_Param {semi Locally_Abstract_Type_Param} ')'
+Locally_Abstract_Type_Param
+    ::= id [Type_Param_Clause] [Type_Equation | Type_Abstract]
 \end{lstlisting}
 
 A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named $x$, which is considered abstract in the scope of the function or method it appears in, but then replaced by a fresh type variable of the form ~\lstinline!'$x$!~ outside the function or method, and which is unifiable by (\sref{sec:automatic-inference}).
+
+The implied type variable may be also given some type constraints, like any other type parameters, in the forms of type equation or type abstract constraints. 
+
+A parameter clause ~\lstinline!(type $x_1$; $\ldots$; $x_n$ )!~ is a syntactic sugar for ~\lstinline!(type $x_1$) $\ldots$ (type $x_n$)!. 
 
 
 
@@ -617,8 +620,6 @@ A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named 
 Variant_Type_Param 
     ::= ...
       | {Annotation} 'type' ['+' | '-'] Locally_Abstract_Type_Param
-Locally_Abstract_Type_Param
-    ::= id [Type_Param_Clause] Type_Param_Constraints
 \end{lstlisting}
 
 Explicitly polymorphic locally abstract types are a combination of (\sref{sec:explicit-polymorphic-type-annotations}) and (\sref{sec:locally-abstract-types}).
@@ -1045,61 +1046,6 @@ The signature of a method $m_1$ is a {\em subsignature} of the signature of a me
 \end{itemize}
 
 A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsignature of $m_2$. Two method signatures $m_1$ and $m_2$ are {\em override-equivalent}, iff $m_1$ is the same as $m_2$. 
-
-
-
-
-
-\section{Method Types Inference}
-\label{sec:method-types-inference}
-
-\paragraph{\em Parameter Type Inference}
-Functions that are members of a class $C$ may define parameters without type annotations. The types of such parameters are inferred as follows. Say, a~method $m$ in a class $C$ has a parameter $p$ which does not have a type annotation. We first determine methods $m'$ in $C$ that might be overridden (\sref{sec:overriding}) by $m$, assuming that appropriate types are assigned to all parameters of $m$ whose types are missing. If there is exactly one such method, the type of the parameter corresponding to $p$ in that method---seen as a member of $C$---is assigned to $p$. It is an error if there are several such overridden methods $m'$. If there is none\footnote{Detected at compile-time. Dynamically added overridden methods are not used with type inference.} ($m$ does not override any $m'$ known at compile-time), then the parameters are inferred to be of type \code{Any}.
-
-\example Assume the following definitions:
-\begin{lstlisting}
-protocol I[A] extends Object
-  def f(x: A)(y: A): A end
-end
-class C extends I[Integer]
-  def f(x)(y) := x + y
-end
-\end{lstlisting}
-Here, the parameter and result types of \lstinline@f@ in \lstinline@C@ are inferred from the corresponding types of \lstinline@f@ in \lstinline@I@. The signature of \lstinline@f@ in \lstinline@C@ is thus inferred to be
-\begin{lstlisting}
-  def f(x: Integer)(y: Integer): Integer
-\end{lstlisting}
-
-\paragraph{\em Result Type Inference}
-A class member definition $m$ that overrides some other function $m'$ in a base class of $C$ may leave out the result type, even if it is recursive. In this case, the result type $R'$ of the overridden function $m'$---seen as a member of $C$---is taken as the result type of $m$ for each recursive invocation of $m$. That way, a type $R$ for the right-hand side of $m$ can be determined, which is then taken as the result type of $m$. Note that $R$ may be different from $R'$, as long as $R$ conforms to $R'$. If $m$ does not override any $m'$, then its result type is inferred to be of type \code{Any}. 
-
-\example Assume the following definitions:
-\begin{lstlisting}
-protocol I
-begin
-  def factorial(x: Integer): Integer end
-end
-class C extends I
-  def factorial(x: Integer) :=
-    if x = 0 then 1 else x * factorial(x - 1) end
-end
-\end{lstlisting}
-Here, it is ok to leave out the result type of \lstinline@factorial@
-in \lstinline@C@, even though the method is recursive. 
-
-For any index $i$ let $fsig_i$ be a function signature consisting of a function
-name, an optional type parameter section, and zero or more parameter
-sections. Then a function declaration 
-~\lstinline@def $fsig_1 \commadots fsig_n$: $T$@~ 
-is a shorthand for the sequence of function
-declarations ~\lstinline@def $fsig_1$: $T$; $\ldots$; def $fsig_n$: $T$@.  
-A function definition ~\lstinline@def $fsig_1 \commadots fsig_n$ := $e$@~ is a
-shorthand for the sequence of function definitions 
-~\lstinline@def $fsig_1$ := $e$; $\ldots$; def $fsig_n$ := $e$@.  
-A function definition
-~\lstinline@def $fsig_1 \commadots fsig_n: T$ = $e$@~ is a shorthand for the
-sequence of function definitions 
-~\lstinline@def $fsig_1: T$ := $e$; $\ldots$; def $fsig_n: T$ := $e$@.
 
 
 
