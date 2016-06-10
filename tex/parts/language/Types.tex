@@ -8,52 +8,55 @@
 \newpage
 
 \grammar\begin{lstlisting}
-Type                   ::= Function_Type Quantification_Clauses
-                         | Infix_Type Quantification_Clauses
-                         | Type_Pack
-Function_Type          ::= [Implicit_Types] Function_Args {'->' Function_Args} 
-                           ['->' Signalling_Types] '->' Type
-Function_Args          ::= Infix_Type
-                         | '(' [Function_Arg {',' Function_Arg}] ')'
-                         | '(' Function_Arg {'*' Function_Arg} ')'
-Function_Arg           ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Type
-Implicit_Types         ::= Simple_Type '=>'
-                         | '(' Types ')' '=>'
-Quantification_Clauses ::= Quantification_Clause {'and' Quantification_Clause}
-Quantification_Clause  ::= Existential_Clauses
-                         | Universal_Clauses
-                         | Given_Clauses
-Existential_Clauses    ::= 'for-some' '{' Quantification_Dcl
-                           {semi Quantification_Dcl} '}'
-Universal_Clauses      ::= 'for-all' '{' Quantification_Dcl
-                           {semi Quantification_Dcl} '}'
-Given_Clauses          ::= 'given' Simple_Type
-                         | 'given' '{' Given_Dcl {semi Given_Dcl} '}'
-Quantification_Dcl     ::= Type_Definition (* containing Type_Abstract *)
-                         | Val_Dcl
-Compound_Type          ::= Annot_Type [Nullable_Mod] {['prepend'] 'with' Annot_Type} 
-                           ['with' ['refinement'] Refine_Stats]
-                         | ['refinement'] Refine_Stats
-Postfix_Type           ::= Compound_Type 
-                           ['with' 'constraint' Constraint_Block]
-Infix_Type             ::= Postfix_Type 
-                           {[nl] (Infix_Op - 'also', 'else') [nl] Postfix_Type}
-                         | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
-                           {':' Postfix_Type}
-Annot_Type             ::= {Annotation} Simple_Type
-Simple_Type            ::= Simple_Type [Type_Args]
-                         | Postfix_Simple_Type
-                         | Simple_Type '#' id
-                         | Stable_Id
-                         | Path '.' 'type'
-                         | Literal ['.' 'type']
-                         | '(' [Types] ')'
-                         | Foreign_Type
-Postfix_Simple_Type    ::= Type Stable_Id
-Types                  ::= Named_Subtype {',' Named_Subtype}
-Named_Subtype          ::= ['~' id ':'] Type
-Type_Equation          ::= '=' Type
-Type_Pack              ::= '...' Type
+Type_Expr
+    ::= Function_Type [Quantification_Clauses]
+      | Infix_Type [Quantification_Clauses]
+      | Type_Pack
+Quantification_Clauses 
+    ::= Quantification_Clause {'and' Quantification_Clause}
+Quantification_Clause  
+    ::= Existential_Clauses
+      | Universal_Clauses
+      | Given_Clauses
+Existential_Clauses 
+    ::= 'for-some' '{' Quantification_Dcl {semi Quantification_Dcl} '}'
+Universal_Clauses 
+    ::= 'for-all' '{' Quantification_Dcl {semi Quantification_Dcl} '}'
+Given_Clauses
+    ::= 'given' Simple_Type
+      | 'given' '{' Given_Dcl {semi Given_Dcl} '}'
+Quantification_Dcl 
+    ::= Type_Definition  (* containing Type_Abstract *)
+      | Val_Dcl
+Compound_Type
+    ::= Annot_Type [Nullable_Mod] {'with' Annot_Type} 
+        ['with' ['refinement'] Refine_Stats]
+      | ['refinement'] Refine_Stats
+Postfix_Type 
+    ::= Compound_Type ['with' 'constraint' Constraint_Block]
+Infix_Type 
+    ::= Postfix_Type {[nl] ? Infix_Op except two-part ones ? [nl] Postfix_Type}
+      | Postfix_Type [nl] nary_op_id [nl] Postfix_Type {':' Postfix_Type}
+Annot_Type 
+    ::= {Annotation} Simple_Type
+Simple_Type 
+    ::= Stable_Id
+      | Parameterized_Type
+      | Literal ['.' 'type']
+      | '(' [Tuple_of_Types] ')'
+      | Simple_Type '#' id
+      | Path '.' 'type'
+      | Foreign_Type
+Postfix_Simple_Type
+    ::= Type_Expr Stable_Id
+Tuple_of_Types 
+    ::= Named_Subtype {',' Named_Subtype}
+Named_Subtype
+    ::= ['~' id ':'] Type_Expr
+Type_Equation 
+    ::= '=' Type_Expr
+Type_Pack 
+    ::= '...' Type_Expr
 \end{lstlisting}
 
 When we say \textit{type} in the context of Aml, we are talking about a blueprint of an entity, while the type itself is an entity. Every type in Aml is backed by a \textit{class}, which is an instance of the type \lstinline@Class@. 
@@ -158,12 +161,15 @@ Every value in Aml has a type which is of one of the following forms.
 
 
 
-
 \subsection{Singleton Type}
 \label{sec:singleton-types}
 
 \grammar\begin{lstlisting}
-Simple_Type ::= Path '.' 'type'
+Simple_Type 
+    ::= ...
+      | Singleton_Type
+Singleton_Type
+    ::= Path '.' 'type'
 \end{lstlisting}
 
 A singleton type is of the form ~\lstinline@$p$.type@, where $p$ is a path pointing to a value. The type denotes the set of values consisting of solely the value denoted by $p$.
@@ -178,7 +184,11 @@ A {\em stable type} is either a singleton type or a type which is declared to be
 \label{sec:cloned-types}
 
 \grammar\begin{lstlisting}
-Simple_Type ::= Path '.' 'cloned' '.' 'type'
+Simple_Type 
+    ::= ...
+      | Cloned_Type
+Cloned_Type
+    ::= Path '.' 'cloned' '.' 'type'
 \end{lstlisting}
 
 A cloned type is of the form ~\lstinline!$p$.cloned.type!, where $p$ is a path pointing to a value. The type denotes the set of values consisting of the value denoted by $p$ and every value that is cloned from the value denoted by $p$. 
@@ -193,7 +203,11 @@ A {\em stable type} is either a cloned type or a type which is declared to be a 
 \label{sec:literal-based-singleton-type}
 
 \grammar\begin{lstlisting}
-Simple_Type ::= Literal ['.' 'type']
+Simple_Type 
+    ::= ...
+      | Literal_Type
+Literal_Type
+    ::= Literal ['.' 'type']
 \end{lstlisting}
 
 A singleton type based on a literal is of the form \lstinline@$l$.type@, where $l$ is a literal. The type denotes the set of values consisting of every literal value that is equal to $l$. 
@@ -210,7 +224,11 @@ In contexts where a type is expected\footnote{Most notably type arguments or typ
 \label{sec:type-projection}
 
 \grammar\begin{lstlisting}
-Simple_Type ::= Simple_Type '#' id
+Simple_Type 
+    ::= ...
+      | Projected_Type
+Projected_Type
+    ::= Simple_Type '#' id
 \end{lstlisting}
 
 A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. This is useful i.e. with nested classes that belong to the class instances, not the class object. 
@@ -243,7 +261,9 @@ This is due to the fact that the \code{class B} is defined as a class instance m
 \label{sec:type-designators}
 
 \grammar\begin{lstlisting}
-Simple_Type ::= Stable_Id
+Simple_Type 
+    ::= ...
+      | Stable_Id
 \end{lstlisting}
 
 A type designator refers to a named value type. It can be simple or qualified. All such type designators are shorthands for type projections. 
@@ -281,28 +301,37 @@ class A_Class {
 
 
 
-
 \subsection{Parameterized Types}
 \label{sec:parameterized-types}
 
 \grammar\begin{lstlisting}
-Simple_Type         ::= Simple_Type [Type_Args]
-                      | Postfix_Simple_Type
-Postfix_Simple_Type ::= Type Stable_Id
-Type_Args           ::= '[' [Type_Arg {',' Type_Arg}] ']'
-Type_Arg            ::= Type_Arg_Value
-                      | Measure_Arg_Value
-                      | Static_Arg_Value
-Type_Arg_Value      ::= ['~' id ':'] Type
-                      | '_'
-Measure_Arg_Value   ::= ['~' id ':'] '<' measure_literal '>'
-Static_Arg_Value    ::= Constant
-                      | 'constant' '(' Expr ')'
+Simple_Type
+    ::= ...
+      | Parameterized_Type
+Parameterized_Type
+    ::= Simple_Type [Type_Args]
+      | Postfix_Parameterized_Type
+Postfix_Parameterized_Type 
+    ::= Type_Arg Stable_Id
+Type_Args 
+    ::= '[' [Type_Arg {',' Type_Arg}] ']'
+Type_Arg 
+    ::= Type_Arg_Value
+      | Measure_Arg_Value
+      | Static_Arg_Value
+Type_Arg_Value
+    ::= ['~' id ':'] Type
+      | '_'
+Measure_Arg_Value 
+    ::= ['~' id ':'] '<' measure_literal '>'
+Static_Arg_Value
+    ::= Constant
+      | 'constant' '(' Expr ')'
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
 
-Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 := T_1 \commadots a_n := T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline!$A$ <: Comparable[$A$]!~ is substituted into ~\lstinline!$C$ <: Comparable[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfill the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
+Say the type parameters have lower bounds $L_1 \commadots L_n$ and upper bounds $U_1 \commadots U_n$. The parameterized type is well-formed if each actual type parameter {\em conforms to its bounds}, so that $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 \mapsto T_1 \commadots a_n \mapsto T_n]$\footnote{The substitution works by replacing occurrences of $a_i$ in the argument by $T_i$, so that, e.g. ~\lstinline!$A$ <: Comparable[$A$]!~ is substituted into ~\lstinline!$C$ <: Comparable[$C$]!.}. Also, $U_i$ must never be a subtype of $L_i$, since no other type ever would be able to fulfill the bounds ($U_i$ and $L_i$ may be the exact same type though, but in that case the type parameter would be invariant and the whole point of having a parameterized type would be useless). 
 
 Each type argument may be given a name $n$, using the form ``\lstinline!~$n$: $T$!''. This attaches the annotation ~\lstinline!@[labelled :$n$]!~ to the type argument. 
 
@@ -376,15 +405,19 @@ Boolean List List    (* equivalent to List[List[Boolean]] *)
 \subsection{Polymorphic Variant Types}
 \label{sec:polymorphic-variant-types}
 
-\grammar\begin{lstlisting}
-Simple_Type              ::= Polymorphic_Variant_Type
-Polymorphic_Variant_Type ::= '[[' Tag_Spec {semi Tag_Spec} ']]'
-                           | '[[>' [Tag_Spec {semi Tag_Spec}] ']]'
-                           | '[[<' Tag_Spec {semi Tag_Spec}
-                                   [semi '>' {Tag_Name}+] ']]'
-Tag_Spec                 ::= Tag_Name ['of' Type]
-                           | Type
-Tag_Name                 ::= '`' ? id that does not start with ` or @ ?
+\grammar\begin{lstlisting}[deletekeywords={not,with,or}]
+Simple_Type 
+    ::= ...
+      | Polymorphic_Variant_Type
+Polymorphic_Variant_Type 
+    ::= '[[' Tag_Spec {semi Tag_Spec} ']]'
+      | '[[>' [Tag_Spec {semi Tag_Spec}] ']]'
+      | '[[<' Tag_Spec {semi Tag_Spec} [semi '>' {Tag_Name}+] ']]'
+Tag_Spec 
+    ::= Tag_Name ['of' Type]
+      | Type
+Tag_Name 
+    ::= '`' ? id that does not start with ` or @ ?
 \end{lstlisting}
 
 Polymorphic variant types describe the values a polymorphic variant may take. 
@@ -407,9 +440,14 @@ Intersection-like types may be given in closed polymorphic variant types, likely
 \label{sec:tuple-types}
 
 \grammar\begin{lstlisting}
-Simple_Type ::= '(' Types ')'
-Types       ::= Named_Subtype {',' Named_Subtype}
-Infix_Type  ::= Named_Subtype {'*' Named_Subtype}
+Simple_Type 
+    ::= ...
+      | '(' Types ')'
+Types
+    ::= Named_Subtype {',' Named_Subtype}
+Infix_Type 
+    ::= ...
+      | Named_Subtype {'*' Named_Subtype}
 \end{lstlisting}
 
 A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple[$T_1 \commadots T_n$]@, where $n \geq 1$. 
@@ -420,7 +458,7 @@ Tuple classes are available as patterns for pattern matching. The properties can
 
 Tuple classes are generated lazily by the runtime as needed, so that the language does not constrain users to tuples of only limited sizes, but allows any size. 
 
-If any of the tuple's type parameters $T_i$ is annotated to be named $n$ (see \sref{sec:parameterized-types}, then an additional method named $n$ is added, returning the same value as ~\lstinline!$i$!, of the type $T_i$. If that type parameter is furthermore annotated with ~\lstinline!@[purely_named]!, then the ~\lstinline!$i$!~ is removed. 
+If any of the tuple's type arguments $T_i$ is annotated to be named $n$ (see \sref{sec:parameterized-types}, then annotation ~\lstinline!@[labelled :$n$]!~ is added to the type argument. 
 
 Tuple type with single type parameter is an alias for the type parameter itself. This is true for the form ~\lstinline!($T$)!~ as well as ~\lstinline!Tuple[$T$]!.
 
@@ -446,15 +484,18 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations (\sref{sec:annotations
 \label{sec:compound-types}
 
 \grammar\begin{lstlisting}
-Compound_Type ::= Annot_Type {['prepend'] 'with' Annot_Type} 
-                  ['with' ['refinement'] Refine_Stats]
-                | ['refinement'] Refine_Stats
-Refine_Stats  ::= '{' Refine_Stat {semi Refine_Stat} '}'
-Refine_Stat   ::= Dcl
-                | Type_Definition (* containing Type_Abstract *)
-                | Constraint_Dcl
-                | Struct_Constraint
-                | ()
+Compound_Type 
+    ::= Annot_Type [Nullable_Mod] {'with' Annot_Type} 
+        ['with' ['refinement'] Refine_Stats]
+      | ['refinement'] Refine_Stats
+Refine_Stats 
+    ::= '{' Refine_Stat {semi Refine_Stat} [semi '_'] '}'
+      | '{' '_' '}'
+Refine_Stat 
+    ::= Dcl
+      | Type_Definition  (* containing Type_Abstract or Type_Equation *)
+      | Struct_Constraint
+      | ()
 \end{lstlisting}
 
 A compound type \lstinline@$T_1$ with $\ldots$ with $T_n$ with refinement {$R$}@ represents values with members as given in the component types $T_1 \commadots T_n$ and the refinement \lstinline@{$R$}@. A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
@@ -479,10 +520,9 @@ The \code{refinement} keyword may also be omitted from a compound type that cons
 \label{sec:infix-types}
 
 \grammar\begin{lstlisting}
-Infix_Type ::= Postfix_Type 
-               {[nl] (Infix_Op - 'also', 'else') [nl] Postfix_Type}
-             | Postfix_Type [nl] nary_op_id [nl] Postfix_Type 
-               {':' Postfix_Type}
+Infix_Type 
+    ::= Postfix_Type {[nl] (Infix_Op - ('and' 'also'), ('or' 'else')) [nl] Postfix_Type}
+      | Postfix_Type [nl] nary_op_id [nl] Postfix_Type {':' Postfix_Type}
 \end{lstlisting}
 
 An infix type $T_1\ \op\ T_2$ consists of an infix operator $\op$, which gets applied to two type operands $T_1$ and $T_2$. The type is equivalent to the type application ~\lstinline!$\op$[$T_1$, $T_2$]!. The infix operator $\op$ may be an arbitrary identifier, and is expected to represent a type constructor. 
@@ -497,14 +537,13 @@ Infix type may also result from an infix expression (\sref{sec:prefix-infix-ops}
 \label{sec:function-types}
 
 \grammar\begin{lstlisting}
+Type
+    ::= ...
+      | Function_Type
 Function_Type 
-    ::= [Implicit_Types] Function_Args {'->' Function_Args}
+    ::= [Type_Context] Function_Arg_Type {'->' Function_Arg_Type}
         ['->' Signalling_Types] '->' Type
-Function_Args 
-    ::= Infix_Type
-      | '(' [Function_Arg {',' Function_Arg}] ')'
-      | '(' Function_Arg {'*' Function_Arg} ')'
-Function_Arg
+Function_Arg_Type
     ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Type
 Signalling_Types
     ::= Signalling_Kind {'and' Signalling_Kind}  (* each kind at most once *)
@@ -560,12 +599,14 @@ def h (x: Integer, y: Integer, z: Integer) end
 \subsection{Type Class Constraints}
 
 \grammar\begin{lstlisting}
-Implicit_Types ::= Simple_Type '=>'
-                 | '(' Types ')' '=>'
-Given_Dcl      ::= ['class'] Type
+Type_Context 
+    ::= Simple_Type '=>'
+      | '(' Types ')' '=>'
+Given_Dcl
+    ::= 'class' Type
 \end{lstlisting}
 
-A function type can additionally express type class constraints, either with the prefix syntax using \code{Implicit_Types}, or the postfix syntax using \code{Given_Clauses}. Each type occurring in either of those is considered to be adding a type class constraint to the function type (\sref{sec:type-class-constrained-types}). 
+A function type can additionally express type class constraints, either with the prefix syntax using \code{Type_Context}, or the postfix syntax using \code{Given_Clauses}. Each type occurring in either of those is considered to be adding a type class constraint to the function type (\sref{sec:type-class-constrained-types}). 
 
 \example A function type that requires that an instance of a type class \code{Show['a]} is available for the type parameter \code{'a}.
 \begin{lstlisting}
@@ -587,8 +628,9 @@ A good style is to not combine the two syntaxes in one function type, however, i
 \subsection{Functional Dependencies}
 
 \grammar\begin{lstlisting}
-Given_Dcl ::= ...
-            | Simple_Type '~>' Simple_Type
+Given_Dcl 
+    ::= ...
+      | Simple_Type '~>' Simple_Type
 \end{lstlisting}
 
 A functional dependency expresses dependencies between type parameters of a function type. A functional dependency in form of ~\lstinline!'a ~> 'b!~ expresses the fact that type variable \code{'a} determines the type variable \code{'b}. Note that the involved type variables are still unifiable at that point, unless made explicitly polymorphic. 
@@ -600,27 +642,29 @@ A functional dependency expresses dependencies between type parameters of a func
 \subsection{Type Dependencies, Constraints \& Equations}
 
 \grammar\begin{lstlisting}
-Given_Dcl ::= ...
-            | Type_Var Type_Equation
-            | Type_Var '>:' Type ['<:' Type]
-            | Type_Var '<:' Type
-            | Type_Var ':' 'nil'
-            | Type_Vars ':' '(' Member_Signature ')'
-            | Type_Var ':' '(' Constructor_Signature ')'
-Type_Vars ::= Type_Var
-            | '(' Type_Var {'or' Type_Var} ')'
+Given_Dcl 
+    ::= ...
+      | Type_Var Type_Equation
+      | Type_Var '>:' Type ['<:' Type]
+      | Type_Var '<:' Type
+      | Type_Var ':' 'nil'
+      | Type_Vars ':' '(' Member_Signature ')'
+      | Type_Var ':' '(' Constructor_Signature ')'
+Type_Vars 
+    ::= Type_Var
+      | '(' Type_Var {'or' Type_Var} ')'
 Member_Signature
-          ::= ['class'] 'member' fun_id ':' Type
-            | ['class'] 'operator' op_id ':' Type
-            | ['class'] 'property' id ':' Type ['with' Property_Signature_Extra]
+    ::= ['class'] 'member' fun_id ':' Type
+      | ['class'] 'operator' op_id ':' Type
+      | ['class'] 'property' id ':' Type ['with' Property_Signature_Extra]
 Constructor_Signature
-          ::= ('new' | 'constructor') ':' Type  (* just type of parameters, no result type *)
+    ::= ('new' | 'constructor') ':' Type  (* just type of parameters, no result type *)
 Property_Signature_Extra
-          ::= 'get' ['and' 'set']
-            | 'set' ['and' 'get']
+    ::= 'get' ['and' 'set']
+      | 'set' ['and' 'get']
 \end{lstlisting}
 
-A type dependency or equation expresses additional relations between different type components (usually type variables used as type parameters) that make up a type that uses the \code{given} declarations. It can equate two types (e.g. ~\lstinline!given {'a := 'b}!), or declare that two or three types have a conformance relation (e.g. ~ \lstinline!given {'a >: 'b <: 'c}!).
+A type dependency or equation expresses additional relations between different type components (usually type variables used as type parameters) that make up a type that uses the \code{given} declarations. It can equate two types (e.g. ~\lstinline!given {'a = 'b}!), or declare that two or three types have a conformance relation (e.g. ~ \lstinline!given {'a >: 'b <: 'c}!).
 
 
 
@@ -630,12 +674,8 @@ A type dependency or equation expresses additional relations between different t
 \label{sec:existential-types}
 
 \grammar\begin{lstlisting}[escapechar=@]
-Type
-    ::= ...
-      | Infix_Type Quantification_Clauses
-Quantification_Clauses 
-    ::= {'for-some' '{' Quantification_Dcl
-        {semi Quantification_Dcl} '}'}
+Existential_Clauses
+    ::= 'for-some' '{' Quantification_Dcl {semi Quantification_Dcl} '}'
 Quantification_Dcl
     ::= Type_Definition (* containing Type_Abstract *)
       | Val_Dcl
@@ -751,9 +791,8 @@ Since this \code{List} type is covariant in its type parameter, then e.g. ~\lsti
 \label{sec:universal-types}
 
 \grammar\begin{lstlisting}
-Type              ::= Infix_Type Quantification_Clauses
-Universal_Clauses ::= {'for-all' '{' Quantification_Dcl
-                      {semi Quantification_Dcl} '}'}
+Universal_Clauses 
+    ::= {'for-all' '{' Quantification_Dcl {semi Quantification_Dcl} '}'}
 \end{lstlisting}
 
 A type variable bound in $T$ is also explicitly polymorphic. 
@@ -767,34 +806,11 @@ A type variable bound in $T$ is also explicitly polymorphic.
 
 \grammar\begin{lstlisting}
 Nullable_Mod 
-    ::= '?' | '!'
+    ::= '?' 
+      | '!'
 \end{lstlisting}
 
-A nullable type has the form \lstinline!$T$?!, where ``\code{?}'' denotes a nullable type. Although \code{nil} as the singleton member of the \code{Nothing} type is a subtype of every type, Aml types are implicitly not-nullable, meaning that the language complains when the \code{nil} value is assigned to a variable whose type is not bound to be nullable. And it does so by issuing compile-time warnings and runtime warnings\footnote{In debug mode.} when the \code{nil} value is assigned to a type that is not nullable, including parameter assignment and result value assignment. This is due to the fact that the type \code{Nothing} conforms to any type that descends from \code{Any}, which is, well, any type. 
-
-A block of code (or whole files or modules) may opt-in to behaviour that raises errors in runtime, instead of issuing warnings, using \code{pragma error_on_nil} inside the code block, file or module. 
-
-If an implicit conversion from \code{Nothing} to $T$ is available, then nullability is not a problem. Also, if $T$ implements the \code{Default[$T$]} trait (\sref{sec:types-preventing-nil}), nullability is also not a problem, as there will always be a value that replaces \code{nil} or even \code{undefined}. 
-
-Nullable types in this form can appear everywhere where a type is expected. 
-
-A nullable type may be seen as a syntax sugar for the following union type ~\code{Nullable[$T$]} (\sref{sec:unions}):
-\begin{lstlisting}
-type Nullable [T] is union of 
-  T
-  Nothing
-end type
-\end{lstlisting}
-
-When a method is applied on a variable containing \code{nil}, the standard \code{Member_Not_Found} may occur, if the method is really not found in the class \code{Nothing} or in any of implicit conversions from \code{Nothing} (e.g., \code{Nothing} has an implicit conversion to the option type \code{None}). 
-
-A strictly not-nullable type has the form ~\lstinline@$T$!@, where ``\code{!}'' denotes a not-nullable type. Aml types are implicitly not-nullable, but strictly not-nullable types have the extra property that \code{nil} and \code{undefined} do not cause a warning when assigned to a variable or value that is of a strictly not-nullable type, but raise a type error. In case the referenced value changes in runtime by other means than assignment (native access or maybe due to hot code load), the same error has to be raised. 
-
-A compiler may decide to issue extra warnings when assignment of a \code{nil} or \code{undefined} can be detected. 
-
-A strictly not-nullable may be seen as some implicitly wrapped-on-assignment / unwrapped-on-read box that checks for \code{value = nil} and raises an error when such condition is true. But Aml does not have any special methods for object dereference.\footnote{Yet, and probably never will.} 
-
-When used in a compound type, use nullable modifier only on the first component. When used in a constrained type, use nullable modifier only on the component type of the constrained type. 
+A nullable type has the form \lstinline!$T$?!, which is an abbreviation for \lstinline!Option[$T$]!, and the form \lstinline@$T$!@, which is an abbreviation for \lstinline!Implicitly_Unwrapped_Option[$T$]!.
 
 
 
@@ -803,17 +819,11 @@ When used in a compound type, use nullable modifier only on the first component.
 \subsection{Types Preventing Nil}
 \label{sec:types-preventing-nil}
 
-In Aml, two traits exist that make every type that implements them conform to a compatible strictly not-nullable type: \code{Default[$T$]} and \code{Never_Nil}. 
+In Aml, a type class exists that makes every type that implements it conform to a compatible non-nullable type: \code{Default[$T$]}. 
 
-\code{Default[$T$]} does that by implementing a default value to runtime-replace \code{nil} or \code{undefined}. \code{Never_Nil} does that by making the implementing type behave as if all of its occurrences were in fact \code{$T$!} (strictly not-nullable). 
+\code{Default[$T$]} does that by implementing a default value to runtime-replace \code{nil}. 
 
-An implementation of \code{Default[$T$]} must provide the following method, where \code{self} is the implementing class or type instance: 
-\begin{lstlisting}
-message self.default (): $T$! end
-\end{lstlisting}
-
-Then, the value returned by it replaces occurrences of \code{nil} or \code{undefined} in runtime. Also, an attribute is provided for the implementing type, in form of \code{$T$.'default}. 
-
+Types \code{T} that have got the \code{Default[$T$]} type class implemented have got an implicit conversion from type \code{Option[$T$]} to the type \code{T} enabled, rendering \code{Option[$T$]} compatible with \code{T}.
 
 
 
@@ -823,9 +833,9 @@ Then, the value returned by it replaces occurrences of \code{nil} or \code{undef
 \label{sec:unions}
 
 \grammar\begin{lstlisting}
-Type_Representation ::= Is Union
-Union               ::= 'union' 'of' Type {semi Type}
-Infix_Type          ::= Type {'or' Type}
+Infix_Type
+    ::= ...
+      | Type {'or' Type}
 \end{lstlisting}
 
 Union types represent multiple types, possibly unrelated. Union types are abstract by nature and can not be instantiated, only the types that they contain may, if these are instantiable. For type safety, bindings of union types should be matched for the actual type prior to usage. 
@@ -863,9 +873,9 @@ Union types also employ the following set of rules, given some types \code{X}, \
 \label{sec:intersection-types}
 
 \grammar\begin{lstlisting}
-Type_Representation ::= Is 'intersection' 'of'
-                        Type {semi Type}
-Infix_Type          ::= Type {'and' Type}
+Infix_Type 
+    ::= ...
+      | Type {'and' Type}
 \end{lstlisting}
 
 An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. 
@@ -900,9 +910,10 @@ Intersection types also employ the following set of rules, given some types \cod
 \label{sec:constrained-types}
 
 \grammar\begin{lstlisting}
-Postfix_Type     ::= Compound_Type 
-                     'with' 'constraint' Constraint_Block
-Constraint_Block ::= '{' Block '}'
+Postfix_Type 
+    ::= Compound_Type 'with' 'constraint' Constraint_Block
+Constraint_Block 
+    ::= '{' Block '}'
 \end{lstlisting}
 
 A constrained type constructs a subset of allowed members of its component type. Such a subset is defined as members for which the constraint block returns boolean \code{yes}. Constraints defined within the component type are implicitly available in such block as local variables. In case of concurrent changes in the member, the type may not match anymore -- a warning is issued when a constraint is applied to a member that is not frozen nor immutable. 
@@ -916,45 +927,17 @@ Constrained types are an implementation of {\em dependent types} in Aml. Depende
 
 
 
-\subsection{Mutable \& Immutable Types}
-\label{sec:mutable-immutable-types}
-
-Aml offers two annotations that can constrain a type to either {\em mutability} or {\em immutability}. Implicitly, types are not constrained in such a way, therefore a type could represent both mutable and immutable values at the same time. 
-
-\paragraph{Mutable types}
-A mutable type is expressed with the annotation \code{@[mutable]}, and is not transitive. It constrains a type to mutable values (i.e. not frozen), but not values referred to by the values it represents. 
-
-\paragraph{Immutable types}
-An immutable type is expressed with the annotation \code{@[immutable]}, and is transitive. It constrain a type to immutable values (i.e. frozen) and also requires that all values that are referred to by those immutable values to be also immutable, unless they are explicitly typed as mutable. 
-
-\paragraph{Note}
-See also section about storage of mutable and immutable values: (\sref{sec:mutable-immutable-storage}).
-
-A \code{mutable} type can be seen as a constrained type, where the constraint is:
-\begin{lstlisting}
-$T$ with constraint { not self.'is_frozen? }  ,
-\end{lstlisting}
-where \code{self} would be a constraint published by the type $T$, referring to the \code{self} of a value of the type $T$. 
-
-An \code{immutable} type can be seen as a constrained type, where the constraint is:
-\begin{lstlisting}
-$T$ with constraint { self.'is_frozen? }  ,
-\end{lstlisting}
-where \code{self} would be a constraint published by the type $T$, referring to the \code{self} of a value of the type $T$. 
-
-If a mutable or immutable type is seen as a constrained type, but $T$ is already a constrained type, then the condition presented by the already constrained type $T$ can be seen without loss of generality as joined with the mutable/immutable constraint by \code{and}. 
-
-
-
-
-
 \subsection{Foreign Types}
 \label{sec:foreign-types}
 
 \grammar\begin{lstlisting}
-Simple_Type  ::= Foreign_Type
-Foreign_Type ::= 'foreign' lang_name string_literal
-lang_name    ::= id
+Simple_Type 
+    ::= ...
+      | Foreign_Type
+Foreign_Type 
+    ::= 'foreign' lang_name string_literal
+lang_name 
+    ::= id
 \end{lstlisting}
 
 A {\em foreign type} is a tool that helps Aml programs integrate with other languages written for the same VM, the Aml VM. It is viewed as extending the type \code{Any}, can be given an alias name and be a part of a compound type with another foreign types or Aml types. 
@@ -964,10 +947,10 @@ If the foreign type is parameterized, it can be a part of a type application as 
 
 \example A foreign type aliases for a few foreign types:
 \begin{lstlisting}
-type Java_Object is foreign Java "java.lang.Object" end type
-type Java_int is foreign Java "int" end type
-type CS_Object is foreign `C#` "System.Object" end type
-type Rb_Proc_Status is foreign Ruby "Process::Status" end type
+type Java_Object = foreign Java "java.lang.Object" end type
+type Java_int = foreign Java "int" end type
+type CS_Object = foreign `C#` "System.Object" end type
+type Rb_Proc_Status = foreign Ruby "Process::Status" end type
 \end{lstlisting}
 
 
@@ -1428,74 +1411,24 @@ Reified types have some major effects on programs in Aml:
 In Aml, there are a few types and their values that represent emptiness of some sort. The following lists specifies their semantical purposes. 
 
 \begin{enumerate}
-  \item The \code{Nothing} type. It represents a missing object in places where an object is expected. 
+  \item The \code{Nothing} type, which is the bottom type ($\bot$) of Aml's type system. 
   
-  The type has just one inhabitant, and that is the frozen \code{nil} value. In a Aml VM, this type is usually an immediate value. 
+  It's the only empty type in Aml, i.e. it has no type inhabitants. Aml defines a function that has this type: \code{undefined}, parameterless. 
   
-  \item The \code{Undefined} type. It represents a missing object in places where an object is expected, but its source is not defined. This applies to non-defined instance variables, undefined variables, or undefined mappings in, e.g., \code{Map} implementations. 
+  To signal that a function never returns, the type alias \code{Diverges} should be used instead, as its name better expresses the intent. 
+
+  \item The \code{None} variant of the \code{Option[$T$]} variant type and represents a missing value.
   
-  The type has just one inhabitant, and that is the frozen \code{undefined} value, which is equal to, but not identical to \code{nil}. In a Aml VM, this type is usually an immediate value.
-  
-  The semantical difference between a \code{nil} and \code{undefined} in context of, e.g., \code{Map} implementations is that \code{nil} is returned if the map contains the given key, but has \code{nil} assigned to it on purpose, whereas \code{undefined} means there was no mapping defined. 
-  
-  Aml forbids access to undefined local variables during compilation, unlike e.g. JavaScript. 
-  
-  \item The \code{None} case object. It is a subtype of \code{Option[$T$]} and represents the exact same thing as \code{Nothing}, but has the extra semantical meaning of ``being ready to handle missing values'', which non-nullable types do not represent -- those expect a value to be present and cause errors when it is not present. 
-  
-  The \code{None} case object is primarily designed to be used with pattern matching, and also plays an important internal part in Aml's implementation of pattern matching. 
-  
-  Implicit conversion (\sref{sec:implicit-conversions}) from \code{Nothing} and \code{Undefined} to \code{Option[$T$]} is defined in \code{Language.Predef}, and results in \code{None}. 
+  The dedicated keyword \code{nil} is the value of that type. 
   
   \item The \code{Unit} type. It is basically a \code{Tuple} type with zero type parameters. 
   
-  It's semantical meaning is that no value is even expected. It is used for functions that should never return any value, and that are technically procedures, whose purpose lies in side-effects. 
+  It's semantical meaning is that no value is even expected. It is used for functions that should never return any meaningful value (but they do return control back to their users), and that are technically procedures, whose purpose lies in side-effects. 
   
   The type has just one inhabitant, the ``\code{()}'' value, also known as an empty tuple. In a Aml VM, this type is usually an immediate value.
   
   There are no implicit conversions from \code{Unit} to any other type defined by Aml. 
 \end{enumerate}
-
-The following lines show some common relations between empty values. 
-\begin{lstlisting}[deletekeywords={also}]
-nil = undefined  (* yes *)
-nil == undefined (* no *)
-nil = None       (* no *)
-undefined = None (* no *)
-() = undefined   (* no *)
-() = nil         (* no *)
-
-Nothing === nil         (* yes *)
-Nothing === undefined   (* yes *)
-Nothing === ()          (* no *)
-Undefined === nil       (* no *)
-Undefined === undefined (* yes *)
-Undefined === ()        (* no *)
-Unit === nil            (* no *)
-Unit === undefined      (* no *)
-Unit === ()             (* yes *)
-
-val nothing := nil
-match nothing {
-  when Some(x) then () (* does not match *)
-  when None then ()    (* matches *)
-}
-
-val nothing := get_undefined (* a function that returns `undefined' *)
-match nothing {
-  when Some(x) then () (* does not match *)
-  when None then ()    (* matches *)
-}
-
-val unit = ()
-match unit {
-  when Some(x) then () (* does not match, 
-                          also compilation warning, because Unit 
-                          is not compatible to Option[T] *)
-  when None then ()    (* does not match, also not compatible *)
-  when Unit then ()    (* matches *)
-}
-\end{lstlisting}
-
 
 
 
