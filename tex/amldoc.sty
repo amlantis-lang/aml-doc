@@ -140,20 +140,17 @@
     attribute,%
     begin,%
     before,%
-    bitfield,%
     break,%
     broken,%
     case,%
     catch,%
     class,%
-    clone,%
     cloned,%
     constant,%
     constraint,%
     constructor,%
     convenience,%
     declare,%
-    def,%
     defer,%
     delta,%
     destructor,%
@@ -172,7 +169,7 @@
     execution,%
     exhausted,%
     exit,%
-    extends,%
+    extension,%
     family,%
     failure,%
     final,%
@@ -180,6 +177,7 @@
     for-all,%
     for-some,%
     foreign,%
+    fun,%
     function,%
     functor,%
     get,%
@@ -188,8 +186,6 @@
     handle,%
     handler,%
     if,%
-    immutable,%
-    implements,%
     implicit,%
     in,%
     include,%
@@ -199,7 +195,6 @@
     inherit,%
     instance,%
     interface,%
-    intersection,%
     invariant,%
     invoke,%
     is,%
@@ -208,6 +203,7 @@
     label,%
     lazy,%
     let,%
+    let?,%
     let!,%
     loop,%
     macro,%
@@ -220,7 +216,6 @@
     module,%
     monitored,%
     multi,%
-    mutable,%
     native,%
     new,%
     next,%
@@ -236,7 +231,6 @@
     operator,%
     optional,%
     or,%
-    origin,%
     otherwise,%
     out,%
     outer,%
@@ -247,7 +241,6 @@
     pointcut,%
     pragma,%
     prefer,%
-    prepend,%
     private,%
     property,%
     protected,%
@@ -279,8 +272,7 @@
     return,%
     return!,%
     returning,%
-    requires,%
-    reverse,%
+    required,%
     scope,%
     sealed,%
     self,%
@@ -292,7 +284,6 @@
     signals,%
     signature,%
     skip,%
-    soft,%
     step,%
     struct,%
     structure,%
@@ -319,12 +310,13 @@
     unless,%
     unowned,%
     until,%
-    union,%
     upgrade,%
     use,%
     use!,%
     val,%
+    val?,%
     var,%
+    var?,%
     variant,%
     yes,%
     weak,%
@@ -386,7 +378,7 @@
 \newcommand{\sref}[1]{\S\ref{#1}}
 \newcommand{\comma}{,\,}
 \newcommand{\commadots}{\comma \ldots \comma}
-\newcommand{\conforms}{<:}
+\newcommand{\conforms}{\ifmmode \mathtt{\ <:\ } \else <: \fi}
 \newcommand{\gap}{\quad\quad}
 
 \newcounter{Example}[section]
