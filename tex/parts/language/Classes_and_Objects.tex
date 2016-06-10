@@ -86,35 +86,6 @@ Auxiliary templates do not need to be eager loaded. There are basically three ma
 
 
 
-\subsection{Autoloading}
-\label{sec:autoloading}
-
-Autoloading is a mechanism of putting code from different source files and source directories together in runtime. There are two kinds of autoloading.
-
-\paragraph{Implicit autoloading}
-This kind of autoloading is basically the expected layout of source files, source directories and terms inside of a directory. Given that a root directory represents a module sources root, each template definition is expected to appear in a file that directly appears in this directory, preferably with a name of the included template. If multiple templates appear in one source file, then the implicit autoloading uses the mechanism of template index to track location of these templates. However, if the name of the template is generated dynamically in runtime (i.e. not via template definition or a constant initialization), then it needs to be loaded using explicit autoloading. 
-
-\paragraph{Explicit autoloading}
-This kind of autoloading is basically a custom definition of the layout of source files, source directories and terms inside of a directory. Explicit autoloading happens every time a member is accessed in a template and it is not defined. Explicit autoloading is defined in means of using the \code{autoload} method, provided by the \code{Class} class, and therefore available inside of any template definition. The method has the following overloaded declarations: 
-\begin{lstlisting}
-type Autoloaded_Term is Symbol or Regexp 
-end type
-def autoload (term: Autoloaded_Term, 
-              path: String): Unit
-end def
-def autoload (term: Autoloaded_Term := nil, 
-              callback: (t: Autoloaded_Term) -> Boolean): Unit
-end def
-\end{lstlisting}
-The first overloaded variant generates an autoloading record that will autoload the source file from the given path. The second overloaded variant expects a callback that will return a boolean indicating whether the term was successfully autoloaded or not, also having the actual autoloaded term as an optional argument -- if the argument is omitted, then the callback is registered for every autoloading attempt.
-
-With explicit autoloading, the runtime is allowed to keep track of templates that make use of explicit autoloading to optimize member resolution. If an explicit autoloading is added in runtime, the version number of the template has to be updated to invalidate member caches. 
-
-
-
-
-
-
 
 \subsection{Constructor Invocations}
 \label{sec:constructor-invocations}
