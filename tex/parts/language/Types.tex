@@ -236,17 +236,19 @@ A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $
 % example based on: http://stackoverflow.com/a/9444487/473180
 \example A sample code that shows off what type projections are good for:
 \begin{lstlisting}
-class A {
-  class B {}
-  def f (b: B): Unit   := Console.print_line "Got my B."
-  def g (b: A#B): Unit := Console.print_line "Got a B."
-}
+class A = object
+  class B = object end
+  method f (b: B): Unit   = Console.print_line "Got my B."
+  method g (b: A#B): Unit = Console.print_line "Got a B."
+end object
 
-val a1 := A.new
-val a2 := A.new
-a2.f a1.B.new     (* type mismatch, found a1.B, required a2.B *)
-a2.g a1.B.new     (* prints "Got a B." to stdout *)
-a2.f a2.B.new     (* prints "Got my B." to stdout *)
+val a1 = A.new in
+val a2 = A.new in
+begin
+  a2.f a1.B.new   (* type mismatch, found a1.B, required a2.B *)
+  a2.g a1.B.new   (* prints "Got a B." to stdout *)
+  a2.f a2.B.new   (* prints "Got my B." to stdout *)
+end
 \end{lstlisting}
 This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
 
@@ -274,27 +276,30 @@ A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a pa
 
 \example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
 \begin{lstlisting}
-t = $\epsilon$.type#t (* "global space" *)
+t = $\epsilon$.type#t         (* "global space" *)
 (* predefined import of Aml/Language *)
 Number = Aml/Language.type#Number 
 
-object An_Object {
+object An_Object
   type t
-  t = An_Object.type#t (* bound by object *)
-}
+  t = An_Object.type#t        (* bound by standalone object *)
+end object
 
-class A_Class {
+class A_Class = object
   type t
-  def a_method := {
-    t = A_Class.self.type#t (* bound by class *)
+  method a_method = {
+    t = A_Class.self.type#t   (* bound by class *)
+    t = self.type#t           (* bound by class *)
   }
   class << self
     type u
-    u = A_Class.type#u (* bound by (class) object *)
+    u = A_Class.type#u        (* bound by class object *)
+    t = A_Class.self.type#t   (* bound by class *)
   end
-  t = A_Class.self.type#t (* bound by class *)
-  self.u = A_Class.type#u (* bound by (class) object *)
-}
+  t = A_Class.self.type#t     (* bound by class *)
+  A_Class.u = A_Class.type#u  (* bound by class object *)
+  u = A_Class.type#u          (* not bound by class, thus bound by class object *)
+end object
 \end{lstlisting}
 
 
@@ -342,15 +347,15 @@ A type may be parameterized by at most two type parameter clauses, although the 
 Given the generic type definitions: 
 
 \begin{lstlisting}
-class Tree_Map[A <: Comparable[A], B] $\ldots$ end
-class List[A] $\ldots$ end
-class I extends Comparable[I]; $\ldots$ end
+class Tree_Map['a <: Comparable['a], 'b] = object $\ldots$ end
+class List['a] = object $\ldots$ end
+class I = object inherit Comparable[I]; $\ldots$ end
 
-class F[M[_], X] $\ldots$ end
-class S[K <: String] $\ldots$ end
-class G[M[Z <: I], I] $\ldots$ end
+class F['m[_], 'x] = object $\ldots$ end
+class S['k <: String] = object $\ldots$ end
+class G['m['z <: 'i], 'i] = object $\ldots$ end
 
-trait Function[-T, +R]; end
+trait Function[-'t, +'r] = object $\ldots$ end
 \end{lstlisting}
 
 the following parameterized types are well-formed: 
@@ -692,7 +697,7 @@ A type variable bound in $T$ is also explicitly polymorphic.
 
 A {\em type instance} of ~\lstinline@$T$ for-some { $Q$ }@~ is a type $\sigma T$, where $\sigma$ is a substitution over $t_1 \commadots t_n$, such that for each $i$, $\sigma L_i \conforms \sigma t_i \conforms \sigma U_i$. The set of values denoted by the existential type \lstinline@$T$ for-some { $Q$ }@ is the union of the set of values of all its type instances. In other words, a type instance of an existential type is a type application (\sref{sec:type-applications}) of the type ~\lstinline@$T$ for-some { $Q$ }@, where the applied type arguments conform to the bounds, or are free in ~\lstinline@$T$ for-some { $Q$ }@. 
 
-A {\em skolemization} of ~\lstinline@$T$ for-some { $Q$ }@~ is a type instance $\sigma T$, where $\sigma$ is the substitution $[t_1 := t'_1 \commadots t_n := t'_n]$ and each $t'_i$ is a fresh abstract virtual type with lower bound $\sigma L_i$ and upper bound $\sigma U_i$\footnote{This virtual type $t'_i$ denotes the set of all types, for which $\sigma L_i \conforms \sigma t'_i \conforms \sigma U_i$.}. Such type instance is inaccessible to user programs, but is essential to type equality and conformance checks, as it describes the set of values denoted by the existential type without an actual existential type, but with a universal type. 
+A {\em skolemization} of ~\lstinline@$T$ for-some { $Q$ }@~ is a type instance $\sigma T$, where $\sigma$ is the substitution $[t_1 \mapsto t'_1 \commadots t_n \mapsto t'_n]$ and each $t'_i$ is a fresh abstract virtual type with lower bound $\sigma L_i$ and upper bound $\sigma U_i$\footnote{This virtual type $t'_i$ denotes the set of all types, for which $\sigma L_i \conforms \sigma t'_i \conforms \sigma U_i$.}. Such type instance is inaccessible to user programs, but is essential to type equality and conformance checks, as it describes the set of values denoted by the existential type without an actual existential type, but with a universal type. 
 
 
 
@@ -723,7 +728,7 @@ As a syntactic convenience, the bindings clause in an existential type may also 
 \label{par:placeholder-existential-types}
 Aml supports a placeholder syntax for existential types. A {\em wildcard type} is of the form ~\lstinline!? >: $L$ <: $U$!~ and may only appear as a type argument. Both bound clauses may be omitted. If a lower bound clause ~\lstinline!? >: $L$!~ is omitted, ~\lstinline!? >: Nothing!~ is assumed. If an upper bound clause ~\lstinline!? <: $U$!~ is omitted, ~\lstinline!? >: Object!~ is assumed. A wildcard type is a shorthand for an existentially quantified type variable, where the existential quantification is implicit.\footnote{Although the syntax for existential types is heavily influenced by Scala, the particular syntax for the placeholder itself was chosen from Java, as the underscore, which is used in Scala, is already used by wildcard type argument for partial type applications.}
 
-A wildcard type must appear as a type argument of a parameterized type. Let ~\lstinline!$T$ := $p$.$c$[$\targs$, $T$, $\targs'$]!~ be a parameterized type, where $\targs$, $\targs'$ may be empty and $T$ is a wildcard type ~\lstinline!_ >: $L$ <: $U$!. Then $T$ is equivalent to the existential type
+A wildcard type must appear as a type argument of a parameterized type. Let ~\lstinline!$T$ = $p$.$c$[$\targs$, $T$, $\targs'$]!~ be a parameterized type, where $\targs$, $\targs'$ may be empty and $T$ is a wildcard type ~\lstinline!_ >: $L$ <: $U$!. Then $T$ is equivalent to the existential type
 \begin{lstlisting}
 $p$.$c$[$\targs$, $t$, $\targs'$] for-some { type $t$ >: $L$ <: $U$ }
 \end{lstlisting}
@@ -1322,7 +1327,7 @@ A declaration or definition in some compound type of class type $C$ {\em subsume
 \begin{itemize}
   \item A value declaration or definition that defines a name $x$ with type $T$ subsumes a value or method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
   \item A method declaration or definition that defines a name $x$ with type $T$ subsumes a method declaration that defines $x$ with type $T'$, provided $T \conforms T'$. 
-  \item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] := $T'$!~ if $T \equiv T'$. 
+  \item A type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] = $T$!~ subsumes a type alias ~\lstinline!type $t$[$T_1 \commadots T_n$] = $T'$!~ if $T \equiv T'$. 
   \item A type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!~ subsumes a type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L'$ <: $U'$!, if $L' \conforms L$ and $U \conforms U'$. 
   \item A type or class definition that binds a type name $t$ subsumes an abstract type declaration ~\lstinline!type $t$[$T_1 \commadots T_n$] >: $L$ <: $U$!, if $L \conforms t \conforms U$. 
 \end{itemize}

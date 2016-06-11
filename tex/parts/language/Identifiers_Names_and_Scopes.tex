@@ -29,8 +29,8 @@ If at any point of the program execution a binding would change (e.g., by introd
 As shadowing is only a partial order, in a situation like
 
 \begin{lstlisting}
-var x := 1
-use p.x
+var x = 1 in
+use p.x in
 x
 \end{lstlisting}
 

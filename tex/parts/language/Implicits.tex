@@ -24,24 +24,28 @@ Implicit_Params ::= 'implicit' ':' Atomic_Pattern
 
 Template members and parameters labelled with \code{implicit} modifier can be passed to implicit parameters (\sref{sec:implicit-parameters}) and can be used as implicit conversions called views (\sref{sec:views}). 
 
-If the member marked with \code{implicit} is a class, it makes the primary constructor of the class available for implicit conversions as a function. Such primary constructor may take exactly one non-implicit argument in its first parameter list. 
+If the member marked with \code{implicit} is a class $c$, it makes the constructors of the class available for view applications of expression $e$ (\sref{sec:views}) using the instance creation expression ~\lstinline!(new $c$($e$))!~ (\sref{sec:instance-creation-exprs}). Such constructor must take exactly one non-implicit argument as its first parameter (constructors with no or more than one non-implicit parameters are not made available for view applications).\footnote{The reason for this is simple: the Aml system can't make up the extra arguments and the constructor must be applied to the viewed expression.}
 
 \example\label{ex:impl-monoid} The following code defined an abstract class of monoids and two concrete implementations, \code{String_Monoid} and \code{Int_Monoid}. The two implementations are marked implicit and will be used throughout the following discussions. 
 \begin{lstlisting}
-abstract class Monoid [A] extends Semi_Group [A] {
-  def unit: A end
-  def add (x: A, y: A): A end
-}
-object Monoids {
-  implicit object String_Monoid extends Monoid[String] {
-    def unit: String := ""
-    def add (x: String, y: String): String := x + y
-  }
-  implicit object Int_Monoid extends Monoid[Integer] {
-    def unit: Integer := 0
-    def add (x: Integer, y: Integer): Integer := x + y
-  }
-}
+abstract class Monoid ['a] = object
+  inherit Semi_Group ['a] 
+  message unit: 'a end
+  message add (x: 'a, y: 'a): 'a end
+end object
+
+object Monoids
+  implicit object String_Monoid
+    inherit Monoid[String]
+    method unit: String = ""
+    method add (x: String, y: String): String = x + y
+  end
+  implicit object Int_Monoid 
+    inherit Monoid[Integer] 
+    method unit: Integer = 0
+    method add (x: Integer, y: Integer): Integer = x + y
+  end
+end object
 \end{lstlisting}
 
 
@@ -104,7 +108,7 @@ Implicit parameters and method can also define implicit conversions called {\em 
 
 Views are applied in the following situations.
 \begin{enumerate}
-\item If an expression $e$ is of a type $T$, and $T$ does not conform to the expression's expected type $\exptype$. In this case an implicit $v$ is searched, which is applicable to $e$ and whose result type conforms to $\exptype$, and this process makes $T$ compatible with $\exptype$. The search proceeds as in the case of implicit parameters, where the implicit scopes are the scope of $T$ followed by the scope of $\exptype$, searched in this order. If such a view is found, the expression $e$ is converted to \code{$v$($e$)}. 
+\item If an expression $e$ is of a type $T$, and $T$ does not conform to the expression's expected type $\exptype$. In this case an implicit $v$ is searched, which is applicable to $e$ and whose result type conforms to $\exptype$, and this process makes $T$ compatible with $\exptype$. The search proceeds as in the case of implicit parameters\footnote{Starting with implicit definitions in the scope.}, where the implicit scopes are the scope of $T$ followed by the scope of $\exptype$, searched in this order. If such a view is found, the expression $e$ is converted to \code{$v$($e$)}. 
 
 \item In a selection \code{$e$.$m$} with $e$ of a type $T$, if the selector $m$ does not denote an accessible member of $T$, including restrictions imposed by access modifiers, i.e. the member $m$ may actually exist in $T$. In this case, a view $v$ is searched which is applicable to $e$ and whose result contains an accessible member named $m$. The search proceeds as in the case of implicit parameters, where the implicit scope is just that of $T$. If there are several eligible views, the most specific one is chosen according to overloading resolution with an expected type inherited from the original selection. If such a view is found, the selection \code{$e$.$m$} is converted to \code{$v$($e$).$m$}. 
 
@@ -141,13 +145,13 @@ A type parameter $A$ of a method or a non-trait class may have one or more view 
 
 A method or class containing type parameters with view or context bounds is treated as being equivalent to a method with implicit parameters, and if it already contains explicitly some implicit parameters, those are added right after the section of any positional parameters and before the section of any named parameters. Consider the case of a single parameter with a view and/or context bounds, such as: 
 \begin{lstlisting}
-def $f$ [$A$ <% $T_1$ $\ldots$ <% $T_m$ : $U_1$ : $U_n$] ($\ps$): $R$ := $\ldots$
+let $f$ [$A$ <% $T_1$ $\ldots$ <% $T_m$ : $U_1$ : $U_n$] ($\ps$): $R$ = $\ldots$
 \end{lstlisting}
 
 Then the method definition above is equivalent to
 \begin{lstlisting}
-def $f$ [$A$] ($\ps$)(implicit: $v_1$: $A$ -> $T_1 \commadots v_m$: $A$ -> $T_m$,
-                         $w_1$: $U_1$[$A$]$\commadots w_n$: $U_n$[$A$]): $R$ := $\ldots$
+let $f$ [$A$] ($\ps$)(implicit: $v_1$: $A$ -> $T_1 \commadots v_m$: $A$ -> $T_m$,
+                         $w_1$: $U_1$[$A$]$\commadots w_n$: $U_n$[$A$]): $R$ = $\ldots$
 \end{lstlisting}
 where the $v_i$ and $w_j$ are fresh names for the newly introduced implicit parameters. These parameters are called {\em evidence parameters}. 
 
@@ -157,8 +161,8 @@ If the type of a context-bound parameter uses the type parameter in its definiti
 
 \example The following example shows a method with a context-bound parameter using a partially applied type, and the resulting translation below it. 
 \begin{lstlisting}
-def f [T : T -> String] (t: T) := $\ldots$
-def f [T] (t: T) (implicit: $w_1$: T -> String) := $\ldots$
+let f [T : T -> String] (t: T) = $\ldots$
+let f [T] (t: T) (implicit: $w_1$: T -> String) = $\ldots$
 \end{lstlisting}
 
 
@@ -169,10 +173,6 @@ def f [T] (t: T) (implicit: $w_1$: T -> String) := $\ldots$
 \label{sec:multi-methods}
 
 \grammar\begin{lstlisting}
-Dcl               ::= Multi_Fun_Dcl
-                    | Multi_Op_Dcl
-                    | Multi_Message_Dcl
-                    | Multi_Att_Dcl
 Multi_Fun_Dcl     ::= 'def'      'dispatch'  Fun_Sig Mul_Val 'end' ['def']
                     | 'def'      'multi'     Fun_Sig         'end' ['def']
 Multi_Op_Dcl      ::= 'dispatch' 'operator'  Op_Sig  Mul_Val 'end' ['operator']
@@ -230,10 +230,11 @@ This is the easiest way to achieve multiple dispatch, where the overloaded funct
 
 \example Multiple dispatch with \code{Dynamic} type, Asteroids colliding with Spaceships.  
 \begin{lstlisting}[morekeywords={Dynamic}]
-object program {
-  abstract class Thing extends Object {}
-  class Asteroid extends Thing {}
-  class Spaceship extends Thing {}
+structure program =
+struct
+  abstract class Thing = object end
+  class Asteroid = object inherit Thing end
+  class Spaceship = object inherit Thing end
   
   method collide_with_impl (x: Asteroid, y: Asteroid): Unit
     print_line "Asteroid hits an Asteroid"
@@ -252,18 +253,18 @@ object program {
   end method
   
   method collide_with (x: Thing, y: Thing): Unit
-    val a: Dynamic := x
-    val b: Dynamic := y
-    collide_with_impl(a, b)
+    let a: Dynamic = x in
+    let b: Dynamic = y in
+    collide_with_impl (a, b)
   end method
   
   method run (*args: String): Unit
-    val asteroid := Asteroid.new
-    val spaceship := Spaceship.new
-    collide_with(asteroid, spaceship)
-    collide_with(spaceship, spaceship)
+    let asteroid = Asteroid.new in
+    let spaceship = Spaceship.new in
+    collide_with (asteroid, spaceship)
+    collide_with (spaceship, spaceship)
   end method
-}
+end struct
 \end{lstlisting}
 This code upon running \code{program.run} prints the following to the console:
 \begin{lstlisting}
@@ -279,48 +280,84 @@ Spaceship hits a Spaceship
 
 Another approach to multiple dispatch involves implicit parameters and type classes. This is probably the most verbose approach. 
 
-\example Multiple dispatch with type classes, matrices and vectors. 
+\example Multiple dispatch with type classes (via traits and implicit objects), matrices and vectors. 
 \begin{lstlisting}
-object program {
-  class Matrix extends Object {}
-  class Vector extends Object {}
+structure program =
+struct
+  class Matrix = object end
+  class Vector = object end
   
-  trait Mult_Dep[A, B, C] {
-    message apply (a: A, b: B): C end
-  }
-  object Mult_Dep {
+  trait Mult_Dep['a, 'b, 'c] = object
+    message apply (a: 'a, b: 'b): 'c end
+  end
+  
+  structure Mult_Dep =
+  struct
     implicit object mmm 
-        extends Mult_Dep[Matrix, Matrix, Matrix] {$\ldots$}
+      inherit Mult_Dep[Matrix, Matrix, Matrix] 
+      $\ldots$
+    end
     implicit object mvv 
-        extends Mult_Dep[Matrix, Vector, Vector] {$\ldots$}
+      inherit Mult_Dep[Matrix, Vector, Vector] 
+      $\ldots$
+    end
     implicit object mim 
-        extends Mult_Dep[Matrix, Integer, Matrix] {$\ldots$}
+      inherit Mult_Dep[Matrix, Integer, Matrix] 
+      $\ldots$
+    end
     implicit object imm 
-        extends Mult_Dep[Integer, Matrix, Matrix] {$\ldots$}
-  }
+      inherit Mult_Dep[Integer, Matrix, Matrix] 
+      $\ldots$
+    end
+  end struct
   
-  method multiply [A, B, C]
-      (a: A, b: B)(implicit: dep: Mult_Dep[A, B, C]): C
-    dep.apply(a, b)
-  end method
+  let multiply ['a, 'b, 'c]
+      (a: 'a, b: 'b) (implicit: dep: Mult_Dep['a, 'b, 'c]): 'd =
+    dep.apply (a, b)
   
-  method run (*args: String): Unit
+  let run (*args: String): Unit = begin
     (* ok: *)
-    val r1: Matrix := multiply(
-        (Matrix with {}).new, (Matrix with {}).new)
-    val r2: Vector := multiply(
-        (Matrix with {}).new, (Vector with {}).new)
-    val r3: Vector := multiply(
-        (Matrix with {}).new, 2)
-    val r4: Matrix := multiply(
-        2, (Matrix with {}).new)
+    let r1: Matrix = multiply(
+        (Matrix with {}).new, (Matrix with {}).new) in
+    let r2: Vector = multiply(
+        (Matrix with {}).new, (Vector with {}).new) in
+    let r3: Vector = multiply(
+        (Matrix with {}).new, 2) in
+    let r4: Matrix = multiply(
+        2, (Matrix with {}).new) in
     
     (* error, no implicit value found for type
          Mult_Dep[Matrix, Vector, Matrix]: *)
-    val r5: Matrix := multiply(
-        (Matrix with {}).new, (Vector with {}).new)
-  end method
-}
+    let r5: Matrix = multiply(
+        (Matrix with {}).new, (Vector with {}).new) in
+    ()
+  end
+end struct
+\end{lstlisting}
+
+\example Multiple dispatch with type classes (literal ones this time), matrices and vectors. 
+\begin{lstlisting}
+structure program = 
+struct
+  class Matrix = object end
+  class Vector = object end
+  
+  type class Mult_Dep['a, 'b, 'c] 
+  with message apply (a: 'a, b: 'b): 'c end
+  end type
+  
+  type class instance Mult_Dep[Matrix, Matrix, Matrix]
+  with method apply (a: Matrix, b: Matrix): Matrix = $\ldots$
+  end type 
+  
+  $\ldots$
+  
+  let multiply ['a, 'b, 'c] 
+      given Mult_Dep['a, 'b, 'c] 
+      (a: 'a, b: 'b): 'c =
+    apply (a, b)
+
+end struct
 \end{lstlisting}
 
 

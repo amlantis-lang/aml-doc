@@ -18,10 +18,10 @@ This chapter introduces the way programs {\em should} be written and laid out in
 
 They are important to programmers for many reasons:
 \begin{itemize}
-\item Maintenance of a software is a huge part of its lifetime costs. 
-\item Software is usually not maintained for its whole lifetime by its original author. If you think that is not your case, imagine a future world, where an apocalypse happened. People that survived it might need to update your software for the new environment requirements. Or maybe in a different scenario, mankind reaches another terraformed planet and need to update your software for the new planet’s requirements, probably different time and so on. Still not convinced? 
-\item Code conventions improve the readability of the software, allowing engineers to understand new code more quickly and thoroughly. 
-\item If your software is shipped including its source code, you might want to not feel embarrassed about it, and rather ship it clean. 
+  \item Maintenance of a software is a huge part of its lifetime costs. 
+  \item Software is usually not maintained for its whole lifetime by its original author. If you think that is not your case, imagine a future world, where an apocalypse happened. People that survived it might need to update your software for the new environment requirements. Or maybe in a different scenario, mankind reaches another terraformed planet and need to update your software for the new planet’s requirements, probably different time and so on. Still not convinced? 
+  \item Code conventions improve the readability of the software, allowing engineers to understand new code more quickly and thoroughly. 
+  \item If your software is shipped including its source code, you might want to not feel embarrassed about it, and rather ship it clean. 
 \end{itemize}
 
 
@@ -64,13 +64,10 @@ A directory holding a module must have the same name as the module, contained in
             /Example/Your_Module.amlpsi
         /cpp14
             /native_method.a
-    /vendor -> /usr/local/An_Aml_VM/modules
     /binaries (* or `bin` *)
         /an_executable.a
         /run_your_module (* some executable file 
                             using #! to run an Aml VM *)
-    /protocols (* or `pro` *)
-        /Plugin.amlp
     /resources (* or `res` *)
         /logo.png
     /.gitignore
@@ -108,22 +105,8 @@ Compiled files do not need to be checked into a VCS, unless they can't be genera
 \paragraph{Binary files}
 A common name for this directory is \code{bin}, or very less commonly \code{binaries}. It is intended to contain any necessary binary files that are not to be compiled during build of the software, but rather just included in it as they are. May include executable binary files, or even shell scripts that start up a Aml VM with a specific entry point. 
 
-\paragraph{Protocol files}
-A common name for this directory is \code{pro}, or \code{protocols}. It is supposed to hold extracted interface of the module for use in other modules outside of this module. Such files contain just \code{interface} and \code{protocol} definitions, which may result by translation from \code{class} and \code{trait} definitions, and also other type definitions that are not regular classes. 
-
-Aml protocol files have the suffix of \code{.amlp}, but their structure is identical to any other Aml source file. 
-
-Module builds that contain just the protocol files are an option to include in vendor directory. 
-
 \paragraph{Resources}
 A common name for this directory is \code{res}, or \code{resources}, the latter may be preferred. Such directory is supposed to hold any files that the module needs, may it be images, sounds or whatever. Its organization is up to the module's maintainer. 
-
-\paragraph{Vendor directory}
-A common name for this directory is \code{ven}, or \code{vendor}, the latter may be preferred. Such directory is supposed to hold vendor directories (which may be just symlinks to the actual installed vendor modules, or even just virtually displayed in IDE as links to the vendor modules), which in their leave paths have e.g. modules with only protocol files, so that compiler may bind to their identifiers and use that in building of PSI and for type-checking. A vendor directory may also be used to store the whole compiled vendor module, or be a place to download the module dependency on demand as needed and if possible, if the vendor module is not already present in user's system. 
-
-Dependencies for a module may be defined in the module file, along with version requirements and possibly a network path to download the module. 
-
-A path to a vendor directory follows the module name. 
 
 
 
@@ -147,22 +130,22 @@ A Aml file whose purpose is to define classes should contain at most one such to
 
 A typical Aml source file has the following ordering: 
 \begin{enumerate}
-\item Module identification, e.g.:
+  \item Module identification, e.g.:
 \begin{lstlisting}
 module Heroes/Cool_App
 \end{lstlisting}
 
-\item Imports, e.g.:
+  \item Imports, e.g.:
 \begin{lstlisting}
 use Them/Cool_Library.{Some_Class as A_Class, _}
 \end{lstlisting}
 
-\item Pragmas for the whole file, e.g.:
+  \item Pragmas for the whole file, e.g.:
 \begin{lstlisting}
 pragma Profile :Prague
 \end{lstlisting}
 
-\item The class or type definition(s). 
+  \item The class or type definition(s). 
 \end{enumerate}
 
 
@@ -172,7 +155,7 @@ pragma Profile :Prague
 
 \subsection{Class Definition Organization}
 
-The following list describes the parts of a class definition (or an interface, a protocol, or a trait), in the order that they should appear. 
+The following list describes the parts of a class definition (or a trait), in the order that they should appear. 
 
 \begin{enumerate}
 \item {\bfseries Class documentation} \hfill \\

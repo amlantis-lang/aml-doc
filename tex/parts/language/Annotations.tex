@@ -13,26 +13,21 @@
 % TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits like Function[...] may use it in its type parameters to apply the parameter extras to the apply method
 
 \grammar\begin{lstlisting}
-Dcl                   ::= ...
-                        | Macro_Dcl
-Def                   ::= ...
-                        | Macro_Def
-Tmpl_Def              ::= ...
-                        | Annotation_Definition
-Expr                  ::= ...
-                        | Pragma
-Annotation_Definition ::= 'annotation' Class_Def
-Macro_Dcl             ::= 'def' 'macro' Fun_Sig 'end' ['def']
-Macro_Def             ::= 'def' 'macro' Fun_Sig [Fun_Dec] 
-                          [semi Fun_Stats] 'end' ['def']
-                        | 'def' 'macro' Fun_Sig ':=' [Fun_Dec2] Expr
-Annotation            ::= '@[' Long_Id [Arguments] ']'
-                        | '@[' Long_Id '(' [Arguments] ')' ']'
-Pragma                ::= 'pragma' Long_Id [Arguments] (Do_Block | In_Sep Expr ['end'])
-                        | 'pragma' Long_Id '(' [Arguments] ')' (Do_Block | In_Sep Expr ['end'])
+Expr
+    ::= ...
+      | Pragma
+Annotation_Definition 
+    ::= 'annotation' Class_Def
+Macro_Dcl
+    ::= 'macro' Fun_Sig 'end' ['macro']
+Macro_Def 
+    ::= 'macro' Fun_Sig '=' [Fun_Dec] Expr
+Annotation 
+    ::= '@[' Long_Id [Arguments] {semi Long_Id [Arguments]} ']'
+Pragma 
+    ::= 'pragma' Long_Id [Arguments] (Do_Block | In_Sep Expr ['end'])
+      | 'pragma' Long_Id '(' [Arguments] ')' (Do_Block | In_Sep Expr ['end'])
 \end{lstlisting}
-
-% TBD: define also postfix annotations? [@ Stable_Id Arguments]
 
 Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Aml, possibly affecting the resulting bytecode and abstract syntax trees. 
 
@@ -111,7 +106,7 @@ Macros can be applied as an intermediate step by IDEs, so that their resulting t
 \subsection{Whitebox \& Blackbox Macros}
 \label{sec:whitebox-blackbox-macros}
 
-{\em Blackbox macros} are such macros that exactly follow their type signature, including the result type, and therefore can be treated as blackboxes. Their implementations are irrelevant to understanding their behavior. On the otherhand, {\em whitebox macros} do not necessarily follow their type signature, which they have, but only as an approximation, which may or may not be precise. Therefore, whitebox macros may be used to create e.g. type providers, functional dependency materialization or extractor macros. 
+{\em Blackbox macros} are such macros that exactly follow their type signature, including the result type, and therefore can be treated as blackboxes. Their implementations are irrelevant to understanding their behaviour. On the otherhand, {\em whitebox macros} do not necessarily follow their type signature, which they have, but only as an approximation, which may or may not be precise. Therefore, whitebox macros may be used to create e.g. type providers, functional dependency materialization or extractor macros. 
 
 Blackbox macros have the following restrictions applied to them:
 \begin{enumerate}

@@ -29,32 +29,43 @@ To construct tokens, characters are distinguished according to the rules defined
 \label{sec:keywords}
 
 \syntax\begin{lstlisting}[deletekeywords={of,and,class,for}]
-digit_char      ::= '0' $\ldots$ '9'
-letter_char     ::= ? Unicode char of classes Lu, Ll, Lt, Lo, 
-                    Lm and Nl ?
-connecting_char ::= ? Unicode char of class Pc ?
-combining_char  ::= ? Unicode char of classes Mn and Mc ?
-formatting_char ::= ? Unicode char of class Cf ?
-lower           ::= ? Unicode char of class Ll ? 
-                  | '_'
-upper           ::= (letter_char - lower) 
-                  | '$\Dollar$' | '§'
-
-var_id   ::= lower id_rest
-plain_id ::= upper id_rest
-           | var_id
-id       ::= ['@' | '@@'] (plain_id | '``' {any_id}+ '``')
-           | '`' plain_id '`'
-           | '`' {op_char}+ '`'
-impl_par ::= '%' {digit_char}+
-id_char  ::= letter_char
-           | digit_char
-           | connecting_char
-           | combining_char
-           | formatting_char
-           | '+' | '-' | '/' | '_'
-id_rest  ::= {id_char} ['?' | '!' | {'''}+]
-any_id   ::= ? any Unicode chars except for two backquotes: '``' ?
+digit_char 
+    ::= '0' $\ldots$ '9'
+letter_char
+    ::= ? Unicode char of classes Lu, Ll, Lt, Lo, Lm and Nl ?
+connecting_char 
+    ::= ? Unicode char of class Pc ?
+combining_char
+    ::= ? Unicode char of classes Mn and Mc ?
+formatting_char 
+    ::= ? Unicode char of class Cf ?
+lower 
+    ::= ? Unicode char of class Ll ? 
+      | '_'
+upper 
+    ::= (letter_char - lower) 
+      | '§'
+var_id 
+    ::= lower id_rest
+plain_id 
+    ::= upper id_rest
+      | var_id
+id  ::= ['@' | '@@'] (plain_id | '``' {any_id}+ '``')
+      | '`' plain_id '`'
+      | '`' op_id '`'
+impl_par 
+    ::= '%' {digit_char}+
+id_char 
+    ::= letter_char
+      | digit_char
+      | connecting_char
+      | combining_char
+      | formatting_char
+      | '_'
+id_rest 
+    ::= {id_char | op_char} [{'''}+]
+any_id 
+    ::= ? any Unicode chars except for two backquotes: '``' ?
 \end{lstlisting}
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
@@ -63,9 +74,9 @@ An identifier may also be formed by an identifier between back-quotes (``\lstinl
 
 Aml programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
 
-The ``\lstinline[mathescape=false]!$!'' character is reserved as an identifier for special purposes, each described in this document (e.g. \sref{sec:receiver-universal-shortcut} or \sref{sec:target-type-expressions}).
-
 A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in some other languages, keywords are not being recognized inside of paths, except for a few specific cases.
+
+\newpage
 
 The following names are the reserved words. Identifiers that match any of the specified reserved word carry the extra property of being a possible keyword, which is used in syntactic grammar. 
 
@@ -100,7 +111,7 @@ rec           recursive     record        redo          ref
 refine        refinement    reflect       release       reraise
 reraises      rescue        resignal      resignals     retain
 rethrow       rethrows      retry         return        returning
-requires      reverse       scope         sealed        self
+required      reverse       scope         sealed        self
 set           seq           sig           signal        signalling
 signals       skip          soft          step          struct
 super         switch        synchronized  tailcall      target
@@ -112,7 +123,8 @@ variant       yes           weak          when          while
 with          xor           yield         yielding      _
 \end{lstlisting}
 
-Not every reserved word is a keyword in every context, this behavior will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backquotes: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backquotes (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
+Not every reserved word is a keyword in every context, this behaviour will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backquotes: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backquotes (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
+
 
 
 
@@ -121,9 +133,10 @@ Not every reserved word is a keyword in every context, this behavior will be fur
 \label{sec:function-identifiers}
 
 \syntax\begin{lstlisting}
-fun_id ::= id
-         | '(' op_id ')'
-         | Active_Pattern_Ids
+fun_id 
+    ::= id
+      | '(' op_id ')'
+      | Active_Pattern_Ids
 \end{lstlisting}
 
 Function identifiers specify how a function can be named. Usually, it will be the first case. The second case is provided for specifying functions that are in fact operators, and is practically equivalent to the form of \code{op_id} enclosed in backquotes. The third case is for active patterns (\sref{sec:active-patterns}) in pattern matching (\sref{sec:pattern-matching}). 
@@ -138,9 +151,10 @@ Function identifiers specify how a function can be named. Usually, it will be th
 \syntax\begin{lstlisting}[deletekeywords={of}]
 Symbolic_Keyword ::= ? one of: ?
 let!  yield!  return!  as?  as!  is!  not!  open!  try?  try!
+let?  val?  var?
 |  .  .?  .!  .'  :  (  )  @[  [  ]  <  >  >:  <:  :>
 %[|  |]  %[  %(  (~  {  %{  }  %/  /
-'  #  ..  ..<  ...  ~...  :=  ==  /==  =~  ;  ;;  ->  <-  ~>
+'  #  ..  ..<  ...  ~...  =  :=  ==  /==  =~  ;  ;;  ->  <-  ~>
 =>  *  **  &  ?  ,
 _  @  <@  @>  <@@  @@>  {<  >}  %%
 \end{lstlisting}
@@ -154,33 +168,44 @@ Symbolic or partially symbolic character sequences can be treated as keywords, i
 \section{Symbolic Operators}
 \label{sec:symbolic-operators}
 
-\syntax\begin{lstlisting}[deletekeywords={of,and,for}]
-op_id        ::= Symbolic_Op
-               | Qualified_Op
-nary_op_id   ::= '?' {op_char}
-Symbolic_Op  ::= {op_char}+
-Qualified_Op   | '`' Long_Id '.' {op_char}+ '`'
-               | '`' Long_Id '.' id '`'
-op_char      ::= ? Unicode char of classes Sm and So except for 0x0060 ?
-               | '!'
-               | '#'
-               | '%'
-               | '&'
-               | '*'
-               | '+'
-               | '-'
-               | '.'
-               | '/'
-               | ':'
-               | '<'
-               | '='
-               | '>'
-               | '?'
-               | '@'
-               | '\'
-               | '^'
-               | '|'
-               | '~'
+\syntax\begin{lstlisting}[deletekeywords={of,for}]
+op_id 
+    ::= Symbolic_Op
+      | Qualified_Op
+      | 'and' ['also']
+      | 'or' ['else']
+      | 'xor'
+      | 'not'
+      | id
+nary_op_id 
+    ::= '?' {op_char}
+Symbolic_Op  
+    ::= {op_char}+
+Qualified_Op 
+    ::= '`' Long_Id '.' {op_char}+ '`'
+      | '`' Long_Id '.' id '`'
+op_char 
+    ::= ? Unicode char of classes Sm, So except for 0x0060 ?
+      | '!'
+      | '#'
+      | '%'
+      | '$\Dollar$'
+      | '&'
+      | '*'
+      | '+'
+      | '-'
+      | '.'
+      | '/'
+      | ':'
+      | '<'
+      | '='
+      | '>'
+      | '?'
+      | '@'
+      | '\'
+      | '^'
+      | '|'
+      | '~'
 \end{lstlisting}
 
 Symbolic operators are sequences of characters as shown above, except where the sequence of characters is a symbolic keyword (\sref{sec:symbolic-keywords}) and is used by the corresponding grammar as such.\footnote{In another words, symbolic keywords have a precedence over symbolic operators, if a grammar would be otherwise ambiguous.}
@@ -435,41 +460,21 @@ A member named \code{Not_a_Number} exists in the class cluster \code{Number}, wi
 
 
 
-\subsection{Rational Number Literals}
-\label{sec:rationalliterals}
-
-\syntax\begin{lstlisting}
-real_number_literal ::= integer_literal | fp_literal
-rat_suffix_literal  ::= real_number_literal 'r'
-rational_literal    ::= real_number_literal 
-                        ['/' rat_suffix_literal]
-\end{lstlisting}
-
-Rational number literals are of type \code{Number}, and have a container type \code{Number.Rational}, which has further methods of creating instances of itself. There are also methods in \code{Number}, such as \code{//}, which results in a rational number. Rational numbers have sort of increased accuracy of operations, especially when component types are integral types. 
-
-\example Some literal notations and methods that result in rational numbers. 
-\begin{lstlisting}
-val a := 1 / 3r
-val b := 1 // 3
-val c := Rational(1, 3)
-\end{lstlisting}
-
-
-
-
-
 \subsection{Imaginary Number Literals}
 \label{sec:imaginaryliterals}
 
 \syntax\begin{lstlisting}
-imaginary_literal ::= rational_literal 'i'
-complex_literal   ::= [rational_literal ('+' | '-') ]
-                      imaginary_literal
-	                  | imaginary_literal ('+' | '-') 
-	                    rational_literal
-number_literal    ::= imaginary_literal
-	                  | complex_literal
-	                  | rational_literal
+real_number_literal
+     ::= integer_literal | fp_literal
+imaginary_literal 
+     ::= real_number_literal 'i'
+complex_literal
+     ::= [real_number_literal ('+' | '-') ] imaginary_literal
+	   | imaginary_literal ('+' | '-') real_number_literal
+number_literal
+    ::= imaginary_literal
+      | complex_literal
+      | real_number_literal
 \end{lstlisting}
 
 Imaginary number literals are of type \code{Number}, and have a basically a single container type: \code{Number.Complex}. The syntax requirement here is whitespace around the ``\code{+}'' and ``\code{-}'' signs, separating the real part from the imaginary part. Newlines as whitespace have the same effect as defined for cases where the sign could be considered to be an operator (\sref{sec:newlinecharacters}).
@@ -481,8 +486,11 @@ Imaginary number literals are of type \code{Number}, and have a basically a sing
 \subsection{Percentage Literals}
 \label{sec:percentageliterals}
 
-\syntax\begin{lstlisting}
-percent_literal ::= real_number_literal ['_'] ('%' | '(*@‰@*)')
+\syntax\begin{lstlisting}[deletekeywords={new}]
+percent_literal 
+    ::= real_number_literal 
+        [? whitespace except new line ?] 
+        ('%' | '(*@‰@*)')
 \end{lstlisting}
 
 Aml offers a way to represent numbers as fractions of 100 (in case of ``\,\lstinline!%!\,'' suffix) or 1000 (in case of ``\,\texttt{‰}\,'' suffix). The type of such literal is not \code{Number} though, but \code{Percentage} (which is convertible to a number). 
@@ -497,16 +505,17 @@ Aml offers a way to represent numbers as fractions of 100 (in case of ``\,\lstin
 Aml has an addition to number handling, called {\em units of measure} (\sref{sec:units-of-measure}). Number instances can be annotated with a unit of measure to ensure correctness of arithmetic operations. 
 
 \syntax\begin{lstlisting}
-annotated_number ::= number_literal '[<' measure_literal '>]'
+annotated_number 
+    ::= number_literal '[<' measure_literal '>]'
 \end{lstlisting}
 
 \example Some number literals annotated with units of measure:
 \begin{lstlisting}
-var min_motorway_speed := 90 [<km/hour>]
+var min_motorway_speed = 90 [<km/hour>]
 (* in the end, same as: *)
-var distance := 90 [<km>]
-var time := 1 [<hour>]
-min_motorway_speed := distance // time
+var distance = 90 [<km>]
+var time = 1 [<hour>]
+min_motorway_speed = distance // time
 \end{lstlisting}
 
 
@@ -518,8 +527,10 @@ min_motorway_speed := distance // time
 \label{sec:characterliterals}
 
 \syntax\begin{lstlisting}[deletekeywords={and}]
-printable_char    ::= ? all visible and printable UTF-8 characters ? 
-character_literal ::= '%'' (printable_char | char_escape_seq) '''
+printable_char 
+    ::= ? all visible and printable UTF-8 characters ? 
+character_literal 
+    ::= '%'' (printable_char | char_escape_seq) '''
 \end{lstlisting}
 
 Character literals are of type \code{Character}, and are internally similar to strings (\sref{sec:stringliterals}) of length of 1 character. 
@@ -527,28 +538,29 @@ Character literals are of type \code{Character}, and are internally similar to s
 Character escape sequences are used in strings as well, and are defined as follows: 
 
 \syntax\begin{lstlisting}[language=]
-char_escape_seq ::= 
-      '\'' (* Literal single-quote: ' *)
-    | '\"' (* Literal double-quote: " *)
-    | '\?' (* Literal question mark: ? *)
-    | '\\' (* Literal backslash: \ *)
-    | '\#' (* Literal hash: # *)
-    | '\$\Dollar$' (* Literal dollar: $\Dollar$ *)
-    | '\0' (* Binary zero (NUL, U+0000) *)
-    | '\a' (* BEL (alarm) character (U+0007) *)
-    | '\b' (* Backspace (U+0008) *)
-    | '\f' (* Form feed (FF, U+000C) *)
-    | '\n' (* End-of-line (U+000A) *)
-    | '\r' (* Carriage return (U+000D) *)
-    | '\t' (* Horizontal tab (U+0007) *)
-    | '\v' (* Vertical tab (U+000B) *)
-    | '\x$nn$' (* Byte value in hexadecimal *)
-    | '\u$nnnn$' (* Unicode character U+$nnnn$, hex digits *)
-    | '\U$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$, hex digits *)
-    | '\&' {named_char}+ ';' (* Named character entity *)
-    | '\{' {named_char | ' '}+ '}' (* Named Unicode character *)
+char_escape_seq 
+    ::= '\'' (* Literal single-quote: ' *)
+      | '\"' (* Literal double-quote: " *)
+      | '\?' (* Literal question mark: ? *)
+      | '\\' (* Literal backslash: \ *)
+      | '\#' (* Literal hash: # *)
+      | '\$\Dollar$' (* Literal dollar: $\Dollar$ *)
+      | '\0' (* Binary zero (NUL, U+0000) *)
+      | '\a' (* BEL (alarm) character (U+0007) *)
+      | '\b' (* Backspace (U+0008) *)
+      | '\f' (* Form feed (FF, U+000C) *)
+      | '\n' (* End-of-line (U+000A) *)
+      | '\r' (* Carriage return (U+000D) *)
+      | '\t' (* Horizontal tab (U+0007) *)
+      | '\v' (* Vertical tab (U+000B) *)
+      | '\x$nn$' (* Byte value in hexadecimal *)
+      | '\u$nnnn$' (* Unicode character U+$nnnn$, hex digits *)
+      | '\U$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$, hex digits *)
+      | '\&' {named_char}+ ';' (* Named character entity *)
+      | '\{' {named_char | ' '}+ '}' (* Named Unicode character *)
       
-named_char ::= 'a' | $\cdots$ | 'z' | 'A' | $\cdots$ | 'Z'
+named_char 
+    ::= 'a' | $\cdots$ | 'z' | 'A' | $\cdots$ | 'Z'
 \end{lstlisting}
 
 The named character reference (\code{named_char}) is defined by HTML5 (\url{http://www.w3.org/TR/html5/syntax.html#named-character-references}); valid Unicode character names are specified by Unicode 8.0 (\url{http://www.unicode.org/versions/Unicode8.0.0/})\footnote{Will be updated to newer Unicode versions as ICU components are updated.}. 
@@ -561,10 +573,11 @@ The named character reference (\code{named_char}) is defined by HTML5 (\url{http
 \label{sec:booleanliterals}
 
 \syntax\begin{lstlisting}
-boolean_literal ::= 'yes' | 'no'
+boolean_literal 
+    ::= 'yes' | 'no'
 \end{lstlisting}
 
-Both literals are members of type \lstinline@Boolean@. The \lstinline@no@ literal has also a special behavior when being compared to \lstinline@nil@: \lstinline@no@ equals to \lstinline@nil@, while not actually being \lstinline@nil@. Identity equality is indeed different, and \code{no} does not match in pattern matching (\sref{sec:pattern-matching}) as \code{nil} and vice versa. The implication is that both \lstinline@nil@ and \lstinline@no@ are false conditions in \lstinline@if@-expressions. 
+Both literals are members of type \lstinline@Boolean@. 
 
 
 

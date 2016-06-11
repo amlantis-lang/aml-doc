@@ -119,9 +119,9 @@ Primary constructor evaluation happens in the following order in respect to the 
 \label{sec:eigenclasses}
 
 \paragraph{\em Metaclasses}
-A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behavior and properties of its instances, a metaclass defines the behavior of its class. Classes are first-class citizens in Aml. 
+A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behaviour and properties of its instances, a metaclass defines the behaviour of its class. Classes are first-class citizens in Aml. 
 
-Everything is an object in Aml. Every object has a class that defines the structure (i.e. the instance variables) and behavior of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
+Everything is an object in Aml. Every object has a class that defines the structure (i.e. the instance variables) and behaviour of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
 
 Class methods actually belong to the metaclass, just as instance methods actually belong to the class. All metaclasses are instances of only one class called \code{Metaclass}, which is a subclass of the class \code{Class}. 
 
@@ -603,7 +603,7 @@ The rules governing the validity and meaning of a modifier are as follows:
 
   We call a member $M$ of a class or trait {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
 
-  The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behavior can be turned off only in tests, if needed, and is implicitly turned on. 
+  The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
 
   The \code{abstract override} modifier combination can be thus used with a full definition in a trait and yet affect the class or trait with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
 
@@ -694,7 +694,7 @@ Tmpl_Env_Brackets   ::= ['extends' [Early_Defs]]
 Tmpl_Env_No_Pars    ::= ['begin' [Template_Body]] 'end'
 \end{lstlisting}
 
-A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
+A class definition defines the type signature, behaviour and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behaviour defined in its metaclass (\sref{sec:metaclasses}). 
 
 The most general form of a class definition is
 \begin{lstlisting}
@@ -732,7 +732,7 @@ $t$ is a template (\sref{sec:templates}) of the form
 \begin{lstlisting}
 $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
 \end{lstlisting}
-for $(n \geq 0)$, which defines the base classes, behavior and initial state of objects of the class. The extends clause ~\lstinline!extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$!~ can be omitted, in which case ~\lstinline!extends Object!~ is implied. The only class that defines $sc$ as ~\lstinline!()!~ is \code{Object} (meaning that it has no superclass) and it is an error if any other class attempts to do the same. 
+for $(n \geq 0)$, which defines the base classes, behaviour and initial state of objects of the class. The extends clause ~\lstinline!extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$!~ can be omitted, in which case ~\lstinline!extends Object!~ is implied. The only class that defines $sc$ as ~\lstinline!()!~ is \code{Object} (meaning that it has no superclass) and it is an error if any other class attempts to do the same. 
 
 \end{itemize}
 
@@ -812,7 +812,7 @@ $c$[String, *_]
 The primary constructor is a special function, more special in its syntax than any other function in Aml. Its definition can spread across three syntactically different places inside of a class definition: formal value parameters, explicit field declarations, explicit primary constructor body. Primary constructor without explicitly defined parameters is equivalent to the default constructor. 
 
 \paragraph{\em Primary constructor parameters}
-These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
+These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behaviour overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
 
 \paragraph{\em Explicit primary constructor fields}
 These are expressions inside the class template (\sref{sec:templates}) that refer to the formal value parameters, and they become an implicit part of the primary constructor. The evaluation happens after early definitions are evaluated and before explicit primary constructor body is evaluated, but combinations of the two approaches should be avoided for the sake of readability -- the only expressions that the formal value parameters should appear in are simple instance variable definitions. 
@@ -820,46 +820,18 @@ These are expressions inside the class template (\sref{sec:templates}) that refe
 \paragraph{\em Explicit primary constructor body}
 If a primary constructor should do something more than simply map parameters to instance values, then its explicit body comes in. It may co-exist with explicit primary constructor fields, which are then executed right after a call to the super-constructor (either in implicit position, or an explicit one). 
 
-\grammar\begin{lstlisting}
-Def             ::= PCtor_Def
-PCtor_Def       ::= 'constructor' PCtor_Fun_Def
-PCtor_Fun_Def   ::= 'do' (Constr_Expr | Constr_Block)
-Constr_Expr     ::= Self_Invocation
-                  | Constr_Block2
-Self_Invocation ::= 'self' Arguments
-                  | Sup_Invocation
-Sup_Invocation  ::= 'super' [Arguments]
-Constr_Block    ::= Constr_Block1 | Constr_Block2
-Constr_Block1   ::= [semi Constr_Block3] 'end' ['constructor']
-Constr_Block2   ::= '{' [Constr_Block3] '}'
-Constr_Block3   ::= [[Block_Stat {semi Block_Stat} semi] 
-                    Self_Invocation semi] 
-                    Block_Stat {semi Block_Stat}
-                  | Self_Invocation
-\end{lstlisting}
-
 \paragraph{Auxiliary constructors}
 Besides the primary constructor, a class may define additional constructors with different parameter sections, that form together with the primary constructor an overloaded constructor definition. Every auxiliary constructor is constrained in means that it has to either invoke another constructor defined before itself, or any superclass constructor. Therefore classes in Aml have multiple entry points, but with great power comes great responsibility: user must ensure that every constructor path defines all necessary members. It is an error if a constructor invocation leads to an instance with abstract members. If a constructor does not explicitly invoke another constructor, an invocation of the implicit constructor is inserted implicitly as the first invocation in the constructor. 
 
 \grammar\begin{lstlisting}
-Ctor_Def     ::= ['convenience'] 'constructor' Ctor_Fun_Def
-Ctor_Fun_Def ::= [Param_Clauses] (':=' Constr_Expr | Constr_Block)
-
-Dtor_Def     ::= 'destructor' Dtor_Fun_Def
-Dtor_Fun_Def ::= (':=' Dtor_Expr | Dtor_Block)
-Dtor_Expr    ::= Sup_Invocation
-               | Dtor_Block2
-Dtor_Block   ::= Dtor_Block1 | Dtor_Block2
-Dtor_Block1  ::= [semi Dtor_Block3] 'end' ['destructor']
-Dtor_Block2  ::= '{' [Dtor_Block3] '}'
-Dtor_Block3  ::= [[Block_Stat {semi Block_Stat} semi] 
-                 Sup_Invocation semi] 
-                 Block_Stat {semi Block_Stat}
-               | Sup_Invocation
+Constructor_Def
+    ::= ['convenience'] 'constructor' [Param_Clauses] '=' [Fun_Dec] Expr
+Destructor_Def 
+    ::= 'destructor' '=' [Fun_Dec] Expr
 \end{lstlisting}
 
 \paragraph{\em Implicit constructor}
-An implicit constructor is an automatically generated constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions), so that an explicit empty constructor would not have to be specified. Implicit constructor can only be generated if all members have a default value and the superclass has a parameterless designated constructor. 
+An implicit constructor is an automatically generated constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (if possible), so that an explicit empty constructor would not have to be specified. Implicit constructor can only be generated if all members have a default value and the superclass has a parameterless designated constructor. 
 
 \paragraph{\em Designated constructor}
 A designated constructor is such a constructor that initializes all members of the class. The primary constructor always has to be also a designated constructor. A designated constructor can only call a constructor of the immediate superclass\footnote{This is a relaxation from Swift by Apple, which only allows to call a designated constructor of the immediate superclass.}. A single class may have multiple designated constructors, but either way all instance members have to be initialized and at least one designated constructor has to exist. Note that new instance members may be added dynamically in runtime -- but those are also initialized at the time they are added by the dynamic code. Also note that the constructor of the superclass may be dealing with an incomplete object\footnote{As the constructors may further edit the new object later.}, therefore a designated constructor must make sure that all instance members are initialized (either with their default values, or ones set up by the constructor), before it delegates up to the constructor of the superclass. 
@@ -902,10 +874,10 @@ Constructors may have modified accessibility, so that only certain functions can
 \begin{lstlisting}
 class $C$
 begin
-  constructor (param)
-    val @resource := param
-    super()
-  end constructor
+  constructor (param) =
+    val @resource = param in
+    super
+    
 end class
 \end{lstlisting}
 
@@ -913,16 +885,16 @@ end class
 \begin{lstlisting}
 class $C$
 begin
-  constructor (param)
-    val @resource := param
-    super()
-  end constructor
-  convenience constructor := self(42)
+  constructor (param) =
+    val @resource = param in
+    super
+    
+  convenience constructor = self (42)
 end class
 \end{lstlisting}
 
 \paragraph{\em Constant instance variables}
-Any constructor may modify a constant instance variable during its evaluation, even multiple times. This behavior passes on to any methods that are invoked during the object's construction, but should be used with caution. 
+Any constructor may modify a constant instance variable during its evaluation, even multiple times. This behaviour passes on to any methods that are invoked during the object's construction, but should be used with caution. 
 
 \paragraph{\em Explicit destructor}
 An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. To further emphasize that, the \code{this} and \code{self} keywords are disallowed in a destructor body, and invoking any method that does use the \code{self}-value is forbidden. The VM is required to raise an error in case \code{self} would be attempted to be retained again, to prevent zombie objects apocalypse. 
@@ -970,63 +942,12 @@ An object {\em eligible for destruction} must meet the following conditions:
 
 
 
-\subsection{Clone Constructor Definitions}
-\label{sec:clone-def}
-
-\grammar\begin{lstlisting}
-CCtor_Def     ::= ['convenience'] 'clone' CCtor_Fun_Def
-CCtor_Fun_Def ::= [Type_Param_Clause] [Given_Clauses] [Param_Clauses] 
-                  (':=' Constr_Expr | Clone_Block)
-Clone_Block   ::= [semi Constr_Block3] 'end' ['clone']
-                | Constr_Block2
-\end{lstlisting}
-
-Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but with the ~\lstinline[deletekeywords={clone}]!clone!~ attribute on the cloned instance (\lstinline[deletekeywords={clone}]!obj_to_clone.'clone!). Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
-
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self[origin]}, \code{this[origin]} and \code{super[origin]} constructs (the latter being only useful as prefix in function applications), the new cloned object is available with the \code{self[cloned]}, \code{this[cloned]} and \code{super[cloned]} constructs. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, but the original object still has to be accessed with the defined construct. The \code{self} value reference does not exist within context of clone constructors, to prevent accidental confusion between the two objects. 
-
-Clone constructors have the ability to modify immutable instance variables, but only of the new cloned object (\code{self[cloned]}) -- the original object is already constructed. 
-
-Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
-
-A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). The same rules for using \code{self[cloned]} (as \code{self}) as in constructors apply. 
-
-The \code{Object} class has a default root clone constructor, which carries the modifier \code{protected} (\sref{sec:modifiers}). Therefore, any custom clone constructor has to be explicitly protected in a less restrictive way, or public, in order to allow direct object cloning from outside of the class that defines it. 
-
-\paragraph{Implicit clone constructor}
-An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
-
-\paragraph{Designated clone constructor}
-A designated clone constructor can only invoke inherited clone constructors from superclass. 
-
-\paragraph{Convenience clone constructor}
-A convenience clone constructor is a clone constructor marked with the keyword \code{convenience}. They can only invoke clone constructors from the same class. 
-
-\paragraph{Accessibility of clone constructors}
-Clone constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
-
-\example An example of a default clone constructor of class $C$, performing a deep copy. 
-\begin{lstlisting}
-class $C$
-  clone
-    (* super is invoked implicitly here *)
-    self[cloned].@resource := self[origin].@resource.clone
-  end constructor
-end class
-\end{lstlisting}
-
-
-
-
-
 \subsection{Upgrade Constructor Definitions}
 \label{sec:upgrade-def}
 
 \grammar\begin{lstlisting}
-UCtor_Def     ::= ['convenience'] 'upgrade' 'constructor' 
-                  UCtor_Fun_Def
-UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
-                  (':=' Constr_Expr | Constr_Block)
+Upgrade_Constructor_Def 
+    ::= 'upgrade' 'constructor' '(' id [':' 'Self'] ')' '=' Expr
 \end{lstlisting}
 
 
@@ -1052,16 +973,16 @@ The formal parameters are handled differently from regular classes. The formal p
 
 A case class definition of \lstinline!$c$[$\tps$]($\ps_1$)$\ldots$($\ps_n$)! with type parameters $\tps$, and value parameters $\ps$ implicitly adds some methods to the corresponding class object, making it suitable as an extractor object (\sref{sec:case-class-patterns}), and are defined as follows:
 \begin{lstlisting}
-object $c$ {
-  def apply[$\tps$]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
+object $c$ 
+  method apply[$\tps$]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
       $c$[$\Ts$].new($xs_1$)$\ldots$($xs_n$)
-  def unapply[$\tps$]($x$: $c$[$\tps$]?): Option[$e$] :=
+  method unapply[$\tps$]($x$: $c$[$\tps$]?): Option[$e$] :=
       unless $x$ = nil
         Some($x$.$xs_{11} \commadots x$.$xs_{1k}$)
       else
         None
       end
-}
+end
 \end{lstlisting}
 
 Here, $\Ts$ stands for the vector of types defined in the type parameter section $\tps$, each $xs_i$ denotes the parameter names of the parameter section $\ps_i$, $xs_{11} \commadots xs_{1k}$ denote the names of all parameters in the first parameter section $xs_1$, and $e$ denotes the type that \code{Option} is parameterized with. If a type parameter section is missing in the class $c$, it is also missing in the \code{apply} and \code{unapply} methods. The definition of \code{apply} is missing also if the class $c$ is marked \code{abstract}.\footnote{Because the implied \code{apply} method creates new objects and abstract classes can't have any instances of themselves.}
