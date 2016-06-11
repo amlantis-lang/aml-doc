@@ -16,9 +16,9 @@ Tmpl_Def             ::= Class_Definition
                        | Aspect_Definition
                        | Annotation_Definition
                        | Type_Definition
-Class_Definition     ::= [Mutability] ['monitored'] ['case'] 'class' Class_Def
-Object_Definition    ::= [Mutability] ['monitored'] ['case'] 'object' Object_Def
-Trait_Definition     ::= [Mutability] ['monitored'] 'trait' Trait_Def
+Class_Definition     ::= ['monitored'] ['case'] 'class' Class_Def
+Object_Definition    ::= ['monitored'] ['case'] 'object' Object_Def
+Trait_Definition     ::= ['monitored'] 'trait' Trait_Def
 Protocol_Definition  ::= ['monitored'] 'protocol' Pro_Def
 \end{lstlisting}
 
@@ -527,7 +527,6 @@ Local_Modifier   ::= 'implicit'
 Access_Modifier  ::= 'public'
                    | ('protected' | 'private') [Access_Qualifier]
 Access_Qualifier ::= '[' (id | 'self') ']'
-Mutability       ::= 'mutable' | 'immutable'
 \end{lstlisting}
 
 Access modifiers may appear in two forms:
@@ -623,10 +622,6 @@ The rules governing the validity and meaning of a modifier are as follows:
   \item The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or trait is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
 
   Additionally, an annotation \lstinline!@[Sealed]! exists for classes and class members that triggers only warnings in case of inheriting outside the same source file, but does not prevent the inheritance. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
-  
-  \item The \code{mutable} mutability modifier guarantees that all member values of the type that it is applied to will not be immutable, hence not frozen. It transitively applies to all subtypes, and is disallowed when any of the parents of the type is declared to be immutable. It is an error to freeze values that are declared mutable. 
-  
-  \item The \code{immutable} mutability modifier guarantees that all member values of the type that it is applied to will be immutable, hence frozen. It transitively applies to all subtypes, and is disallowed when any of the parents of the type is declared to be mutable. When applied to classes, it does so by implicitly freezing all values right before all their constructors are finished\footnote{Freezing is re-entrant and irreversible. If a constructor freezes a value explicitly, nothing is wrong.}. 
 
   \item The \code{lazy} local modifier applies to value definitions. A \code{lazy} value is initialized the first time it is accessed (which might eventually never happen). Attempting to access a lazy value during its initialization is a blocking invocation until the value is initialized of failed to initialize. If an exception is thrown during initialization, the value is considered uninitialized and the initialization is restarted on later access, re-evaluating its right hand side. 
 
@@ -680,7 +675,7 @@ This is just for the sake of completeness, since change from public to public is
 \label{sec:class-definitions}
 
 \grammar\begin{lstlisting}
-Class_Definition    ::= [Mutability] ['monitored'] 'class' Class_Def
+Class_Definition    ::= ['monitored'] 'class' Class_Def
 Class_Def           ::= id [Type_Param_Clause] [Given_Clauses]
                         [Class_Param_Clauses] Class_Tmpl_Env
 Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
@@ -1044,7 +1039,7 @@ UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
 \label{sec:case-classes}
 
 \grammar\begin{lstlisting}
-Class_Definition ::= [Mutability] ['monitored'] 'case' 'class' Class_Def
+Class_Definition ::= ['monitored'] 'case' 'class' Class_Def
 \end{lstlisting}
 
 If a class definition is prefixed with \code{case}, the class is said to be a {\em case class}. 
@@ -1114,7 +1109,7 @@ Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) par
 \label{sec:traits}
 
 \grammar\begin{lstlisting}
-Trait_Definition ::= [Mutability] 'trait' Trait_Def
+Trait_Definition ::= 'trait' Trait_Def
 Trait_Def        ::= id [Type_Param_Clause] [Given_Clauses]
                      Trait_Tmpl_Env
 Trait_Tmpl_Env   ::= Tmpl_Env_With_Pars ['trait']
@@ -1214,12 +1209,12 @@ Protocol references are preferred to traits to be used by library designers to d
 \label{sec:object-definitions}
 
 \grammar\begin{lstlisting}
-Object_Definition ::= [Mutability] 'object' Object_Def
+Object_Definition ::= 'object' Object_Def
 Object_Def        ::= id Object_Tmpl_Env
 Object_Tmpl_Env   ::= Tmpl_Env_With_Pars ['object']
                     | Tmpl_Env_Brackets
                     | Tmpl_Env_No_Pars ['object']
-Expr              ::= [Mutability] 'object' Object_Tmpl_Env
+Expr              ::= 'object' Object_Tmpl_Env
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Aml/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Aml/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Aml/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Aml/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Aml has one scope for both types and terms. 
@@ -1249,7 +1244,7 @@ Every trait applied to a class object does not affect the associated class itsel
 \label{sec:case-objects}
 
 \grammar\begin{lstlisting}
-Object_Definition ::= [Mutability] ['monitored'] 'case' 'object' Object_Def
+Object_Definition ::= ['monitored'] 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
