@@ -21,6 +21,7 @@ Expr
       | Quasiquote_Expr
       | Quote_Expr
       | Metaclass_Access
+      | Message_Data_Expr
       | Workflow_Expr
       | Rescue_Expr
       | Catch_Expr
@@ -575,12 +576,28 @@ a.value := 128
 \label{sec:arguments-expressions}
 
 \grammar\begin{lstlisting}
-Args_Expr ::= 'arguments' [nl] '(' Arguments ')' [Block_Argument]
-            | 'arguments' [nl] Arguments [Block_Expr2 | Method_Expr]
-            | 'arguments' [nl] Block_Argument
+Args_Expr 
+    ::= 'arguments' [nl] '{' Arguments [Block_Argument] '}' 
+      | 'arguments' [nl] '{' Block_Argument '}'
 \end{lstlisting}
 
-Arguments expressions of the form ~\lstinline!arguments $a_1 \ldots a_n$!~ generate a special value, which is equivalent to what is passed as arguments in function applications. % TBD: define what the type is; also define the operations on it (joining arguments lists etc.)
+Arguments expressions of the form ~\lstinline!arguments $a_1 \ldots a_n$!~ generate a special value, which is equivalent to what is passed as arguments in function applications. A value $x$ generated with this expression can be used in a function application using ``\,\lstinline!**$x$!\,''. The type of such expression is a tuple with each element representing one argument, where the argument itself may again be a tuple (or any other value). 
+
+
+
+
+
+\subsection{Message Data Expression}
+\label{sec:message-data-expression}
+
+\grammar\begin{lstlisting}
+Message_Data_Expr
+    ::= 'message' '{' Expr '}' 'with' Args_Expr
+      | 'message' symbol_literal 'with' Args_Expr
+      | Args_Expr
+\end{lstlisting}
+
+A value $x$ generated with this expression can be used to send an object a message using e.g. ``\,\lstinline!obj.'send $x$!\,''. In the first form, the expression is typed with expected type of \code{Symbol}. 
 
 
 

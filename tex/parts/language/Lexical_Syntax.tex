@@ -631,9 +631,13 @@ In each form, literal newlines do not need to be escaped. Newlines may still be 
 \label{sec:symbolliterals}
 
 \syntax\begin{lstlisting}
-symbol_literal       ::= simple_symbol | quoted_symbol
-simple_symbol        ::= ':' plain_id
-quoted_symbol        ::= ':"' {int_string_element} '"'
+symbol_literal
+    ::= simple_symbol 
+      | quoted_symbol
+simple_symbol 
+    ::= ':' plain_id
+quoted_symbol 
+    ::= ':"' {int_string_element} '"'
 \end{lstlisting}
 
 Symbol literals are members of the type \lstinline@Symbol@. They differ from \nameref{sec:stringliterals} in the way runtime handles them: while there may be multiple instances of the same string, there is always up to one instance of the same symbol. Unlike in Ruby, they do get released from memory when no code references to them anymore, so their object id (sometimes) varies with time. Aml does not require their ids to be constant in time. 
