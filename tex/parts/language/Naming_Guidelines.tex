@@ -230,14 +230,14 @@ When an expression will not fit into a single line, break it according to the fo
 (* preferable *)
 function_1 (long_expression_1, long_expression_2, long_expression_3,
             long_expression_4, long_expression_5)
-val a := function_1 (long_expression_1,
-                     function_2 (long_expression_2,
-                                 long_expression_3))
+val a = function_1 (long_expression_1,
+                    function_2 (long_expression_2,
+                                long_expression_3))
 (* acceptable *)
 function_1 (long_expression_1, long_expression_2, 
     long_expression_3, long_expression_4, 
     long_expression_5)
-val a := function_1 (
+val a = function_1 (
     long_expression_1,
     function_2 (
         long_expression_2,
@@ -248,27 +248,27 @@ val a := function_1 (
 
 \begin{lstlisting}
 (* prefer *)
-long_name_1 := long_name_2 * (long_name_3 + long_name_4 - long_name_5)
-               + 4 * long_name_6
+long_name_1 = long_name_2 * (long_name_3 + long_name_4 - long_name_5)
+              + 4 * long_name_6
 (* avoid *)
-long_name_1 := long_name_2 * (long_name_3 + long_name_4 
-                              - long_name_5) + 4 * long_name_6
+long_name_1 = long_name_2 * (long_name_3 + long_name_4 
+                             - long_name_5) + 4 * long_name_6
 \end{lstlisting}
 
 \example Following are examples of indenting method definitions. The first is the conventional case, the second would shift the second and third line to the far right if it used conventional indentation, so instead it indents two tabs. Also, if a visibility modifier is causing the line to be too long, consider using it as a pragma before the method definition instead (but remember that definitions following it will have the same visibility). 
 
 \begin{lstlisting}
 (* conventional indentation *)
-def some_method (an_arg: Integer, another_arg: Object, 
-                 yet_another: String,
-                 and_still_another: Object): Unit := {
+method some_method (an_arg: Integer, another_arg: Object, 
+                    yet_another: String,
+                    and_still_another: Object): Unit = {
   $\ldots$
 }
 
-(* indent two tabs to avoid very deep indents *)
+(* indent two levels to avoid very deep indents *)
 private method self.very_long_method_name (an_arg: Integer,
     another_arg: Object, yet_another_arg: String, 
-    and_still_another: Object): Unit := {
+    and_still_another: Object): Unit = {
   $\ldots$
 }
 \end{lstlisting}
@@ -302,14 +302,14 @@ end
 \example Aml does not have any ternary operators, but the following is an equivalent expression:
 
 \begin{lstlisting}
-alpha := if a_long_boolean_expression
-           beta
-         else
-           gamma
-         end
+alpha = if a_long_boolean_expression
+          beta
+        else
+          gamma
+        end
 
 (* or alternatively *)
-alpha := if a_long_boolean_expression
+alpha = if a_long_boolean_expression
   beta
 else
   gamma
@@ -339,41 +339,6 @@ Comments should not be enclosed in any decorative boxes made of asterisks or wha
 
 
 
-\section{Declarations}
-
-
-
-
-
-
-\subsection{One Per Line}
-
-One declaration per line is recommended, since it encourages commenting, unless the declarations are a part of a pattern matching extraction. 
-
-Multiple declaration expressions on the same line using a semicolon to separate them should be avoided, and should definitely not mix variable and function declarations. 
-
-\example The following shows preferred variable declarations and declarations to be avoided:
-\begin{lstlisting}
-(* preferred *)
-val level: Integer
-val size: Integer
-
-(* avoid *)
-val level, size: Integer
-val level: Integer; size: Integer
-\end{lstlisting}
-
-\example Another acceptable alternative is to align the type names with spaces: 
-\begin{lstlisting}
-val level:         Integer
-val size:          Integer
-val current_entry: Object
-\end{lstlisting}
-
-
-
-
-
 \subsection{Placement}
 
 Preferable is to put declarations at the beginning of scopes (blocks). Variable declarations in the middle of code should be avoided. The only exception is in expressions like generators. 
@@ -387,23 +352,6 @@ To optimize variable creation, variables do not have to be defined before first 
 \subsection{Initialization}
 
 Try to initialize every variable as soon as possible, or use the \code{lazy} modifier on it. 
-
-
-
-
-
-
-\section{Class Definitions}
-
-When writing Aml classes, the following formatting rules should be followed: 
-\begin{itemize}
-  \item A space between a method name and the parenthesis of its first parameter list, if any. 
-  \item Open brace ``\lstinline!{!'' appears at the end of the same line as the declaration statement. 
-  \item Open keyword \code{begin} appears on the next line to the declaration statement. 
-  \item Closing brace ``\lstinline!}!'' or close keyword \code{end} appears on a line alone (or followed by the keyword appropriate for the closed term). The only exception is when the close brace or close keyword should end the declaration immediately (usually in method declarations or definitions of methods that have an empty body, thus returning a \code{Unit} value). 
-  \item The \code{declare} and \code{begin} keywords should appear alone on their lines. 
-  \item Members except instance variables and class instance variables are separated by a blank line. 
-\end{itemize}
 
 
 
@@ -428,30 +376,9 @@ Each line should contain at most one statement. Avoid grouping statements on one
 
 Compounds statements are those enclosed in a block. 
 \begin{itemize}
-\item The enclosed statements should be indented one more level than the compound statement. 
-\item The opening brace or keyword should be at the end of the line that begins the compound statement. The closing brace or keyword should begin a line and be indented to the beginning of the compound statement, unless that indent would be too deep. 
+  \item The enclosed statements should be indented one more level than the compound statement. 
+  \item The opening brace or keyword should be at the end of the line that begins the compound statement. The closing brace or keyword should begin a line and be indented to the beginning of the compound statement, unless that indent would be too deep. 
 \end{itemize}
-
-
-
-
-
-\subsection{Return Statements}
-
-A \code{return} statement with a value should not use parentheses unless required by the syntax.
-
-\example For instance: 
-\begin{lstlisting}
-return
-
-return my_disk.size
-
-return (builder
-    .set_title "hello"
-    .set_message "world"
-    .build)
-\end{lstlisting}
-
 
 
 
