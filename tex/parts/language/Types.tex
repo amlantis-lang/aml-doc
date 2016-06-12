@@ -143,7 +143,7 @@ Paths introduce also {\em path dependent types}, if the referenced member is a t
 \subsection{Type Variables}
 \label{sec:type-variables}
 
-A type \lstinline!'$x$! stands for a type variable named $x$.
+A type ``\,\lstinline!'$x$!\'' stands for a type variable named $x$.
 
 Type variables, unlike type parameters, may also be unified with a specific type by the automatic type inference, and may be made explicitly polymorphic. 
 
@@ -153,7 +153,7 @@ Type variables, unlike type parameters, may also be unified with a specific type
 
 \section{Value Types}
 
-Every value in Aml has a type which is of one of the following forms. 
+Every value in Aml has a type which is of one of the following forms. Remember that the grammar elements from the following sections are used in contexts where a type is expected -- not any general expression. 
 
 
 
@@ -186,10 +186,10 @@ Simple_Type
     ::= ...
       | Cloned_Type
 Cloned_Type
-    ::= Path '.' 'cloned' '.' 'type'
+    ::= Path '.' 'type' '.' 'cloned'
 \end{lstlisting}
 
-A cloned type is of the form ~\lstinline!$p$.cloned.type!, where $p$ is a path pointing to a value. The type denotes the set of values consisting of the value denoted by $p$ and every value that is cloned from the value denoted by $p$. 
+A cloned type is of the form ~\lstinline!$p$.type.cloned!, where $p$ is a path pointing to a value. The type denotes the set of values consisting of the value denoted by $p$ and every value that is cloned from the value denoted by $p$. 
 
 A {\em stable type} is either a cloned type or a type which is declared to be a subtype of a trait \code{Cloned_Type}. Singleton in this view appears to be a special case (more concrete to be precise) of a cloned type, excluding the cloned values. 
 
