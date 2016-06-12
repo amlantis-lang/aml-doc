@@ -81,20 +81,20 @@ A macro is defined as a regular function, but it's body is required to pass invo
 use Aml/Language.Reflection.Macros.Blackbox.Context
 
 (* define the macro *)
-def macro assert (condition: Boolean, message: String_Like): Unit := 
+macro assert (condition: Boolean, message: String_Like): Unit = 
     Asserts.assert_impl
 
 (* implement the macro *)
-object Asserts {
-  def assert_impl 
+object Asserts
+  method assert_impl 
       (c: Context)
-      (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit :=
+      (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit =
     <@ unless #{cond}
          raise #{msg}
        else
          ()
        end @>
-}
+end
 \end{lstlisting}
 
 Macros can be applied as an intermediate step by IDEs, so that their resulting transformations could be viewed prior to proceeding with compilation. 
