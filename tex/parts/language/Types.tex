@@ -26,7 +26,7 @@ Given_Clauses
     ::= 'given' Simple_Type
       | 'given' '{' Given_Dcl {semi Given_Dcl} '}'
 Quantification_Dcl 
-    ::= Type_Definition  (* containing Type_Abstract *)
+    ::= Type_Declaration
       | Val_Dcl
 Compound_Type
     ::= Annot_Type [Nullable_Mod] {'with' Annot_Type} 
@@ -317,13 +317,18 @@ Parameterized_Type
     ::= Simple_Type [Type_Args]
       | Postfix_Parameterized_Type
 Postfix_Parameterized_Type 
-    ::= Type_Arg Stable_Id
+    ::= Atomic_Type_Arg Stable_Id
 Type_Args 
     ::= '[' [Type_Arg {',' Type_Arg}] ']'
 Type_Arg 
     ::= Type_Arg_Value
       | Measure_Arg_Value
       | Static_Arg_Value
+Atomic_Type_Arg
+    ::= Type_Arg_Value
+      | '(' Measure_Arg_Value ')'
+      | '(' Static_Arg_Value ')'
+      | '(' [Type_Arg {',' Type_Arg}] ')'
 Type_Arg_Value
     ::= ['~' id ':'] Type
       | '_'
@@ -498,7 +503,7 @@ Refine_Stats
       | '{' '_' '}'
 Refine_Stat 
     ::= Dcl
-      | Type_Definition  (* containing Type_Abstract or Type_Equation *)
+      | Type_Definition
       | Struct_Constraint
       | ()
 \end{lstlisting}
@@ -652,18 +657,19 @@ Given_Dcl
       | Type_Var Type_Equation
       | Type_Var '>:' Type ['<:' Type]
       | Type_Var '<:' Type
-      | Type_Var ':' 'nil'
-      | Type_Vars ':' '(' Member_Signature ')'
+      | Type_Vars ':' '(' Member_Signature {semi Member_Signature} ')'
       | Type_Var ':' '(' Constructor_Signature ')'
 Type_Vars 
     ::= Type_Var
       | '(' Type_Var {'or' Type_Var} ')'
 Member_Signature
-    ::= ['class'] 'member' fun_id ':' Type
-      | ['class'] 'operator' op_id ':' Type
-      | ['class'] 'property' id ':' Type ['with' Property_Signature_Extra]
+    ::= ['object' | 'class'] 'member' fun_id ':' Type
+      | ['object' | 'class'] 'message' fun_id ':' Type
+      | ['object' | 'class'] 'attribute' fun_id ':' Type
+      | ['object' | 'class'] 'operator' op_id ':' Type
+      | ['object' | 'class'] 'property' id ':' Type ['with' Property_Signature_Extra]
 Constructor_Signature
-    ::= ('new' | 'constructor') ':' Type  (* just type of parameters, no result type *)
+    ::= 'new' ':' Type  (* just type of parameters, no result type *)
 Property_Signature_Extra
     ::= 'get' ['and' 'set']
       | 'set' ['and' 'get']
@@ -678,12 +684,12 @@ A type dependency or equation expresses additional relations between different t
 \subsection{Existentially Quantified Types}
 \label{sec:existential-types}
 
-\grammar\begin{lstlisting}[escapechar=@]
+\grammar\begin{lstlisting}
 Existential_Clauses
     ::= 'for-some' '{' Quantification_Dcl {semi Quantification_Dcl} '}'
 Quantification_Dcl
-    ::= Type_Definition (* containing Type_Abstract *)
-      | Val_Dcl
+    ::= Type_Declaration  (* the closing 'end type' is optional *)
+      | 'val' id ':' Type
 Type_Arg
     ::= ...
       | Wildcard_Type_Arg

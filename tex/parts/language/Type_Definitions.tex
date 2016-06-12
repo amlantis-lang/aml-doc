@@ -11,13 +11,19 @@
 \label{sec:type-decls-aliases}
 
 \grammar\begin{lstlisting}
-Def ::= ...
-      | Type_Definition
 Type_Definition 
-    ::= 'type' Typedef {'and' Typedef} 'end' ['type']
+    ::= 'type' Typedef {'and' ['type'] Typedef} 'end' ['type']
+        (* see additional rules below *)
+Type_Declaration
+    ::= 'type' Typedcl {'and' ['type'] Typedcl} 'end' ['type']
+        (* see additional rules below *)
+Type_Name
+    ::= [Type_Context] id [Type_Param_Clause] [Given_Clauses]
+      | [Type_Context] Prefix_Type_Param_Clause id [Given_Clauses]
 Typedef 
-    ::= [Type_Context] id [Type_Param_Clause] [Given_Clauses] [Type_Information]
-      | [Type_Context] Prefix_Type_Param_Clause id [Given_Clauses] [Type_Information]
+    ::= Type_Name [Type_Information]
+Typedcl
+    ::= Type_Name [Type_Abstract]
 Type_Information
     ::= [Type_Equation [Type_Re-export] | Type_Abstract]
       | [Type_Representation]
@@ -27,7 +33,11 @@ Type_Abstract
     ::= ['>:' Type] ['<:' Type] {'<%' Type} {':' Type}
 Type_Re-export
     ::= '=' '(' 'include' Long_id ')'
+      | Type_Representation
 \end{lstlisting}
+
+\paragraph{Additional grammar rules for type definitions and declarations}
+The closing ``\,\code{'end' ['type']}\,'' is optional in some contexts (e.g. when being enclosed in brackets, like it happens in type refinement statements); the connecting ``\,\code{['type']}\,'' may be needed in some context to resolve ambiguities (e.g. when colliding with intersection types), and is required when followed by either one of \code{Type_Class_Dcl}, \code{Type_Family_Dcl} or \code{Type_Instance_Def}\footnote{So that the code will read always as \code{type class} or \code{type family} no matter what, because a \code{class} alone is a different thing entirely from \code{type class}.}. 
 
 A {\em type declaration} \lstinline!type $t$[$\tps$] >: $L$ <: $U$! declares $t$ to be an abstract type with lower bound type $L$ and upper bound type $U$. If the type parameter clause \lstinline@[$\tps$]@ is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause. 
 
@@ -211,9 +221,9 @@ Record extension members, if given, are added to the type object, unless they ar
 
 \example An example of a variant type. 
 \begin{lstlisting}
-type B-tree['t] = variant 
+type B-Tree['t] = variant 
   case Empty
-  case Node of 't * B-tree['t] * B-tree['t]
+  case Node of 't * B-Tree['t] * B-Tree['t]
   with member is_member? x b-tree =
     match b-tree
     when Empty then no
@@ -333,8 +343,7 @@ Struct_Type
       | 'signature' 'of' Struct_Expr
 Struct_Spec 
     ::= 'val' id [Type_Param_Clause] ':' Type
-      | Type_Definition  (* containing Type_Abstract, 
-                            or type class/family declaration *)
+      | Type_Declaration
       | Protocol_Definition
       | 'structure' id ':' Struct_Type 'end' ['structure']
       | 'signature' id ['=' Struct_Type] 'end' ['signature']
@@ -362,7 +371,7 @@ Struct_Item
       | Do_Binding
 Struct_Def 
     ::= [Access_Modifier] Val_Def
-      | [Access_Modifier] Type_Definition  (* without Type_Abstract *)
+      | [Access_Modifier] (Type_Definition - Type_Abstract)
       | {Modifier} Tmpl_Def
       | [Access_Modifier] 'structure' id [Struct_Ascription] 
         '=' Struct_Expr
@@ -417,10 +426,10 @@ A structure is usually given a name with the \code{structure} or \code{module} b
 
 \example A structure packaging together a type of priority queues and their operations:
 \begin{lstlisting}
-structure Priority_Queue is
+structure Priority_Queue =
 struct
   type Priority = Number.Integer end type
-  type 'a Queue is variant 
+  type 'a Queue = variant 
     case Empty
     case Node of Priority * 'a * 'a Queue * 'a Queue
   end type
@@ -522,7 +531,7 @@ functor (Element_Type: Ordered_Type) ->
   struct
     type Element = Element_Type.T end type
     type Set = Element List end type
-    let empty = %[
+    let empty = %[]
     let rec add x s = match s
       when %[] then %[x]
       when %[head, *tail] then 
@@ -664,16 +673,14 @@ Typedef
       | Type_Class_Dcl
       | Type_Family_Dcl
       | Type_Instance_Def
+Typedcl
+    ::= ...
+      | Type_Class_Dcl
+      | Type_Family_Dcl
 Type_Class_Dcl
-    ::= 'class' [Type_Context] id [Type_Param_Clause] [Given_Clauses] 
-        Type_Class_Dcl_Body
-      | 'class' [Type_Context] Prefix_Type_Param_Clause id [Given_Clauses] 
-        Type_Class_Dcl_Body
+    ::= 'class' Type_Name Type_Class_Dcl_Body
 Type_Family_Dcl
-    ::= 'family' [Type_Context] id [Type_Param_Clause] [Given_Clauses]
-        [Type_Family_Closed_Def] 
-      | 'family' [Type_Context] Prefix_Type_Param_Clause id [Given_Clauses] 
-        [Type_Family_Closed_Def] 
+    ::= 'family' Type_Name [Type_Family_Closed_Def]
 Type_Instance_Def
     ::= Type_Class_Instance_Def
       | Type_Family_Instance_Def
@@ -685,9 +692,7 @@ Type_Class_Spec
     ::= Struct_Spec
       | Struct_Def  (* to define "default" implementations if instance omits it *)
 Type_Class_Instance_Def
-    ::= ['class'] 'instance' [Type_Context] 
-        Type_Instance_Id [Given_Clauses] 
-        Type_Class_Instance_Body
+    ::= ['class'] 'instance' Type_Instance_Id Type_Class_Instance_Body
 Type_Class_Instance_Body 
     ::= 'with' Template_Stat {'and' Template_Stat}
       | Type_Equation
@@ -696,16 +701,14 @@ Type_Family_Closed_Def
     ::= 'with' [Type_Family_Instance_Def {'and' Type_Family_Instance_Def}]
       | Type_Equation
 Type_Family_Instance_Def
-    ::= ['family'] 'instance' [Type_Context] 
-        Type_Instance_Id [Given_Clauses] 
-        Type_Family_Instance_Body
+    ::= ['family'] 'instance' Type_Instance_Id Type_Family_Instance_Body
 Type_Family_Instance_Body
     ::= Type_Equation
-      | Variant_Type_Def
+      | Type_Representation
 
 Type_Instance_Id
-    ::= id Type_Args
-      | Type_Arg id
+    ::= [Type_Context] id Type_Args [Given_Clauses]
+      | [Type_Context] Atomic_Type_Arg id [Given_Clauses]
 \end{lstlisting}
 
 

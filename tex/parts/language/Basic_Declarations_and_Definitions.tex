@@ -54,8 +54,6 @@ This is to keep up consistency with pattern matching, where the type will usuall
 \label{sec:value-dcl-def}
 
 \grammar\begin{lstlisting}
-Val_Dcl 
-    ::= [Storage_Modifier] 'val' id {',' id} ':' Type
 Val_Def 
     ::= [Storage_Modifier] ('val' | 'let') ['rec'] Let_Binding {'and' Let_Binding}
 Let_Binding
@@ -180,8 +178,6 @@ The following shorthands are recognized:
 \label{sec:variable-dcl-def}
 
 \grammar\begin{lstlisting}
-Var_Dcl 
-    ::= [Storage_Modifier] 'var' id {',' id} ':' Type
 Var_Def 
     ::= [Storage_Modifier] 'var' Var_Binding
 Var_Binding 
@@ -421,7 +417,7 @@ Atomic_Type_Param_Clause
     ::= '(' Variant_Type_Param {',' Variant_Type_Param} ')'
 Variant_Type_Param 
     ::= {Annotation} ['+' | '-'] ['...'] Type_Param
-      | '<' (Type_Var | id) ['<:' id] '>'
+      | '<' Type_Var ['<:' Long_Id] '>'
 Type_Param 
     ::= (Type_Var | '_') [Type_Param_Clause] [Type_Abstract]
 \end{lstlisting}
@@ -591,9 +587,7 @@ Param_Clause
     ::= ...
       | Locally_Abstract_Type_Param_Clause
 Locally_Abstract_Type_Param_Clause 
-    ::= '(' 'type' Locally_Abstract_Type_Param {semi Locally_Abstract_Type_Param} ')'
-Locally_Abstract_Type_Param
-    ::= id [Type_Param_Clause] [Type_Equation | Type_Abstract]
+    ::= '(' 'type' Typedcl {semi Typedcl} ')'
 \end{lstlisting}
 
 A parameter clause ~\lstinline!(type $x$)!~ introduces a type constructor named $x$, which is considered abstract in the scope of the function or method it appears in, but then replaced by a fresh type variable of the form ~\lstinline!'$x$!~ outside the function or method, and which is unifiable by (\sref{sec:automatic-inference}).
@@ -612,7 +606,7 @@ A parameter clause ~\lstinline!(type $x_1$; $\ldots$; $x_n$ )!~ is a syntactic s
 \grammar\begin{lstlisting}
 Variant_Type_Param 
     ::= ...
-      | {Annotation} 'type' ['+' | '-'] Locally_Abstract_Type_Param
+      | {Annotation} 'type' ['+' | '-'] Typedcl
 \end{lstlisting}
 
 Explicitly polymorphic locally abstract types are a combination of (\sref{sec:explicit-polymorphic-type-annotations}) and (\sref{sec:locally-abstract-types}).
