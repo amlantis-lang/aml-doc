@@ -300,12 +300,12 @@ Assignment to properties is translated automatically into a setter function call
 \begin{lstlisting}
 Prop_Get_Impl 
     ::= '{' Block '}'
-      | 'do' Block 'end'
+      | 'do' Block 'done'
       | '=' Expr
       | '_'
 Prop_Set_Impl 
     ::= '{' '|' Param '|' [':' Type semi] Block '}'
-      | 'do' '|' Param '|' [':' Type semi] Block 'end' 
+      | 'do' '|' Param '|' [':' Type semi] Block 'done' 
       | '(' Param ')' [':' Type semi] '=' Expr
       | '_'
 \end{lstlisting}
