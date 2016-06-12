@@ -937,7 +937,6 @@ Function_Expr
     ::= {Value_Param_Clause '->'}+ Expr
       | 'fun' {Params_Clause}+ [Guard] [':' Type] '->' Expr
       | 'function' When_Clauses 'end' ['function']
-      | 'function' '{' When_Clauses '}'
 \end{lstlisting}
 
 The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
