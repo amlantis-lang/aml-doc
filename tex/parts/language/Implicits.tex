@@ -172,47 +172,6 @@ let f [T] (t: T) (implicit: $w_1$: T -> String) = $\ldots$
 \section{Multi-Methods \& Multiple Dispatch}
 \label{sec:multi-methods}
 
-\grammar\begin{lstlisting}
-Multi_Fun_Dcl     ::= 'def'      'dispatch'  Fun_Sig Mul_Val 'end' ['def']
-                    | 'def'      'multi'     Fun_Sig         'end' ['def']
-Multi_Op_Dcl      ::= 'dispatch' 'operator'  Op_Sig  Mul_Val 'end' ['operator']
-                    | 'multi'    'operator'  Op_Sig          'end' ['operator']
-Multi_Message_Dcl ::= 'dispatch' 'message'   Fun_Sig Mul_Val 'end' ['message']
-                    | 'multi'    'message'   Fun_Sig         'end' ['message']
-Multi_Att_Dcl     ::= 'dispatch' 'attribute' Att_Sig Mul_Val 'end' ['attribute']
-                    | 'multi'    'attribute' Att_Sig         'end' ['attribute']
-
-Def               ::= Multi_Fun_Def
-                    | Multi_Op_Def
-                    | Multi_Method_Def
-                    | Multi_Att_Def
-Multi_Fun_Def     ::= 'def' 'dispatch' Fun_Sig Mul_Val [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['def']
-                    | 'def' 'dispatch' Fun_Sig Mul_Val ':=' [Fun_Dec2] Expr
-                    | 'def' 'multi' Fun_Sig [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['def']
-                    | 'def' 'multi' Fun_Sig ':=' [Fun_Dec2] Expr
-Multi_Op_Def      ::= 'dispatch' 'operator' Op_Sig Mul_Val [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['operator']
-                    | 'dispatch' 'operator' Op_Sig Mul_Val ':=' [Fun_Dec2] Expr
-                    | 'multi' 'operator' Op_Sig [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['operator']
-                    | 'multi' 'operator' Op_Sig ':=' [Fun_Dec2] Expr
-Multi_Method_Def  ::= 'dispatch' 'method' Fun_Sig Mul_Val [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['method']
-                    | 'dispatch' 'method' Fun_Sig Mul_Val ':=' [Fun_Dec2] Expr
-                    | 'multi' 'method' Fun_Sig [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['method']
-                    | 'multi' 'method' Fun_Sig ':=' [Fun_Dec2] Expr
-Multi_Att_Def     ::= 'dispatch' 'attribute' Att_Sig Mul_Val [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['attribute']
-                    | 'dispatch' 'attribute' Att_Sig Mul_Val ':=' [Fun_Dec2] Expr
-                    | 'multi' 'attribute' Att_Sig [Fun_Dec] 
-                      [semi Fun_Stats] 'end' ['attribute']
-                    | 'multi' 'attribute' Att_Sig ':=' [Fun_Dec2] Expr 
-Mul_Val           ::= [':' 'val' Type]
-\end{lstlisting}
-
 Aml offers multiple ways to achieve multiple dispatch and the related multi-methods: 
 
 \begin{enumerate}
@@ -385,60 +344,55 @@ Multi-methods expect only values in their first parameter list, therefore, the s
 
 \example Multiple dispatch with dynamic value dispatch, Asteroids colliding with Spaceships.
 \begin{lstlisting}
-object program {
-  abstract class Thing extends Object {}
-  class Asteroid extends Thing {}
-  class Spaceship extends Thing {}
+object program 
+  abstract class Thing = object end
+  class Asteroid = object inherit Thing end
+  class Spaceship = object inherit Thing end
   
-  def dispatch collide_with (a: Thing, b: Thing)
-      : Unit 
-      : val (Class[Thing], Class[Thing])
-    (a.type, b.type)
-  end def
-  
-  def multi collide_with (Asteroid, Asteroid)(a, b)
-    print_line "Asteroid hits an Asteroid"
-  end def
-  
-  $\ldots$
-  
-  method run (*args: String): Unit
-    val asteroid := Asteroid.new
-    val spaceship := Spaceship.new
-    collide_with(asteroid, spaceship)
-    collide_with(spaceship, spaceship)
-  end method
-}
+  multi method collide_with (a: Thing, b: Thing) =
+    method (dispatch Dynamic * Dynamic use type) = (a, b)
+    and method (when :? Asteroid, :? Asteroid) 
+        = print_line "Asteroid hits an Asteroid"
+    and method (when :? Asteroid, :? Spaceship) 
+        = print_line "Asteroid hits a Spaceship"
+    and method (when :? Spaceship, :? Asteroid) 
+        = print_line "Spaceship hits an Asteroid"
+    and method (when :? Spaceship, :? Spaceship) 
+        = print_line "Spaceship hits a Spaceship"
+    and method (when _, _) = print_line "Found a UFO"
+
+  method run (*args: String): Unit =
+    let asteroid = Asteroid.new in
+    let spaceship = Spaceship.new in
+    begin
+      collide_with asteroid, spaceship
+      collide_with spaceship, spaceship
+    end
+end
 \end{lstlisting}
 
 \example Multiple dispatch with dynamic value dispatch, area of shapes. This example shows a possible direction of extensions to the multi-methods, by providing more implementations for different symbols. 
 \begin{lstlisting}
-object program {
-  def dispatch area (obj: Map[Symbol, Any]): Real : val Symbol
-    obj(:shape)
-  end def
-  
-  def multi area (:Rectangle)(obj)
-    obj(:width) * obj(:height)
-  end def
-  
-  def multi area (:Circle)(obj)
-    Math.$\pi$ * obj(:radius) ^ 2
-  end def
-  
-  def run (*args: String): Unit
-    val rect := %{
+object program
+  multi method area (obj: Map[Symbol, Any]): Real =
+    method (dispatch Symbol use match) = obj :shape
+    and method (for :Rectangle) = (obj :width) *. (obj :height)
+    and method (for :Circle) = Math.$\pi$ * (obj :radius)^2
+
+  method run (*args: String): Unit =
+    let rect = %{
         :shape => :Rectangle
         :width => 4 [<cm>]
-        :height => 13 [<cm>]}
-    val circle := %{
+        :height => 13 [<cm>]} in
+    let circle = %{
         :shape => :Circle
-        :radius => 12 [<cm>]}
-    print_line area(rect) (* 52 cm^2 *)
-    print_line area(circle) (* 452.38$\ldots$ cm^2 *)
-    print_line area(%{}[Symbol, Any]) (* error *)
-  end def
-}
+        :radius => 12 [<cm>]} in
+    begin
+      print_line area rect 
+      print_line area circle
+      print_line area %{}[Symbol, Any]  (* error, no such method *)
+    end
+end
 \end{lstlisting}
 
 

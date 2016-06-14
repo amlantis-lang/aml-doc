@@ -281,11 +281,11 @@ Type_Representation
         [Record_Extensions]
 Struct_Spec
     ::= ...
-      | 'type' id [Type_Param_Clause] 
+      | 'type' Type_Name 
         '+=' Type_Constr_Dcl {semi Type_Constr_Dcl}
 Struct_Def
     ::= ...
-      | 'type' id [Type_Param_Clause] 
+      | 'type' Type_Name
         '+=' Type_Constr_Def {semi Type_Constr_Def}
 Type_Constr_Def
     ::= Type_Constr_Dcl 

@@ -41,7 +41,7 @@ Expr
       | Ref_Expr
       | Jump_Expr
       | Function_Expr
-      | Def_Expr
+      | Binding_Expr
       | Tuple_Exprs
       | Method_Expr
       | Structure_Ref_Expr
@@ -2112,15 +2112,14 @@ x (i, j) := (e_1, e_2)       x.update (i, j) (e_1, e_2)
 \grammar\begin{lstlisting}
 Expr 
     ::= ...
-      | Def_Expr
-Def_Expr 
-    ::= ['implicit'] Val_Dcl In_Sep Expr ['end']
-      | ['implicit'] Var_Dcl In_Sep Expr ['end']
-      | ['implicit'] Val_Def In_Sep Expr ['end']
+      | Binding_Expr
+Binding_Expr 
+    ::= ['implicit'] Val_Def In_Sep Expr ['end']
       | ['implicit'] Var_Def In_Sep Expr ['end']
-      | {Local_Modifier} Tmpl_Def In_Sep Expr ['end']
-      | Struct_Def In_Sep Expr ['end']
+      | 'let' 'structure' id {'(' [id ':' Struct_Type] ')'} [':' Struct_Type]
+        '=' Struct_Expr In_Sep Expr ['end']
 \end{lstlisting}
+
 
 
 
@@ -2135,8 +2134,10 @@ Def_Expr
 \label{sec:typed-expressions}
 
 \grammar\begin{lstlisting}
-Cast_Expr  ::= Expr ('as' | 'as!' | 'as?') Type
-Infix_Expr ::= Expr ('is' ['not'] | 'is!' | 'is' 'not!') Type
+Cast_Expr 
+    ::= Expr ('as' | 'as!' | 'as?') Type
+Infix_Expr 
+    ::= Expr ('is' ['not' | 'not!'] | 'is!') Type
 \end{lstlisting}
 
 The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. If the type conversion fails, a runtime error is raised. The conversion can take these forms, preferred in the following order:
@@ -3025,7 +3026,6 @@ Template_Stat  ::= ? Expr, which includes the following extra elements for Expr:
                    ['public'] Use_Clause
                  | [Opt_Req] {Modifier} Dcl
                  | Opt_Req [Alias_Id {',' Alias_Id}]
-                 | {Modifier} (Def_Expr - ('implicit', Local_Modifier))
                  | {Modifier} Val_Def
                  | {Modifier} Var_Def
                  | {Modifier} Fun_Def
@@ -3051,11 +3051,11 @@ Template_Stat  ::= ? Expr, which includes the following extra elements for Expr:
                  | {Modifier} Prop_Def
                  | {Modifier} Constraint_Dcl
                  | {Modifier} Constraint_Def
-                 | 'inherit' Long_Id ['as' id] [Cond_Modifier]
-                 | 'inherit' Object_Creation_Expr 'as' id [Cond_Modifier]
+                   (* parent: *)
+                 | 'inherit' Long_Id [Arguments] ['as' id] [Cond_Modifier]
+                   (* mixin: *)
+                 | 'inherit' 'val' (Expr - Binding_Expr) 'as' id [Cond_Modifier]
                  | 'include' Long_Id [Cond_Modifier]
-                 | ['inherit' 'and'] 'prepend' Long_Id [Cond_Modifier]
-                 | 'implements' Long_Id [Cond_Modifier]
                  | Expr
                  | Alias_Expr
                  | Struct_Expr
@@ -3074,15 +3074,6 @@ Tmpl_Ifc_Impl  ::= 'interface' Annot_Type
                    'end' ['interface']
 Tmpl_Ifc_Dcl   ::= 'interface' Annot_Type 
                    'end' ['interface']
-Fun_Dec_Expr   ::= {Annotation} Dcl
-                 | ('transparent' | 'opaque')
-                 | 'pure'
-                 | 'native' [Expr]
-                 | 'implicit' id
-                 | {Annotation} 'in'  '{' Block '}'
-                 | {Annotation} 'out' '{' ['|' id '|'] Block '}'
-                 | Expr
-                 | ()
 Alias_Expr     ::= 'alias' Alias_Id 'is' Alias_Id
 Alias_Id       ::= symbol_literal
                  | id

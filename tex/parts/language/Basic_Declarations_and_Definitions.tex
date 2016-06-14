@@ -50,8 +50,8 @@ This is to keep up consistency with pattern matching, where the type will usuall
 
 
 
-\section{Value Declarations \& Definitions}
-\label{sec:value-dcl-def}
+\section{Value Definitions}
+\label{sec:value-def}
 
 \grammar\begin{lstlisting}
 Val_Def 
@@ -642,38 +642,72 @@ Then, every application of operations defined by the type class $T$ to values of
 \section{Function Declarations \& Definitions}
 \label{sec:function-decls-defs}
 
+% TBD: prepend optional ['class' | 'member'] in object definition as appropriate for each kind
 \grammar\begin{lstlisting}
 Message_Dcl 
-    ::= 'message' Fun_Sig 'end' ['message']
-Op_Dcl 
-    ::= 'operator' Op_Sig 'end' ['operator']
-Att_Dcl 
-    ::= 'attribute' Att_Sig 'end' ['attribute']
+    ::= 'message' fun_id [':' Function_Type] 'end' ['message']
+Operator_Dcl 
+    ::= 'operator' op_id [':' Function_Type] 'end' ['operator']
+Attribute_Dcl 
+    ::= 'attribute' id [':' Function_Type] 'end' ['attribute']
 Method_Def 
-    ::= 'method' Fun_Sig '=' [Fun_Dec] Expr
-Op_Def  
-    ::= 'operator' Op_Sig '=' [Fun_Dec] Expr
-Att_Def
-    ::= 'attribute' Att_Sig '=' [Fun_Dec] Expr
-Fun_Dec
-    ::= [nl] 'declare' Fun_Dec_Exprs In_Sep
-Fun_Dec_Exprs 
-    ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
-Fun_Sig 
-    ::= Function_Path [Type_Param_Clause] [Given_Clauses] Param_Clauses [':' Type]
-Op_Sig 
-    ::= Op_Path [Type_Param_Clause] [Given_Clauses]
-        Param_Clause Param_Clauses [':' Type]
-Att_Sig 
-    ::= Function_Path [Type_Param_Clause] [Given_Clauses]
-        Param_Clause Param_Clauses [':' Type]
-        (* it is an error if the first param clause only accepts Unit *)
-Function_Path 
-    ::= fun_id
-      | Long_Id '.' fun_id
-Op_Path 
-    ::= op_id
-      | Long_Id '.' op_id
+    ::= 'method' fun_id Method_Type_Clauses
+        Single_Method_Identity Param_Clauses [':' Type] 
+        '=' Single_Method_Body
+      | 'multi' 'method' fun_id Method_Type_Clauses
+        Multi_Method_Identity Param_Clauses [':' Type] 
+        '=' Single_Method_Body
+      | 'multi' 'method' fun_id Method_Type_Clauses 
+        Single_Method_Identity Param_Clauses [':' Type] 
+        '=' Multi_Method_Bodies
+      | 'prefer' ['method'] fun_id Expr 'to' Expr
+Operator_Def
+    ::= 'operator' op_id Method_Type_Clauses 
+        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        '=' Single_Method_Body
+      | 'multi' 'operator' op_id Method_Type_Clauses 
+        Multi_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        '=' Single_Method_Body
+      | 'multi' 'operator' op_id Method_Type_Clauses
+        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        '=' Multi_Method_Bodies
+      | 'prefer' 'operator' op_id Expr 'to' Expr
+Attribute_Def
+    ::= 'attribute' id Method_Type_Clauses
+        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        '=' Single_Method_Body
+      | 'multi' 'attribute' id Method_Type_Clauses
+        Multi_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        '=' Single_Method_Body
+      | 'multi' 'attribute' id Method_Type_Clauses
+        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        '=' Multi_Method_Bodies
+      | 'prefer' 'attribute' id Expr 'to' Expr
+
+Method_Type_Clauses
+    ::= [Type_Param_Clause] [Given_Clauses]
+Single_Method_Identity
+    ::= ['(' 'alias' Expr ')']  (* a constant expression *)
+Multi_Method_Identity
+    ::= Single_Method_Identity (Multi_Method_Dispatch | Multi_Method_Select)
+Multi_Method_Dispatch
+    ::= '(' 'dispatch' [Type] ['use' 
+        ('type'    (* each pattern must have a distinct type *)
+        | 'match'  (* will use constant patterns *)
+        | Expr)    (* will use a custom hierarchy *)
+        ]')'
+Multi_Method_Select
+    ::= '(' 'when' Pattern ')'
+      | '(' 'for'  Expr    ')'  (* a constant expression *)
+Single_Method_Body
+    ::= [Function_Declarations] Expr
+Multi_Method_Bodies
+    ::= [nl] Multi_Method_Body {[nl] 'and' Multi_Method_Body}
+Multi_Method_Body
+    ::= 'method' Multi_Method_Identity 
+        '=' Single_Method_Body
+      | 'prefer' ['method'] Expr 'to' Expr
+
 Param_Clauses 
     ::= {Param_Clause} [Variadic_Param] [Block_Capture_Param] [Implicit_Params]
 Param_Clause  
@@ -709,6 +743,7 @@ Positional_Variadic_Param
 Capture_Variadic_Param
     ::= '**(' [Mutability_Modifier] ['val' | 'var'] var_id [':' Type] ')'
       | '**'  [Mutability_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
+
 Params 
     ::= Positional_Params {',' Labelled_Params}
       | Labelled_Params
@@ -747,6 +782,22 @@ Param_Rw
       | 'ref'
 Param_Type
     ::= ['->'] Type
+    
+Function_Declarations
+    ::= [nl] 'declare' Fun_Dec_Exprs In_Sep
+Fun_Dec_Exprs 
+    ::= Fun_Dec_Expr {semi Fun_Dec_Expr}
+Fun_Dec_Expr 
+    ::= {Annotation} Dcl
+      | ('transparent' | 'opaque')
+      | 'pure'
+      | 'native' [Expr]
+      | 'implicit' id
+      | Signalling_Types
+      | {Annotation} 'in'  '{' Expr '}'
+      | {Annotation} 'out' '{' ['|' id '|'] Expr '}'
+      | Expr
+      | ()
 \end{lstlisting}
 
 A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's path, $\psig$ is its parameter signature and $T$ is its result type. 
