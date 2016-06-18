@@ -361,9 +361,8 @@ Struct_Expr
       | 'functor' {'(' [id ':' Struct_Type] ')'}+ '->' Struct_Expr
       | Struct_Expr {'(' [Struct_Expr] ')'}+
       | '(' Struct_Expr ')'
-      | '(' Struct_Expr 'as' Struct_Type ')'
       | '(' Struct_Expr Struct_Ascription ')'
-      | '(' 'val' Expr ['as' Pkg_Type] ')'
+      | '(' 'val' Expr [':' Pkg_Type] ')'
 Struct_Items 
     ::= Struct_Item {semi Struct_Item} 
 Struct_Item 

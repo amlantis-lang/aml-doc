@@ -850,10 +850,10 @@ Lazy_Pattern
 
 \grammar\begin{lstlisting}
 Struct_Pattern 
-    ::= 'structure' Pkg_Type
+    ::= '(' 'structure' id [':' Pkg_Type] ')'
 \end{lstlisting}
 
-A structure pattern ~\lstinline!structure $T$!~ matches a structure with type $T$. To bind the matched structure to a variable, the construct ~\lstinline!structure $T$ as $s$!~ can be used, binding the structure to the name $s$. 
+A structure pattern ~\lstinline!(structure $n$: $T$)!~ matches a structure with type $T$ and binds it to the value name $n$. The type $T$ may be omitted, if it can be inferred from the enclosing pattern. 
 
 % Currently, no decomposing of structures is possible. Could be added later, if it would make sense. 
 
