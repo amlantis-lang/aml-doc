@@ -174,8 +174,8 @@ The following shorthands are recognized:
 
 
 
-\section{Variable Declarations \& Definitions}
-\label{sec:variable-dcl-def}
+\section{Variable Definitions}
+\label{sec:variable-def}
 
 \grammar\begin{lstlisting}
 Var_Def 
@@ -229,19 +229,17 @@ shorthand for the sequence of variable declarations ~\lstinline@var $x_1$: $T$; 
 
 \grammar\begin{lstlisting}
 Prop_Dcl
-    ::= 'property' ['(' Prop_Specs ')'] id [':' Type]
+    ::= 'property' ['(' Prop_Specs ')'] id ':' Type
 Prop_Specs 
     ::= Prop_Spec {',' Prop_Spec}
 Prop_Spec 
     ::= ([Access_Modifier] ('get' | 'set')) 
-      | ['optional'] 'weak'
+      | 'weak'
       | 'unowned'
-      | ['optional'] 'soft'
-Prop_Def   
+Prop_Def
     ::= 'property' ['(' Prop_Specs ')'] id [':' Type] Prop_Impls
 Prop_Impls 
-    ::= '{' Prop_Impl {semi Prop_Impl} '}'
-      | [nl] 'with' Prop_Impl {[nl] 'and' Prop_Impl}
+    ::= [nl] 'with' Prop_Impl {[nl] 'and' Prop_Impl}
 Prop_Impl 
     ::= ([Access_Modifier] 'get' Prop_Get_Impl)
       | ([Access_Modifier] 'set' Prop_Set_Impl)
@@ -249,34 +247,22 @@ Prop_Impl
       | ([Access_Modifier] 'var' '=' Expr)
 \end{lstlisting}
 
-A property declaration \lstinline@property $x$: $T$@ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
+A property declaration \lstinline@property $x$: $T$@~ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
 
-A property definition \lstinline@property $x$: $T$ {get $\ldots$; set $\ldots$}@ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behaviour and storage of a property, but may as well opt-in for auto-generated implementation, by specifying the implementation block as ``~\code{_}~'', which is: 
+A property definition \lstinline@property $x$: $T$ with get $\ldots$ and set $\ldots$@~ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behaviour and storage of a property, but may as well opt-in for auto-generated implementation, by specifying the implementation block as ``~\code{_}~'', which is: 
 
 \begin{enumerate}
-\item 
-Storage of the property's value is in an instance variable (or a class instance variable in case of class properties) of the same name as is the name of the property: \lstinline@property $x$@ is stored in an instance variable \lstinline+@$x$+. 
+  \item Storage of the property's value is in an instance variable (or a class instance variable in case of class properties) of the same name as is the name of the property: \lstinline@property $x$@ is stored in an instance variable \lstinline+@$x$+. 
 
-\item
-Properties defined with only \code{get} are stored in immutable instance variables (\sref{sec:value-dcl-def}). 
+  \item Properties defined with only \code{get} are stored in immutable instance variables (\sref{sec:value-def}). 
 
-\item
-Properties defined with \code{set}\footnote{It is also possible to declare/define properties that are \code{set}-only. That makes them {\em write-only}, as opposed to {\em read-only} properties with \code{get}-only.} are stored in mutable instance variables (\sref{sec:variable-dcl-def}). 
+  \item Properties defined with \code{set}\footnote{It is also possible to declare/define properties that are \code{set}-only. That makes them {\em write-only}, as opposed to {\em read-only} properties with \code{get}-only.} are stored in mutable instance variables (\sref{sec:variable-def}). 
 
-\item
-Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@. 
+  \item Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@. 
 
-\item
-Properties defined with \code{unowned} are stored as unowned references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Unowned_Reference[$T$]@. 
+  \item Properties defined with \code{unowned} are stored as unowned references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@ and implicitly unwrapped. 
 
-\item
-Properties defined with \code{soft} are stored as unowned references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Soft_Reference[$T$]@. 
-
-\item
-The getter and setter, including both implicit and explicit versions, automatically wrap (assignment) or unwrap (evaluation) the corresponding reference type. The default values defined with \code{val} or \code{var} do the same. 
-
-\item
-If the property is declared as \code{optional}, then the property is stored in an instance variable of type \code{A_Reference[Option[$T$]]}, where \code{A_Reference} is one of \code{Weak_Reference}, \code{Unowned_Reference} or \code{Soft_Reference}, and is again automatically wrapped and unwrapped as appropriate, but inside the \code{Option[$T$]} type. Should the reference be cleared, then \code{None} is set as the value. 
+  \item The getter and setter, including both implicit and explicit versions, automatically wrap (assignment) or unwrap (evaluation) the corresponding reference type. The default values defined with \code{val} or \code{var} do the same. 
 
 \end{enumerate}
 
@@ -299,18 +285,14 @@ Assignment to properties is translated automatically into a setter function call
 
 \begin{lstlisting}
 Prop_Get_Impl 
-    ::= '{' Block '}'
-      | 'do' Block 'done'
-      | '=' Expr
+    ::= ? Block_Expr without parameters ?
       | '_'
 Prop_Set_Impl 
-    ::= '{' '|' Param '|' [':' Type semi] Block '}'
-      | 'do' '|' Param '|' [':' Type semi] Block 'done' 
-      | '(' Param ')' [':' Type semi] '=' Expr
+    ::= ? Block_Expr with exactly one parameter ?
       | '_'
 \end{lstlisting}
 
-Property implementations are restricted to parameterless block expressions for property getters and to block expressions with one parameter for property setters. If the property is specified with a \code{get} or \code{set}, but without a property getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
+Property implementations are restricted to parameterless block expressions for getters and with one parameter for setters. If the property is specified with a \code{get} or \code{set}, but without a getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
 
 If a property setter (\code{set}) does not specify return type, then it is inferred as \code{Unit}. 
 
