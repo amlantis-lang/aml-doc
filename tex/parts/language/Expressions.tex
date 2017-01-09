@@ -2811,23 +2811,52 @@ Signalling a condition does not unwind the call stack.\footnote{Yes, you read it
 \label{sec:try-operator}
 
 \grammar\begin{lstlisting}
-Prefix_Expr 
-    ::= Try_Op Expr
-Try_Op 
-    ::= 'try' 
-      | 'try?' 
+Try_Expr 
+    ::= Try_Op (Expr - Try_Expr) [Else 'rescue' '[' Type_Expr ']' ['with' Expr]]
+      | Try_Op (Expr - Try_Expr) [Else Expr]
+Try_Op
+    ::= 'try'
+      | 'try?'
       | 'try!'
 \end{lstlisting}
 
 The {\em try operator} is required to be applied on expressions, where the expressions contains a function application, one such that the function to be applied are statically known to possibly raise errors (instances of \code{Raiseable}), or reraise them. 
 
-The ~\lstinline!try!~ form is the basic form that simply allows one to use a raising function. 
+\begin{itemize}
+  \item The ~\lstinline!try $e$!~ form is the basic form that simply allows one to use a raising function. 
 
-The ~\lstinline!try?!~ form returns \code{nil} in case of any raised error (except for abandonments, as specified). If the result type of the applied function is default-nullable or not nullable, it is made locally nullable.\footnote{Whether the result type does not allow \code{nil} values is not important, because that only applies to the type itself without nullability specification.}
+  \item The ~\lstinline!try? $e$!~ form returns \code{nil} in case of any raised error. This effectively discards any raised error, except for abandonments, as specified. 
 
-The ~\lstinline@try!@~ form works like the basic form, but does not expect the applied function to ever raise, and if it does, a runtime error is raised -- an abandonment. This has implications on the surrounding context -- the application does not need to be surrounded in \code{begin}-\code{rescue} block and the function in which the application appears does not need to declare itself as raising the unexpected error. 
+  \item The ~\lstinline@try! $e$@~ form works like the basic form, but does not expect the applied function to ever raise, and if it does, a runtime error is raised -- an abandonment. This has implications on the surrounding context -- the application does not need to be surrounded in \code{begin}-\code{rescue} block and the function in which the application appears does not need to declare itself as raising the unexpected error. 
+
+  \item The ~\lstinline!try $e$ else rescue[$E$]!~ form returns a value of type \lstinline!Tried_Result[$T$, $E$]!. Rescued errors that are subtypes of $E$ are then wrapped in it.
+    
+  \item The ~\lstinline!try $e$ else rescue[$E$] with $e_2$!~ form returns result of evaluating $e_2$ if an error is rescued. 
+      
+  \item The ~\lstinline!try $e$ else $e_2$!~ form returns result of evaluating $e_2$ if any error is rescued. 
+ 
+  \item The ~\lstinline!try? $e$ else rescue[$E$]!~ form returns \code{nil} if the raised error is a subtype of $E$, otherwise, the error is reraised. 
+      
+  \item The ~\lstinline!try? $e$ else rescue[$E$] with $e_2$!~ form returns result of evaluating $e_2$ if the raised error is a subtype of $E$, otherwise, \code{nil} is returned. 
+        
+  \item The ~\lstinline!try? $e$ else $e_2$!~ form is forbidden.\footnote{It would be no different from ~\lstinline!try $\,e$ else $\,e_2$!, therefore, it is a redundant form.}
+  
+  \item The ~\lstinline@try! $e$ else rescue[$E$]@~ form returns a value of type \lstinline!Result[$T$, $E$]!. Rescued errors that are subtypes of $E$ are then wrapped in it. An abandonment is raised in case an error that is not a subtype of $E$ is raised by $e_1$.
+      
+  \item The ~\lstinline@try! $e$ else rescue[$E$] with $e_2$@~ form returns result of evaluating $e_2$ if an error is rescued. 
+        
+  \item The ~\lstinline@try! $e$ else $e_2$@~ form returns result of evaluating $e_2$ if any error is rescued. 
+\end{itemize}
 
 The purpose of the try operator is to allow readers of the code to quickly spot the place where things can go south.
+
+The \lstinline!Result[$T$, $E$]! may be defined as follows:
+\begin{lstlisting}
+type Result['Result, 'Error] = variant
+  case Success of 'Result
+  case Fail of 'Error
+end
+\end{lstlisting}
 
 
 
