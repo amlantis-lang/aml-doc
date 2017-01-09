@@ -22,12 +22,14 @@ Atomic_Pattern
     ::= Var_Pattern
       | Bound_Pattern
       | Typed_Pattern
-      | ':?' Type (* a portion of Type_Pattern *)
+        (* a portion of Type_Pattern *)
+      | ':?' (Simple_Type - Postfix_Parameterized_Type)  
       | Type_Instance_Pattern
       | Wildcard_Pattern
       | Constant_Pattern
       | Grouped_Pattern
-      | Stable_Id (* a portion of Named_Pattern *)
+        (* a portion of Named_Pattern *)
+      | Stable_Id  
       | List_Pattern
       | Array_Pattern
       | Dict_Pattern
@@ -59,9 +61,9 @@ Constant_Pattern
 Typed_Pattern 
     ::= '(' Type_Bound_Pattern ')'
 Type_Pattern 
-    ::= ['type' 'is' | ':?'] Type
+    ::= ['type' 'is' | ':?'] Type_Expr
 Type_Bound_Pattern 
-    ::= Pattern ':' Type
+    ::= Pattern ':' Type_Expr
 Type_Instance_Pattern 
     ::= Singleton_Type
       | Projected_Type
@@ -109,27 +111,27 @@ Rest_Extracts
       | Rest_Extract
 Optional_Extract 
     ::= '?' Pattern
-      | '?' ['val' | 'var'] id [':' Type]
-      | '?' '_' [':' Type]
+      | '?' ['val' | 'var'] id [':' Type_Expr]
+      | '?' '_' [':' Type_Expr]
       | '?(' Pattern '=' Expr ')'
 Rest_Extract 
-    ::= '*' ['val' | 'var'] id [':' Type]
-      | '*' '_' [':' Type]
+    ::= '*' ['val' | 'var'] id [':' Type_Expr]
+      | '*' '_' [':' Type_Expr]
 Labelled_Extracts 
     ::= Labelled_Pattern {',' Labelled_Pattern} [',' Capture_Extract]
       | Capture_Extract
 Labelled_Pattern 
     ::= '~'   ['val' | 'var'] id 
-      | '~('  ['val' | 'var'] id [':' Type] ')'
+      | '~('  ['val' | 'var'] id [':' Type_Expr] ')'
       | '~'   ['val' | 'var'] id ':' Pattern
-      | '~'   ['val' | 'var'] id ':' '(' Pattern [':' Type] ')'
+      | '~'   ['val' | 'var'] id ':' '(' Pattern [':' Type_Expr] ')'
       | '~?'  ['val' | 'var'] id
-      | '~?(' ['val' | 'var'] id [':' Type] ['=' Expr] ')'
+      | '~?(' ['val' | 'var'] id [':' Type_Expr] ['=' Expr] ')'
       | '~?'  ['val' | 'var'] id ':' Pattern
-      | '~?'  ['val' | 'var'] id ':' '(' Pattern [':' Type] ['=' Expr] ')'
+      | '~?'  ['val' | 'var'] id ':' '(' Pattern [':' Type_Expr] ['=' Expr] ')'
 Capture_Extract 
-    ::= '**' var_id [':' Type]
-      | '**' '_' [':' Type]
+    ::= '**' var_id [':' Type_Expr]
+      | '**' '_' [':' Type_Expr]
 Seq_Extractions
     ::= Pattern {semi Pattern} [semi Seq_Rest_Extracts] {semi Pattern}
       | Seq_Rest_Extracts {semi Pattern}
@@ -141,12 +143,12 @@ Dict_Extractions
       | Capture_Extract
       | Seq_Extractions
 Dict_Extraction
-    ::= Dict_Key '=>' Pattern
+    ::= Dict_Key '=' Pattern
 Dict_Key 
     ::= '_'
       | Expr
 Record_Pattern 
-    ::= '(' 'record' '{' Field_Patterns '}' ')'
+    ::= '{' Field_Patterns '}'
 Field_Patterns 
     ::= Field_Pattern {semi Field_Pattern} [semi '_']
       | '_'

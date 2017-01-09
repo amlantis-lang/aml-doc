@@ -389,12 +389,17 @@ Struct_Constraint
     ::= 'type' Simple_Type Type_Equation
       | 'struct' Struct_Path '=' Extended_Struct_Path
         (* substituting inside signature: *)
-      | 'type' Simple_Type ':=' Type
+      | 'type' Simple_Type ':=' Type_Expr
       | 'struct' id ':=' Extended_Struct_Path
 Simple_Type 
     ::= ...
-      | '(' 'structure' Pkg_Type ')'
-      | '(' 'structure' Expr ')'
+      | Structural_Type
+Structural_Type
+    ::= '(' 'structure' Infix_Type ')'
+      | '(' 'structure' 'of' Expr ')'
+      | '##' ? no whitespace ? Stable_Id
+      | '##(' Infix_Type ')' 
+      | '##{' Expr '}' 
 Pkg_Type 
     ::= Extended_Struct_Path '.' id ['with' Pkg_Constraint {'and' Pkg_Constraint}]
 Pkg_Constraint
