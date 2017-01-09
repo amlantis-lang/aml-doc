@@ -70,60 +70,11 @@ any_id
 
 There are more kinds of identifiers. An identifier can start with a letter, which can be followed by an arbitrary sequence of letters, digits, underscores and operator characters. The identifier may be prefixed with one or two {\em at} ``\code{@}'' signs, creating an instance variable or a class object variable identifier, respectively. These forms are called {\em plain identifiers}. An identifier may also start with an operator character, followed by arbitrary sequence of operator characters, forming operator identifiers, which can only be used in expressions that directly involve operators (\sref{sec:prefix-infix-ops}). 
 
-An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with Aml keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any Unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
+An identifier may also be formed by an identifier between back-quotes (``\lstinline!$\,$`$\,$!''), to resolve possible name clashes with \Aml keywords, and to allow to identify operators. An identifier may also be enclosed in double back-quotes (``\lstinline!$\,$``$\,$!''), where any Unicode character may appear, except for another back-quote. Instance variable names and class instance variable names never clash with a keyword name, since these are distinguished by the preceding ~``\lstinline!@!''~ and ~``\lstinline!@@!''~ respectively. 
 
-Aml programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
+\Aml programs are parsed greedily, so that a longest match rule applies. Letters from the syntax may be any Unicode letters, but English alphabet letters are recommended, along with English\footnote{English, not mistakes.} names.
 
-A set of identifiers is reserved for language features instead of for user identifiers. However, unlike in some other languages, keywords are not being recognized inside of paths, except for a few specific cases.
-
-\newpage
-
-The following names are the reserved words. Identifiers that match any of the specified reserved word carry the extra property of being a possible keyword, which is used in syntactic grammar. 
-
-\syntax\begin{lstlisting}
-abstract      advice        advice-execution            after
-alias         also          and           annotation    arguments
-around        as            aspect        assert        atomic
-attribute     begin         before        bitfield      break
-broken        case          catch         class         clone
-cloned        constant      constraint    constructor   declare
-def           defer         delta         destructor    digits
-dispatch      do            done          downto        eager
-else          elsif         end           ensure        enum
-execution     exhausted     exit          extends       family
-failure       final         for           for-all       for-some
-foreign       function      functor       get           given
-goto          handle        handler       if            immutable
-implements    implicit      in            include       infix
-infixl        infixr        inherit       instance      interface
-intersection  invariant     invoke        is            joinpoint
-label         lazy          let           loop          macro
-match         measure       member        memoize       message
-method        module        monitored     multi         mutable
-native        new           next          nil           no
-not           object        of            opaque        open
-operator      optional      or            origin        otherwise
-out           outer         override      parallel      per-self
-per-target    pointcut      pragma        prefer        prepend
-private       property      protected     protocol      public
-pure          raise         raises        raising       range
-rec           recursive     record        redo          ref
-refine        refinement    reflect       release       reraise
-reraises      rescue        resignal      resignals     retain
-rethrow       rethrows      retry         return        returning
-required      reverse       scope         sealed        self
-set           seq           sig           signal        signalling
-signals       skip          soft          step          struct
-super         switch        synchronized  tailcall      target
-then          this          throw         throws        throwing
-to            trait         transparent   try           tuple
-type          undefined     unless        unowned       until
-union         upgrade       use           val           var
-variant       yes           weak          when          while
-with          xor           yield         yielding      _
-\end{lstlisting}
-
-Not every reserved word is a keyword in every context, this behaviour will be further explained by syntax definitions. For example, the bitfield reserved word is only recognized as a keyword inside an enumeration definition context, in a specific place. In case of ambiguous syntax views of a sequence of source tokens, the ones that include keywords are preferred.\footnote{This may happen with selection sequences that would include e.g. ~\lstinline!prefix.type!. To treat \code{type} as another selection, enclose it in backquotes: ~\lstinline[deletekeywords={type}]!prefix.`type`!.} In any case, reserved words enclosed in backquotes (``\lstinline!$\,$`$\,$!'') are not treated as keywords. 
+\Aml specification does not list the language keywords, because every keyword is only reserved in particular set of contexts. Every reserved word occurrence in grammar is also literal -- simply enclosing the keyword in one of the backquote forms removes its keyword-bound meaning, e.g. \lstinline[deletekeywords={begin}]!`begin`!. 
 
 
 
@@ -148,18 +99,7 @@ Function identifiers specify how a function can be named. Usually, it will be th
 \section{Symbolic Keywords}
 \label{sec:symbolic-keywords}
 
-\syntax\begin{lstlisting}[deletekeywords={of}]
-Symbolic_Keyword ::= ? one of: ?
-let!  yield!  return!  as?  as!  is!  not!  open!  try?  try!
-let?  val?  var?
-|  .  .?  .!  .'  :  (  )  @[  [  ]  <  >  >:  <:  :>
-%[|  |]  %[  %(  (~  {  %{  }  %/  /
-'  #  ..  ..<  ...  ~...  =  :=  ==  /==  =~  ;  ;;  ->  <-  ~>
-=>  *  **  &  ?  ,
-_  @  <@  @>  <@@  @@>  {<  >}  %%
-\end{lstlisting}
-
-Symbolic or partially symbolic character sequences can be treated as keywords, if a lexical or syntactic grammars specifies that. Some lexical grammars extend some of these sequences with ``flags''. 
+Symbolic or partially symbolic character sequences can be treated as keywords, if a lexical or syntactic grammars specifies that.
 
 
 
