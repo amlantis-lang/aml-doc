@@ -648,7 +648,7 @@ Workflow ::= 'let!' Let_Binding semi Workflow
            | 'for' Val_Dcls 'in' ['reverse'] Expr
              ['step' Expr] Wf_For_Loop
            | ('while' | 'until') Condition Wf_For_Loop
-           | 'for' id '=' Expr ('to' | 'downto') Expr Wf_For_Loop
+           | 'for' id '=' Expr (['up' | 'down'] 'to') Expr Wf_For_Loop
            | Workflow ('while' | 'until') Condition
            
            | Workflow semi Workflow
@@ -2514,16 +2514,16 @@ However, the loop construct has built-in support for loop control expressions.
 \grammar\begin{lstlisting}
 Loop_Expr 
     ::= ...
-      | 'for' id '=' Expr ('to' | 'downto') Expr For_Loop
+      | 'for' id '=' Expr (['up' | 'down'] 'to') Expr For_Loop
 \end{lstlisting}
 
-The {\em counter loop expressions} ~\lstinline!for $i$ = $e_1$ to $e_2$ loop $e_3$ end!~ is typed as \code{Unit}, same as ~\lstinline!for $i$ = $e_1$ downto $e_2$ loop $e_3$ end!~, so there is no point in using their value. 
+The {\em counter loop expressions} ~\lstinline!for $i$ = $e_1$ to $e_2$ loop $e_3$ end!~ is typed as \code{Unit}, same as ~\lstinline!for $i$ = $e_1$ down to $e_2$ loop $e_3$ end!~, so there is no point in using their value. 
 
 The expression ~\lstinline!for $i$ = $e_1$ to $e_2$ loop $e_3$ end!~ first evaluates the expressions $e_1$ and $e_2$ (boundaries) as \code{Integer_Like} values $a$ and $b$. Types of both must be equivalent, and the value $i$ is typed with their type. The loop body $e_3$ is then evaluated in an environment where $i$ is successively bound to the values $a, a+1 \commadots b-1, b$. The loop body is never evaluated if $a > b$. It is an error if ~\lstinline!e_1 as? Integer_Like!~ or ~\lstinline!e_2 as? Integer_Like!~ results in \code{nil}. 
 
-The expression ~\lstinline!for $i$ = $e_1$ downto $e_2$ loop $e_3$ end!~ evaluates similarly, except that $i$ is successively bound to the values $a, a-1 \commadots b+1, b$, and the loop body is also never evaluated if $a < b$. 
+The expression ~\lstinline!for $i$ = $e_1$ down to $e_2$ loop $e_3$ end!~ evaluates similarly, except that $i$ is successively bound to the values $a, a-1 \commadots b+1, b$, and the loop body is also never evaluated if $a < b$. 
 
-
+The expression ~\lstinline!for $i$ = $e_1$ up to $e_2$ loop $e_3$ end!~ is equivalent to ~\lstinline!for $i$ = $e_1$ to $e_2$ loop $e_3$ end!. 
 
 
 
