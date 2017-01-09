@@ -635,10 +635,8 @@ Workflow ::= 'let!' Let_Binding semi Workflow
            | Return_Expr
            
            | 'if' Wf_Condition ('then' | semi) Workflow
-             {[semi] 'elsif' Wf_Condition ('then' | semi) Workflow} 
              [[semi] Else Workflow] 'end' ['if']
            | 'unless' Wf_Condition ('then' | semi) Workflow
-             {[semi] 'elsif' Wf_Condition ('then' | semi) Workflow} 
              [[semi] Else Workflow] 'end' ['unless']
              
            | ? Match_Expr where Expr is extended with Workflow ?

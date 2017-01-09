@@ -454,14 +454,14 @@ end match
 \begin{lstlisting}
 let (|A|B|C|) input = 
   if input < 0 then A
-  elsif input = 0 then B
+  else if input = 0 then B
   else C
   end if
   
 match 3
-when A then "negative"
-when B then "zero"
-when C then "positive"
+  when A then "negative"
+  when B then "zero"
+  when C then "positive"
 end match
 \end{lstlisting}
 Notice in this example that the expressions like \code{A} are elaborated to \code{A(())}, and as the non-constant constructor of \code{Choice} types accepts one argument, the type of that argument is \code{Unit}, as well as the corresponding type argument. 
