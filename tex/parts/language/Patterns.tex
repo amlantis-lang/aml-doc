@@ -277,13 +277,13 @@ let categorize = function
   when 1 then 0
   when 0 then 1
   when _ then 0
-end function
+end
 
 let categorize_alternative = function
   when 1 then 0
   when 0 then 1
   otherwise 0
-end function
+end
 \end{lstlisting}
 
 Wildcard patterns may also be used in extractions to ignore the input at the given site. 
@@ -336,14 +336,14 @@ An enumeration pattern contributes the enumeration type to type of parameter, wh
 type Data = enum
   case Kind_1 of Number * Number
   case Kind_2 of String * String
-end type
+end
 
 let some_data = Data.Kind_1(4, 2)
 
 let result = match some_data
   when Kind_1(a, b) then a + b
   when Kind_2(s1, s2) then s1.length + s2.length
-end match
+end
 \end{lstlisting}
 Which gives \code{result} a value of \code{6}. 
 
