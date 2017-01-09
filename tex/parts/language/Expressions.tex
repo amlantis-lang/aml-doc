@@ -2948,6 +2948,25 @@ The keyword ~\lstinline[language=Java]!try!~ is not available in Aml -- in Aml, 
 
 
 
+\subsection{Parallel Evaluation Expressions}
+\label{sec:parallel-eval}
+
+\grammar\begin{lstlisting}
+Expr 
+    ::= Parallel_Eval_Expr
+Parallel_Eval_Expr
+    ::= 'parallel' Expr {Expr}+
+      | Expr '`parallel`' Expr
+\end{lstlisting}
+
+Parallel evaluation expression ``~\lstinline!parallel $e_1$ $e_2$ $\ldots$ $e_n$!~'' indicates that evaluation of the sub-expressions $e_1 \ldots e_{n-1}$ could happen in parallel with that of $e_n$. It itself evaluates to $e_n$, and thus is semantically equivalent to $e_n$.
+
+\paragraph{Note} 
+If the runtime decides to evaluate the sub-expressions in parallel, occurrences of those sub-expressions within the last sub-expressions are to use the same mechanism as evaluation of by-need parameters (\sref{sec:by-need-parameters}) -- i.e. when the expression's value is to be used, evaluation blocks until the parallel evaluation either completes or fails. Passing the expression as an argument to a method that evaluates it by-name or by-need does not wait for the evaluation to complete.
+
+
+
+
 
 \section{Quoted Expressions}
 \label{sec:syntactic-forms}
