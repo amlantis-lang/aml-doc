@@ -229,7 +229,7 @@ type B-Tree['t] = variant
     when Empty then no
     when Node y, left, right then
       if x = y then yes
-      elsif x < y then is_member? x left
+      else if x < y then is_member? x left
       else is_member? x right
       end if
     end match

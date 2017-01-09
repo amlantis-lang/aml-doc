@@ -2242,32 +2242,24 @@ Conditional_Expr
     ::= Cond_Block_Expr 
       | Cond_Mod_Expr
 Cond_Block_Expr 
-    ::= Cond_Block_Expr1 
-      | Cond_Block_Expr2
-Cond_Block_Expr1 
-    ::= 'if' Condition ('then' | semi) Expr 
-        {[semi] 'elsif' Condition ('then' | semi) Expr}
-        [[semi] Else Expr] 'end' ['if']
-Cond_Block_Expr2 
-    ::= 'unless' Condition ('then' | semi) Expr 
-        {[semi] 'elsif' Condition ('then' | semi) Expr}
-        [[semi] Else Expr] 'end' ['unless']
+    ::= ('if' | 'unless') Condition ('then' | semi) Expr
+        [[semi] Else Expr] 'end'
 Cond_Mod_Expr
     ::= Expr Cond_Modifier
 Cond_Modifier 
-    ::= Cond_Modifier1 [Else (Expr - Conditional_Expr)]
-Cond_Modifier1
+    ::= Basic_Cond_Modifier [Else (Expr - Conditional_Expr)]
+Basic_Cond_Modifier
     ::= ('if' | 'unless') Condition 
 Else 
     ::= 'else' | 'otherwise'
 Condition 
-    ::= Condition1 
-      | Condition2
-Condition1 
+    ::= Boolean_Condition 
+      | Optional_Binding_Condition
+Boolean_Condition 
     ::= (Expr - Conditional_Expr) 
-Condition2 
+Optional_Binding_Condition 
     ::= [Mutability_Modifier] ('val?' | 'let?' | 'var?') Let_Binding 
-        ['and' Condition2]
+        ['and' Optional_Binding_Condition]
 \end{lstlisting}
 
 The conditional expression ~\lstinline!if $e_1$ then $e_2$ else $e_3$!~ chooses one of the values of $e_2$ and $e_3$, depending on the value of $e_1$. The condition $e_1$ is expected to conform to type \code{Boolean}, but can be virtually any type -- if it is not a \code{Boolean}, then it is equal to \code{yes} if it implements the method ~\lstinline!to_boolean(): Boolean! and that implementation returns \code{yes}, or can be converted to \code{yes} (\sref{sec:typed-expressions}), and \code{no} otherwise. If the $e_1$ is the single instance ``\lstinline!()!'' of type \code{Unit}, it is an error. The \code{then}-part $e_2$ and the \code{else}-part $e_3$ are both expected to conform to the expected type of the conditional expression, but are not required to. The type of the conditional expression is the weak least upper bound (\sref{sec:weak-conformance}) of the types of $e_2$ and $e_3$. A semicolon preceding the \code{else} symbol of a conditional expression is ignored. 
@@ -2284,17 +2276,7 @@ $x$ sor $y$           if $x$ then yes else $y$
 
 A short form of the conditional expression eliminates the \code{else}-part. The conditional expression ~\lstinline!if $e_1$ then $e_2$!~ is evaluated as if it was ~\lstinline!if $e_1$ then $e_2$ else ()!, and is therefore expected to be the weak least upper bound of the type \code{Unit} and the type of $e_2$. 
 
-The conditional expression 
-\begin{lstlisting}
-if $e_1$ then $e_2$ elsif $e_3$ then $e_4$ $\ldots$ elsif $e_n$ then $e_{n+1}$ else $e_{n+2}$
-\end{lstlisting} 
-is evaluated as if it was 
-\begin{lstlisting}
-if $e_1$ then $e_2$ else if $e_3$ then $e_4$ $\ldots$ else if $e_n$ then $e_{n+1}$ else $e_{n+2}$
-\end{lstlisting}
-Basically, \code{elsif} is a simple syntax sugar for the little longer \code{else if} keyword tokens sequence. 
-
-The alternative conditional expression ~\lstinline!unless $e_1$ then $e_2$ else $e_3$!~ is evaluated as if it was ~\lstinline@if not $e_1$ then $e_2$ else $e_3$@. Unlike in Ruby, the \code{elsif}-part is allowed to appear with this conditional expression. However, there is no syntax sugar for the \code{else unless} keyword tokens sequence. 
+The alternative conditional expression ~\lstinline!unless $e_1$ then $e_2$ else $e_3$!~ is evaluated as if it was ~\lstinline@if not $e_1$ then $e_2$ else $e_3$@. 
 
 The modifier-fashion conditional expression ~\lstinline!$e_1$ if $e_2$ else $e_3$!~ is interpreted as if it was ~\lstinline!if $e_2$ then $e_1$ else $e_3$!. Similarly with the \code{unless} version and the short form of the modifier conditional expression (without the explicit \code{else}-part). 
 
@@ -2304,7 +2286,7 @@ Unlike in some languages, conditional expressions do not require to place parent
 Aml provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
 
 \paragraph{Conditional Variable Binding}
-The conditional variable definition ~\lstinline!if $p$ = $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ = $e_1$!~ is a variable binding using one of \code{let?}, \code{val?} or \code{var?}, works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no} (literally), the condition is still met (because \code{no} is not \code{nil} neither \code{()}) and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ = $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. In case the \code{unless} keyword is used instead of \code{if}, then the variable binding is effective in $e_3$ (and possible other \code{elsif} branches), but not in $e_2$. Multiple conditional variable bindings may be combined, and in that case, all of them must successfully bind for the condition to be true. 
+The conditional variable definition ~\lstinline!if $p$ = $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ = $e_1$!~ is a variable binding using one of \code{let?}, \code{val?} or \code{var?}, works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no} (literally), the condition is still met (because \code{no} is not \code{nil} neither \code{()}) and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ = $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. In case the \code{unless} keyword is used instead of \code{if}, then the variable binding is effective in $e_3$, but not in $e_2$. Multiple conditional variable bindings may be combined, and in that case, all of them must successfully bind for the condition to be true. 
 
 
 
