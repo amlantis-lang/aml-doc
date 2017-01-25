@@ -8,36 +8,308 @@
 \newpage
 
 \grammar\begin{lstlisting}
-Tmpl_Def             ::= Class_Definition
-                       | Object_Definition
-                       | Trait_Definition
-                       | Protocol_Definition
-                       | Refinement_Definition
-                       | Aspect_Definition
-                       | Annotation_Definition
-                       | Type_Definition
-Class_Definition     ::= ['monitored'] ['case'] 'class' Class_Def
-Object_Definition    ::= ['monitored'] ['case'] 'object' Object_Def
-Trait_Definition     ::= ['monitored'] 'trait' Trait_Def
-Protocol_Definition  ::= ['monitored'] 'protocol' Pro_Def
+Objects_Definition
+    ::= Objects_Binding {'and' Objects_Binding}
+Objects_Binding
+    ::= Class_Definition
+      | Object_Definition
+      | Trait_Definition
+      | Protocol_Specification
+      | Extension_Definition
+      | Refinement_Definition
+Objects_Specification
+    ::= Objects_Spec {'and' Objects_Spec}
+Objects_Spec
+    ::= Class_Specification
+      | Object_Specification
+      | Trait_Specification
+      | Protocol_Specification
+      | Extension_Specification
+      | Refinement_Specification
+
+Class_Definition
+    ::= Class_Modifiers 'class' Type_Name 
+        [Access_Modifier] [Param_Clauses] [':' Class_Type]
+        ('=' Class_Expr | '+=' Trait_Expr)
+Object_Definition 
+    ::= Object_Modifiers 'object' Type_Name [':' Trait_Type]
+        ['=' | '+='] Standalone_Object_Expr 'end' ['object']
+Trait_Definition 
+    ::= Trait_Modifiers 'trait' Type_Name [':' Trait_Type]
+        ('=' | '+=') Trait_Expr
+Extension_Definition
+    ::= Trait_Modifiers 'extension' Type_Name 'for' Parameterized_Type [':' Class_Body_Type]
+        ('=' | '+=') Extension_Expr
+Refinement_Definition
+    ::= 'refinement' Parameterized_Type [':' Trait_Type]
+        '=' Trait_Expr
+
+Class_Specification
+    ::= Class_Modifiers 'class' Type_Name [Param_Clauses] ':' Class_Type
+Object_Specification
+    ::= Object_Modifiers 'object' Type_Name ':' Trait_Type
+Trait_Specification
+    ::= Trait_Modifiers 'trait' Type_Name ':' Trait_Type
+Protocol_Specification
+    ::= 'protocol' Type_Name ':' Class_Body_Type
+Extension_Specification
+    ::= Trait_Modifiers 'extension' Type_Name 
+        'for' Parameterized_Type ':' Class_Body_Type
+Refinement_Specification
+    ::= 'refinement' Parameterized_Type ':' Trait_Type
+    
+Class_Modifiers
+    ::= [Access_Modifier] ['implicit'] ['open'] ['sealed'] ['case' | 'abstract']
+      | [Access_Modifier] ['implicit'] ['open'] 'final' ['case']
+Trait_Modifiers
+    ::= [Access_Modifier] ['open']
+Object_Modifiers
+    ::= [Access_Modifier] ['implicit'] ['open'] ['case']  
 \end{lstlisting}
 
-Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
 
 
 
 
 
-\section{Templates}
-\label{sec:templates}
+\section{Class Definitions \& Specifications}
+\label{sec:class-defs-specs}
+
+\subsection{Class Definitions}
+\label{sec:class-defs}
 
 \grammar\begin{lstlisting}
-Class_Parents  ::= Base_Call {['prepend'] 'with' Annot_Type} 
-Trait_Parents  ::= Annot_Type {['prepend'] 'with' Annot_Type}
-Template_Body  ::= [Self_Type] Template_Stat {semi Template_Stat}
-Self_Type      ::= 'use' 'self' 'as' 'val' id [':' Type] In_Sep
-                 | 'use' 'self' 'as' Type In_Sep
+Class_Expr
+    ::= (* only in non-recursive occurrences: *)
+        Parameterized_Type  
+      | Function_Declarations [Expr semi] Class_Expr
+        (* in both recursive and non-recursive occurrences: *)
+      | '(' Class_Expr [':' Class_Type] ')'
+      | 'fun' {Params_Clause}+ [Guard] '->' [Function_Declarations] Class_Expr
+      | 'object' Class_Body 'end'
+      | 'begin' Class_Expr 'end'
+      | Class_Use_Expr
+      | Class_Binding_Expr
+      | Expr semi Class_Expr
+Class_Body
+    ::= [Instance_Self_Type] {[nl] Class_Field}
+Instance_Self_Type
+    ::= '(' id [':' Type_Expr] ')'
+        (* here, id can be also 'self', which is the default *)
+Class_Use_Expr
+    ::= Class_Use_Expr_As
+      | Class_Use_Aspect
+      | Class_Use_Refinement
+      | Use_Clause In_Sep Class_Expr
+        (* no Class_Use_Droppable intentionally  *)
+Class_Use_Expr_As
+    ::= 'use' Expr ('as' | 'as!' | 'as?')
+        [['var' | 'val'] id ':'] Type In_Sep Class_Expr
+Class_Use_Aspect
+    ::= 'use' 'aspect' Stable_id In_Sep Class_Expr
+Class_Use_Refinement
+    ::= 'use' 'refinement' Stable_Id In_Sep Class_Expr
+Class_Binding_Expr
+    ::= ['implicit'] Val_Def In_Sep Class_Expr
+      | ['implicit'] Var_Def In_Sep Class_Expr
+      | 'let' 'structure' id {'(' [id ':' Struct_Type] ')'} [':' Struct_Type]
+        '=' Struct_Expr In_Sep Class_Expr
+
+Class_Field
+    ::= Class_Structure_Field
+      | Class_Member_Field
+      | Class_Extra_Field
+      | Class_Interface_Fields
+Class_Structure_Field
+    ::= 'inherit' Long_Id [Arguments] ['as' id] [Cond_Modifier]
+      | 'inherit' 'val' (Expr - Binding_Expr) 'as' id [Cond_Modifier]
+      | Class_Structure_Include
+Class_Structure_Include
+    ::= 'include' Long_Id [Cond_Modifier]
+Class_Member_Field
+    ::= [Class_Member_Modifiers] Ivar_Def
+      | [Class_Member_Modifiers] Property_Def
+      | [Class_Member_Modifiers] Method_Def
+      | [Class_Member_Modifiers] Operator_Def
+      | [Class_Member_Modifiers] Attribute_Def
+      | ['abstract'] [Class_Member_Modifiers] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifiers] Property_Spec
+      | ['abstract'] [Class_Member_Modifiers] Message_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Attribute_Dcl
+      | [Class_Member_Modifiers] Constructor_Def
+      | Destructor_Def
+Class_Extra_Field
+    ::= [Access_Modifier] 'invariant' Expr
+      | Objects_Definition
+      | Objects_Specification
+      | [Class_Member_Modifiers] Type_Definition
+      | Alias_Def
+      | Access_Modifier {nl Class_Field}+
+      | Do_Binding
+      | {Annotation}+ Class_Field
+      | Nested_Annotation
+Class_Interface_Fields
+    ::= 'interface' Annot_Type {'and' Annot_Type}
+        'with' {[nl] Trait_Concrete_Field}
+        'end'
+
+Ivar_Def
+    ::= Ivar_Modifiers ('val' | 'var') id [':' Type_Expr] '=' Expr
+Ivar_Spec
+    ::= Ivar_Modifiers ('val' | 'var') id [':' Type_Expr] {',' id [':' Type_Expr]}
+      | Ivar_Modifiers ('val' | 'var') '(' id {',' id} ')' [':' Type_Expr]
+Ivar_Modifiers
+    ::= ['implicit'] [Access_Modifier] [Storage_Modifier]
+Class_Member_Modifiers
+    ::= ['implicit'] [Access_Modifier] ['final'] ['override' [Class_Qualifier]]
+Alias_Def
+    ::= 'alias' Alias_Id '=' Alias_Id
+Alias_Id 
+    ::= symbol_literal
+      | id
+      | op_id
 \end{lstlisting}
+
+
+
+
+
+\subsection{Class Specifications}
+\label{sec:class-specs}
+
+\grammar\begin{lstlisting}
+Class_Type
+    ::= Class_Function_Type
+      | Class_Body_Type
+Class_Function_Type
+    ::= Function_Arg_Type '->' Class_Type
+      | Function_Arg_Type '->' Signalling_Types '->' Class_Body_Type
+Class_Body_Type
+    ::= Parameterized_Type
+      | 'object' ['(' Type_Expr ')'] {[nl] Class_Field_Spec} 'end'
+
+Class_Field_Spec
+    ::= Class_Structure_Field_Spec
+      | Class_Member_Field_Spec
+      | Class_Extra_Field_Spec
+      | Class_Interface_Fields_Spec
+Class_Structure_Field_Spec
+    ::= 'inherit' Long_Id [Cond_Modifier]
+      | 'inherit' 'val' 'of' Type_Expr
+      | Class_Structure_Include
+Class_Member_Field_Spec
+    ::= ['abstract'] [Class_Member_Modifier] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifier] Property_Spec
+      | ['abstract'] [Class_Member_Modifier] Message_Dcl
+      | ['abstract'] [Class_Member_Modifier] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifier] Attribute_Dcl
+      | [Class_Member_Modifiers] Constructor_Dcl
+Class_Extra_Field_Spec
+    ::= Objects_Specification
+      | [Class_Member_Modifiers] Type_Declaration
+      | Alias_Def
+      | Access_Modifier {nl Class_Field_Spec}+
+      | {Annotation}+ Class_Field_Spec
+      | Nested_Annotation
+Class_Interface_Fields_Spec
+    ::= 'interface' Annot_Type {'and' Annot_Type} 'end'
+\end{lstlisting}
+
+
+
+
+
+
+\section{Trait Definitions \& Specifications}
+\label{sec:trait-defs-specs}
+
+\subsection{Trait Definitions}
+\label{sec:trait-defs}
+
+\grammar\begin{lstlisting}
+Trait_Expr
+    ::= 'object' Trait_Body 'end'
+Trait_Body
+    ::= [Instance_Self_Type] {[nl] Trait_Field}
+
+Trait_Field
+    ::= Trait_Structure_Field
+      | Trait_Concrete_Field
+Trait_Concrete_Field
+    ::= Trait_Member_Field
+      | Trait_Extra_Field
+      | Class_Structure_Include
+      | Class_Interface_Fields
+Trait_Structure_Field
+    ::= 'inherit' Long_Id ['as' id] [Cond_Modifier]
+Trait_Member_Field
+      | [Class_Member_Modifiers] Property_Def
+      | [Class_Member_Modifiers] Method_Def
+      | [Class_Member_Modifiers] Operator_Def
+      | [Class_Member_Modifiers] Attribute_Def
+      | ['abstract'] [Class_Member_Modifiers] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifiers] Property_Spec
+      | ['abstract'] [Class_Member_Modifiers] Message_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Attribute_Dcl
+Trait_Extra_Field
+    ::= [Access_Modifier] 'invariant' Expr
+      | Objects_Definition
+      | Objects_Specification
+      | [Class_Member_Modifiers] Type_Definition
+      | Alias_Def
+      | Access_Modifier {nl Trait_Field}+
+      | Do_Binding
+      | {Annotation}+ Trait_Field
+      | Nested_Annotation
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Trait Specifications}
+\label{sec:trait-specs}
+
+\grammar\begin{lstlisting}
+Trait_Type
+    ::= Parameterized_Type
+      | 'object' ['(' Type_Expr ')'] {[nl] Trait_Field_Spec} 'end'
+
+Trait_Field_Spec
+    ::= Trait_Structure_Field_Spec
+      | Trait_Concrete_Field_Spec
+Trait_Structure_Field_Spec
+    ::= 'inherit' Long_Id [Cond_Modifier]
+Trait_Concrete_Field_Spec
+    ::= Trait_Member_Field_Spec
+      | Trait_Extra_Field_Spec
+      | Class_Structure_Include
+      | Class_Interface_Fields_Spec
+Trait_Member_Field_Spec
+      | ['abstract'] [Class_Member_Modifiers] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifiers] Property_Spec
+      | ['abstract'] [Class_Member_Modifiers] Message_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Attribute_Dcl
+Trait_Extra_Field_Spec
+    ::= [Access_Modifier] 'invariant' Expr
+      | Objects_Definition
+      | Objects_Specification
+      | [Class_Member_Modifiers] Type_Definition
+      | Alias_Def
+      | Access_Modifier {nl Trait_Field_Spec}+
+      | Do_Binding
+      | {Annotation}+ Trait_Field_Spec
+      | Nested_Annotation
+\end{lstlisting}
+
+
+
+
+
 
 A template defines the type signature, behaviour and initial state of a trait, class of objects or of a single object. Templates for part of instance creation expressions (constructors, see \sref{sec:constructor-invocations} \& \sref{sec:constructor-destructor-def}), class definitions and object definitions. A template ~\lstinline!$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }!~ consists of constructor invocation $sc$, which defines the template's {\em superclass}, trait references $mt_1 \commadots mt_n$ $(n \geq 0)$, which statically define the template's included traits\footnote{Including protocols, which are also traits.}, and a statement sequence $\stats$, which contains initialization code and additional member definitions \& declarations for the template. Unlike in Scala, all trait references in class/trait parents need not to be exhaustive, as more prepended/included traits may be defined as a part of the template body. Trait references declared using \code{prepend with} are prepended to the template body instead of included (\sref{sec:include-classes}). 
 
@@ -936,21 +1208,6 @@ An object {\em eligible for destruction} must meet the following conditions:
   \item If there are soft references to the object, the runtime is allowed to drop all of them in case of low memory. Definition of such condition is implementation-specific. 
   \item The object is eligible for destruction regardless of any weak references remaining. 
 \end{itemize}
-
-
-
-
-
-
-\subsection{Upgrade Constructor Definitions}
-\label{sec:upgrade-def}
-
-\grammar\begin{lstlisting}
-Upgrade_Constructor_Def 
-    ::= 'upgrade' 'constructor' '(' id [':' 'Self'] ')' '=' Expr
-\end{lstlisting}
-
-
 
 
 
