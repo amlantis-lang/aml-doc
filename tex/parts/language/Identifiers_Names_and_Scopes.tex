@@ -29,12 +29,15 @@ If at any point of the program execution a binding would change (e.g., by introd
 As shadowing is only a partial order, in a situation like
 
 \begin{lstlisting}
-var x = 1 in
-use p.x in
-x
+let val x = 1 
+in
+  use p.x in
+    x
+  end
+end
 \end{lstlisting}
 
-neither binding of $x$ shadows the other. Consequently, the reference to $x$ on the third line above is ambiguous and the compiler will happily refuse to proceed. 
+neither binding of $x$ shadows the other. Consequently, the reference to $x$ on the fourth line above is ambiguous and the compiler will happily refuse to proceed. 
 
 A reference to an unqualified identifier $x$ is bound by a unique binding, which
 

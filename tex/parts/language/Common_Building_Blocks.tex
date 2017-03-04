@@ -1,7 +1,7 @@
 %!TEX TS-program = xelatex
 %!TEX encoding = UTF-8 Unicode
 
-\chapter{Basic Declarations \& Definitions}
+\chapter{Common Building Blocks}
 
 \minitoc
 
@@ -12,11 +12,16 @@ Reference_Modifier
     ::= 'weak'
       | 'unowned'
 Mutability_Modifier  
-    ::= 'constant'
+    ::= 'constant' 
+      | 'mutable' 
+      | 'immutable'
+Eagerness 
+    ::= 'eager' 
+      | 'lazy'
 Storage_Modifier
     ::= [Eagerness] Mutability_Modifier [Reference_Modifier]
       | [Eagerness] Reference_Modifier
-        (* Eagerness only when not present in preceding Modifier *)
+      | Eagerness
 In_Sep
     ::= [nl] 'in' [nl] 
       | semi
@@ -34,7 +39,7 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 
 
 
-\section{Value \& Variable Names}
+\section{Value Names}
 \label{sec:val-var-names}
 
 Syntax rules defined in the following sections do not restrict users from choosing whatever value or variable name they want. However, there are a few conventions that are recommended to follow, because otherwise, an inconsistency in naming could arise in face of pattern matching (\sref{sec:pattern-matching}):
@@ -55,17 +60,21 @@ This is to keep up consistency with pattern matching, where the type will usuall
 
 \grammar\begin{lstlisting}
 Val_Def 
-    ::= [Storage_Modifier] ('val' | 'let') ['rec'] Let_Binding {'and' Let_Binding}
+    ::= 'let' ['rec'] [nl] Let_Binding {('and' | semi) Let_Binding}
 Let_Binding
     ::= Let_Value_Binding
       | Let_Fun_Binding
 Let_Value_Binding
-    ::= Pattern [Type_Param_Clause] [':' Type] '=' Expr {',' Expr}
+    ::= ['implicit'] [Storage_Modifier] Pattern [Type_Param_Clause] Fun_Type_Expr
+        '=' Expr
 Let_Fun_Binding
-    ::= fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses [':' Type] '=' Expr
+    ::= ['fun'] fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses Fun_Type_Expr
+        '=' Expr
+Fun_Type_Expr
+    ::= [':' Type_Expr] [':>' Type_Expr]
 \end{lstlisting}
 
-A value declaration \lstinline@val $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
+A value declaration \lstinline@let $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
 
 A value definition \lstinline@val $x$: $T$ = $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
 
@@ -77,7 +86,7 @@ Evaluation of the value definition implies evaluation of its right-hand side $e$
 
 A {\em lazy value} is of the form
 \begin{quote}\begin{lstlisting}
-lazy val $x$: $T$ = $e$
+lazy let $x$: $T$ = $e$
 \end{lstlisting}\end{quote}
 
 A lazy value may only be defined, and a value of the same name (binding) may be declared prior to the value definition, but never as a lazy value. 
@@ -85,17 +94,6 @@ A lazy value may only be defined, and a value of the same name (binding) may be 
 The effect of the value definition is to bind $x$ to the value of $e$ converted to type $T$. 
 
 A value definition using the keyword \code{let} is equivalent to value definitions using the keyword \code{val}. Value declarations do not use the keyword \code{let}. 
-
-Value declarations \& definitions with the type $T$ omitted are of the form
-\begin{quote}\begin{lstlisting}
-val $x$
-val @$x$
-val @@$x$
-val $x$ = $e$
-val @$x$ = $e$
-val @@$x$ = $e$
-let $x$ = $e$
-\end{lstlisting}\end{quote}
 
 A value declaration without any type is basically only declaring the name, so that a binding is introduced and the actual value is for another code to define.\footnote{Usually, that another code should be a \code{constructor} or the class-level block in another file, maybe.}
 
@@ -105,20 +103,20 @@ A value definition can alternatively have a pattern (\sref{sec:patterns}) as lef
 \item
 If the pattern $p$ has bound variables $x_1 \commadots x_n$ for some $n > 1$:
 \begin{lstlisting}[escapechar=@]
-val $x$' = match $e$
+let $x$' = match $e$
   when $p$ then ($x_1 \commadots x_n$)
-end match
-val $x_1$ = $x$'.1
+end
+let $x_1$ = $x$'.1
 $\ldots$
-val $x_n$ = $x$'.$n$
+let $x_n$ = $x$'.$n$
 \end{lstlisting}
 
 \item
 If $p$ has exactly one unique bound variable $x$:
 \begin{lstlisting}
-val $x$ = match $e$
+let $x$ = match $e$
   when $p$ then $x$
-end match
+end
 \end{lstlisting}
 
 \item
@@ -126,40 +124,40 @@ If $p$ has no bound variables:
 \begin{lstlisting}
 match $e$
   when $p$ then ()
-end match
+end
 \end{lstlisting}
 \end{enumerate}
 
 \example The following are examples of value definitions. 
 \begin{lstlisting}
-val pi = 3.14159
-val pi: Double = 3.14159
-val Some(x) = f() 
-val Some(x), y = f()
+let pi = 3.14159
+let pi: Double = 3.14159
+let Some (x) = f () 
+let Some (x), y = f ()
 \end{lstlisting}
 
 The last three definitions have the following expansions:
 \begin{lstlisting}[escapechar=@]
-val x = match f()
+let x = match f()
   when Some(x) then x
-end match
+end
 
-val x' = f()
-val x = match x'.1
-  when Some(x'') then x''
-end match
-val y = x'.2
+let x' = f ()
+let x = match x'.1
+  when Some (x'') then x''
+end
+let y = x'.2
 
-val x' = match my_list
+let x' = match my_list
   when x :: xs then (x, xs)
-end match
-val x = x'.1
-val xs = x'.2
+end
+let x = x'.1
+let xs = x'.2
 \end{lstlisting}
 
 The following shorthands are recognized: 
 \begin{itemize}
-  \item[] A value declaration ~\lstinline@val $x_1 \commadots x_n$: $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$: $T$; $\ldots$; val $x_n$: $T$@. 
+  \item[] A value declaration ~\lstinline@let $x_1 \commadots x_n$: $T$@~ is a shorthand for the sequence of value declarations ~\lstinline@val $x_1$: $T$; $\ldots$; val $x_n$: $T$@. 
 
   \item[] A value definition ~\lstinline@val $p_1 \commadots p_n$ = $e$@~ is a shorthand for the sequence of value definitions ~\lstinline@val $p_1$ = $e$; $\ldots$; val $p_n$ = $e$@. Multiple such sequences may appear in a single value definition, then every appearing $T$ defined type of the preceding values without an explicit type. 
 
@@ -174,61 +172,12 @@ The following shorthands are recognized:
 
 
 
-\section{Variable Definitions}
-\label{sec:variable-def}
 
-\grammar\begin{lstlisting}
-Var_Def 
-    ::= [Storage_Modifier] 'var' Var_Binding
-Var_Binding 
-    ::= Let_Binding
-      | id {',' id} ':' Type '=' ('_' | Constant)
-\end{lstlisting}
+\section{Property Definitions \& Specifications}
+\label{sec:property-def}
 
-A variable declaration \lstinline@var $x$: $T$@ introduces a mutable variable without a defined initial value of type $T$. More specifically, \lstinline+var @$x$: $T$+ introduces a mutable instance variable of type $T$ and \lstinline+var @@$x$: $T$+ introduces a mutable class instance variable of type $T$. 
-
-A variable definition \lstinline@var $x$: $T$ = $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$. The type $T$ can be omitted, in that case the type of expression $e$ is assumed, but not bound to the variable -- the variable is only bound to \code{Object} then. If the type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}), as well as every future value of the variable. 
-
-Variable definitions can alternatively have a pattern (\sref{sec:patterns}) as their left-hand side. A variable definition \lstinline@var $p$ = $e$@, where $p$ is a pattern other than a simple name followed by a colon and a type, is expanded in the same way (\sref{sec:value-dcl-def}) as a value definition \lstinline@val $p$ = $e$@, except that the free names in $p$ are introduced as mutable variables instead of values. 
-
-A variable definition ~\lstinline!var $x$: $T$ = _!~ introduces a mutable variable with type $T$ and a default initial value. The default value is defined by the ~\lstinline!Default[$T$]!~ type class, defined for some standard types as follows:
-\begin{quote}\begin{tabular}{ll}
-  \code{0} & if $T$ is \code{Integer} or one of its subrange types, \\
-  \lstinline@0.0f@ & if $T$ is \code{Float} or \code{Half_Float},\\
-  \lstinline@0.0d@ & if $T$ is \code{Double},\\
-  \lstinline@0.0q@ & if $T$ is \code{Quadruple},\\
-  \lstinline@0.0m@ & if $T$ is \code{Decimal} or \code{Real},\\
-  \lstinline@0 / 1r@ & if $T$ is \code{Rational},\\
-  \lstinline@0 + 0i@ & if $T$ is \code{Complex},\\
-  \code{no} & if $T$ is \code{Boolean},\\
-  \lstinline@()@ & if $T$ is \code{Unit}
-\end{tabular}\end{quote}
-It is an error if the type $T$ is not nullable and is expected to have a default value of \code{nil} at the same time. 
-
-The following shorthands are recognized:
-\begin{itemize}
-  \item[] A variable declaration ~\lstinline@var $x_1 \commadots x_n$: $T$@~ is a
-shorthand for the sequence of variable declarations ~\lstinline@var $x_1$: $T$; $\ldots$; var $x_n$: $T$@. 
-
-  \item[] A variable definition ~\lstinline@var $x_1 \commadots x_n$ = $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$ = $e$; $\ldots$; var $x_n$ = $e$@. 
-
-  \item[] A variable definition ~\lstinline@var $x_1 \commadots x_n$: $T$ = $e$@~ is a shorthand for the sequence of variable definitions ~\lstinline@var $x_1$: $T$ = $e$; $\ldots$; var $x_n$: $T$ = $e$@. Multiple such sequences may appear in a single variable definition, then every appearing $T$ defined type of the preceding variables without an explicit type. 
-
-  \item[] A variable definition ~\lstinline!var $p_1\ \ps$: $T \commadots p_n\ \ps$: $T$ = $e$!~ is a shorthand for the sequence of value definitions ~\lstinline!var $p_1$: $\ps$ -> $T \commadots p_n$: $\ps$ -> $T$ = $e$!~, where $\ps$ are parameter sections (\sref{sec:function-decls-defs}).
-  
-  \item[] A variable definition part ~\lstinline@*$x$: $T$@~ is a shorthand for the type ~\lstinline!Sequence[$T$]!~ of the variable name $x$. 
-\end{itemize}
-
-
-
-
-
-
-\section{Property Declarations \& Definitions}
-\label{sec:property-dec-dfn}
-
-\grammar\begin{lstlisting}
-Prop_Dcl
+\grammar\begin{lstlisting}[deletekeywords={of,up,to}]
+Property_Spec
     ::= 'property' ['(' Prop_Specs ')'] id ':' Type
 Prop_Specs 
     ::= Prop_Spec {',' Prop_Spec}
@@ -236,15 +185,23 @@ Prop_Spec
     ::= ([Access_Modifier] ('get' | 'set')) 
       | 'weak'
       | 'unowned'
-Prop_Def
+      | Mutability_Modifier
+Property_Def
     ::= 'property' ['(' Prop_Specs ')'] id [':' Type] Prop_Impls
 Prop_Impls 
     ::= [nl] 'with' Prop_Impl {[nl] 'and' Prop_Impl}
+      | [nl] 'by' Expr 
+        [[nl] 'with' Prop_Hook_Impl {[nl] 'and' Prop_Hook_Impl}]
 Prop_Impl 
     ::= ([Access_Modifier] 'get' Prop_Get_Impl)
       | ([Access_Modifier] 'set' Prop_Set_Impl)
       | ([Access_Modifier] 'val' '=' Expr)
-      | ([Access_Modifier] 'var' '=' Expr)
+      | Prop_Hook_Impl
+Prop_Hook_Impl
+    ::= ('will' 'set' Prop_Hook_1_Impl)
+      | ('did' 'set' Prop_Hook_0_Impl)
+      | ('will' 'get' Prop_Hook_0_Impl)
+      | ('did' 'get' Prop_Hook_0_Impl)
 \end{lstlisting}
 
 A property declaration \lstinline@property $x$: $T$@~ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
@@ -262,15 +219,14 @@ A property definition \lstinline@property $x$: $T$ with get $\ldots$ and set $\l
 
   \item Properties defined with \code{unowned} are stored as unowned references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@ and implicitly unwrapped. 
 
-  \item The getter and setter, including both implicit and explicit versions, automatically wrap (assignment) or unwrap (evaluation) the corresponding reference type. The default values defined with \code{val} or \code{var} do the same. 
-
+  \item The getter and setter, including both implicit and explicit versions, automatically wrap (assignment) or unwrap (evaluation) the corresponding reference type.
 \end{enumerate}
 
 Declaring a property $x$ of type $T$ is equivalent to declarations of a {\em getter function} $x$ and a {\em setter function} \lstinline!set_$x$!, declared as follows:
 
 \begin{lstlisting}
-message $x$ (): $T$ end
-message set_$x$ (y: $T$): Unit end
+message $x$ (): $T$
+message set_$x$ (y: $T$): Unit
 \end{lstlisting}
 
 Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation due to implicit conversions (\sref{sec:implicit-conversions}). 
@@ -283,18 +239,25 @@ Assignment to properties is translated automatically into a setter function call
 \subsection{Property Implementations}
 \label{sec:property-impl}
 
-\begin{lstlisting}
+\begin{lstlisting}[deletekeywords={with}]
 Prop_Get_Impl 
-    ::= ? Block_Expr without parameters ?
+    ::= Specialised_Block_Expr(())
       | '_'
 Prop_Set_Impl 
-    ::= ? Block_Expr with exactly one parameter ?
+    ::= Specialised_Block_Expr(Param_Clause)
       | '_'
+Prop_Hook_0_Impl
+    ::= Specialised_Block_Expr(())
+Prop_Hook_1_Impl
+    ::= Specialised_Block_Expr((Param_Clause | ()))
 \end{lstlisting}
 
 Property implementations are restricted to parameterless block expressions for getters and with one parameter for setters. If the property is specified with a \code{get} or \code{set}, but without a getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
 
 If a property setter (\code{set}) does not specify return type, then it is inferred as \code{Unit}. 
+
+Property implementation preceded by ``\code{will}'' will be executed before the instance variable is either read from (\code{will get}) or written to (\code{will set}), or before the property getter or setter respectively is evaluated, if the implementation is explicit. Property implementation preceded by ``\code{did}'' will be executed after the instance variable is either read from (\code{did get}) or written to (\code{did set}), or after the property getter or setter respectively is evaluated, if the implementation is explicit. If the \code{will set} specifies a parameter, the new value is passed to it as argument. These hooks are not evaluated during object's construction, and this behaviour can be modified by annotations. 
+
 
 
 
@@ -307,7 +270,7 @@ Reference type modifiers are the syntax category \code{Reference_Modifier}. The 
 
 Reference type modifiers are applied to variables, whose \code{id} begins with ``\lstinline!@!'' (class instance variables) or with ``\lstinline!@@!'' (class object variables). Such variable may appear as a part of pattern matching, in that case, the modifier is applied as well. By default, all other declared or defined variables are inferred to be \code{strong}. If a variable is declared with a non-\code{strong} reference type, then it does not have to be explicitly defined with the same reference type, and it is an error if it is defined with a different reference type. 
 
-Aml provides automatic wrapping and unwrapping of variables that are declared or defined non-\code{strong}. Strong references are (usually) not wrapped in anything. 
+\Aml provides automatic wrapping and unwrapping of variables that are declared or defined non-\code{strong} in context where the wrapped type is expected. Strong references are (usually) not wrapped in anything. 
 
 Non-\code{strong} references are intended to break strong reference cycles that would prevent values from being ever released. 
 
@@ -370,23 +333,6 @@ Unowned reference type is required to be provided by every proper Aml VM impleme
 
 
 
-\subsection{Soft Reference Type}
-
-This reference is represented in Aml by the type \code{Soft_Reference[$T$]}. 
-
-Like weak references, an {\em unowned reference} does not keep a strong hold on the value it refers to, and thus does not stop automatic reference counting from releasing the referenced value. Such variable may be changed to \code{nil} in runtime at any time without an error, therefore it behaves as a nullable type. A value does not need to be released when there are only soft references referring to it -- there are other facilities which may trigger clearing of soft references, including out-of-memory scenarios and explicit clearing triggers. Soft references are suitable for implementations of various caches. 
-
-Soft references are not required to be provided by proper Aml VM implementations. If a Aml VM uses garbage collection instead of automatic reference counting, it is suggested to provide support for soft references. 
-
-Support for soft references is to be queried with the following method:
-\begin{lstlisting}
-Aml/Language.Soft_Reference.is_supported?
-\end{lstlisting}
-
-
-
-
-
 \section{Type Parameters}
 
 \grammar\begin{lstlisting}
@@ -398,8 +344,10 @@ Prefix_Type_Param_Clause
 Atomic_Type_Param_Clause
     ::= '(' Variant_Type_Param {',' Variant_Type_Param} ')'
 Variant_Type_Param 
-    ::= {Annotation} ['+' | '-'] ['...'] Type_Param
+    ::= {Annotation} Type_Param_Variance ['...'] Type_Param
       | '<' Type_Var ['<:' Long_Id] '>'
+Type_Param_Variance
+    ::= ['+' | '-']
 Type_Param 
     ::= (Type_Var | '_') [Type_Param_Clause] [Type_Abstract]
 \end{lstlisting}
@@ -453,6 +401,8 @@ The following type parameter clauses are illegal:
 
 \subsection{Variance of Type Parameters}
 \label{sec:variance-of-type-parameters}
+
+% TBD: update this for the new grammar, remove mutable ivars
 
 Variance annotations indicate how instances of parameterized types relate with respect to subtyping (\sref{sec:conformance}). A ``\lstinline!+!'' variance indicates a covariant dependency, a ``\lstinline!-!'' variance indicates a contravariant dependency, and an empty variance indicates an invariant dependency. 
 
@@ -627,42 +577,44 @@ Then, every application of operations defined by the type class $T$ to values of
 % TBD: prepend optional ['class' | 'member'] in object definition as appropriate for each kind
 \grammar\begin{lstlisting}
 Message_Dcl 
-    ::= 'message' fun_id [':' Function_Type] 'end' ['message']
+    ::= 'message' fun_id [':' Type_Expr]
 Operator_Dcl 
-    ::= 'operator' op_id [':' Function_Type] 'end' ['operator']
+    ::= 'operator' op_id [':' Type_Expr]
+      | Fixity_Binding
 Attribute_Dcl 
-    ::= 'attribute' id [':' Function_Type] 'end' ['attribute']
+    ::= 'attribute' id [':' Type_Expr]
 Method_Def 
     ::= 'method' fun_id Method_Type_Clauses
-        Single_Method_Identity Param_Clauses [':' Type] 
+        Single_Method_Identity Param_Clauses Fun_Type_Expr
         '=' Single_Method_Body
       | 'multi' 'method' fun_id Method_Type_Clauses
-        Multi_Method_Identity Param_Clauses [':' Type] 
+        Multi_Method_Identity Param_Clauses Fun_Type_Expr
         '=' Single_Method_Body
       | 'multi' 'method' fun_id Method_Type_Clauses 
-        Single_Method_Identity Param_Clauses [':' Type] 
+        Single_Method_Identity Param_Clauses Fun_Type_Expr
         '=' Multi_Method_Bodies
       | 'prefer' ['method'] fun_id Expr 'to' Expr
 Operator_Def
     ::= 'operator' op_id Method_Type_Clauses 
-        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        Single_Method_Identity Param_Clause Param_Clauses Fun_Type_Expr
         '=' Single_Method_Body
       | 'multi' 'operator' op_id Method_Type_Clauses 
-        Multi_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        Multi_Method_Identity Param_Clause Param_Clauses Fun_Type_Expr
         '=' Single_Method_Body
       | 'multi' 'operator' op_id Method_Type_Clauses
-        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        Single_Method_Identity Param_Clause Param_Clauses Fun_Type_Expr
         '=' Multi_Method_Bodies
       | 'prefer' 'operator' op_id Expr 'to' Expr
+      | Fixity_Binding
 Attribute_Def
     ::= 'attribute' id Method_Type_Clauses
-        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        Single_Method_Identity Param_Clause Param_Clauses Fun_Type_Expr
         '=' Single_Method_Body
       | 'multi' 'attribute' id Method_Type_Clauses
-        Multi_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        Multi_Method_Identity Param_Clause Param_Clauses Fun_Type_Expr
         '=' Single_Method_Body
       | 'multi' 'attribute' id Method_Type_Clauses
-        Single_Method_Identity Param_Clause Param_Clauses [':' Type] 
+        Single_Method_Identity Param_Clause Param_Clauses Fun_Type_Expr
         '=' Multi_Method_Bodies
       | 'prefer' 'attribute' id Expr 'to' Expr
 
@@ -673,11 +625,11 @@ Single_Method_Identity
 Multi_Method_Identity
     ::= Single_Method_Identity (Multi_Method_Dispatch | Multi_Method_Select)
 Multi_Method_Dispatch
-    ::= '(' 'dispatch' [Type] ['use' 
+    ::= '(' 'dispatch' [Type_Expr] ['use' 
         ('type'    (* each pattern must have a distinct type *)
         | 'match'  (* will use constant patterns *)
         | Expr)    (* will use a custom hierarchy *)
-        ]')'
+        ] ')'
 Multi_Method_Select
     ::= '(' 'when' Pattern ')'
       | '(' 'for'  Expr    ')'  (* a constant expression *)
@@ -699,38 +651,37 @@ Param_Clause
 Value_Param_Clause
     ::= Atomic_Pattern
       | '~' Reflected_Param_Extra id
-      | '~(' Reflected_Param_Extra id [':' Type] ')'
+      | '~(' Reflected_Param_Extra id [':' Type_Expr] ')'
       | '~' Reflected_Param_Extra id ':' Atomic_Pattern
-      | '~' Reflected_Param_Extra id ':' '(' Pattern [':' Type] ')'
+      | '~' Reflected_Param_Extra id ':' '(' Pattern [':' Type_Expr] ')'
       | '~?' Reflected_Param_Extra id
       | '~?(' Reflected_Param_Extra id [':' Param_Type] ['=' Expr] ')'
       | '~?' Reflected_Param_Extra id ':' Atomic_Pattern
-      | '~?' Reflected_Param_Extra id ':' '(' Pattern [':' Type] ['=' Expr] ')'
-      | '(' [Params] ')'
+      | '~?' Reflected_Param_Extra id ':' '(' Pattern [':' Type_Expr] ['=' Expr] ')'
+      | '(' [Tuple_Params] ')'
+      | Record_Params
       | Reflected_Param_Clause
 Implicit_Params 
     ::= 'implicit' ':' Atomic_Pattern
       | '(' 'implicit' ':' (Atomic_Pattern | Params) ')'
 Block_Capture_Param
-    ::= '&' ['val' | 'var'] id
-      | '&(' ['val' | 'var'] id [':' Type] ')'
-      | '~&' id ':' Type ['as' Var_Pattern]
-      | '~&' id ':' '(' Type ['as' Var_Pattern] ['=' Expr] ')'
+    ::= '&' id
+      | '&(' id [':' Type_Expr] ')'
+      | '~&' id ':' Type_Expr ['as' Var_Pattern]
+      | '~&' id ':' '(' Type_Expr ['as' Var_Pattern] ['=' Expr] ')'
 Variadic_Param 
     ::= Positional_Variadic_Param [Capture_Variadic_Param]
       | Capture_Variadic_Param
 Positional_Variadic_Param
-    ::= '*(' [Mutability_Modifier] ['val' | 'var'] var_id [':' Type] ')'
-      | '*'  [Mutability_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
+    ::= '*(' [Mutability_Modifier] var_id [':' Type_Expr] ')'
+      | '*'  [Mutability_Modifier] var_id [':' Atomic_Pattern]
 Capture_Variadic_Param
-    ::= '**(' [Mutability_Modifier] ['val' | 'var'] var_id [':' Type] ')'
-      | '**'  [Mutability_Modifier] ['val' | 'var'] var_id [':' Atomic_Pattern]
+    ::= '**(' [Mutability_Modifier] var_id [':' Type_Expr] ')'
+      | '**'  [Mutability_Modifier] var_id [':' Atomic_Pattern]
 
 Params 
-    ::= Positional_Params {',' Labelled_Params}
-      | Labelled_Params
-Positional_Params
-    ::= Positional_Param {',' Positional_Param} [',' Rest_Params {',' Positional_Param}]
+    ::= Positional_Param {',' Positional_Param} 
+        [',' Rest_Params {',' Positional_Param}]
       | Rest_Params {',' Positional_Param}
 Positional_Param
     ::= Pattern
@@ -742,28 +693,26 @@ Optional_Param
     ::= Optional_Extract
       | '?' Param_Extra id [':' Param_Type]
       | '?(' Param_Extra id [':' Param_Type] ['=' Expr] ')'
-Labelled_Params 
-    ::= Labelled_Param {',' Labelled_Param} [',' Capture_Extract]
+Record_Params
+    ::= '{' Record_Param {semi Record_Param}
+            [semi Record_Rest_Params | semi '_' [':' Type_Expr]] '}'
+      | '{' Record_Rest_Params '}'
+      | '{' '_' [':' Type_Expr] '}'
+Record_Param
+    ::= Stable_Id '=' Positional_Param
+      | Positional_Param
+Record_Rest_Params
+    ::= Optional_Record_Param {',' Optional_Record_Param} [',' Capture_Extract]
       | Capture_Extract
-Labelled_Param 
-    ::= Labelled_Pattern
-      | '~' Param_Extra id 
-      | '~(' Param_Extra id [':' Param_Type] ')'
-      | '~' Param_Extra id ':' Pattern
-      | '~?' Param_Extra id
-      | '~?(' Param_Extra id [':' Param_Type] ['=' Expr] ')'
-      | '~?' Param_Extra id ':' Pattern
-      | '~?' Param_Extra id ':' '(' Pattern [':' Param_Type] ['=' Expr] ')'
+Optional_Record_Param
+    ::= Stable_Id '=' Optional_Param
+      | Optional_Param
 Param_Extra 
-    ::= [Eagerness] [Mutability_Modifier] [Param_Rw]
+    ::= [Eagerness] [Mutability_Modifier]
 Reflected_Param_Extra
     ::= ['reflect'] Param_Extra
-Param_Rw 
-    ::= 'val' 
-      | 'var' 
-      | 'ref'
 Param_Type
-    ::= ['->'] Type
+    ::= ['->'] Type_Expr
     
 Function_Declarations
     ::= [nl] 'declare' Fun_Dec_Exprs In_Sep
@@ -777,7 +726,7 @@ Fun_Dec_Expr
       | 'implicit' id
       | Signalling_Types
       | {Annotation} 'in'  '{' Expr '}'
-      | {Annotation} 'out' '{' ['|' id '|'] Expr '}'
+      | {Annotation} 'out' '{' [id '->'] Expr '}'
       | Expr
       | ()
 \end{lstlisting}
@@ -883,7 +832,7 @@ Also known as {\em lazy evaluation}, this is a memoized version of {\em call-by-
 \subsubsection{By-Reference Parameters}
 \label{sec:by-ref-parameters}
 
-The name of a parameter may be prefixed with a ``\code{ref}'' keyword, in which case the parameter's type $T$ is boxed into ~\lstinline!Reference_Cell[$T$]!. See (\sref{sec:ref-expressions}) for more details on reference cells. 
+It is possible to get a parameter by reference simply by using the constructor pattern ``\lstinline!ref $x$!''. The corresponding argument has to be a reference cell. 
 
 
 
@@ -894,7 +843,7 @@ The name of a parameter may be prefixed with a ``\code{ref}'' keyword, in which 
 
 The type of a value parameter may be prefixed by ``\lstinline@->@'', e.g. \lstinline@$x$: -> $T$@. This indicates that the corresponding argument is not evaluated at the point of function application, but instead is evaluated at each use within the function.
 
-The by-name modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}). The by-name modifier implies \code{val} parameter and is disallowed for \code{var} parameters. 
+The by-name modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}).
 
 By-name parameters with default value expressions evaluate the default value expression each time the parameter is accessed, unlike optional parameters that evaluate the default value expression only once. 
 
@@ -908,7 +857,7 @@ By-name parameters with default value expressions evaluate the default value exp
 
 The parameter definition may be preceded by \code{lazy} keyword. This indicates that the corresponding argument is not evaluated before function application, but instead is evaluated the first time used within the function. 
 
-The by-need modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}). The by-need modifier implies \code{val} parameter and is allowed for \code{var} parameters. 
+The by-need modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}).
 
 By-need parameters with default value expressions evaluate the default value expression the first time the parameter is accessed, like optional parameters that evaluate the default value expression only once. 
 
@@ -1055,6 +1004,39 @@ A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsign
 
 
 
+\section{Local Fixity Definitions}
+\label{sec:fixity-defs}
+
+\grammar\begin{lstlisting}
+Let_Binding 
+    ::= ...
+      | 
+Fixity_Binding
+    ::= Fixity_Id Operator_Ids
+Fixity_Id
+    ::= 'nonfix'
+      | 'infix'  [integer_literal]
+      | 'infixl' [integer_literal]
+      | 'infixr' [integer_literal]
+Operator_Ids
+    ::= op_id {',' op_id}
+\end{lstlisting}
+
+Fixity definition can locally change the fixity of given operators, or locally make operators out of the given identifiers, or remove operator status of given identifiers. 
+
+The fixities are defined as follows:
+\begin{itemize}
+  \item \code{infix} is non-associative. 
+  \item \code{infixl} is left-associative. 
+  \item \code{infixr} is right-associative. 
+  \item \code{nonfix} removes operator status. 
+\end{itemize}
+
+Fixities can also be defined in place of operator declarations or definitions, as defaults for the given operator identifiers. 
+
+
+
+
 \section{Overloaded Declarations \& Definitions}
 \label{sec:overloaded-definitions}
 
@@ -1070,14 +1052,32 @@ Overloaded members do not need to appear in the same scope, an overloading membe
 \label{sec:use-clauses}
 
 \grammar\begin{lstlisting}
-Use_Clause    ::= 'use' ['lazy'] (Type | Stable_Id) ['.' Import_Expr]
-                | 'open' (Type | Stable_Id) ['.' Import_Expr]
-                | 'open!' (Type | Stable_Id) ['.' Import_Expr]
-Import_Expr   ::= Single_Import
-                | '{' Import_Exprs '}'
-                | '_'
-Import_Exprs  ::= Single_Import {',' Single_Import} [',' '_']
-Single_Import ::= id ['as' (id | '_')]
+Use_Clause 
+    ::= Import_Clause
+      | Open_Clause
+Import_Clause
+    ::= 'use' ['lazy'] (Type | Stable_Id) ['.' Import_Expr]
+Open_Clause
+    ::= 'open' (Type | Stable_Id) ['.' Import_Expr]
+      | 'open!' (Type | Stable_Id) ['.' Import_Expr]
+Import_Expr
+    ::= Single_Import
+      | '{' Import_Exprs '}'
+      | '_'
+Import_Exprs
+    ::= Single_Import {',' Single_Import} [',' '_']
+Single_Import 
+    ::= id ['as' (id | '_')]
+    
+Lambda_Declarations
+    ::= [Closure_Usage] Function_Declarations
+      | Closure_Usage In_Sep
+Closure_Usage
+    ::= 'use' Capture_List
+Capture_List
+    ::= Capture_Items {'and' Capture_Items}
+Capture_Items
+    ::= (id {',' id} | Let_Value_Binding) 'as' Reference_Modifier
 \end{lstlisting}
 
 A use clause has the form ~\lstinline!use $p$.$I$!, where $p$ is a path to the containing type of the imported entity, and $I$ is an import expression. The import expression determines a set of names (or just one name) of {\em importable members}\footnote{Dynamically created members are not importable, since the compiler has no way to predict their existence.} of $p$, which are made available without full qualification, e.g. as an unqualified name. A member $m$ of $p$ is {\em importable}, if it is {\em visible} from the import scope and not object-private (\sref{sec:modifiers}). The most general form of an import expression is a list of {\em import selectors}

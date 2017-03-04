@@ -7,6 +7,9 @@
 
 \newpage
 
+\section{Blueprints of Objects}
+\label{sec:blueprints-objects}
+
 \grammar\begin{lstlisting}
 Objects_Definition
     ::= Objects_Binding {'and' Objects_Binding}
@@ -32,13 +35,14 @@ Class_Definition
         [Access_Modifier] [Param_Clauses] [':' Class_Type]
         ('=' Class_Expr | '+=' Trait_Expr)
 Object_Definition 
-    ::= Object_Modifiers 'object' Type_Name [':' Trait_Type]
-        ['=' | '+='] Standalone_Object_Expr 'end' ['object']
+    ::= Object_Modifiers 'val' Type_Name [':' Trait_Type]
+        ['=' | '+='] Standalone_Object_Expr
 Trait_Definition 
     ::= Trait_Modifiers 'trait' Type_Name [':' Trait_Type]
         ('=' | '+=') Trait_Expr
 Extension_Definition
-    ::= Trait_Modifiers 'extension' Type_Name 'for' Parameterized_Type [':' Class_Body_Type]
+    ::= Trait_Modifiers 'extension' [id 'for'] Parameterized_Type
+        [Given_Clauses] [':' Class_Body_Type]
         ('=' | '+=') Extension_Expr
 Refinement_Definition
     ::= 'refinement' Parameterized_Type [':' Trait_Type]
@@ -47,20 +51,20 @@ Refinement_Definition
 Class_Specification
     ::= Class_Modifiers 'class' Type_Name [Param_Clauses] ':' Class_Type
 Object_Specification
-    ::= Object_Modifiers 'object' Type_Name ':' Trait_Type
+    ::= Object_Modifiers 'val' Type_Name ':' Object_Type
 Trait_Specification
     ::= Trait_Modifiers 'trait' Type_Name ':' Trait_Type
 Protocol_Specification
     ::= 'protocol' Type_Name ':' Class_Body_Type
 Extension_Specification
-    ::= Trait_Modifiers 'extension' Type_Name 
-        'for' Parameterized_Type ':' Class_Body_Type
+    ::= Trait_Modifiers 'extension' [id 'for'] Parameterized_Type 
+        [Given_Clauses] ':' Class_Body_Type
 Refinement_Specification
     ::= 'refinement' Parameterized_Type ':' Trait_Type
     
 Class_Modifiers
-    ::= [Access_Modifier] ['implicit'] ['open'] ['sealed'] ['case' | 'abstract']
-      | [Access_Modifier] ['implicit'] ['open'] 'final' ['case']
+    ::= [Access_Modifier] ['implicit'] ['open'] ['case' | ['sealed'] 'abstract']
+      | [Access_Modifier] ['implicit'] ['open'] ('final' | 'sealed')
 Trait_Modifiers
     ::= [Access_Modifier] ['open']
 Object_Modifiers
@@ -104,14 +108,13 @@ Class_Use_Expr
         (* no Class_Use_Droppable intentionally  *)
 Class_Use_Expr_As
     ::= 'use' Expr ('as' | 'as!' | 'as?')
-        [['var' | 'val'] id ':'] Type In_Sep Class_Expr
+        [id ':'] Type In_Sep Class_Expr
 Class_Use_Aspect
     ::= 'use' 'aspect' Stable_id In_Sep Class_Expr
 Class_Use_Refinement
     ::= 'use' 'refinement' Stable_Id In_Sep Class_Expr
 Class_Binding_Expr
     ::= ['implicit'] Val_Def In_Sep Class_Expr
-      | ['implicit'] Var_Def In_Sep Class_Expr
       | 'let' 'structure' id {'(' [id ':' Struct_Type] ')'} [':' Struct_Type]
         '=' Struct_Expr In_Sep Class_Expr
 
@@ -126,7 +129,7 @@ Class_Structure_Field
       | Class_Structure_Include
 Class_Structure_Include
     ::= 'include' Long_Id [Cond_Modifier]
-Class_Member_Field
+Class_Template_Member_Field
     ::= [Class_Member_Modifiers] Ivar_Def
       | [Class_Member_Modifiers] Property_Def
       | [Class_Member_Modifiers] Method_Def
@@ -137,6 +140,8 @@ Class_Member_Field
       | ['abstract'] [Class_Member_Modifiers] Message_Dcl
       | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
       | ['abstract'] [Class_Member_Modifiers] Attribute_Dcl
+Class_Member_Field
+    ::= Class_Template_Member_Field
       | [Class_Member_Modifiers] Constructor_Def
       | Destructor_Def
 Class_Extra_Field
@@ -149,16 +154,21 @@ Class_Extra_Field
       | Do_Binding
       | {Annotation}+ Class_Field
       | Nested_Annotation
+      | 'local' Struct_Defs 'in' Class_Field {[nl] Class_Field} 'end'
+      | Class_Conditional_Field(Class_Field)
 Class_Interface_Fields
     ::= 'interface' Annot_Type {'and' Annot_Type}
         'with' {[nl] Trait_Concrete_Field}
         'end'
+Class_Conditional_Field(Nested)
+    ::= ('if' | 'unless') Boolean_Condition ('then' | semi) Nested
+        [[semi] Else Nested] 'end'
 
 Ivar_Def
-    ::= Ivar_Modifiers ('val' | 'var') id [':' Type_Expr] '=' Expr
+    ::= Ivar_Modifiers 'val' id [':' Type_Expr] '=' Expr
 Ivar_Spec
-    ::= Ivar_Modifiers ('val' | 'var') id [':' Type_Expr] {',' id [':' Type_Expr]}
-      | Ivar_Modifiers ('val' | 'var') '(' id {',' id} ')' [':' Type_Expr]
+    ::= Ivar_Modifiers 'val' id [':' Type_Expr] {',' id [':' Type_Expr]}
+      | Ivar_Modifiers 'val' '(' id {',' id} ')' [':' Type_Expr]
 Ivar_Modifiers
     ::= ['implicit'] [Access_Modifier] [Storage_Modifier]
 Class_Member_Modifiers
@@ -212,8 +222,38 @@ Class_Extra_Field_Spec
       | Access_Modifier {nl Class_Field_Spec}+
       | {Annotation}+ Class_Field_Spec
       | Nested_Annotation
+      | Class_Conditional_Field(Class_Field_Spec)
 Class_Interface_Fields_Spec
     ::= 'interface' Annot_Type {'and' Annot_Type} 'end'
+\end{lstlisting}
+
+
+
+
+
+\section{Standalone Object Definitions \& Specifications}
+\label{sec:standalone-object-defs-specs}
+
+\subsection{Standalone Object Definitions}
+\label{sec:standalone-object-defs}
+
+\grammar\begin{lstlisting}
+Standalone_Object_Expr
+    ::= 'object' Object_Body 'end'
+Object_Body
+    ::= [Instance_Self_Type] {[nl] Object_Field}
+Object_Field
+    ::= Class_Structure_Field
+      | Class_Template_Member_Field
+      | Class_Extra_Field
+      | Class_Interface_Fields
+\end{lstlisting}
+
+\subsection{Standalone Object Specifications}
+\label{sec:standalone-object-specs}
+
+\grammar\begin{lstlisting}
+
 \end{lstlisting}
 
 
@@ -263,6 +303,7 @@ Trait_Extra_Field
       | Do_Binding
       | {Annotation}+ Trait_Field
       | Nested_Annotation
+      | Class_Conditional_Field(Trait_Field)
 \end{lstlisting}
 
 
@@ -304,6 +345,7 @@ Trait_Extra_Field_Spec
       | Do_Binding
       | {Annotation}+ Trait_Field_Spec
       | Nested_Annotation
+      | Class_Conditional_Field(Trait_Field_Spec)
 \end{lstlisting}
 
 
@@ -757,32 +799,6 @@ It is an error if the inheritance closure of a class type consists of an infinit
 
 
 
-\subsection{Early Definitions}
-\label{sec:early-defs}
-
-\grammar\begin{lstlisting}
-Early_Defs ::= '{' [Early_Def {semi Early_Def}] '}' 
-               'with'
-Early_Def  ::= {Annotation} {Modifier} (Var_Def | Val_Def)
-\end{lstlisting}
-
-A template may start with an {\em early definition} clause, which serves to define certain field values before the supertype constructor is called. In a template
-\begin{lstlisting}
-{
-  val $p_1$: $T_1$ := $e_1$
-  $\ldots$
-  val $p_n$: $T_n$ := $e_n$
-} with $sc$ with $mt_1$ with $\ldots$ with $mt_n$
-\end{lstlisting}
-The initial pattern definitions of $p_1 \commadots p_n$ are called {\em early definitions}. They define fields which form part of the template. Every early definition must define at least one field. 
-
-Any reference to \code{self} in the right-hand side of an early definition refers to the identity of \code{self} just outside the template, not inside of it. As a consequence, it is impossible for any early definition to refer to the object being constructed by the template, or refer to any of its fields, except for any other preceding early definition in the same section. 
-
-
-
-
-
-
 
 \section{Modifiers}
 \label{sec:modifiers}
@@ -1097,9 +1113,9 @@ Besides the primary constructor, a class may define additional constructors with
 
 \grammar\begin{lstlisting}
 Constructor_Def
-    ::= ['convenience'] 'constructor' [Param_Clauses] '=' [Fun_Dec] Expr
+    ::= ['convenience'] 'constructor' [Param_Clauses] '=' [Function_Declarations] Expr
 Destructor_Def 
-    ::= 'destructor' '=' [Fun_Dec] Expr
+    ::= 'destructor' '=' [Function_Declarations] Expr
 \end{lstlisting}
 
 \paragraph{\em Implicit constructor}

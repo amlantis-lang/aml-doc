@@ -13,14 +13,16 @@
 Type_Expr
     ::= Function_Type [Quantification_Clauses]
       | Infix_Type [Quantification_Clauses]
-      | Type_Pack
+      | Type_Pack_Expansion
       | Type_Context Type_Expr
+      | Atomic_Type_Expr
 Quantification_Clauses 
     ::= Quantification_Clause {'and' Quantification_Clause}
 Quantification_Clause  
     ::= Existential_Clauses
       | Universal_Clauses
       | Given_Clauses
+      | Type_Constraint_Clause
 Given_Clauses
     ::= 'given' Simple_Type
       | 'given' '{' Given_Dcl {semi Given_Dcl} '}'
@@ -28,7 +30,7 @@ Tuple_of_Types
     ::= Type_Expr {',' Type_Expr}
 Type_Equation 
     ::= '=' Type_Expr
-Type_Pack 
+Type_Pack_Expansion 
     ::= '...' Type_Expr
 Atomic_Type_Expr
     ::= Simple_Type
@@ -61,25 +63,24 @@ Long_Id
       | 'global' '.' id
 Stable_Id
     ::= Long_Id
-      | Type_Var
 Class_Qualifier 
     ::= '[' Long_Id ']'
 \end{lstlisting}
 
-Paths are not types themselves, but they can be a part of named types and in that function form a role in Aml's type system. 
+Paths are not types themselves, but they can be a part of named types and in that function form a role in \Aml's type system. 
 
 A path is one of the following:
 
 \begin{itemize}
-  \item The empty path $\epsilon$ (which can not be written explicitly in user programs). 
+  \item The empty path $\epsilon$ (which can't be written explicitly in user programs). 
 
-  \item \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference. A special path ~\lstinline!Function.self!, where \code{Function} is defined by Aml's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks). Such path denotes the ``self type'' of $C$, i.e. the class type, type of all values that are members of the type $C$.
+  \item \lstinline@$C$.self@, where $C$ references a class or a trait. The path \code{self} is taken as a shorthand for \lstinline@$C$.self@, where $C$ is the name of the class directly enclosing the reference.\footnote{This is used to refer to a single object. }
+  
+  \item \lstinline!Function.self!, where \code{Function} is defined by Aml's \code{Language} module (not imported to be anything else), is a reference to the directly enclosing function object and is available only within functions (or methods, anonymous functions, and even blocks).
 
-  \item \lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$.. 
+  \item \lstinline@$p$.$x$@, where $p$ is a path and $x$ is a member of $p$.
 
-  \item \lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$#super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
-
-  \item \lstinline!'$x$!, where $x$ is a type variable name (\sref{sec:type-variables}).
+  \item \lstinline@$C$.super.$x$@ or \lstinline@$C$.super[$M$].$x$@, where $C$ references a class or a trait and $x$ references a member of the superclass or designated parent class $M$ of $C$. The prefix \code{super} is taken as a shorthand for \lstinline@$C$.super@, where $C$ is the name of the class directly enclosing the reference, and \lstinline@super[$M$]@ as a shorthand for \lstinline@$C$.super[$M$]@, where $C$ is yet again the name of the class directly enclosing the reference. 
 \end{itemize}
 
 Paths introduce also {\em path dependent types}, if the referenced member is a type. 
@@ -92,6 +93,9 @@ Paths introduce also {\em path dependent types}, if the referenced member is a t
 \label{sec:type-variables}
 
 \grammar\begin{lstlisting}
+Stable_Id 
+    ::= ...
+      | Type_Var
 Type_Var 
     ::= ''' plain_id
       | '''' plain_id
@@ -100,6 +104,15 @@ Type_Var
 A type ``\,\lstinline!'$x$!\,'' stands for a type variable named $x$. A type ``\,\lstinline!''$x$!\,'', moreover, comes with a type context, ~\lstinline!Equality '$x$ => '$x$!, which is added to the type where it appears (or is exactly that if the type comprise just the type variable). 
 
 Type variables, unlike type parameters, may also be unified with a specific type by the automatic type inference, and may be made explicitly polymorphic. 
+
+
+
+
+
+\subsection{Self Path}
+\label{sec:self-path}
+
+The path ~\lstinline@$C$.self@~ and its derivatives are not really special within \Aml, because it is possible to bind the object (that ~\lstinline@$C$.self@~ would otherwise refer to) to a different name, say $t$. In such a case, ~\lstinline@$t$@~ can then be used throughout \Aml's type system as ~\lstinline@$C$.self@~ would have been used. The only difference is then that ~\lstinline@$C$.$t$@~ is not allowed to be used to resolve which \code{self} is meant to be used -- but that is the whole point of renaming that particular \code{self} to $t$, to not have to explicitly write the whole (possibly long) path. 
 
 
 
@@ -180,7 +193,7 @@ Simple_Type
     ::= ...
       | Projected_Type
 Projected_Type
-    ::= Simple_Type '#' id
+    ::= Simple_Type ('#' | '.#') id
 \end{lstlisting}
 
 A type projection \lstinline@$T$#$x$@ references type member named $x$ of type $T$. This is useful i.e. with nested classes that belong to the class instances, not the class object. 
@@ -192,15 +205,17 @@ class A = object
   class B = object end
   method f (b: B): Unit   = Console.print_line "Got my B."
   method g (b: A#B): Unit = Console.print_line "Got a B."
-end object
-
-val a1 = A.new in
-val a2 = A.new in
-begin
-  a2.f a1.B.new   (* type mismatch, found a1.B, required a2.B *)
-  a2.g a1.B.new   (* prints "Got a B." to stdout *)
-  a2.f a2.B.new   (* prints "Got my B." to stdout *)
 end
+
+let 
+  val a1 = A()
+  val a2 = A() 
+in
+  begin
+    a2.f a1.B()   (* type mismatch, found a1.B, required a2.B *)
+    a2.g a1.B()   (* prints "Got a B." to stdout *)
+    a2.f a2.B()   (* prints "Got my B." to stdout *)
+  end
 \end{lstlisting}
 This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
 
@@ -218,6 +233,12 @@ This is due to the fact that the \code{class B} is defined as a class instance m
 Simple_Type 
     ::= ...
       | Stable_Id
+      | Selected_Type
+      | Self_Type_Expr
+Selected_Type
+    ::= Parameterized_Type '.' Long_Id
+Self_Type_Expr
+    ::= 'Self'
 \end{lstlisting}
 
 A type designator refers to a named value type. It can be simple or qualified. All such type designators are shorthands for type projections. 
@@ -228,25 +249,27 @@ A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a pa
 
 The type designator ~\lstinline!self!~ refers to the singleton type ~\lstinline!self.type!, and ~\lstinline!$C$.self!~ refers to the singleton type ~\lstinline!$C$.self.type!. Aml also defines a designator named \code{Self}, which refers to the enclosing class type. 
 
+% TBD: describe the Self_Type_Expr (similar to Swift)
+
 \example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
 \begin{lstlisting}
-t = $\epsilon$.type#t         (* "global space" *)
+t = $\epsilon$.type#t         (* "global space", not real code *)
 (* predefined import of Aml/Language *)
 Number = Aml/Language.type#Number 
 
-object An_Object
-  type t
+val An_Object = object
+  type t = $\ldots$ end
   t = An_Object.type#t        (* bound by standalone object *)
-end object
+end
 
 class A_Class = object
-  type t
-  method a_method = {
+  type t = $\ldots$ end
+  method a_method = begin
     t = A_Class.self.type#t   (* bound by class *)
     t = self.type#t           (* bound by class *)
-  }
+  end
   class << self
-    type u
+    type u = $\ldots$ end
     u = A_Class.type#u        (* bound by class object *)
     t = A_Class.self.type#t   (* bound by class *)
   end
@@ -258,9 +281,9 @@ class A_Class = object
   u = A_Class.type#u          (* not bound by class, thus bound by class object;
                                  if class A_Class defined u itself, it would shadow 
                                  the definition in the class object *)
-end object
+end
 \end{lstlisting}
-
+% TBD fix the above to fit updated grammar, also finally resolve the class object vs class instances
 
 
 
@@ -273,7 +296,8 @@ Simple_Type
     ::= ...
       | Parameterized_Type
 Parameterized_Type
-    ::= Simple_Type [Type_Args]
+    ::= Simple_Type [? no whitespace ? Type_Args]
+      | Simple_Type '.' Type_Args
       | Postfix_Parameterized_Type
 Postfix_Parameterized_Type 
     ::= Atomic_Type_Arg Stable_Id
@@ -294,8 +318,8 @@ Type_Arg_Value
 Measure_Arg_Value 
     ::= ['~' id ':'] '<' measure_literal '>'
 Static_Arg_Value
-    ::= Constant
-      | 'constant' '(' Expr ')'
+    ::= Constant_Expr
+      | 'constant' Expr
 \end{lstlisting}
 
 A parameterized type $T[T_1 \commadots T_n]$ consists of a type designator $T$ and type parameters $T_1 \commadots T_n$, where $n \geq 1$. $T$ must refer to a type constructor which takes exactly $n$ type parameters $a_1 \commadots a_n$. 
@@ -379,9 +403,9 @@ Simple_Type
     ::= ...
       | Polymorphic_Variant_Type
 Polymorphic_Variant_Type 
-    ::= '[[' Tag_Spec {semi Tag_Spec} ']]'
-      | '[[>' [Tag_Spec {semi Tag_Spec}] ']]'
-      | '[[<' Tag_Spec {semi Tag_Spec} [semi '>' {Tag_Name}+] ']]'
+    ::= '[' Tag_Spec {semi Tag_Spec} ']'
+      | '[>' [Tag_Spec {semi Tag_Spec}] ']'
+      | '[<' Tag_Spec {semi Tag_Spec} [semi '>' {Tag_Name}+] ']'
 Tag_Spec 
     ::= Tag_Name ['of' Type]
       | Type
@@ -391,11 +415,11 @@ Tag_Name
 
 Polymorphic variant types describe the values a polymorphic variant may take. 
 
-The first case (\lstinline![[ ts$_1$; $\ldots$; ts$_n$ ]]!) is an {\em exact polymorphic variant type}: all possible tags are known, with their associated types, and they can all be present in values; its structure is fully known. 
+The first case (\lstinline![ ts$_1$; $\ldots$; ts$_n$ ]!) is an {\em exact polymorphic variant type}: all possible tags are known, with their associated types, and they can all be present in values; its structure is fully known. 
 
-The second case (\lstinline![[> ts$_1$; $\ldots$; ts$_n$ ]]!) is an {\em open polymorphic variant type}, describing a polymorphic variant value: it givs the list of all tags the value could take, with their associate types, and this type is still compatible with a polymorphic variant type containing more tags. A special case is the unknown type (\lstinline![[> ]]!), which does not define any tag, and therefore is compatible with any polymorphic variant type. 
+The second case (\lstinline![> ts$_1$; $\ldots$; ts$_n$ ]!) is an {\em open polymorphic variant type}, describing a polymorphic variant value: it givs the list of all tags the value could take, with their associate types, and this type is still compatible with a polymorphic variant type containing more tags. A special case is the unknown type (\lstinline![> ]!), which does not define any tag, and therefore is compatible with any polymorphic variant type. 
 
-The third case (\lstinline![[< ts$_1$; $\ldots$; ts$_m$; > `Tag$_n\ \ldots$ `Tag$_o$ ]]!) is a {\em closed polymorphic variant type}. It gives information on all the possible tags and their associated types, along with which tags are known to potentially appear in values. The exact variant type from the first case is equivalent to a closed variant type where all possible tags are also potentially present in values. 
+The third case (\lstinline![< ts$_1$; $\ldots$; ts$_m$; > `Tag$_n\ \ldots$ `Tag$_o$ ]!) is a {\em closed polymorphic variant type}. It gives information on all the possible tags and their associated types, along with which tags are known to potentially appear in values. The exact variant type from the first case is equivalent to a closed variant type where all possible tags are also potentially present in values. 
 
 In all cases, tags may be either specified directly in the ~\lstinline!`Tag!~ and ~\lstinline!`Tag of $T$!~ forms, or indirectly through a type, which must expand to an exact polymorphic variant type, whose tag specifications are inserted in place. 
 
@@ -454,7 +478,7 @@ An annotated type $a_1 \ldots a_n T$ attaches annotations (\sref{sec:annotations
 
 \grammar\begin{lstlisting}
 Infix_Type 
-    ::= Postfix_Type {[nl] ? Infix_Op except two-part ones ? [nl] Postfix_Type}
+    ::= Type_Expr {[nl] (Infix_Op - 'and also', 'or else') [nl] Type_Expr}
 \end{lstlisting}
 
 An infix type $T_1\ \op\ T_2$ consists of an infix operator $\op$, which gets applied to two type operands $T_1$ and $T_2$. The type is equivalent to the type application ~\lstinline!$\op$[$T_1$, $T_2$]!. The infix operator $\op$ may be an arbitrary identifier, and is expected to represent a type constructor. 
@@ -493,8 +517,7 @@ Union types also employ the following set of rules, given some types \code{X}, \
   \item Conformance: \code{X} conforms to \code{X or Y}. 
   \item Supertypes: if both \code{X} and \code{Y} conform to \code{Z}, then \code{X or Y} also conforms to \code{Z}. 
   
-  \item \code{X or Nothing} is equivalent to \code{X} for any \code{X} except \code{Undefined}. 
-  \item \code{X or Undefined} is equivalent to \code{X} for any \code{X}. 
+  \item \code{X or Nothing} is equivalent to \code{X} for any \code{X}. 
   \item \code{X or Any} is equivalent to \code{Any} for any \code{X}. 
   
   \item If \code{X[T]} is covariant in the type parameter \code{T}, then \code{X[U] or X[V]} conforms to \code{X[U or V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
@@ -511,16 +534,10 @@ Union types also employ the following set of rules, given some types \code{X}, \
 \grammar\begin{lstlisting}
 Infix_Type 
     ::= ...
-      | Type_Expr {'and' Type_Expr}
-      | Compound_Type
-
-Compound_Type 
-    ::= Annot_Type [Nullable_Mod] ['with' Annot_Type {'and' Annot_Type} ['and' Refine_Stats]] 
-      | Annot_Type [Nullable_Mod] ['with' Refine_Stats]
-      | Refine_Stats
+      | Type_Expr ['with' Type_Expr] {'and' Type_Expr}
 \end{lstlisting}
 
-An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. 
+An intersection type is a type that conforms to all types that it consists of. Any value that is an instance of all the types is also an instance of the intersection type. The second connected type may be optionally separated using ``\code{with}'' instead of ``\code{and}''.
 
 Intersection types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
 \begin{itemize}
@@ -531,34 +548,12 @@ Intersection types also employ the following set of rules, given some types \cod
   \item Subtypes: if \code{Z} conforms to both type \code{X} and type \code{Y}, then \code{Z} also conforms to \code{X and Y}. 
   \item Distributivity over union: \code{X and (Y or Z)} is equivalent to \code{(X and Y) or (X and Z)}. 
   
-  \item \code{X and Nothing} is equivalent to \code{Nothing} for any \code{X} except \code{Undefined}. 
-  \item \code{X and Undefined} is equivalent to \code{Undefined} for any \code{X}. 
+  \item \code{X and Nothing} is equivalent to \code{Nothing} for any \code{X}.
   \item \code{X and Any} is equivalent to \code{X} for any \code{X}. 
   
   \item If \code{X[T]} is covariant in the type parameter \code{T}, then \code{X[U and V]} conforms to \code{X[U] and X[V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
   \item If \code{X[T]} is contravariant in the type parameter \code{T}, then \code{X[U or V]} conforms to \code{X[U] and X[V]} for any types \code{U} and \code{V} that satisfy the type constraints of T. 
 \end{itemize}
-
-
-
-
-
-\subsection{Refined Types}
-\label{sec:refined-types}
-
-\grammar\begin{lstlisting}
-Refine_Stats 
-    ::= '{' Refine_Stat {semi Refine_Stat} [semi '_'] '}'
-      | '{' '_' '}'
-Refine_Stat 
-    ::= Dcl
-      | Type_Definition
-      | Struct_Constraint
-      | ()
-\end{lstlisting}
-
-A refinement \lstinline@{$R$}@ contains declarations and definitions (\sref{sec:refinements}). 
-
 
 
 
@@ -678,14 +673,14 @@ A functional dependency expresses dependencies between type parameters of a func
 \grammar\begin{lstlisting}
 Given_Dcl 
     ::= ...
-      | Type_Var Type_Equation
-      | Type_Var '>:' Type ['<:' Type]
-      | Type_Var '<:' Type
+      | Stable_Id Type_Equation
+      | Stable_Id '>:' Type ['<:' Type]
+      | Stable_Id '<:' Type
       | Type_Vars ':' '(' Member_Signature {semi Member_Signature} ')'
-      | Type_Var ':' '(' Constructor_Signature ')'
+      | Stable_Id ':' '(' Constructor_Signature ')'
 Type_Vars 
-    ::= Type_Var
-      | '(' Type_Var {'or' Type_Var} ')'
+    ::= Stable_Id
+      | '(' Stable_Id {'or' Stable_Id} ')'
 Member_Signature
     ::= ['object' | 'class'] 'member' fun_id ':' Type
       | ['object' | 'class'] 'message' fun_id ':' Type
@@ -762,13 +757,13 @@ A wildcard type must appear as a type argument of a parameterized type. Let ~\ls
 \begin{lstlisting}
 $p$.$c$[$\targs$, $t$, $\targs'$] for some { type $t$ >: $L$ <: $U$ }
 \end{lstlisting}
-where $t$ is a fresh type variable. Wildcard types may also appear as parts of compound types (\sref{sec:compound-types}), function types (\sref{sec:function-types}) or tuple types (\sref{sec:tuple-types}). Their expansion is then the expansion in the equivalent parameterized type. 
+where $t$ is a fresh type variable. 
 
 \example Assume the class definitions
 \begin{lstlisting}
-class Ref[T] = object ... end
+class Ref['t] = object ... end
 abstract class Outer = object 
-  type T end
+  type T
 end
 \end{lstlisting}
 
@@ -841,7 +836,10 @@ A type variable bound in $T$ is also explicitly polymorphic.
 \subsection{Nullable Types}
 \label{sec:nullable-types}
 
-\grammar\begin{lstlisting}
+\grammar\begin{lstlisting}[deletekeywords={no}]
+Simple_Type
+    ::= ...
+      | Simple_Type ? no whitespace ? Nullable_Mod
 Nullable_Mod 
     ::= '?' 
       | '!'
@@ -873,8 +871,8 @@ Types \code{T} that have got the \code{Default[$T$]} type class implemented have
 \label{sec:constrained-types}
 
 \grammar\begin{lstlisting}
-Postfix_Type 
-    ::= Compound_Type 'with' Constraint_Block
+Type_Constraint_Clause 
+    ::= 'where' Constraint_Block
 Simple_Type
     ::= ...
       | '@(' Expr ')'
@@ -1155,13 +1153,13 @@ The conformance relation $(\conforms)$ is the smallest transitive relation that 
       \item For the $i^{\superth}$ type parameter of $T$, $N_i \conforms U_i$.
     \end{itemize}
 
-  \item A compound type ~\lstinline!$T_1$ with $\ldots$ with $T_n$ with { $R$ }!~ conforms to each of its component types $T_i$.
+  \item A compound type ~\lstinline!$T_1$ with $\ldots$ and $T_n$!~ conforms to each of its component types $T_i$.
   
   \item Conformance of intersection types is defined in (\sref{sec:intersection-types}).
 
-  \item A constrained type ~\lstinline!$T$ with constraint $b$!~ conforms to $T$. A type ~\lstinline!$T$ with constraint $b_1$!~ conforms to ~\lstinline!$T$ with constraint $b_2$!, if any value $e$ that conforms ~\lstinline!$T$ with constraint $b_1$!~ by being a member of $T$ and passing the test presented by $b_1$, also conforms to ~\lstinline!$T$ with constraint $b_2$!~ by passing the test presented by $b_2$.\footnote{This conformance is only tested based on actual values being tested, not the types themselves.}
+  \item A constrained type ~\lstinline!$T$ where $b$!~ conforms to $T$. A type ~\lstinline!$T$ where $b_1$!~ conforms to ~\lstinline!$T$ where $b_2$!, if any value $e$ that conforms ~\lstinline!$T$ where $b_1$!~ by being a member of $T$ and passing the test presented by $b_1$, also conforms to ~\lstinline!$T$ where $b_2$!~ by passing the test presented by $b_2$.\footnote{This conformance is only tested based on actual values being tested, not the types themselves.}
 
-  \item If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ with $U_n$ with { $R$ }!. 
+  \item If $T \conforms U_i$ for $i = 1 \commadots n$, and every binding $d$ of a type or value $x$ in $R$ exists a member binding of $x$ in $T$ which subsumes $d$, then $T$ conforms to the compound type ~\lstinline!$U_1$ with $\ldots$ and $U_n$!. 
 
   \item The existential type ~\lstinline!$T$ for some { $Q$ }!~ conforms to $U$, if its skolemization (\sref{sec:existential-types}) conforms to $U$. This also means that the $t'_i$ type variables have to fall in between $U$'s type parameter bounds. 
 

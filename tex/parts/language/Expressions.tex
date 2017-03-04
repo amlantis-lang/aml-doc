@@ -12,6 +12,7 @@ Expr
     ::= Simple_Expr
       | Application_Expr
       | Object_Creation_Expr
+      | Standalone_Object_Expr
       | Type_Application_Expr
       | '(' Expr ')'
       | 'begin' Expr 'end'
@@ -88,9 +89,9 @@ What we call ``statement'', in context of Aml is in fact yet another kind of an 
 
 \grammar\begin{lstlisting}
 Simple_Expr 
-    ::= Constant
-Constant
-    ::= Literal
+    ::= Constant_Expr
+Constant_Expr
+    ::= Literal_Expr
 \end{lstlisting}
 
 Typing of literals is as described in (\sref{sec:literals}); their evaluation is immediate. 
@@ -105,7 +106,7 @@ Aml guarantees that methods of numeric literals (the class \code{Number}) always
 \subsection{The Nil and Undefined Values}
 
 \grammar\begin{lstlisting}
-Constant 
+Constant_Expr 
     ::= ...
       | 'nil'
       | 'undefined'
@@ -113,13 +114,13 @@ Constant
 
 The \code{nil} value is of type \code{Option[$T$]}, the \code{None} variant, and is thus compatible with every type that is nullable (\sref{sec:nullable-types}).
 
-The \code{undefined} value is of type \code{Nothing}, a subtype of \code{Nothing}, and is therefore compatible with every type whatsoever. 
-
 The \code{nil} represents a ``no value'', and is itself represented by an object (with a possible immediate representation). 
 
 A reference to any member of the \code{nil} object causes \code{Member_Not_Found} to be raised, unless the member in fact exists. The \code{nil} object is also frozen by default. 
 
-The \code{undefined} represents ``nothing, not even no value''.
+The \code{undefined} expression is of type \code{Nothing}, and is therefore compatible with every type whatsoever. 
+
+The \code{undefined} represents ``nothing, not even no value'', and is used in computations that never finish (e.g. always end by raising an error, or transferring control somewhere else).
 
 See (\sref{sec:emptiness}) for more details on ``nothing'' values. 
 
@@ -135,57 +136,22 @@ Expr
     ::= ...
       | Tuple_Exprs
 Tuple_Exprs 
-    ::= Exprs {',' [nl] Named_Exprs}
-      | Named_Exprs
-      | Tuple_Head_Expr '(' [nl] Exprs {',' [nl] Named_Exprs} [nl] ')'
-      | Tuple_Head_Expr '(' [nl] Named_Exprs [nl] ')'
-      | Tuple_Head_Expr '{' [nl] Tuple_Fields_Init [nl] '}'
+    ::= Expr {',' Expr}+
+      | Tuple_Head_Expr '(' [nl] Expr {',' Expr}+ [nl] ')'
 Tuple_Head_Expr
-    ::= ['mutable' | 'immutable'] 'tuple' [nl]
-Named_Exprs 
-    ::= Named_Expr {',' [nl] Named_Expr}
-Named_Expr
-    ::= '~' id ':' Expr
-Constant 
+    ::= [Mutability_Modifier] 'tuple' [nl]
+Constant_Expr 
     ::= ...
       | '()'
-Tuple_Fields_Init 
-    ::= Tuple_Positional_Fields_Init [semi Tuple_Labelled_Fields_Init]
-      | Tuple_Labelled_Fields_Init
-Tuple_Positional_Fields_Init
-    ::= Tuple_Field_Init {semi Tuple_Field_Init}
-Tuple_Labelled_Fields_Init
-    ::= Tuple_Labelled_Field_Init {semi Tuple_Labelled_Field_Init}
-Tuple_Positional_Field_Init 
-    ::= Expr
-Tuple_Labelled_Field_Init
-    ::= id '=>' Expr
 \end{lstlisting}
 
-A tuple expression ~\lstinline!($e_1 \commadots e_n$)!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 1$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is usually only the value itself, without being wrapped in a tuple.  
+A tuple expression ~\lstinline!$e_1 \commadots e_n$!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is usually only the value itself, without being wrapped in a tuple.  
 
 A tuple expression may alternatively appear in the form ~\lstinline!tuple {$e_1$; $\ldots$; $e_n$}!. In that form, it may also be prepended with either \code{mutable} or \code{immutable} keyword. Implicitly, all forms are prepended with \code{immutable}. 
-
-Sub-expressions that are not labelled with any id are positional. 
-
-Sub-expressions in a tuple expression that are prepended with a tilde and an id (in form of ~\lstinline!~$x_i$: $e_i$!) are labelled $x_i$ -- this adds annotation ~\lstinline!@[labelled :$x_i$]!~ to the type of the sub-expression, and such an element is then not accessible by its order. If the annotation is explicitly added, the behaviour is the same. Labelled sub-expressions, either in the syntax sugar or explicit form, can only appear at the end of the sequence of sub-expressions, thus no unnamed sub-expressions can appear after a named sub-expression. 
-% TBD: specify the full path to that annotation
-
-Labelled sub-expressions must appear after all positional (non-labelled) sub-expressions. Otherwise, they are implicitly reordered after all positional sub-expressions, and a warning is issued. The positions of non-labelled sub-expressions is then recalculated to match the new order.
 
 Tuple expressions have the runtime type of ~\lstinline!Aml/Language.Tuple[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that give label to sub-expressions. Tuple expressions prepended by \code{mutable} are of the type ~\lstinline!Aml/Language.Mutable_Tuple[$T_1 \commadots T_n$]!.
 
 Tuple expressions with an extended grammar rules are also used within function applications (\sref{sec:function-applications}), and the rules considering element labelling and positions are the same as for the simple data tuple expressions. 
-
-\paragraph{Mixing labelled and non-labelled elements}
-As a rule of thumb, only the following combinations of labelled and non-labelled elements should be used:
-\begin{itemize}
-  \item All non-labelled elements. Usually should not exceed 3 elements.
-  \item All labelled elements.  
-  \item One non-labelled element followed by labelled elements, as an argument (\sref{sec:function-applications}). 
-  \item Many non-labelled elements followed by up to 3 labelled elements, also as an argument. 
-\end{itemize}
-The compiler should by default issue a warning when different combinations are encountered. 
 
 
 
@@ -204,12 +170,12 @@ Tuple_Exprs
 Tuple_Fields_Clone 
     ::= Tuple_Field_Clone {semi Tuple_Field_Clone}
 Tuple_Field_Clone
-    ::= (id | decimal_numeral) ['=>' Expr]
+    ::= decimal_numeral '=' Expr
 \end{lstlisting}
 
 An expression of the form 
 \begin{lstlisting}
-tuple { $e$ with $i_1$ => $e_1$; $\ldots$; $i_n$ => $e_n$ }
+tuple { $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
 \end{lstlisting}
 is a tuple clone expression. 
 
@@ -229,34 +195,18 @@ Words
 Word
     ::= {id_char}+
 List_Expr
-    ::= '%' List_Flags '[' [Expr {semi Expr}] ']'
-      | '%w' List_Flags '[' [Words] ']'
-List_Flags
-    ::= [['i' |  (* immutable *)
-          'm']   (* mutable *)
-         ['l']]  (* double linked *)]
+    ::= '[' [Expr {semi Expr}] ']'
+      | '%[' [Expr {semi Expr}] ']'
+      | '%w[' [Words] ']'
 \end{lstlisting}
 
-An expression of the form ~\lstinline!%[$e_1$; $\ldots$; $e_n$]! is a list expression. 
-
+Expressions of the forms ~\lstinline![$e_1$; $\ldots$; $e_n$]!, ~\lstinline!%[$e_1$; $\ldots$; $e_n$]!~ and ~\lstinline!%w[$w_1$ $\ldots$ $w_n$]!~ are list expressions. Specifically, 
 \begin{itemize}
-  \item Expression of the form ~\lstinline!%[$e_1$; $\ldots$; $e_n$]!
-    has type of \code{Linked_List[$T$]}. 
-  \item Expression of the form ~\lstinline!%i[$e_1$; $\ldots$; $e_n$]!
-    has also type of \code{Linked_List[$T$]}. 
-  \item Expression of the form ~\lstinline!%m[$e_1$; $\ldots$; $e_n$]!
-    has type of \code{Mutable_Linked_List[$T$]}. 
-  \item Expression of the form ~\lstinline!%l[$e_1$; $\ldots$; $e_n$]!
-    has type of \code{Double_Linked_List[$T$]}. 
-  \item Expression of the form ~\lstinline!%il[$e_1$; $\ldots$; $e_n$]!
-    has also type of \code{Double_Linked_List[$T$]}. 
-  \item Expression of the form ~\lstinline!%ml[$e_1$; $\ldots$; $e_n$]!
-    has type of \code{Mutable_Double_Linked_List[$T$]}. 
-  \item Expression of the form ~\lstinline!%w[word word2 wordx]!
-    has type of \code{Linked_List[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Aml/Language.String}). 
+  \item \lstinline![$e_1$; $\ldots$; $e_n$]!~ is the most versatile list expression. The elementary type of it is ~\lstinline!'a list!, but can be inferred to any other sequence type, including indexed and linear sequences. 
+  \item \lstinline!%[$e_1$; $\ldots$; $e_n$]!, on the other hand, hints that the type is ~\lstinline!Linear_Sequence['a]!.
+  \item \lstinline!%w[$w_1$ $\ldots$ $w_n$]!~ is a list of words expression, which hints that its type is ~\lstinline!Linear_Sequence[String]!. Each \code{Word} in the expression is represented by one \code{String} element of the list. 
 \end{itemize}
 
-The ``\code{i}'' and ``\code{m}'' flags can be inferred from the expected type, based on \code{immutable} and \code{mutable} modifier (\sref{sec:mutable-immutable-storage}) respectively (or the related type annotations). This is also true for array expressions (\sref{sec:array-expressions}), dictionary expressions (\sref{sec:dict-expressions}), multimap expressions (\sref{sec:multimap-expressions}) and bag expressions (\sref{sec:bag-expressions}). It is an error if there is a mutability flag in the expression that is incompatible to the mutability required by the expected type. 
 
 
 
@@ -269,27 +219,23 @@ The ``\code{i}'' and ``\code{m}'' flags can be inferred from the expected type, 
 Simple_Expr
     ::= ...
       | Array_Expr
+      | Vector_Expr
 Array_Expr
-    ::= '%' Array_Flags '[|' [Expr {semi Expr}] '|]'
-      | '%w' Array_Flags '[|' Words '|]'
-Array_Flags 
-    ::= [['i' |  (* immutable *)
-          'm']]  (* mutable *)
+    ::= '[|' [Expr {semi Expr}] '|]'
+      | '%[|' [Expr {semi Expr}] '|]'
+      | '%w[|' Words '|]'
+Vector_Expr
+    ::= '#[' [Expr {semi Expr}] ']'
 \end{lstlisting}
 
-An expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]! is an array expression. 
-
+Expressions of the forms ~\lstinline![|$e_1$; $\ldots$; $e_n$|]!, ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]!~ and ~\lstinline!%w[|$w_1$ $\ldots$ $w_n$|]!~ are array expressions. Specifically,
 \begin{itemize}
-  \item Expression of the form ~\lstinline!%[|$e_1$; $\ldots$; $e_n$|]!
-    has type of \code{Mutable_Array[$T$]}. 
-  \item Expression of the form ~\lstinline!%i[|$e_1$; $\ldots$; $e_n$|]!
-    has type of \code{Array[$T$]}. 
-  \item Expression of the form ~\lstinline!%m[|$e_1$; $\ldots$; $e_n$|]!
-    has type of \code{Mutable_Array[$T$]}.
-  \item Expression of the form ~\lstinline!%w[|word word2 wordx|]!
-    has type of \code{Mutable_Array[String]}, and respectively for the other flags, where $T$ is \code{String} (\code{Aml/Language.String}). 
+  \item \lstinline![|$e_1$; $\ldots$; $e_n$|]!~ hints that the expression's type is ~\lstinline!Indexed_Sequence['a]!, and unless constrained to another type, is implemented by ~\lstinline!Array['a]!.
+  \item \lstinline!%[|$e_1$; $\ldots$; $e_n$|]!~ is equivalent to the previous form in \AmlCore, but may have semantics different in \AmlSystem. % TBD: link to more info
+  \item \lstinline!%w[|$w_1$ $\ldots$ $w_n$|]!~ is an array of words expression, which hints that its type is ~\lstinline!Indexed_Sequence[String]!. 
 \end{itemize}
 
+An expression of the form ~\lstinline!#[$e_1$; $\ldots$; $e_n$]!~ is a vector expression, typed ~\lstinline!Vector['a]!.
 
 
 
@@ -303,37 +249,18 @@ Simple_Expr
     ::= ...
       | Dictionary_Expr
 Dictionary_Expr 
-    ::= '%' Dict_Flags '{' [Dict_Mapping1 {semi Dict_Mapping1}] '}'
-      | '%' Dict_Flags '{' [Dict_Mapping2 {semi Dict_Mapping2}] '}'
+    ::= '%{' [Dict_Mapping1 {semi Dict_Mapping1}] '}'
+      | '%{' [Dict_Mapping2 {semi Dict_Mapping2}] '}'
+      | '#{' [Dict_Mapping1 {semi Dict_Mapping1}] '}'
+      | '#{' [Dict_Mapping2 {semi Dict_Mapping2}] '}'
 Dict_Mapping1
-    ::= Expr '=>' Expr
+    ::= Expr '=' Expr
 Dict_Mapping2 
-    ::= ['~'] id ':' Expr
-Dict_Flags
-    ::= [['i' |  (* immutable *)
-          'm']   (* mutable *)
-         ['l']]  (* linked *)
+    ::= plain_id ':' Expr
+      | '"' {int_string_element} '":' Expr
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%{$e_1$; $\ldots$; $e_n$}! is a dictionary expression. 
-
-\begin{itemize}
-  \item Expression of the form ~\lstinline!%{$e_1$; $\ldots$; $e_n$}!
-    has type of \code{Hash_Dictionary[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%i{$e_1$; $\ldots$; $e_n$}!
-    has also type of \code{Hash_Dictionary[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%m{$e_1$; $\ldots$; $e_n$}!
-    has type of \code{Mutable_Hash_Dictionary[$K$, $T$]}.
-  \item Expression of the form ~\lstinline!%l{$e_1$; $\ldots$; $e_n$}!
-    has type of \code{Linked_Hash_Dictionary[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%il{$e_1$; $\ldots$; $e_n$}!
-    has type of \code{Linked_Hash_Dictionary[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%ml{$e_1$; $\ldots$; $e_n$}!
-    has also type of \code{Linked_Hash_Dictionary[$K$, $T$]}.
-  \item Expression of the form ~\lstinline!%ml{$e_1$; $\ldots$; $e_n$}!
-    has type of \code{Mutable_Linked_Hash_Dictionary[$K$, $T$]}.
-  \item Dictionary expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Aml/Language.Symbol}). 
-\end{itemize}
 
 
 
@@ -347,27 +274,13 @@ Simple_Expr
     ::= ...
       | Multimap_Expr
 Multimap_Expr 
-    ::= '%' Dict_Flags '{{' [Dict_Mapping1 {semi Dict_Mapping1}] '}}'
-      | '%' Dict_Flags '{{' [Dict_Mapping2 {semi Dict_Mapping2}] '}}'
+    ::= '%{|' [Dict_Mapping1 {semi Dict_Mapping1}] '|}'
+      | '%{|' [Dict_Mapping2 {semi Dict_Mapping2}] '|}'
+      | '#{|' [Dict_Mapping1 {semi Dict_Mapping1}] '|}'
+      | '#{|' [Dict_Mapping2 {semi Dict_Mapping2}] '|}'
 \end{lstlisting}
 
-An expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}! is a multimap expression. 
-
-\begin{itemize}
-  \item Expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}!
-    has type of \code{Hash_Multimap[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%i{{$e_1$; $\ldots$; $e_n$}}!
-    has also type of \code{Hash_Multimap[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%m{{$e_1$; $\ldots$; $e_n$}}!
-    has type of \code{Mutable_Hash_Multimap[$K$, $T$]}.
-  \item Expression of the form ~\lstinline!%l{{$e_1$; $\ldots$; $e_n$}}!
-    has type of \code{Linked_Hash_Multimap[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%il{{$e_1$; $\ldots$; $e_n$}}!
-    has also type of \code{Linked_Hash_Multimap[$K$, $T$]}. 
-  \item Expression of the form ~\lstinline!%ml{{$e_1$; $\ldots$; $e_n$}}!
-    has type of \code{Mutable_Linked_Hash_Multimap[$K$, $T$]}.
-  \item Multimap expression that uses the \code{Dict_Mapping1} syntax category to define its elements has $K$ of \code{Symbol} (\code{Aml/Language.Symbol}). 
-\end{itemize}
+An expression of the form ~\lstinline!%{|$e_1$; $\ldots$; $e_n$|}! is a multimap expression. 
 
 
 
@@ -380,44 +293,19 @@ An expression of the form ~\lstinline!%{{$e_1$; $\ldots$; $e_n$}}! is a multimap
 \grammar\begin{lstlisting}
 Simple_Expr 
     ::= ...
+      | Set_Expr
       | Bag_Expr
+Set_Expr
+    ::= '%(' [Expr {semi Expr}] ')'
+      | '#(' [Expr {semi Expr}] ')'
 Bag_Expr
-    ::= '%' Bag_Flags '(' [Expr {semi Expr}] ')'
-Bag_Flags
-    ::= [['i' |  (* immutable *)
-          'm']   (* mutable *)
-         ['l']   (* linked *)
-         ['s']]  (* set instead of bag (tally-less bag) *)
+    ::= '%(|' [Expr {semi Expr}] '|)'
+      | '#(|' [Expr {semi Expr}] '|)'
 \end{lstlisting}
 
-An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a bag expression. 
+An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a set expression. 
 
-\begin{itemize}
-  \item Expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Hash_Bag[$T$]}. 
-  \item Expression of the form ~\lstinline!%i($e_1$; $\ldots$; $e_n$)!
-    has also type of \code{Hash_Bag[$T$]}. 
-  \item Expression of the form ~\lstinline!%m($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Mutable_Hash_Bag[$T$]}.
-  \item Expression of the form ~\lstinline!%l($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Linked_Hash_Bag[$T$]}. 
-  \item Expression of the form ~\lstinline!%il($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Linked_Hash_Bag[$T$]}. 
-  \item Expression of the form ~\lstinline!%ml($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Mutable_Linked_Hash_Bag[$T$]}.
-  \item Expression of the form ~\lstinline!%s($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Hash_Set[$T$]}. 
-  \item Expression of the form ~\lstinline[deletekeywords={is}]!%is($e_1$; $\ldots$; $e_n$)!
-    has also type of \code{Hash_Set[$T$]}. 
-  \item Expression of the form ~\lstinline!%ms($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Mutable_Hash_Set[$T$]}.
-  \item Expression of the form ~\lstinline!%ls($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Linked_Hash_Set[$T$]}. 
-  \item Expression of the form ~\lstinline!%ils($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Linked_Hash_Set[$T$]}. 
-  \item Expression of the form ~\lstinline!%mls($e_1$; $\ldots$; $e_n$)!
-    has type of \code{Mutable_Linked_Hash_Set[$T$]}.
-\end{itemize}
+An expression of the form ~\lstinline!%(|$e_1$; $\ldots$; $e_n$|)! is a bag expression.
 
 
 
@@ -446,7 +334,7 @@ Simple_Expr
     ::= ...
       | Record_Expr
 Record_Expr 
-    ::= 'record' [nl] '{' [nl] Record_Fields_Init [nl] '}'
+    ::= '{' [nl] Record_Fields_Init [nl] '}'
 Record_Fields_Init
     ::= Record_Field_Init {semi Record_Field_Init}
 Record_Field_Init
@@ -455,7 +343,7 @@ Record_Field_Init
 
 An expression of the form
 \begin{lstlisting}
-record { $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
+{ $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
 \end{lstlisting}
 is a record expression. 
 
@@ -472,8 +360,7 @@ Simple_Expr
     ::= ...
       | Record_Clone_Expr
 Record_Clone_Expr
-    ::= 'record' [nl] 
-        '{' [nl] Expr 'with' Record_Fields_Clone [nl] '}'
+    ::= '{' [nl] Expr 'with' Record_Fields_Clone [nl] '}'
 Record_Fields_Clone 
     ::= Record_Field_Clone {semi Record_Field_Clone}
 Record_Field_Clone 
@@ -482,7 +369,7 @@ Record_Field_Clone
 
 An expression of the form
 \begin{lstlisting}
-record { $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
+{ $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
 \end{lstlisting}
 is a record clone expression. 
 
@@ -556,18 +443,17 @@ Reference cells are lightweight instances that can be used to simulate output pa
 
 \example An example of how to manipulate reference cells. 
 \begin{lstlisting}
-(* initialize a reference cell *)
-let a = ref 42
-let b = Aml/Language.Reference_Cell.new (42)
-let c = new Aml/Language.Reference_Cell (42)
+let 
+  (* initialize a reference cell *)
+  val a = ref 42
+  val b = Aml/Language.Reference_Cell (42)
 
-(* retrieve contained value from reference cell *)
-let d = !a
-let e = a.value
-
-(* change the value the reference cell contains *)
-a <- 64
-a.value := 128
+  (* retrieve contained value from reference cell *)
+  val c = !a
+in
+  (* change the value the reference cell contains *)
+  a := 64
+end
 \end{lstlisting}
 
 
@@ -608,62 +494,69 @@ A value $x$ generated with this expression can be used to send an object a messa
 \subsection{Workflows}
 \label{sec:workflows}
 
-\grammar\begin{lstlisting}[deletekeywords={is,with,or,is,and}]
+\grammar\begin{lstlisting}[deletekeywords={is,with,or,is,and,where}]
 Workflow_Expr          ::= Expr '{' Workflow_or_Range_Expr '}'
 Workflow_or_Range_Expr ::= Workflow | Short_Workflow | Range_Expr
 
-Workflow ::= 'let!' Let_Binding semi Workflow
-           | ['implicit'] Val_Dcl In_Sep Workflow ['end']
-           | ['implicit'] Var_Dcl In_Sep Workflow ['end']
-           | ['implicit'] Val_Def In_Sep Workflow ['end']
-           | ['implicit'] Var_Def In_Sep Workflow ['end']
-           | ['implicit'] Op_Dcl In_Sep Workflow ['end']
-           | ['implicit'] Op_Def In_Sep Workflow ['end']
-           | ['implicit'] Multi_Op_Dcl In_Sep Workflow ['end']
-           | ['implicit'] Multi_Op_Def In_Sep Workflow ['end']
-           | {Local_Modifier} Tmpl_Def In_Sep Workflow ['end']
-           | Struct_Def In_Sep Workflow ['end']
+Workflow 
+    ::= 'let!' Let_Binding semi Workflow
+      | ['implicit'] Val_Def In_Sep Workflow ['end']
+      | ['implicit'] Op_Def In_Sep Workflow ['end']
+      | ['implicit'] Multi_Op_Def In_Sep Workflow ['end']
+      | 'let' Struct_Defs In_Sep Workflow ['end']
            
-             (* because Do_Binding can't be the last element of a workflow: *)
-           | 'do' Expr In_Sep Workflow ['done'] 
-           | 'do!' Expr In_Sep Workflow ['done']
+        (* because Do_Binding can't be the last element of a workflow: *)
+      | 'do' Expr In_Sep Workflow ['done']
+      | 'do!' Expr In_Sep Workflow ['done']
            
-           | 'use!' [Storage_Modifier] Let_Binding In_Sep Workflow ['end']
-           | 'use' [Storage_Modifier] Let_Binding In_Sep Workflow ['end']
-           | 'yield!' Expr
-           | Yield_Expr
-           | 'return!' Expr
-           | Return_Expr
+      | 'use!' [Storage_Modifier] Let_Binding In_Sep Workflow ['end']
+      | 'use' [Storage_Modifier] Let_Binding In_Sep Workflow ['end']
+      | 'yield!' Expr
+      | Yield_Expr
+      | 'return!' Expr
+      | Return_Expr
            
-           | 'if' Wf_Condition ('then' | semi) Workflow
-             [[semi] Else Workflow] 'end' ['if']
-           | 'unless' Wf_Condition ('then' | semi) Workflow
-             [[semi] Else Workflow] 'end' ['unless']
-             
-           | ? Match_Expr where Expr is extended with Workflow ?
-           | ? Switch_Expr where Expr is extended with Workflow ?
-           | ? Catch_Expr or Rescue_Expr, where initial Expr, 
-               Handle_Block, Catch_Block and Rescue_Block are extended with Workflow ?
+      | 'if' Wf_Condition ('then' | semi) Workflow
+        [[semi] Else Workflow] 'end' ['if']
+      | 'unless' Wf_Condition ('then' | semi) Workflow
+        [[semi] Else Workflow] 'end' ['unless']
+         
+        (* Match_Expr where When_Expr is extended with Workflow *)
+      | Wf_Match_Expr
+        (* Catch_Expr or Rescue_Expr, where initial Expr, 
+           Handle_Block, Catch_Block and Rescue_Block are extended with Workflow *)
+      | Wf_Catch_Expr
+      | Wf_Rescue_Expr
            
-           | 'for' Val_Dcls 'in' ['reverse'] Expr
-             ['step' Expr] Wf_For_Loop
-           | ('while' | 'until') Condition Wf_For_Loop
-           | 'for' id '=' Expr (['up' | 'down'] 'to') Expr Wf_For_Loop
-           | Workflow ('while' | 'until') Condition
+      | 'for' Val_Dcls 'in' ['reverse'] Expr
+        ['step' Expr] Wf_For_Loop
+      | ('while' | 'until') Condition Wf_For_Loop
+      | 'for' id '=' Expr (['up' | 'down'] 'to') Expr Wf_For_Loop
+      | Workflow ('while' | 'until') Condition
            
-           | Workflow semi Workflow
-           | Annot_Workflow
-           | Expr
+      | Workflow semi Workflow
+      | Annot_Workflow
+      | Expr
 
-Annot_Workflow ::= {Annotation}+ Workflow           
-Short_Workflow ::= 'for' Generator_Expr
-                 | [Label_Dcl] 'for' Val_Dcls 'in' Expr 
-                   ['step' Expr] Wf_For_Loop
+Annot_Workflow 
+    ::= {Annotation}+ Workflow           
+Short_Workflow
+    ::= 'for' Generator_Expr
+      | [Label_Dcl] 'for' Val_Dcls 'in' Expr 
+        ['step' Expr] Wf_For_Loop
 
-Wf_For_Loop    ::= 'loop' Wf_Loop_Block 'end' ['loop']
-                 | 'do' Wf_Loop_Block 'done'
-Wf_Loop_Block  ::= Workflow + Loop_Ctrl_Expr
-Wf_Condition   ::= Workflow - Conditional_Expr
+Wf_For_Loop 
+    ::= 'loop' Wf_Loop_Block 'end'
+Wf_Loop_Block 
+    ::= Workflow + Loop_Ctrl_Expr
+Wf_Condition
+    ::= Workflow - Conditional_Expr
+Wf_Match_Expr
+    ::= Match_Expr   (* see Match_Expr for extensions *)
+Wf_Catch_Expr
+    ::= Catch_Expr   (* see Catch_Expr for extensions *)
+Wf_Rescue_Expr
+    ::= Rescue_Expr  (* see Rescue_Expr for extensions *)
 \end{lstlisting}
 
 % TODO: finish Workflow, continue with loop, while, for
@@ -676,13 +569,19 @@ Wf_Condition   ::= Workflow - Conditional_Expr
 \label{sec:collection-comprehensions}
 
 \grammar\begin{lstlisting}
-List_Literal       ::= '%' [CF] '['  Collection_Gen  ']'
-Array_Literal      ::= '%' [CF] '[|' Collection_Gen '|]'
-Dictionary_Literal ::= '%' [CF] '{'  Collection_Gen  '}'
-Bag_Literal        ::= '%' [CF] '('  Collection_Gen  ')'
-Collection_Gen     ::= (Workflow_Expr | Expr) ['in' Range_Expr]
-                     | Short_Workflow
-                     | Range_Expr
+List_Literal 
+    ::= '%' List_Flags '['  Collection_Gen  ']'
+Array_Literal 
+    ::= '%' Array_Flags '[|' Collection_Gen '|]'
+Dictionary_Literal 
+    ::= '%' Dict_Flags '{'  Collection_Gen  '}'
+      | '%' Dict_Flags '{{'  Collection_Gen  '}}'
+Bag_Literal
+    ::= '%' Bag_Flags '('  Collection_Gen  ')'
+Collection_Gen
+    ::= (Workflow_Expr | Expr) ['in' Range_Expr]
+      | Short_Workflow
+      | Range_Expr
 \end{lstlisting}
 
 Collection comprehensions extend the syntax of collection ``literals''\footnote{Pure literals are terminal symbols in the language, but collection literals are wrappers around virtually any expression.}, so that collections may be defined not by their explicit values, but by a function that generates them -- and that function is a generator. Only tuple literals don't have collection comprehension, due to their special nature within the language. 
@@ -703,11 +602,12 @@ If the expression that generates values would create an infinite collection, the
 \label{sec:sequence-comprehensions}
 
 \grammar\begin{lstlisting}
-Collection_Literal ::= Seq_Literal
-Eagerness          ::= ['eager' | 'lazy']
-Seq                ::= Eagerness 'seq'
-Seq_Literal        ::= Seq '{' Collection_Gen '}'
-Collection_Literal ::= Seq_Literal
+Collection_Literal 
+    ::= Seq_Literal
+Seq_Head 
+    ::= [Eagerness] 'seq'
+Seq_Literal
+    ::= Seq_Head '{' Collection_Gen '}'
 \end{lstlisting}
 
 Apart from collection comprehensions (\sref{sec:collection-comprehensions}), Aml offers also sequence comprehensions. The crucial difference is in evaluation: collection comprehension trigger eager evaluation, unless indeed the used source collection does not employ lazy evaluation of some kind by itself. Sequence comprehension, on the other hand, is super-lazy. 
@@ -934,12 +834,20 @@ method transpose['a](xss: List[List['a]]): List[List['a]] =
 
 \grammar\begin{lstlisting}
 Function_Expr
-    ::= {Value_Param_Clause '->'}+ Expr
-      | 'fun' {Params_Clause}+ [Guard] [':' Type] '->' Expr
-      | 'function' When_Clauses 'end' ['function']
+    ::= 'fun' {Anonymous_Params_Clause}+ [Guard] [':' Type] 
+        '->' [Lambda_Declarations] Expr
+      | 'function' [Lambda_Declarations 'match'] When_Clauses 'end'
+Block_Expr
+    ::= Match_Block_Expr
+Match_Block_Expr
+    ::= '{' When_Clauses '}'
+      | 'do' When_Clauses 'done'
+Anonymous_Params_Clause
+    ::= Params_Clause
+      | '(' 'rec' [id] ')'
 \end{lstlisting}
 
-The anonymous function ~\lstinline!($x_1$: $T_1 \commadots x_n$: $T_n$) -> { $b$ }!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
+The anonymous function ~\lstinline!fun $x_1$: $T_1\,\ldots\,x_n$: $T_n$ -> $b$!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
 
 If the expected type of an anonymous function is of the form ~\lstinline!Function[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
 
@@ -948,15 +856,9 @@ Note that anonymous functions explicitly specify all of their parameters, unlike
 The anonymous function is evaluated as the following expression:
 \begin{lstlisting}
 (Function[$S_1 \commadots S_n$, $T$] with {
-  def apply ($x_1$: $T_1 \commadots x_n$: $T_n$): $T$ = { $b$ }
+  method apply ($x_1$: $S_1$) \ldots ($x_n$: $S_n$): $T$ = $b$
 }).new
 \end{lstlisting}
-
-In the case of a single untyped formal parameter, ~\lstinline!($x$) -> { $b$ }!~ can be abbreviated to ~\lstinline!$x$ -> { $b$ }!. If an anonymous function ~\lstinline!($x$: $T$) -> { $b$ }!~ with a single typed parameter appears as the result of expression of a block, it can be abbreviated to ~\lstinline!$x$: $T$ -> { $b$ }!.
-
-A formal parameter may also be a wildcard represented by an underscore ``\lstinline!_!''. In that case, a fresh name for the parameter is chosen arbitrarily. 
-
-A parameter of an anonymous function may optionally be preceded by an \code{implicit} modifier. In that case the parameter is labeled \code{implicit} (\sref{sec:implicit-params-views}); however the parameter section itself does not count as an implicit parameter section in the sense of (\sref{sec:implicit-parameters}). Such a parameter ~\lstinline!implicit $x_i$!~ is then added transparently to the block $b$ as ~\lstinline!implicit val $y_i$ = $x_i$!, where $y_i$ is a fresh name. Also, therefore arguments to anonymous functions always have to be given explicitly. 
 
 \example Examples of anonymous functions:
 \begin{lstlisting}[mathescape=false]
@@ -979,6 +881,20 @@ fun (x: Integer) (y: Integer) -> x + y
 
 (* a function that ignores its argument and returns 5 *)
 _ -> 5 
+\end{lstlisting}
+
+Among the parameters of an anonymous function, a special form ~\lstinline!(rec $n$)!~ or just ~\lstinline!(rec)!~ can appear, giving the anonymous function itself a name for its recursive use within itself, either $n$ or \code{rec}, respectively. 
+
+\begin{lstlisting}[mathescape=false]
+fun (rec f) n -> 
+  if n <= 1 then 1 
+  otherwise n * f $ n - 1 
+  end
+
+fun (rec) n ?(acc = 1) -> 
+  if n = 1 then acc 
+  otherwise rec (n - 1) (acc * n)
+  end
 \end{lstlisting}
 
 
@@ -1039,6 +955,7 @@ Simple_Expr
       | Path
       | Expr '.' Selection
       | [Expr '.'] Dynamic_Var_Selection
+      | Type_Member_Selection
 Selection 
     ::= Simple_Selection
       | Tuple_Selection
@@ -1053,7 +970,10 @@ Optional_Selection
 Forced_Selection
     ::= '!' (Simple_Selection | Tuple_Selection)
 Dynamic_Var_Selection
-    ::= ('@' | '@@') '{' Expr '}'
+    ::= '@{' Expr '}'
+Type_Member_Selection
+    ::= Expr ('#' | '.#') id
+      | '#' ? no whitespace ? id
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
@@ -1066,10 +986,12 @@ For other expressions $e$, ~\lstinline!$e$.$x$!~ is typed as if it was ~\lstinli
 
 The selection ~\lstinline!$e$.?$x$!~ is typed as if it was 
 \begin{lstlisting}
-{ if let? $y$ = $e$  (* optional binding *)
+begin
+  if let? $y$ = $e$  (* optional binding *)
   then $y$.$x$ 
   else nil 
-  end }
+  end
+end
 \end{lstlisting}
 for some fresh name $y$; also called {\em safe navigation} or {\em safe selection}. Works with weak references as well. 
 
@@ -1112,22 +1034,18 @@ The distinctive form in which instance and class instance value or variable sele
 
 
 
-\subsection{Self, This, Super \& Outer}
+\subsection{Self, Super \& Outer}
 \label{sec:self-this-super}
 
 \grammar\begin{lstlisting}
 Simple_Expr 
     ::= ...
       | [id '.'] 'self' ['.' Selection]
-      | [id '.'] 'this' '.' Selection
       | [id '.'] 'super' [Class_Qualifier] ['.' Selection]
-      | 'outer' Class_Qualifier '.' 'self' ['.' Selection]
-      | 'outer' Class_Qualifier '.' 'this' '.' Selection
+      | 'outer' Class_Qualifier ['.' Selection]
 \end{lstlisting}
 
 The expression \code{self} stands always for the current instance in the context (and in function resolution searches in the actual class of the instance) in the innermost template containing the reference (thus excluding blocks and anonymous functions). 
-
-The expression \code{this} is the same as \code{self}, except that function resolution searches from the class that this expression appears in, possibly skipping overrides in subtypes of the actual class of \code{self}, and continues as usual up the inheritance chain. The \code{this} expression is interchangeable with \code{self} in the following paragraphs, although use of \code{self} is preferred. 
 
 The expression ~\lstinline!$C$.self!~ refers to the current instance in the context of the enclosing (or even directly enclosing) type $C$. It is an error if $C$ is not an enclosing type. The type of the expression is the same as ~\lstinline!$C$.self.type!. 
 
@@ -1139,7 +1057,7 @@ The \code{super} prefix may be followed by a qualifier ~\lstinline![$T$]!, as in
 
 The expression ~\lstinline!outer[$T$]!~ refers to the current instance in the context of enclosing (or even directly enclosing) type $T$. It is an error if $T$ is not an enclosing type. The type of the expression is the same as ~\lstinline!outer[$T$].type!. 
 
-Class qualifier may be a simple name referring to name of an enclosing type or supertype (depending on the preceding keyword: \code{outer} or \code{super}), or---if there is no type of such name or the qualifier is not a simple name---a stable id referring to the enclosing type or supertype. The latter case is useful in cases when there are multiple enclosing types or supertypes of the same simple name. Class qualifiers are evaluated at compile time, but, when the slow path of stable id is taken, it may refer to a lazily imported type name. It is obviously an error if the slow path is taken, no name is found during compilation and there are no lazy imports in the scope, or no name is found using the lazy import. 
+Class qualifier may be a simple name referring to name of an enclosing type or supertype (depending on the preceding keyword: \code{outer} or \code{super}), or---if there is no type of such name or the qualifier is not a simple name---a stable id referring to the enclosing type or supertype. The latter case is useful in cases when there are multiple enclosing types or supertypes of the same simple name. Class qualifiers are evaluated at compile time. 
 
 
 
@@ -1149,26 +1067,33 @@ Class qualifier may be a simple name referring to name of an enclosing type or s
 \label{sec:use-expressions}
 
 \grammar\begin{lstlisting}
+Expr
+    ::= ...
+      | Use_Expr
 Use_Expr 
     ::= Use_Expr_As 
       | Use_Aspect
       | Use_Refinement
       | Use_Droppable
-      | Use_Clause [Do_Block | In_Sep Expr ['end']]
+      | Import_Clause [Do_Block | In_Sep Expr ['end']]
+      | 'let' Open_Clause In_Sep Expr ['end']
+      | Local_Open_Expr
 Use_Expr_As 
     ::= 'use' Expr ('as' | 'as!' | 'as?')
-        [['var' | 'val'] id ':'] Type [Do_Block | In_Sep Expr ['end']]
+        [id ':'] Type [Do_Block | In_Sep Expr ['end']]
 Use_Aspect
     ::= 'use' 'aspect' Stable_Id [Do_Block | In_Sep Expr ['end']]
 Use_Refinement 
     ::= 'use' 'refinement' Stable_Id [Do_Block | In_Sep Expr ['end']]
 Use_Droppable 
     ::= 'use' [Storage_Modifier] Let_Binding In_Sep Expr ['end']
+Local_Open_Expr
+    ::= Long_Id '.' '{' Expr '}'
 \end{lstlisting}
 
-Use expressions of the form ~\lstinline!use $e$ as $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Block_Expr} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
+Use expressions of the form ~\lstinline!use $e$ as $T$!~ are similar to typed expressions (\sref{sec:typed-expressions}). Their intention is to rebind an expression to a specific type (changing its expected type), and then either have this type to be effective in the same scope from that point onward, or, if a \code{Do_Block} is syntactically given, only in the scope of that block expression. If a block is given, then the return value of the block is the value of this expression, otherwise, the value retrieved by evaluation of \code{Simple_Expr} is the value of this expression. Conversions described in typed expressions (\sref{sec:typed-expressions}) apply in these expressions as well, including the differences between \code{as} and ~\lstinline@as!@. 
 
-Use expressions of the forms ~\lstinline!use $e$ as val $v$: $T$!~ and ~\lstinline!use $e$ as var $v$: $T$!~ rebind the evaluated expression $e$ to a value or variable named $v$, typed with type $T$. The \code{val} and \code{var} parts are optional -- and \code{val} is implied. 
+Use expressions of the form ~\lstinline!use $e$ as $v$: $T$!~ rebinds the evaluated expression $e$ to a value named $v$, typed with type $T$.
 
 Use expressions of the form ~\lstinline!use aspect $T$!~ enable the specified aspect, either in the scope defined by the given block, or if no block is given, then from that point onward, up to the scope end. If the expression is used as a template statement, then the aspect is enabled for the whole template anywhere, unless it has the block part. 
 
@@ -1192,52 +1117,39 @@ Expr
 Application_Expr 
     ::= Regular_Precedence_Application_Expr 
       | High_Precedence_Application_Expr
-      | Op_Application_Expr
 Regular_Precedence_Application_Expr
-    ::= Expr Arguments [Block_Expr2 | Method_Expr]
-      | 'super' [Arguments] [Block_Expr2 | Method_Expr]
+    ::= Expr Arguments [Block_Argument]
+      | 'super' [Arguments] [Block_Argument]
 High_Precedence_Application_Expr
-    ::= Expr [Block_Argument]
-      | Expr '.' '(' [Arguments] ')' [Block_Argument]
-      | 'super' [Block_Argument]
+    ::= Expr '.' '(' [Arguments] ')' [Block_Argument]
+      | Expr ? no whitespace ? '(' [Argument] ')'
 Arguments
     ::= {Argument}+
 Argument
     ::= Positional_Argument
       | Labelled_Argument
 Positional_Argument 
-    ::= ['?' | '*' | '**'] Expr
-      | Tuple_Argument
+    ::= ['?' | '*'] Expr
+      | (Tuple_Argument - Slice_Expr)
       | '(' Tuple_Argument ')'
-      | Slice_Expr (* only when enclosed in parentheses or within Tuple_Argument *)
 Labelled_Argument
     ::= ('~' | '~?') id ':' Expr
       |  '~'         id ':' Slice_Expr
       |  '~'         id ':' Tuple_Argument
       |  '~'         id ':' '(' Tuple_Argument ')'
       | ('~' | '~?') id
+      | '**' Expr
 Tuple_Argument 
-    ::= Positional_Tuple_Arguments [',' Named_Tuple_Arguments]
-      | Named_Tuple_Arguments
-Positional_Tuple_Arguments 
     ::= Positional_Tuple_Argument {',' Positional_Tuple_Argument}
 Positional_Tuple_Argument 
     ::= ['?' | '...'] Expr
-      | Slice_Expr (* only when enclosed in parentheses or within Tuple_Argument *)
-Named_Tuple_Arguments
-    ::= Named_Tuple_Argument {',' Named_Tuple_Argument}
-Named_Tuple_Argument
-    ::= Labelled_Argument
-      | '~...' Expr
+      | Slice_Expr
 Block_Argument
     ::= Block_Expr
       | Method_Expr
 \end{lstlisting}
 
 A function application ~\lstinline!$f$($e_1 \ldots e_m$) $b$!~ applies the function $f$ to the argument expressions $e_1 \ldots e_m$ and passes the block expression $b$ (\sref{sec:blocks}) into it. If $f$ is of a value type, the application is taken to be equivalent to ~\lstinline!$f$.apply($e_1 \ldots e_m$)!, i.e. the application of an \code{apply} method defined by $f$. 
-
-\paragraph{Note}
-Target type expression (\sref{sec:target-type-expressions}) that start only with a dot ``\,\code{.}\,'' can't appear among arguments, unless the arguments are enclosed in parentheses, or the argument is preceded by a comma inside a tuple argument; due to resulting ambiguity between an argument expression and a chained function application or selection. This limitation can be solved by prefixing the target type expression with a dollar sign.\footnote{Which is still way shorter than having to explicitly type out the full target type name.}
 
 
 
@@ -1344,75 +1256,64 @@ A function application ~\lstinline!$p$.$f$.($e_1 \ldots e_m$) $b$!~ is a syntax 
 \label{sec:method-values}
 
 \grammar\begin{lstlisting}
-Method_Expr ::= '&' Expr ['.' '(' Partially_Applied_Arguments ')']
-                [Partially_Applied_Block_Argument]
-              | '&(' Expr ['(' Partially_Applied_Arguments ')']
-                [Partially_Applied_Block_Argument] ')'
-              | '&(' Expr Partially_Applied_Arguments
-                [Partially_Applied_Block_Argument2] ')'
-              | '&(' (op_id | nary_op_id) ')' ['(' Partially_Applied_Arguments ')']
-              | '&(' (op_id | nary_op_id) Partially_Applied_Arguments ')'
-              | '(' op_id ')'
-              | '(~' ? whitespace ? op_id ')'
-Partially_Applied_Arguments
-            ::= {Partially_Applied_Argument} 
-Partially_Applied_Argument
-            ::= Argument
-              | Positional_Unapplied_Argument
-              | Labelled_Unapplied_Argument
+Method_Expr 
+    ::= (* explicitly partially applied function: *)
+        '&' Expr ['.' '(' {Partial_Argument} ')'] [Partial_Block_Argument]
+      | '&(' Expr {Partial_Argument} ')' [Partial_Block_Argument]
+
+        (* explicitly partially applied operator: *)
+      | '&(~' ? whitespace ? op_id ')' [Partial_Argument]
+      | '&(' op_id ')' [Partial_Argument [Partial_Argument]]
+      | '&(' nary_op_id ')' {Partial_Argument}
+
+        (* implicitly partially applied operator: *)
+      | '(' (op_id | nary_op_id) ')'
+      | '(~' ? whitespace ? op_id ')'
+
+        (* left section: *)
+      | '(' Expr ? whitespace ? op_id ')'
+
+        (* right section: *)
+      | '(' op_id ? whitespace ? Expr ')'
+
+Partial_Argument
+    ::= Argument
+      | Positional_Unapplied_Argument
+      | Labelled_Unapplied_Argument
 Positional_Unapplied_Argument
-            ::= '_' ['as' Type]
-              | Partially_Applied_Tuple_Argument
-              | '(' Partially_Applied_Tuple_Argument ')'
+    ::= '_' ['as' Type_Expr]
+      | '*_' ['as' Type_Expr]
+      | Partial_Tuple_Argument
+      | '(' Partial_Tuple_Argument ')'
 Labelled_Unapplied_Argument
-            ::= ('~' | '~?') id ':' '_' ['as' Type]
-              |  '~'         id ':' Partial_Slice_Expr
-              |  '~'         id ':' Partially_Applied_Tuple_Argument
-              |  '~'         id ':' '(' [Partially_Applied_Tuple_Argument] ')'
-Partially_Applied_Tuple_Argument
-            ::= Positional_Partially_Applied_Tuple_Arguments 
-                [',' Named_Partially_Applied_Tuple_Arguments]
-              | Named_Partially_Applied_Tuple_Arguments
-Positional_Partially_Applied_Tuple_Arguments 
-            ::= Positional_Partially_Applied_Tuple_Argument
-                {',' Positional_Partially_Applied_Tuple_Argument}
-Positional_Partially_Applied_Tuple_Argument
-            ::= Positional_Tuple_Argument
-              | Positional_Unapplied_Argument
-Named_Partially_Applied_Tuple_Arguments
-            ::= Named_Partially_Applied_Tuple_Argument 
-                {',' Named_Partially_Applied_Tuple_Argument}
-Named_Partially_Applied_Tuple_Argument
-            ::= Named_Tuple_Argument
-              | Labelled_Unapplied_Argument
-Partially_Applied_Block_Argument
-            ::= Block_Argument
-              | '&_' ['as' Type]
-Partially_Applied_Block_Argument2
-            ::= Block_Expr2
-              | Method_Expr
-              | '&_' ['as' Type]
+    ::= ('~' | '~?') id ':' '_' ['as' Type_Expr]
+      |  '~'         id ':' Partial_Slice_Expr
+      |  '~'         id ':' Partial_Tuple_Argument
+      |  '~'         id ':' '(' Partial_Tuple_Argument ')'
+Partial_Tuple_Argument
+    ::= Partial_Tuple_Argument_Part
+        {',' Partial_Tuple_Argument_Part}
+Partial_Tuple_Argument_Part
+    ::= Positional_Tuple_Argument
+      | '_' ['as' Type_Expr]
+      | '..._' ['as' Type_Expr]
+      | Partial_Slice_Expr
 Partial_Slice_Expr
-            ::= Slice_Expr
-              | '_' ['as' Type] ('..' | '..<') ['_' ['as' Type]]
-              | ('..' | '..<') '_' ['as' Type]
+    ::= Slice_Expr
+      | '_' ['as' Type_Expr] ('..' | '..<') ['_' ['as' Type_Expr]]
+      | ('..' | '..<') '_' ['as' Type_Expr]
+Partial_Block_Argument
+    ::= Block_Argument
+      | '&_' ['as' Type_Expr]
 \end{lstlisting}
 
 The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter. If $e$ is a method with parameters, ~\lstinline!&$e$!~ represents $e$ converted to a function type by eta expansion (\sref{sec:eta-expansion}). If $e$ is a parameterless method or call-by-name parameter of type ~\lstinline!=> $T$!, ~\lstinline!&$e$!~ represents the function of type ~\lstinline!() -> $T$!, which evaluates $e$ when it is applied to the empty parameter list ~\lstinline!()!. 
 
 \example The method values in the left column are each equivalent to the anonymous functions (\sref{sec:anonymous-functions}) on their right. 
 \begin{lstlisting}[deletekeywords={range}]
-&(Math.sin)             x -> { Math.sin x }
-&(Array.range)          (x1, x2) -> { Array.range x1 x2 }
-&(42.`*`)               x -> { 42 * x }
-val vs = 1 .. 9 in &(vs.fold)
-                        x1 -> x2 -> { vs.fold x1 x2 }
-&((1 .. 9).fold z)      { let eta1 = z in
-                          let eta2 = (1 .. 9) in
-                          x -> eta2.fold eta1 x }
-&((Some 1).fold `???`)  { let eta1 = fun () -> { `???` } in
-                          let eta2 = Some 1 in
-                          x -> { eta2.fold eta1 x } }
+&(Math.sin)             fun x -> { Math.sin x }
+&(Array.range)          fun x1 x2 -> { Array.range x1 x2 }
+( * 42)                 fun x -> { x * 42 }
 \end{lstlisting}
 
 Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
@@ -1468,24 +1369,26 @@ An attribute selection ~\lstinline!$x$.'$a$!~ is then viewed as function applica
 \paragraph{Note}
 Attribute selections are similar to function composition operators, but allow for a bit more concise code\footnote{Done by not requiring whitespace around the symbolic keyword, unlike whitespace being required around most infix operators.}, resembling designator selections (\sref{sec:designators}):
 \begin{lstlisting}
-let y = x.'a in
-let z = x |> a in
-y = z
+let 
+  val y = x.'a 
+  val z = x |> a 
+in 
+  y = z
 \end{lstlisting}
 The main difference between attribute selections and function compositions shows up when more arguments are needed or multiple functions are composed and attributes chained, compare: 
 \begin{lstlisting}
-{
-  let y = x.'a(b) in    (* a(x)(b) *)
-  let z = x |> a(b) in  (* a(b)(x) *)
+let 
+  val y = x.'a(b)     (* a(x)(b) *)
+  val z = x |> a(b)   (* a(b)(x) *)
+in
   y /= z
-}
 \end{lstlisting}
 \begin{lstlisting}
-{
-  let y = x.'a(b).'c(d) in      (* c(a(x)(b))(d) *)
-  let z = x |> a(b) |> c(d) in  (* c(d)(a(b)(x)) *)
+let 
+  val y = x.'a(b).'c(d)       (* c(a(x)(b))(d) *)
+  val z = x |> a(b) |> c(d)   (* c(d)(a(b)(x)) *)
+in
   y /= z
-}
 \end{lstlisting}
 
 
@@ -1495,10 +1398,14 @@ The main difference between attribute selections and function compositions shows
 \subsection{Type Applications}
 \label{sec:type-applications}
 
-\grammar\begin{lstlisting}
+\grammar\begin{lstlisting}[deletekeywords={no}]
 Type_Application_Expr 
-    ::= Expr Type_Args
+    ::= Expr ? no whitespace ? Type_Args
+      | Expr '.' Type_Args
+      | '(' Postfix_Parameterized_Type ')'
 \end{lstlisting}
+
+%TBD mention that successive type applications are considered by the compiler to be for two different type parameter lists, not for partial applications of the same one (so the resulting partially applied one gets type arguments inferred, because what else could it do)
 
 A type application ~\lstinline!$e$[$T_1 \commadots T_n$]!~ instantiates a polymorphic value $e$ of type ~\lstinline![$a_1$ >: $L_1$ <: $U_1$ $\commadots$ $a_n$ >: $L_n$ <: $U_n$] $\mapsto\ S$!~ with argument types $T_1 \commadots T_n$. Every argument type $T_i$ must obey the corresponding bounds $L_i$ and $U_i$. That is, for each $i = 1 \commadots n$, we must have $\sigma L_i <: T_i <: \sigma U_i$, where $\sigma$ is the substitution $[a_1 \mapsto T_1 \commadots a_n \mapsto T_n]$. The type of the application is $\sigma S$. 
 
@@ -1513,17 +1420,14 @@ Type applications can be omitted if automatic type inference (\sref{sec:automati
 \subsection{Object Creation Expressions}
 \label{sec:object-creation-exprs}
 
-\grammar\begin{lstlisting}
+\grammar\begin{lstlisting}[deletekeywords={no}]
 Expr
     ::= ...
       | Object_Creation_Expr
 Object_Creation_Expr 
-    ::= 'new' Class_Parents 
-      | 'new' [Immediate_Self_Ref] '{' [[Early_Defs] Class_Parents]
-        [Do_Binding] 
-        [Record_Extensions] '}'
-Immediate_Self_Ref
-    ::= '(' id ')'
+    ::= 'new' Type_Expr 
+      | 'new' ? no whitespace ? Type_Args Type_Expr 
+      | 'new' '.' Type_Args Type_Expr 
 \end{lstlisting}
 
 
@@ -1535,14 +1439,28 @@ Immediate_Self_Ref
 
 \grammar\begin{lstlisting}
 Block_Expr 
-    ::= Block_Expr1 
-      | Block_Expr2
-Block_Expr1 
-    ::= '{' [Block_Args] Expr '}'
-Block_Expr2 
-    ::= 'do' [Block_Args] Expr 'done'
-Block_Args 
-    ::= '|' [Params] '|' [':' Type [semi]]
+    ::= ...
+      | Low_Precedence_Block_Expr
+      | High_Precedence_Block_Expr
+Low_Precedence_Block_Expr
+    ::= 'do' [Block_Head] Block_Code_Expr 'done'
+High_Precedence_Block_Expr
+    ::= '{' [Block_Head] Block_Code_Expr '}'
+      | '{' '->' Block_Code_Expr '}'  (* to resolve ambiguity with records *)
+Specialised_Block_Expr(Params)
+    ::= 'do' Params Block_Code_Expr 'done'
+      | '{' Params Block_Code_Expr '}'
+        (* if Params are empty: *)
+      | '{' '->' Block_Code_Expr '}'
+Block_Head
+    ::= [Block_Self_Type] Block_Params [':' Type_Expr [semi]] '->'
+Block_Self_Type
+    ::= ['as' id ':' Type_Expr In_Sep]
+      | ['as' Type_Expr In_Sep]
+Block_Params
+    ::= {Param_Clause} [Variadic_Param] [Implicit_Params]
+Block_Code_Expr
+    ::= [Lambda_Declarations] Expr
 Do_Block 
     ::= '{' Expr '}' 
       | 'do' Expr 'done'
@@ -1553,20 +1471,6 @@ Do_Binding
 A block expression ~\lstinline!{ $s_1$; $\ldots$; $s_n$; $e$ }!~ is constructed from a sequence of block statements $s_1 \commadots s_n$ and a final expression $e$. The statement sequence may not contain two definitions or declarations that bind the same name in the same namespace, except for local function definitions, which then create overloaded local function definitions (behaving pretty much like regular overloaded functions). The final expression may be omitted, in which case the unit value ~\lstinline!()!~ is assumed. 
 
 The expected type of the final expression $e$ is the expected type of the block expression. The expected type of all preceding statements is undefined. 
-
-The type of a block ~\lstinline!{ $s_1$; $\ldots$; $s_n$; $e$ }!~ is ~\lstinline!$T$ for-some { $Q$ }!, where $T$ is the type of $e$ and $Q$ contains existential clauses (\sref{sec:existential-types}) for every value or type name which is free in $T$ and which is defined locally in any of the statements $s_1 \commadots s_n$. We say that the existential clause {\em binds} the occurence of the value or type name. Specifically, 
-\begin{itemize}
-
-% TBD: new class grammar
-
-\item A locally defined type definition ~\lstinline!type $t$ = $T$!~ is bound by the existential clause ~\lstinline!type $t$ >: $T$ <: $T$!. It is an error if $t$ carries type parameters. 
-
-\item A locally defined value definition ~\lstinline!val $x$: $T$ = $e$!~ is bound by the existential clause ~\lstinline!val $x$: $T$!. 
-
-\item A locally defined class definition ~\lstinline!class $c$ extends $t$!~ is bound by the existential clause ~\lstinline!type $c$ <: $T$!, where $T$ is the least class type of refinement type which is a proper supertype of the type $c$. It is an error if $c$ carries type parameters. 
-
-\item A locally defined object definition ~\lstinline!object $x$ extends $t$!~ is bound by the existential clause ~\lstinline!val $x$: $T$!, where $T$ is the least class type of refinement type which is a proper supertype of the type ~\lstinline!$x$.type!.
-\end{itemize}
 
 Evaluation of the block entails evaluation of its statement sequence, followed by an evaluation of the final expression $e$, which defines the implicit result of the block. 
 
@@ -1646,22 +1550,25 @@ Expr
     ::= ...
       | Infix_Expr
 Infix_Expr 
-    ::= Prefix_Expr ['use' Expr]
-      | Expr op_id Expr ['use' Expr]
-      | Expr nary_op_id Expr {':' Expr} ['use' Expr] 
+    ::= Prefix_Expr ['use' Simple_Type]
+      | Expr op_id Expr ['use' Simple_Type]
+      | Expr nary_op_id Expr {':' Expr} ['use' Simple_Type] 
       | Range_Expr
+Application_Expr
+    ::= ...
+      | Op_Application_Expr
 Op_Application_Expr
     ::= (* binary operator application *)
-        '(' op_id ')' Expr Expr ['use' Expr]
-      | '(' op_id Expr Expr ['use' Expr] ')'
+        '(' op_id ')' Expr Expr ['use' Simple_Type]
+      | '(' op_id Expr Expr ['use' Simple_Type] ')'
         (* n-ary operator application *)
-      | '(' nary_op_id ')' Expr {Expr} ['use' Expr]
-      | '(' nary_op_id Expr {Expr} ['use' Expr] ')'
+      | '(' nary_op_id ')' {Expr}+ ['use' Simple_Type]
+      | '(' nary_op_id {Expr}+ ['use' Simple_Type] ')'
         (* unary operator application *)
-      | '(~' ? whitespace ? op_id ')' Expr ['use' Expr]
-      | '(~' ? whitespace ? op_id Expr ['use' Expr] ')'
+      | '(~' ? whitespace ? op_id ')' Expr ['use' Simple_Type]
+      | '(~' ? whitespace ? op_id Expr ['use' Simple_Type] ')'
 Prefix_Expr 
-    ::= [op_id | 'not' | '...' | '~...' | Try_Op] Expr
+    ::= [op_id | 'not' ? whitespace ? | '...'] (Expr - Prefix_Expr)
 Range_Expr
     ::= Expr ('..' | '..<') Expr [FP_Delta [FP_Digits]]
 Slice_Expr
@@ -1950,15 +1857,15 @@ Assignment operators are treated specially in that they can be expanded to assig
 
 Let's consider an assignment operator, such as ``\lstinline!+=!'', in an infix operation ~\lstinline!$l$ += $r$!, where $l$ \& $r$ are expressions. This operation can be re-interpreted as an assignment
 \begin{lstlisting}
-$l$ := $l$ + $r$
+$l$ := !$l$ + $r$
 \end{lstlisting}
 except that the operations's left-hand-side $l$ is evaluated only once. 
 
 The re-interpretation is occurs if the following conditions are fulfilled:
 \begin{enumerate}
   \item The left hand side $l$ does not have a member named ``\lstinline!+=!'', and also can not be converted by an implicit conversion (\sref{sec:implicit-conversions}) to a value with a member named ``\lstinline!+=!'', applicable to a value of type of $r$. 
-  \item The assignment ~\lstinline!$l$ := $l$ + $r$! is type-correct. In particular, this implies that $l$ refers to an object that is convertible to a value with a member named ``\lstinline!+!'' (or itself has such a member without conversion, in the ideal case, indeed). 
-  \item The variable $l$ is assignable, defined, not immutable. This implies that it is defined as a ~\lstinline!var $l$!. 
+  \item The expression ~\lstinline|$l$ := !$l$ + $r$| is type-correct. In particular, this implies that ~\lstinline|!$l$|~ refers to an object that is convertible to a value with a member named ``\lstinline!+!'' (or itself has such a member without conversion, in the ideal case, indeed). 
+  \item The prefix operator ``\,\lstinline|!|\,'' exists for the type of $l$. 
 \end{enumerate}
 
 The re-interpretation is built into the compiled bytecode in such a way that first tries the assignment operator, and then the re-interpretation only in case where the assignment operator approach failed.\footnote{No appropriate implicit conversion was found, or if implicit conversions are disabled for the expression, the value referred to by $l$ does not have the appropriate member.} It is indeed an error if none of the two approaches succeeded. 
@@ -1967,20 +1874,15 @@ Assignment operations are right-associative, despite any rules defined for other
 
 \example Right-associativity of assignment operations, using mutable variables as left-hand sides. 
 \begin{lstlisting}
-(* the assignment *)
-a := b := c
-(* is equivalent to *)
-a := (b := c)
-
-(* the assignment *)
-(a := b) := c
-(* is equivalent to *)
-a := b; a := c
-
-(* this works as well *)
-a := let b = c
-(* as *)
-a := (let b = c)
+let
+  val a = var something
+  val b = var something_else
+in
+  (* the assignment *)
+  a := b := c
+  (* is equivalent to *)
+  a := (b := c)
+end
 \end{lstlisting}
 
 
@@ -2115,9 +2017,9 @@ Expr
       | Binding_Expr
 Binding_Expr 
     ::= ['implicit'] Val_Def In_Sep Expr ['end']
-      | ['implicit'] Var_Def In_Sep Expr ['end']
       | 'let' 'structure' id {'(' [id ':' Struct_Type] ')'} [':' Struct_Type]
         '=' Struct_Expr In_Sep Expr ['end']
+      | 'let' Struct_Defs In_Sep Expr ['end']
 \end{lstlisting}
 
 
@@ -2135,29 +2037,43 @@ Binding_Expr
 
 \grammar\begin{lstlisting}
 Cast_Expr 
-    ::= Expr ('as' | 'as!' | 'as?') Type
+    ::= Flexible_Cast_Expr
+      | Static_Cast_Expr
+      | Dynamic_Cast_Expr
+Flexible_Cast_Expr
+    ::= Expr ('as' | 'as!' | 'as?') Type_Expr
+Static_Cast_Expr
+    ::= (* type ascription and coercion from type to type *)
+        '(' Expr ':' Type_Expr ')'  
+      | '(' Expr [':' Type_Expr] ':>' Type_Expr ')'
+      | Expr ':>' Type_Expr   (* upcast to type *)
+      | 'upcast' Expr         (* upcast to anonymous type variable *)
+Dynamic_Cast_Expr
+    ::= (* downcast from type to type *)
+        '(' Expr [':' Type_Expr] ':?>' Type_Expr ')'
+      | Expr ':?>' Type_Expr  (* downcast to type *)
+      | 'downcast' Expr       (* downcast to anonymous type variable *)
 Infix_Expr 
-    ::= Expr ('is' ['not' | 'not!'] | 'is!') Type
+    ::= Expr ('is' ['not' | 'not!'] | 'is!') Type_Expr
+      | Expr (':?' | '/:?') Type_Expr
 \end{lstlisting}
 
 The typed expression ~\lstinline!$e$ as $T$!~ has type $T$. The type of expression $e$ is expected to conform to $T$. The result of the expression is the value of $e$ converted to type $T$. If the type conversion fails, a runtime error is raised. The conversion can take these forms, preferred in the following order:
 \begin{enumerate}
   \item No conversion, if $e$ conforms to $T$ directly. 
   \item If an implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope, then the conversion is of the form ~\lstinline!$c$($e$)!. 
-  \item Otherwise, the conversion is of the form ~\lstinline!$e$.as_instance_of[$T$]()!, and the type of $e$ must implement \code{Type_Convertible[$S$]}, where $S$ conforms to $T$.
 \end{enumerate}
 
 The conformance check expression ~\lstinline!$e$ is $T$!~ has type \code{Boolean} and tests whether $e$ conforms to $T$, basically by asking a question ``Can $e$ be of type $T$?'', answering either ``It can be'' or ``It can't be''. The expression $e$ conforms to type $T$ if at least one of the following conditions hold:
 \begin{enumerate}
   \item Type of $e$ is a subtype of $T$. 
   \item An implicit conversion $c$ from expression type $E$ of method type ~\lstinline!($E$) $\mapsto\ T$!~ exists in the scope. 
-  \item As a last resort, type of $e$ implements \code{Type_Convertible[$S$]} and $S$ conforms to $T$.
 \end{enumerate}
 
 \paragraph{Flow Based Typing} 
 If the conformance check expression is performed on a variable, as defined here, it shadows the type of the variable, if used as a condition in a conditional expression (\sref{sec:conditional-expressions}), in the related branch. Therefore, it is also used in resolution of function applications (\sref{sec:function-applications}). Furthermore, if the type of the variable was already known in the outer code, then it can both restrict and extend the expected type $T$ with $U$ into $T$: 
 \begin{itemize}
-  \item If the type $T$ did not contain $U$, then $T'$ is ~\lstinline!$T$ with $U$!.
+  \item If the type $T$ did not contain $U$, then $T'$ is ~\lstinline!$T$ and $U$!.
   \item If the type $T$ did contain $U$ and was a union type, then $T'$ is only $U$, dropping the other member types. 
   \item In the other branches of a conditional expression, it means that $T$ does not conform to $U$, whatever that implies. Also, the same happens to the same branch, if the conformance check is negated (e.g., ~\lstinline!$e$ is not $U$!). 
 \end{itemize}
@@ -2166,7 +2082,7 @@ The conformance check expression ~\lstinline!$e$ is not $T$!~ has type \code{Boo
 
 The typed expression ~\lstinline@$e$ as! $T$@~ works like ~\lstinline!$e$ as $T$!, but only uses the first form. Similarly, the conformance check expression ~\lstinline@$e$ is! $T$@~ works like ~\lstinline!$e$ is $T$!, but it uses only the first condition, and the conformance check expression ~\lstinline@$e$ is not! $T$@~ works like ~\lstinline!$e$ is not $T$!, but also uses only the first condition. The bang character ``\lstinline@!@'' signalizes that the operation is more dangerous, in means of that its easier for the expression $e$ to not successfully convert to the target type or conform to it. 
 
-The typed expression ~\lstinline!$e$ as? $T$!~ has a result of type ~\lstinline!$T$?!, resulting in a \code{nil} value instead of an error if no conversion is available to treat $e$ as $T$. 
+The typed expression ~\lstinline!$e$ as? $T$!~ has a result of type ~\lstinline!$T$?!, resulting in a \code{nil} value instead of an error if no conversion (including implicit conversions) is available to treat $e$ as $T$. 
 
 If an expression is typed to a dynamic path of a (syntactic) type, then the value referenced by such path is expected to be a type, and it is an error if it is not. 
 
@@ -2183,9 +2099,11 @@ Expr
     ::= ...
       | Type_Ref_Expr
 Type_Ref_Expr 
-    ::= '(' 'type' Type ')'
-      | Annot_Type - (Type_Var, Postfix_Parameterized_Type)
+    ::= '(' 'type' Type_Expr ')'
+      | Annot_Type
 \end{lstlisting}
+
+% TBD: change Annot_Type to Atomic_Type or (Non_Atomic_Type)
 
 A type reference expression is a way to refer to a type and use it as a first-class value, which it already is. 
 
@@ -2225,6 +2143,24 @@ An annotated expression $a_1\ \ldots\ a_n\ e$ attaches annotations $a_1\ \ldots\
 
 
 
+
+\subsection{Runtime Types}
+\label{sec:runtime-types}
+
+\grammar\begin{lstlisting}
+Type_Expr
+    ::= ...
+      | Expr 'as' 'type'
+      | Expr 'as!' 'type'
+      | Expr ':>' 'type'
+\end{lstlisting}
+
+This grammar does not extend the \code{Expr} class, but instead, allows one to use an expression as a type in the type system. The expression's expected type is \code{Type}. % TBD: mention that this combines with the Dynamic type, since it is inherently a dynamic runtime type
+
+
+
+
+
 \section{Control Flow Expressions}
 
 
@@ -2258,7 +2194,7 @@ Condition
 Boolean_Condition 
     ::= (Expr - Conditional_Expr) 
 Optional_Binding_Condition 
-    ::= [Mutability_Modifier] ('val?' | 'let?' | 'var?') Let_Binding 
+    ::= [Mutability_Modifier] 'let?' Let_Binding 
         ['and' Optional_Binding_Condition]
 \end{lstlisting}
 
@@ -2286,7 +2222,7 @@ Unlike in some languages, conditional expressions do not require to place parent
 Aml provides two equivalent alternatives of the usual ``\code{else}'' keyword: ``\code{else}'' (obviously) and ``\code{otherwise}''. This is only provided so that certain conditions may be read better.
 
 \paragraph{Conditional Variable Binding}
-The conditional variable definition ~\lstinline!if $p$ = $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ = $e_1$!~ is a variable binding using one of \code{let?}, \code{val?} or \code{var?}, works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no} (literally), the condition is still met (because \code{no} is not \code{nil} neither \code{()}) and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ = $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. In case the \code{unless} keyword is used instead of \code{if}, then the variable binding is effective in $e_3$, but not in $e_2$. Multiple conditional variable bindings may be combined, and in that case, all of them must successfully bind for the condition to be true. 
+The conditional variable definition ~\lstinline!if $p$ = $e_1$ then $e_2$ else $e_3$!, where ~\lstinline!$p$ = $e_1$!~ is a variable binding using \code{let?}, works the same way as other conditional expressions, with the following difference: if $e_1$ evaluates to \code{nil} or even \code{()} (\code{Unit} value), then the condition is regarded as \code{no}. Beware that if $e_1$ evaluates to \code{no} (literally), the condition is still met (because \code{no} is not \code{nil} neither \code{()}) and $e_2$ is evaluated. Note that if type required by $p$ does not allow \code{nil} or \code{()} value, then no error happens and $e_3$ is evaluated instead. The condition in this case says ``if the variable definition ~\lstinline!$p$ = $e_1$!~ can be realized, then proceed with $e_2$, otherwise proceed with $e_3$''. In case the \code{unless} keyword is used instead of \code{if}, then the variable binding is effective in $e_3$, but not in $e_2$. Multiple conditional variable bindings may be combined, and in that case, all of them must successfully bind for the condition to be true. 
 
 
 
@@ -2357,8 +2293,7 @@ Loop_Expr
     ::= [Label_Dcl] 'for' Val_Dcls 'in' Expr 
         ['step' Expr] For_Loop
 For_Loop 
-    ::= 'loop' Loop_Block_Expr 'end' ['loop']
-      | 'do' Loop_Block_Expr 'done'
+    ::= 'loop' Loop_Block_Expr 'end'
 Loop_Block_Expr 
     ::= Expr + Loop_Ctrl_Expr
 Val_Dcls 
@@ -2518,10 +2453,9 @@ The expression ~\lstinline!for $i$ = $e_1$ up to $e_2$ loop $e_3$ end!~ is equiv
 
 \grammar\begin{lstlisting}
 Match_Expr     
-    ::= Pat_Match_Expr 
-      | Switch_Expr
-Pat_Match_Expr 
     ::= 'match' Expr Match_Body
+Fallthrough_Expr 
+    ::= 'next'
 Match_Body 
     ::= [nl] When_Clauses 'end' ['match']
 When_Clauses
@@ -2529,53 +2463,12 @@ When_Clauses
         [semi Else [nl] Expr]
         [semi 'rescue' [nl] Rescue_Clauses]
 When_Clause 
-    ::= 'when' Pattern [Guard] ('then' | semi) Expr
-Switch_Expr 
-    ::= 'switch' Expr Switch_Body
-Switch_Body 
-    ::= [nl] Switch_Clauses 'end' ['switch']
-Switch_Clauses 
-    ::= Switch_Clause {['next'] semi Switch_Clause}
-        [['next'] semi Else Expr]
-        [semi 'rescue' [nl] Rescue_Clauses]
-Switch_Clause 
-    ::= 'when' Switches ('then' | semi) Expr
-Switches 
-    ::= Switch {',' Switch}
-Switch_Scalar 
-    ::= (Literal - Collection_Literal)
-      | Long_Id  (* provided that the value is constant and scalar *)
-Switch 
-    ::= Switch_Scalar [('..' | '..<') Switch_Scalar]
+    ::= 'when' Pattern [Guard] ('then' | semi) When_Expr
+When_Expr
+    ::= Expr + Fallthrough_Expr
 \end{lstlisting}
 
-Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given. 
-
-Switch expressions 
-\begin{lstlisting}
-switch $e$ { when $c_1$ then $b_1\ \ldots$ when $c_n$ then $b_n$ else $b_{n+1}$ }
-\end{lstlisting}
-are extremely simplified pattern matching expressions, though they do not use patterns from pattern matching expressions, but {\em equality} and/or {\em range membership} instead. Therefore, switch expressions do not aim at matching the selector expression $e$, thus decomposing the selector $e$, but rather tests if it falls into a particular set of values, defined using the equality or range membership:
-\begin{itemize}
-  \item number types are matched based on their value,
-  \item string types are matched based on their hash code,
-  \item boolean types are considered \code{1} for \code{yes} and \code{0} for \code{no}.
-\end{itemize}
-
-Compiler adds extra code to determine the value to switch on if the switched expression is of an unknown type, or not of one of the mentioned types. Generally, there are two internal kinds of switch instructions:
-\begin{enumerate}
-  \item Single entry switch table, for switch expressions without ranges,
-  \item Triplet entry switch table, for switch expressions with ranges, where the triplet consists of the two marginal values and an indicator whether the range is inclusive (\code{..}) or exclusive (\code{...} or \code{..<}) of the upper limit. 
-\end{enumerate}
-
-Switch expressions therefore do not involve any other implicit conversions or user code evaluation, other than that required to get the value to switch on. If a switch branch uses a guard, that guard becomes a part of the conditional expression that follows. 
-
-\paragraph{Difference from Java etc}
-Java (and countless other languages) does not allow switching on other values than integral numbers (and strings since Java 1.7), where Aml allows all scalar literals, including floating point numbers. It is quite unreliable to switch on floating point numbers, due to rounding errors, whereas switching on fixed point numbers is reliable. Both switching on floating point numbers and fixed point numbers should only be involved in switch expressions with ranges. 
-
-\paragraph{NaN in a switch}
-The {\em not a number} (\code{Number.NaN}) value is treated specially in switch expressions -- it simply never matches anything else but the \code{else} branch. The comparisons of values involved are safe from errors that could be raised from regular unsuspecting comparison with a \code{NaN} value. 
-
+Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given.
 
 
 
@@ -2601,9 +2494,8 @@ Explicit return expressions unconditionally change the flow of programs by makin
 
 \grammar\begin{lstlisting}
 Return_Expr 
-    ::= ['memoize'] 'return' [Expr] [Cond_Modifier1]
-      | ['memoize'] 'tailcall' Arguments [Block_Expr2 | Method_Expr]
-      | ['memoize'] 'tailcall' Block_Argument
+    ::= ['memoize'] 'return' [Expr] [Basic_Cond_Modifier]
+      | ['memoize'] 'tailcall' Arguments [Block_Argument]
 \end{lstlisting}
 
 A return expression ~\lstinline!return $e$!~ must occur inside the body of some enclosing method, or inside a block nested in the body of the innermost enclosing method. Unlike in Scala, the innermost enclosing method in a source program, $f$, does not need to have an explicitly declared result type, as the result type can be inferred as the weak least upper bound of all return paths, including the explicit return path. The return expression evaluates the expression $e$ and returns its value as the result of $f$. The evaluation of any statements or expressions following the return expression is omitted.The type of a return expression is \code{Nothing}.
@@ -2614,6 +2506,9 @@ Returning from a nested block is implemented by throwing and catching a speciali
 
 \paragraph{Memoized return expressions}
 A returned expression may optionally be memoized, by using the keyword \code{memoize} right before the returned expression $e$ or ~\lstinline!return $e$!. In that case, arguments and reference to \code{self} are captured and stored along the returned value, so that further calls to the same method with the same arguments may be sped up significantly (\sref{sec:memoization}). Memoization is not available from within anonymous functions and blocks. 
+
+\paragraph{Implementation Note}
+The \code{return} expression is not using a reserved word, and neither is \code{memoize} or \code{tailcall} -- they are to be implemented as macros, implicitly available through the ~\lstinline!Aml/Language.Predefined!~ module.
 
 
 
@@ -2626,17 +2521,18 @@ A returned expression may optionally be memoized, by using the keyword \code{mem
 \grammar\begin{lstlisting}
 Jump_Expr 
     ::= Goto_Expr 
-      | Label_Dcl
+      | Label_Dcl Expr
 Goto_Expr 
-    ::= 'goto' label_name [Cond_Modifier1]
+    ::= 'goto' label_name [Cond_Modifier]
 Label_Dcl
-    ::= 'label' label_name 
-      | '<<' label_name '>>'
+    ::= '<<' label_name '>>'  (* no whitespace in between *)
 label_name 
     ::= plain_id
 \end{lstlisting}
 
 Local jumps transfer control from the points of \code{goto} statements to the statements following a \code{label}. Such a jump may only occur inside of the same function, i.e. it is not possible to jump from one method to another. Also, the jump can't happen to be from outside of a loop into a loop, but the other way around is possible. The only loop expressions that may be jumped out of are the pure loop (\sref{sec:pure-loops}) and a \code{while} loop, which are not transformed as comprehensions into method calls. 
+
+Labels can also be used as functions (macros) to mark anonymous functions for use with \code{return}.
 
 
 
@@ -2658,9 +2554,13 @@ Unlimited continuations are defined by the whole program, as the unlimited conti
 \paragraph{Definitions}
 The following code shows how a function that create unlimited continuations might be defined. 
 \begin{lstlisting}
-protocol Continuation [-A, +B] extends Function[A, B] {$\ldots$}
-protocol Unlimited_Continuation [-A] extends Continuation[A, Unit] {$\ldots$}
-def call/cc [A, B <: A] &(ctx: Unlimited_Continuation[A] -> B?): A end
+protocol Continuation [-A, +B] : object 
+  inherit Function[A, B] 
+  $\ldots$ end
+protocol Unlimited_Continuation [-A] : object 
+  inherit Continuation[A, Unit] 
+  $\ldots$ end
+let call/cc [A, B <: A] &(ctx: Unlimited_Continuation[A] -> B?): A = $\ldots$
 \end{lstlisting}
 
 A continuation, while internally holding a copy of the call stack that it was created in, is basically a function from the value that is passed into it to some other type. Unlimited continuations are restricted in the means that the input and output type has to be the same, as an unlimited continuation directly changes its result value based on that without any further modification -- the modification is to be actually performed by the code that invokes the unlimited continuation. Delimited continuations do not have this restriction, as the captured continuation is well defined and delimited to a particular scope. 
@@ -2669,9 +2569,9 @@ To vindicate the signature of \code{Unlimited_Continuation[A]}, it extends \code
 
 \example The following shows how to invoke a continuation. 
 \begin{lstlisting}
-call/cc {|cont| cont () }
-call/cc {|cont| cont 1 }
-call/cc {|cont| cont 1, 2, 3 }
+call/cc {cont -> cont () }
+call/cc {cont -> cont 1 }
+call/cc {cont -> cont 1 2 3 }
 \end{lstlisting}
 In this example, each line captures the current continuation, with unlimited scope -- the whole call stack is duplicated for that to be possible. Once a continuation is invoked, the code that follows the corresponding \code{call/cc} is resumed, with the passed arguments being the result value. On the first line, the continuation is immediately invoked with no arguments, therefore the \code{call/cc} returns the unit value ``\code{()}''. On the second line, the continuation is immediately invoked with argument \code{1}, therefore the \code{call/cc} returns the value \code{1}. On the third line, the continuation is immediately invoked with arguments \code{1, 2, 3}, therefore the \code{call/cc} returns the value \code{Sequence(1, 2, 3)}. 
 
@@ -2704,12 +2604,12 @@ class Shift [+A, -B, +C] (val cont: Continuation[A, B] -> C) = object
   method map [A1] 
       (f: A -> A1): 
       Shift[A1, B, C] =
-    Shift.new (k: Continuation[A1, B]) -> { cont((x: A) -> k(f(x))) }
+    Shift.new fun (k: Continuation[A1, B]) -> { cont(fun (x: A) -> k(f(x))) }
 
   method flat_map [A1, B1, C1 <: B] 
       (f: A -> Shift[A1, B1, C1]): 
       Shift[A1, B1, C] = 
-    Shift.new (k: Continuation[A1, B1]) -> { f(x).cont(k) }
+    Shift.new fun (k: Continuation[A1, B1]) -> { f(x).cont(k) }
 }
 message reset [A, C] (ctx: => @[CPS_Param[A, C]] A): C end
 message shift [A, B, C] (cont: Continuation[A, B] -> C): 
@@ -2734,16 +2634,16 @@ Here, the \code{ctx} parameter is causing the passed block to be used as a posit
 \example An example of a delimited continuation in use. 
 \begin{lstlisting}
 reset do
-  shift {|cont: Integer -> Integer|
-    cont(5)
+  shift {(cont: Integer -> Integer) ->
+    cont 5
   } + 1
 end
 \end{lstlisting}
 For the type system, it looks as if it was the following code:
 \begin{lstlisting}
 let ctx = for {
-  x in Shift.new {|cont: Integer -> Integer|
-    cont(5)
+  x in Shift.new {(cont: Integer -> Integer) ->
+    cont 5
   }
 } yield (x + 1)
 reset(ctx)
@@ -2868,11 +2768,11 @@ end
 
 \grammar\begin{lstlisting}
 Catch_Expr
-    ::= 'begin' (Expr - ('begin' Expr 'end'))
+    ::= 'begin' (Expr + ? Workflow only within Wf_Catch_Expr ?)
         ['handle' [nl] Handle_Clauses]
         'catch' [nl] Catch_Clauses
         ['ensure' [nl] Expr] 'end'
-      | 'begin' (Expr - ('begin' Expr 'end')) 
+      | 'begin' (Expr + ? Workflow only within Wf_Catch_Expr ?)
         'handle' [nl] Handle_Clauses
         ['ensure' [nl] Expr] 'end'
 Throw_Expr
@@ -2883,7 +2783,7 @@ Catch_Clauses
 Catch_Clause 
     ::= 'when' Pattern [Guard] ('then' | semi) Catch_Block
 Catch_Block 
-    ::= Expr + Rethrow_Expr
+    ::= Expr + Rethrow_Expr + ? Workflow only within Wf_Catch_Expr ?
 Rethrow_Expr
     ::= 'rethrow' [Cond_Modifier1]
 Handle_Clauses 
@@ -2892,30 +2792,37 @@ Handle_Clauses
 Handle_Clause 
     ::= 'when' Pattern [Guard] ('then' | semi) Handle_Block
 Handle_Block
-    ::= Expr + Resignal_Expr
+    ::= Expr + Resignal_Expr + ? Workflow only within Wf_Catch_Expr ?
 Resignal_Expr 
     ::= 'resignal' [Cond_Modifier1]
 \end{lstlisting}
 
 A throw expression ~\lstinline!throw $e$!~ evaluates the expression $e$. The type of this expression must conform to \code{Throwable}. It is an error if $e$ evaluates to \code{nil} or ~\lstinline!()!. If there is an active \code{begin}-\code{catch} expression that handles the thrown value, evaluation is resumed with the handler, otherwise a thread executing the \code{throw} is aborted. The type of a \code{throw} expression is \code{Nothing}. 
 
-A \code{begin}-\code{catch} expression is of the form ~\lstinline!{ $b$ } catch $h$!, where $h$ is a handler pattern matching anonymous function (\sref{sec:pattern-matching-anon-fun})
+A \code{begin}-\code{catch} expression is of the form ~\lstinline!begin $b$ catch $h$!, where $h$ is a handler pattern matching anonymous function (\sref{sec:pattern-matching-anon-fun})
+
+\begin{minipage}{\linewidth}
 \begin{lstlisting}
-{ when $p_1$ then $b_1$ $\ldots$ when $p_k$ then $b_k$ else $b_{k+1}$ } .
+function 
+  when $p_1$ then $b_1$ 
+  $\ldots$ 
+  when $p_k$ then $b_k$ 
+  otherwise $b_{k+1}$
+end   .
 \end{lstlisting}
+\end{minipage}
 
 This expression is evaluated by evaluating the block $b$ -- if evaluation of $b$ does not throw any value, the result of $b$ is returned, otherwise the handler $h$ is applied to the thrown value. If the handler $h$ contains a \code{when} clause matching the thrown value, the first such clause is invoked (and may throw another value, or the same value). If the handler contains no such clause, the value is re-thrown. 
 
 Let $T$ be the expected type of the \code{begin}-\code{catch} expression. The block $b$ is expected to conform to $T$. The handler $h$ is expected to conform to type ~\lstinline!Partial_Function[Throwable, $T$]!. The type of the \code{begin}-\code{catch} expression is the weak least upper bound (\sref{sec:conformance}) of the type of $b$ and the result type of $h$. 
 
-A \code{begin}-\code{ensure} expression ~\lstinline!{ $b$ } ensure { $e$ }!~ evaluates the block $b$. If evaluation of $b$ does not cause any value to be thrown, the block $e$ is evaluated. If any value is thrown during evaluation of $e$, the evaluation of the whole expression is aborted with the thrown value. If no value is thrown during evaluation of $e$, the result of $b$ is returned as the result of the whole expression, unless $e$ contains an explicit \code{return} (\sref{sec:return-expressions}) -- in that case, the value returned from $e$ replaces the value returned from $b$, even if $b$ returns a value explicitly. 
+A \code{begin}-\code{ensure} expression ~\lstinline!begin $b$ ensure $e$ end!~ evaluates the block $b$. If evaluation of $b$ does not cause any value to be thrown, the block $e$ is evaluated. If any value is thrown during evaluation of $e$, the evaluation of the whole expression is aborted with the thrown value. If no value is thrown during evaluation of $e$, the result of $b$ is returned as the result of the whole expression, unless $e$ contains an explicit \code{return} (\sref{sec:return-expressions}) -- in that case, the value returned from $e$ replaces the value returned from $b$, even if $b$ returns a value explicitly. 
 
 If a value is thrown during evaluation of $b$, the \code{ensure} block $e$ is also evaluated. If another value is thrown during evaluation of $e$, evaluation of the whole expression is aborted with the new thrown value and the previous is discarded. If no value is thrown during evaluation of $e$, the original value thrown from $b$ is re-thrown once evaluation of $e$ has completed, unless $e$ again contains an explicit \code{return} (\sref{sec:return-expressions}) -- in that case, the value thrown from $b$ is discarded, and the value returned from $e$ is returned. 
 
-
 The block $b$ is expected to conform to the expected type of the whole expression and the \code{ensure} block $e$ is expected to conform to type \code{Unit}. 
 
-An expression ~\lstinline!{ $b$ } catch $e_1$ ensure { $e_2$ }!~ is a shorthand for ~\lstinline!{{ $b$ } catch $e_1$ } ensure { $e_2$ }!. 
+An expression ~\lstinline!begin $e_0$ catch $e_1$ ensure $e_2$ end!~ is a shorthand for ~\lstinline!begin (begin $e_0$ catch $e_1$ end) ensure $e_2$ end!. 
 
 
 
@@ -2925,40 +2832,36 @@ An expression ~\lstinline!{ $b$ } catch $e_1$ ensure { $e_2$ }!~ is a shorthand 
 \subsubsection{Raise, Handle \& Rescue Expressions}
 
 \grammar\begin{lstlisting}
-Raise_Expr     ::= 'raise' Raiseable
-Raiseable      ::= string_literal
-                 | Stable_Id [',' string_literal]
-                 | Expr
-Rescue_Expr    ::= [Label_Dcl] (Rescue_Expr1 | Rescue_Expr2)
-Rescue_Expr1   ::= 'begin' Block 
-                   ['handle' [nl] Handle_Clauses]
-                   ['catch' [nl] Catch_Clauses]
-                   'rescue' [nl] Rescue_Clauses
-                   ['ensure' semi Block_Stat {semi Block_Stat}] 'end'
-Rescue_Expr2   ::= '{' Block '}' 
-                   ['handle' '{' Handle_Clauses '}']
-                   ['catch' '{' Catch_Clauses '}']
-                   'rescue' '{' Rescue_Clauses '}'
-                   ['ensure' '{' Block_Stat {semi Block_Stat} '}']
-Fun_Stats      ::= Block
-                   ['handle' [nl] Handle_Clauses]
-                   ['catch' [nl] Catch_Clauses]
-                   ['rescue' [nl] Rescue_Clauses]
-                   ['ensure' semi Block_Stat {semi Block_Stat}]
-Rescue_Clauses ::= Rescue_Clause {semi Rescue_Clause}
-Rescue_Clause  ::= 'when' Pattern [Guard] ('then' | semi) Rescue_Block
-Rescue_Block   ::= {Rescue_Stat semi} [Result_Expr]
-Rescue_Stat    ::= Block_Stat | Retry_Expr | Reraise_Expr
-Retry_Expr     ::= 'retry' [label_name] [Cond_Modifier1]
-Reraise_Expr   ::= 'reraise' [Cond_Modifier1]
+Raise_Expr
+    ::= 'raise' Raiseable_Body
+Raiseable_Body 
+    ::= string_literal
+      | Stable_Id [',' string_literal]
+      | Expr
+Rescue_Expr
+    ::= [Label_Dcl] 'begin' (Expr + ? Workflow only within Wf_Rescue_Expr ?)
+        ['handle' [nl] Handle_Clauses]
+        ['catch' [nl] Catch_Clauses]
+        'rescue' [nl] Rescue_Clauses
+        ['ensure' semi Expr] 'end'
+Rescue_Clauses 
+    ::= Rescue_Clause {semi Rescue_Clause}
+Rescue_Clause 
+    ::= 'when' Pattern [Guard] ('then' | semi) Rescue_Block
+Rescue_Block
+    ::= Expr + Retry_Expr + Reraise_Expr + ? Workflow only within Wf_Rescue_Expr ?
+Retry_Expr
+    ::= 'retry' [label_name] [Cond_Modifier1]
+Reraise_Expr
+    ::= 'reraise' [Cond_Modifier1]
 \end{lstlisting}
 
 A raise expression ~\lstinline!raise $e$!~ is similar to ~\lstinline!throw $e$! (\sref{sec:throw-catch-expressions}), it throws a value (raises an error) that is expected to be of type \code{Raiseable}. It has three variants: 
 \begin{itemize}
-\item[] \lstinline!raise $s$!, where $s$ is a string provided to constructor of the type \code{Runtime_Error}. 
-\item[] \lstinline!raise $T$, $s$!, where $s$ is a string provided to constructor of the type $T$. 
-\item[] \lstinline!raise $e$!, where $e$ is an expression, whose type is expected to conform to \code{Raiseable}, and whose result value will be raised after its evaluation. 
-\item[] \lstinline!raise!, which raises a value of type \code{Runtime_Error} without any message. Such errors should not propagate outside of the method that raises them. 
+  \item[] \lstinline!raise $s$!, where $s$ is a string provided to constructor of the type \code{Runtime_Error}. 
+  \item[] \lstinline!raise $T$, $s$!, where $s$ is a string provided to constructor of the type $T$. 
+  \item[] \lstinline!raise $e$!, where $e$ is an expression, whose type is expected to conform to \code{Raiseable}, and whose result value will be raised after its evaluation. 
+  \item[] \lstinline!raise!, which raises a value of type \code{Runtime_Error} without any message. Such errors should not propagate outside of the method that raises them. 
 \end{itemize}
 
 \code{Raiseable} is a subtype of \code{Throwable}. 
@@ -3055,7 +2958,6 @@ Template_Stat  ::= ? Expr, which includes the following extra elements for Expr:
                  | [Opt_Req] {Modifier} Dcl
                  | Opt_Req [Alias_Id {',' Alias_Id}]
                  | {Modifier} Val_Def
-                 | {Modifier} Var_Def
                  | {Modifier} Fun_Def
                  | {Modifier} Op_Def
                  | {Modifier} Method_Def
@@ -3102,13 +3004,6 @@ Tmpl_Ifc_Impl  ::= 'interface' Annot_Type
                    'end' ['interface']
 Tmpl_Ifc_Dcl   ::= 'interface' Annot_Type 
                    'end' ['interface']
-Alias_Expr     ::= 'alias' Alias_Id 'is' Alias_Id
-Alias_Id       ::= symbol_literal
-                 | id
-                 | op_id
-Capture_Usage  ::= 'use' Capture_List In_Sep Block_Stat ['end']
-Capture_List   ::= Capture_Items {'and' Capture_Items}
-Capture_Items  ::= (id {',' id} | Let_Binding) 'as' Reference_Modifier
 Opt_Req        ::= 'optional' | 'required'
 \end{lstlisting}
 
@@ -3435,12 +3330,13 @@ An important note is that when an identifier $e$ references several members of a
 
 First, one identifies the maximal subexpressions of $e$, let's say these are $e_1 \commadots e_m$. For each of these, one creates a fresh name $x_i$. Let $e'$ be the expression resulting from replacing every maximal subexpression $e_i$ in $e$ by the corresponding fresh name $x_i$. Second, one creates a fresh name $y_i$ for every argument type $T_i$ of the method, for $i = 1 \commadots n$, using named arguments and parameters as defined by the method. The result of eta-expansion is then: 
 \begin{lstlisting}
-{
-  let $x_1$ = $e_1$ in
+let 
+  val $x_1$ = $e_1$
   $\ldots$
-  let $x_m$ = $e_m$ in
-  do |$y_1$: $T_1 \commadots y_n$: $T_n$| $e'$($y_1 \commadots y_n$) done
-}
+  val $x_m$ = $e_m$ 
+in
+  fun ($y_1$: $T_1$) $\ldots$ ($y_n$: $T_n$) -> $e'$.($y_1 \ldots y_n$)
+end
 \end{lstlisting}
 
 \example A few examples of eta-expansion, the original expression and eta-expanded below it:
@@ -3448,10 +3344,12 @@ First, one identifies the maximal subexpressions of $e$, let's say these are $e_
 (* expression: *)
 &((1 .. 9).fold(z))
 (* expands to: *)
-{ let eta1 = z in
-  let eta2 = (1 .. 9) in
-  do |x| eta2.fold(eta1)(x) done 
-}
+let 
+  val eta1 = z
+  val eta2 = (1 .. 9) 
+in
+  fun x -> eta2.fold(eta1)(x)
+end
 \end{lstlisting}
 
 
@@ -3463,7 +3361,7 @@ First, one identifies the maximal subexpressions of $e$, let's say these are $e_
 \subsection{Dynamic Member Selection}
 \label{sec:dynamic-member-selection}
 
-Aml defines a trait \code{Dynamic_Member_Selecting} that enables dynamic invocations rewriting. 
+\Aml defines a trait \code{Dynamic_Member_Selecting} that enables dynamic invocations rewriting. 
 
 % TBD: define the trait, make use of ?- operator
 
