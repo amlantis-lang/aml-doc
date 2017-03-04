@@ -16,6 +16,9 @@
 Expr
     ::= ...
       | Pragma_Expr
+Class_Expr
+    ::= ...
+      | Class_Pragma_Expr
 Annotation_Definition 
     ::= 'annotation' Class_Def
 Macro_Dcl
@@ -34,6 +37,9 @@ Standalone_Annotation
 Pragma_Expr 
     ::= 'pragma' Long_Id [Arguments] (Do_Block | In_Sep Expr ['end'])
       | 'pragma' Long_Id '(' [Arguments] ')' (Do_Block | In_Sep Expr ['end'])
+Class_Pragma_Expr 
+    ::= 'pragma' Long_Id [Arguments] In_Sep Class_Expr
+      | 'pragma' Long_Id '(' [Arguments] ')' In_Sep Class_Expr
 \end{lstlisting}
 
 Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Aml, possibly affecting the resulting bytecode and abstract syntax trees. 
