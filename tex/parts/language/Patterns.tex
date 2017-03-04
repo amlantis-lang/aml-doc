@@ -51,6 +51,7 @@ Non_Atomic_Pattern
       | Tuple_Pattern
       | Cons_Pattern
       | Annotated_Pattern
+      | Nested_Pattern
       | Lazy_Pattern
 Var_Pattern 
     ::= Atomic_Var_Pattern
@@ -111,6 +112,8 @@ Cons_Pattern
     ::= Pattern '::' Pattern
 Annotated_Pattern 
     ::= {Annotation}+ Pattern
+Nested_Pattern
+    ::= Pattern 'with' Pattern '=' Expr
 Extractions
     ::= Pattern 
       | Positional_Extracts
@@ -839,6 +842,32 @@ The record pattern ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_n$ }!~ matc
 
 The record pattern ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_n$; _ }!~ matches records that define at least the fields $f_1$ to $f_n$, with the same rules as the previous record pattern, where the extra fields, if any, are simply discarded.\footnote{Such a pattern is more prone to ambiguous record types. In such a case, the record type has to be resolved by specifying the path to it in at least one of the fields.}
 
+
+
+
+
+\subsection{Nested Pattern Matches}
+\label{sec:nested-pattern-matches}
+
+\grammar\begin{lstlisting}
+Nested_Pattern 
+    ::= Pattern 'with' (Pattern - Nested_Pattern) '=' Expr
+\end{lstlisting}
+
+A nested pattern match of the form ~\lstinline!$p_1$ with $p_2$ = $e_2$!~ matches first against the pattern $p_1$, evaluates $e_2$ and matches its result against $p_2$. Values bound from $p_1$ are available inside $e_2$. The pattern binds the combined set of bound values from both $p_1$ and $p_2$, if any. The pattern fails to match if either $p_1$ or $p_2$ does not match. The pattern $p_1$ may itself be or contain another nested pattern match, but $p_2$ must not. 
+
+A nested pattern contributes the type of the pattern $p_1$ to type of parameter, when used in function parameter list. 
+
+\example An example of a nested pattern match.
+\begin{lstlisting}
+match xs
+  when [x; y] 
+    with Some z = f x y 
+    then x + y + z
+  otherwise 0
+end
+\end{lstlisting}
+If \code{xs} is a list with two elements for which \code{f x y} returns \code{Some z}, then the whole pattern matches, and the match expression evaluates to \code{x + y + z}, otherwise it evaluates to \code{0}. 
 
 
 
