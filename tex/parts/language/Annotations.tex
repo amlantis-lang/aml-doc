@@ -15,16 +15,23 @@
 \grammar\begin{lstlisting}
 Expr
     ::= ...
-      | Pragma
+      | Pragma_Expr
 Annotation_Definition 
     ::= 'annotation' Class_Def
 Macro_Dcl
-    ::= 'macro' Fun_Sig 'end' ['macro']
+    ::= 'macro' Fun_Sig 'end'
 Macro_Def 
     ::= 'macro' Fun_Sig '=' [Fun_Dec] Expr
 Annotation 
     ::= '@[' Long_Id [Arguments] {semi Long_Id [Arguments]} ']'
-Pragma 
+Nested_Annotation
+    ::= Inner_Annotation
+      | Standalone_Annotation
+Inner_Annotation
+    ::= '[@' Long_Id [Arguments] {semi Long_Id [Arguments]} ']'
+Standalone_Annotation
+    ::= '[@@' Long_Id [Arguments] {semi Long_Id [Arguments]} ']'
+Pragma_Expr 
     ::= 'pragma' Long_Id [Arguments] (Do_Block | In_Sep Expr ['end'])
       | 'pragma' Long_Id '(' [Arguments] ')' (Do_Block | In_Sep Expr ['end'])
 \end{lstlisting}
