@@ -1238,19 +1238,6 @@ Parameters of memoization\footnote{Parameters include things like: cache policy,
 
 
 
-\subsubsection{Application Shortcut}
-\label{sec:function-application-shortcut}
-
-A function application ~\lstinline!$f$.($e_1 \ldots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($f$())($e_1 \ldots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$f$().apply($e_1 \ldots e_m$) $b$!, as appropriate.\footnote{E.g. curried functions do not need any explicit \code{.apply()} applications, as these are implied, but would work anyway, therefore the second expanded form is equivalent to the first expanded form.}
-
-This is especially useful for situations where a prefix appears to the function application and $f$ denotes a member that evaluates to a function, or maybe to a collection, but does not itself accept any arguments. 
-
-A function application ~\lstinline!$p$.$f$.($e_1 \ldots e_m$) $b$!~ is a syntax sugar for a function application ~\lstinline!($p$.$f$)($e_1 \ldots e_m$) $b$!, which in turn is a shortcut for function application ~\lstinline!$p$.$f$().apply($e_1 \ldots e_m$) $b$!, where $p$ is some prefix expression. 
-
-
-
-
-
 
 \subsubsection{Method Values \& Explicit Partial Applications}
 \label{sec:method-values}
