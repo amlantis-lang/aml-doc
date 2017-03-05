@@ -41,6 +41,7 @@ Expr
       | Cast_Expr
       | Use_Expr
       | Delayed_Expr
+      | Var_Expr
       | Ref_Expr
       | Jump_Expr
       | Function_Expr
@@ -424,12 +425,20 @@ The \code{Aml/Language.Lazy} instance is not automatically unboxed, unlike lazy 
 
 
 
-
-\subsection{Ref Expressions}
+\subsection[Variable \& Ref Expressions]{Variable \& Ref Expressions}
 \label{sec:ref-expressions}
+\label{sec:var-expressions}
 
 \grammar\begin{lstlisting}
-Ref_Expr ::= 'ref' [nl] Expr
+Var_Expr
+    ::= 'var' Expr
+Ref_Expr 
+    ::= 'ref' Expr
+\end{lstlisting}
+
+Variable expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
+\begin{lstlisting}[deletekeywords={new}]
+Aml/Language.Variable_Cell.new ($e$)
 \end{lstlisting}
 
 Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
@@ -437,9 +446,13 @@ Ref expressions of the form ~\lstinline!ref $e$!~ are a syntax sugar for:
 Aml/Language.Reference_Cell.new ($e$)
 \end{lstlisting}
 
-The \code{Aml/Language.Reference_Cell} instance is not automatically unboxed. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in the meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!<-!'', or by sending the instance a ``\code{set_value}'' message. 
+Variable expressions can be explicitly converted to ref expressions and vice versa, but never implicitly. 
+
+The cell instances are not automatically unwrapped. The contained value can be retrieved from a reference cell using the prefix operator ``\lstinline@!@''\footnote{This operator is not used in the meaning of \code{not}, because accidentally overlooking it does not invert the value that it's applied to.}, or by sending the instance a ``\code{value}'' message. The contained value can be overwritten by using the infix operator ``\lstinline!:=!''.
 
 Reference cells are lightweight instances that can be used to simulate output parameters at low costs, in both CPU cycles and the language design.
+
+Variable expressions are not allowed as return values of functions and can not be captured in closures, unless converted to reference cells. 
 
 \example An example of how to manipulate reference cells. 
 \begin{lstlisting}
@@ -455,6 +468,19 @@ in
   a := 64
 end
 \end{lstlisting}
+Variable cells are manipulated with the same operators. 
+
+\example An example of how pattern matching differs for variable expressions and ref expressions. 
+\begin{lstlisting}[mathescape=false]
+val Reference_Cell = object 
+  method unapply ['a] (cell: 'a ref) : 'a ref option = Some cell
+end
+
+val Variable_Cell = object
+  method unapply ['a] (value: 'a) : 'a option = Some $ var value
+end
+\end{lstlisting}
+Reference cells are used to ``break boundaries'' of function applications, to share a mutable value across function applications, whereas variable cells are meant to define locally or object-locally mutable values.
 
 
 
