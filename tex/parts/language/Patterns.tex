@@ -67,7 +67,7 @@ Constant_Pattern
 Typed_Pattern 
     ::= '(' Type_Bound_Pattern ')'
 Type_Pattern 
-    ::= ['type' 'is' | ':?'] Type_Expr
+    ::= ['is' | ':?'] Type_Expr
 Type_Bound_Pattern 
     ::= Pattern ':' Type_Expr
 Type_Instance_Pattern 
@@ -634,10 +634,10 @@ Typed_Pattern
 Type_Bound_Pattern 
     ::= Pattern ':' Type
 Type_Pattern 
-    ::= ['type' 'is' | ':?'] Type
+    ::= ['is' | ':?'] Type
 \end{lstlisting}
 
-A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!type is $T$!~ and
+A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!is $T$!~ and
 ~\lstinline!:? $T$!, all of which are equivalent. 
 
 Aml does not distinguish type-annotated patterns from dynamic type-test patterns -- all such patterns are dynamic type-test patterns, with implications from a type-annotated pattern. 
