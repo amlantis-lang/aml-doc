@@ -975,10 +975,12 @@ if %1 then x else y end     (z: Boolean) -> if z then x else y end
 \subsection{Designator Expressions}
 \label{sec:designators}
 
-\grammar\begin{lstlisting}
+\grammar\begin{lstlisting}[deletekeywords={no}]
 Simple_Expr
     ::= ...
-      | Path
+      | Designator_Expr
+Designator_Expr 
+    ::= Path
       | Expr '.' Selection
       | [Expr '.'] Dynamic_Var_Selection
       | Type_Member_Selection
@@ -998,8 +1000,8 @@ Forced_Selection
 Dynamic_Var_Selection
     ::= '@{' Expr '}'
 Type_Member_Selection
-    ::= Expr ('#' | '.#') id
-      | '#' ? no whitespace ? id
+    ::= Expr ('#' | '.#') (Simple_Selection | Tuple_Selection)
+      | '#' ? no whitespace ? (Simple_Selection | Tuple_Selection)
 \end{lstlisting}
 
 A designator refers to a named term. It can be a {\em simple name} or a {\em selection}.
