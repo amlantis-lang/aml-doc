@@ -138,47 +138,16 @@ Expr
       | Tuple_Exprs
 Tuple_Exprs 
     ::= Expr {',' Expr}+
-      | Tuple_Head_Expr '(' [nl] Expr {',' Expr}+ [nl] ')'
-Tuple_Head_Expr
-    ::= [Mutability_Modifier] 'tuple' [nl]
 Constant_Expr 
     ::= ...
       | '()'
 \end{lstlisting}
 
-A tuple expression ~\lstinline!$e_1 \commadots e_n$!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is usually only the value itself, without being wrapped in a tuple.  
-
-A tuple expression may alternatively appear in the form ~\lstinline!tuple {$e_1$; $\ldots$; $e_n$}!. In that form, it may also be prepended with either \code{mutable} or \code{immutable} keyword. Implicitly, all forms are prepended with \code{immutable}. 
+A tuple expression ~\lstinline!$e_1 \commadots e_n$!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple.  
 
 Tuple expressions have the runtime type of ~\lstinline!Aml/Language.Tuple[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that give label to sub-expressions. Tuple expressions prepended by \code{mutable} are of the type ~\lstinline!Aml/Language.Mutable_Tuple[$T_1 \commadots T_n$]!.
 
 Tuple expressions with an extended grammar rules are also used within function applications (\sref{sec:function-applications}), and the rules considering element labelling and positions are the same as for the simple data tuple expressions. 
-
-
-
-
-
-\subsection{Tuple Clone Expressions}
-\label{sec:tuple-clone}
-
-\grammar\begin{lstlisting}
-Expr
-    ::= ...
-      | Tuple_Exprs
-Tuple_Exprs 
-    ::= ...
-      | Tuple_Head_Expr '{' [nl] Expr 'with' Tuple_Fields_Clone [nl] '}'
-Tuple_Fields_Clone 
-    ::= Tuple_Field_Clone {semi Tuple_Field_Clone}
-Tuple_Field_Clone
-    ::= decimal_numeral '=' Expr
-\end{lstlisting}
-
-An expression of the form 
-\begin{lstlisting}
-tuple { $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
-\end{lstlisting}
-is a tuple clone expression. 
 
 
 
@@ -339,7 +308,11 @@ Record_Expr
 Record_Fields_Init
     ::= Record_Field_Init {semi Record_Field_Init}
 Record_Field_Init
-    ::= Stable_Id [':' Type_Expr] '=' Expr
+    ::= Record_Label [':' Type_Expr] '=' Expr
+      | var_id
+Record_Label
+    ::= Stable_Id
+      | decimal_numeral
 \end{lstlisting}
 
 An expression of the form
@@ -373,6 +346,19 @@ An expression of the form
 { $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
 \end{lstlisting}
 is a record clone expression. 
+
+
+
+
+
+\subsection{Tuple Clone Expressions}
+\label{sec:tuple-clone}
+
+An expression of the form 
+\begin{lstlisting}
+{ $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
+\end{lstlisting}
+where $i_1 \commadots i_n$ are decimal numbers, is a tuple clone expression. 
 
 
 
