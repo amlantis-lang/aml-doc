@@ -162,10 +162,12 @@ Capture_Extract
 Record_Pattern 
     ::= '{' Field_Patterns '}'
 Field_Patterns 
-    ::= Field_Pattern {semi Field_Pattern} [semi '_']
-      | '_'
+    ::= Field_Pattern {semi Field_Pattern} [semi Field_Rest_Pattern]
+      | [semi] Field_Rest_Pattern
 Field_Pattern 
-    ::= Stable_Id '=' Pattern
+    ::= Record_Label '=' Pattern
+Field_Rest_Pattern
+    ::= '_' ['=' Pattern]
 Struct_Pattern
     ::= '(' 'structure' id ['as' Pkg_Type] ')'
 Pattern_Param 
@@ -841,6 +843,10 @@ A record pattern enables values of record types to be decomposed into a number o
 The record pattern ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_n$ }!~ matches records that define exactly the fields $f_1$ to $f_n$, and such that the value associated with $f_i$ matches the pattern $p_i$, for $i = 1 \commadots n$. If there are multiple record types that have the same fields, then at least one of $f_i$ have to specify the field with a path to the intended type\footnote{The first field should be used for this.}: \code{$T$.$f$}, where $T$ is a path to the record type, and $f$ is the field. 
 
 The record pattern ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_n$; _ }!~ matches records that define at least the fields $f_1$ to $f_n$, with the same rules as the previous record pattern, where the extra fields, if any, are simply discarded.\footnote{Such a pattern is more prone to ambiguous record types. In such a case, the record type has to be resolved by specifying the path to it in at least one of the fields.}
+
+Record patterns or the forms ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_{n-1}$; _ = $p_n$ }!~ and ~\lstinline!{ _ = $p_1$ }!~ match the extra fields into a new record that is then matched against $p_n$ and $p_1$ respectively. 
+
+Record patterns match tuples too, if all record labels are decimal numbers. 
 
 
 
