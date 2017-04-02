@@ -60,16 +60,18 @@ This is to keep up consistency with pattern matching, where the type will usuall
 
 \grammar\begin{lstlisting}
 Val_Def 
-    ::= 'let' ['rec'] [nl] Let_Binding {('and' | semi) Let_Binding}
+    ::= 'let' ['rec'] [nl] Let_Bindings_Sequence
+Let_Bindings_Sequence
+    ::= Let_Binding {('and' | semi) Let_Binding}
 Let_Binding
     ::= Let_Value_Binding
       | Let_Fun_Binding
 Let_Value_Binding
-    ::= ['implicit'] [Storage_Modifier] Pattern [Type_Param_Clause] Fun_Type_Expr
+    ::= Pattern [Type_Param_Clause] [':' Type_Expr]
         '=' Expr
 Let_Fun_Binding
     ::= ['fun'] fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses Fun_Type_Expr
-        '=' Expr
+        '=' [Function_Declarations] Expr
 Fun_Type_Expr
     ::= [':' Type_Expr] [':>' Type_Expr]
 \end{lstlisting}
@@ -1010,7 +1012,7 @@ A method signature $m_1$ is {\em override-matching} $m_2$, if $m_1$ is a subsign
 \grammar\begin{lstlisting}
 Let_Binding 
     ::= ...
-      | 
+      | Fixity_Binding
 Fixity_Binding
     ::= Fixity_Id Operator_Ids
 Fixity_Id
