@@ -735,7 +735,7 @@ Fun_Dec_Expr
 
 A function declaration has the form of \lstinline@def $f$ $\psig$: $T$@, where $f$ is the function's path, $\psig$ is its parameter signature and $T$ is its result type. 
 
-A function definition \lstinline@def $f$ $\psig$: $T$ = $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$\tps$]@, followed by zero or more value parameter clauses \lstinline@($\ps_1$)$\ldots$($\ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and result types are as given. 
+A function definition \lstinline@method $f$ $\psig$: $T$ = $e$@ also includes a {\em function body} $e$, i.e. an expression which defines the functions's return value. A parameter signature consists of an optional type parameter clause \lstinline@[$\tps$]@, followed by zero or more value parameter clauses \lstinline@($\ps_1$)$\ldots$($\ps_n$)@. Such a declaration or definition introduces a value with a (possibly polymorphic) method type, whose parameter types and result types are as given. 
 
 The type of the function body is expected to conform (\sref{sec:conformance}) to the function's declared result type, if one is given. 
 
