@@ -1058,10 +1058,10 @@ Use_Clause
     ::= Import_Clause
       | Open_Clause
 Import_Clause
-    ::= 'use' ['lazy'] (Type | Stable_Id) ['.' Import_Expr]
+    ::= 'use' ['lazy'] (Type_Expr | Stable_Id) ['.' Import_Expr]
 Open_Clause
-    ::= 'open' (Type | Stable_Id) ['.' Import_Expr]
-      | 'open!' (Type | Stable_Id) ['.' Import_Expr]
+    ::= 'open' (Type_Expr | Stable_Id) ['.' Import_Expr]
+      | 'open!' (Type_Expr | Stable_Id) ['.' Import_Expr]
 Import_Expr
     ::= Single_Import
       | '{' Import_Exprs '}'
