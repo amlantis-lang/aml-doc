@@ -243,7 +243,7 @@ Self_Type_Expr
 
 A type designator refers to a named value type. It can be simple or qualified. All such type designators are shorthands for type projections. 
 
-Specifically, the unqualified type name $t$ where $t$ is bound in some class $C$ is taken as a shorthand for ~\lstinline@$C$.self.type#$t$@. If $t$ is bound in some object\footnote{Also in class object methods.} or module $C$, it is taken as a shorthand for ~\lstinline@$C$.type#$t$@. If $t$ is not bound in a class, object or module, then $t$ is taken as a shorthand for ~\lstinline@$\epsilon$.type#$t$@. 
+Specifically, the unqualified type name $t$ where $t$ is bound in some class, object or structure $C$ is taken as a shorthand for ~\lstinline@$C$.self.type#$t$@.\footnote{Note that in objects and structures, the designator~\lstinline@$C$.self@ refers to that object or structure, whereas in classes, it refers to instances of that class.} If $t$ is not bound in a class, object or structure, then $t$ is taken as a shorthand for ~\lstinline@$\epsilon$.type#$t$@. 
 
 A qualified type designator has the form ~\lstinline@$p$.$t$@, where $p$ is a path (\sref{sec:type-paths}) and $t$ is a type name. Such a type designator is equivalent to the type projection ~\lstinline@$p$.type#$t$@. 
 

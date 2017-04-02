@@ -129,30 +129,6 @@ See (\sref{sec:emptiness}) for more details on ``nothing'' values.
 
 
 
-\subsection{Tuple Expressions}
-\label{sec:tuples}
-
-\grammar\begin{lstlisting}
-Expr
-    ::= ...
-      | Tuple_Exprs
-Tuple_Exprs 
-    ::= Expr {',' Expr}+
-Constant_Expr 
-    ::= ...
-      | '()'
-\end{lstlisting}
-
-A tuple expression ~\lstinline!$e_1 \commadots e_n$!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple.  
-
-Tuple expressions have the runtime type of ~\lstinline!Aml/Language.Tuple[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that give label to sub-expressions. Tuple expressions prepended by \code{mutable} are of the type ~\lstinline!Aml/Language.Mutable_Tuple[$T_1 \commadots T_n$]!.
-
-Tuple expressions with an extended grammar rules are also used within function applications (\sref{sec:function-applications}), and the rules considering element labelling and positions are the same as for the simple data tuple expressions. 
-
-
-
-
-
 \subsection{List Expressions}
 \label{sec:list-expressions}
 
@@ -306,52 +282,76 @@ Simple_Expr
 Record_Expr 
     ::= '{' [nl] Record_Fields_Init [nl] '}'
 Record_Fields_Init
-    ::= Record_Field_Init {semi Record_Field_Init}
-Record_Field_Init
-    ::= Record_Label [':' Type_Expr] '=' Expr
+    ::= Record_Row
+      | Expr 'with' Record_Fields ['without' Record_Labels]
+      | Expr 'without' Record_Labels}
+Record_Fields
+    ::= Record_Field [semi Record_Field]
+Record_Field
+    ::= Record_Label [':' Type_Expr] ['=' Expr]
       | var_id
+      | Record_Include_Fields  (* can appear up to 1 time in Record_Fields *)
+Record_Include_Fields
+    ::= '_' '=' Expr
+      | 'include' Expr
 Record_Label
     ::= Stable_Id
       | decimal_numeral
+Record_Labels
+    ::= Record_Label [semi Record_Labels]
 \end{lstlisting}
 
 An expression of the form
 \begin{lstlisting}
 { $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
 \end{lstlisting}
-is a record expression. 
+is a record creation expression. 
+
+% TBD: describe the remaining forms
 
 
 
 
-
-
-\subsection{Record Clone Expressions}
-\label{sec:record-clone-expressions}
+\subsubsection{Anonymous Record Expressions}
+\label{sec:anonymous-record-expressions}
 
 \grammar\begin{lstlisting}
-Simple_Expr 
+Simple_Expr
     ::= ...
-      | Record_Clone_Expr
-Record_Clone_Expr
-    ::= '{' [nl] Expr 'with' Record_Fields_Clone [nl] '}'
-Record_Fields_Clone 
-    ::= Record_Field_Clone {semi Record_Field_Clone}
-Record_Field_Clone 
-    ::= Stable_Id [':' Type_Expr] ['=' Expr]
+      | Anonymous_Record_Expr
+Anonymous_Record_Expr
+    ::= '{|' [nl] Record_Fields_Init [nl] '|}'
 \end{lstlisting}
 
-An expression of the form
-\begin{lstlisting}
-{ $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
+
+
+
+
+\subsection{Tuple Expressions}
+\label{sec:tuples}
+
+\grammar\begin{lstlisting}
+Expr
+    ::= ...
+      | Tuple_Exprs
+Tuple_Exprs 
+    ::= Expr {',' Expr}+
+Constant_Expr 
+    ::= ...
+      | '()'
 \end{lstlisting}
-is a record clone expression. 
+
+A tuple expression ~\lstinline!$e_1 \commadots e_n$!~ is an alias for the class instance creation ~\lstinline!Tuple($e_1 \commadots e_n$)!, where $n \geq 2$. The empty tuple ~\lstinline!()!~ is the unique value of type \code{Unit}. A tuple with only one value is only the value itself, without being wrapped in a tuple.  
+
+Tuple expressions have the runtime type of ~\lstinline!Aml/Language.Tuple[$T_1 \commadots T_n$]!, where each $T_i$ is the known type of each $e_i$, including the annotations that give label to sub-expressions. Tuple expressions prepended by \code{mutable} are of the type ~\lstinline!Aml/Language.Mutable_Tuple[$T_1 \commadots T_n$]!.
+
+Tuple expressions with an extended grammar rules are also used within function applications (\sref{sec:function-applications}), and the rules considering element labelling and positions are the same as for the simple data tuple expressions. 
 
 
 
 
 
-\subsection{Tuple Clone Expressions}
+\subsubsection{Tuple Clone Expressions}
 \label{sec:tuple-clone}
 
 An expression of the form 
@@ -359,6 +359,26 @@ An expression of the form
 { $e$ with $i_1$ = $e_1$; $\ldots$; $i_n$ = $e_n$ }
 \end{lstlisting}
 where $i_1 \commadots i_n$ are decimal numbers, is a tuple clone expression. 
+
+
+
+
+
+
+\subsection{Object Creation Expressions}
+\label{sec:object-creation-exprs}
+
+\grammar\begin{lstlisting}[deletekeywords={no}]
+Expr
+    ::= ...
+      | Object_Creation_Expr
+Object_Creation_Expr 
+    ::= 'new' Type_Expr 
+      | 'new' ? no whitespace ? Type_Args Type_Expr 
+      | 'new' '.' Type_Args Type_Expr 
+\end{lstlisting}
+
+
 
 
 
@@ -661,10 +681,10 @@ Enumerators
     ::= Generator {semi Enumerator}
 Enumerator
     ::= Generator [semi Atomic_Pattern '=' Expr]
-      | Guard
+      | If_Guard
 Generator 
-    ::= [Label_Dcl] Atomic_Pattern 'in' Expr [Guard]
-Guard 
+    ::= [Label_Dcl] Atomic_Pattern 'in' Expr [If_Guard]
+If_Guard 
     ::= Cond_Modifier1
 \end{lstlisting}
 
@@ -846,7 +866,7 @@ method transpose['a](xss: List[List['a]]): List[List['a]] =
 
 \grammar\begin{lstlisting}
 Function_Expr
-    ::= 'fun' {Anonymous_Params_Clause}+ [Guard] [':' Type] 
+    ::= 'fun' {Anonymous_Params_Clause}+ [If_Guard] [':' Type] 
         '->' [Lambda_Declarations] Expr
       | 'function' [Lambda_Declarations 'match'] When_Clauses 'end'
 Block_Expr
@@ -916,15 +936,17 @@ fun (rec) n ?(acc = 1) ->
 \subsubsection{Placeholder Syntax for Anonymous Functions}
 \label{sec:placeholder-functions}
 
-\grammar\begin{lstlisting}
+\grammar\begin{lstlisting}[mathescape=false,deletekeywords={no}]
 Simple_Expr 
     ::= ...
-      | impl_par
+      | Param_Placeholder_Expr
+Param_Placeholder_Expr
+    ::= '$' ? no whitespace ? {digit_char}+
 \end{lstlisting}
 
-An expression (\code{Expr}) may contain embedded percent symbols ``\lstinline!%!'' followed by a number at places where identifiers are legal. Such an expression represents an anonymous function, where each numbered percent symbol denotes the corresponding positional parameter, and the zero-numbered symbol denotes the anonymous function itself.\footnote{This is different from Scala where the parameters are referenced with an underscore and not numbered -- they are successive.}
+An expression (\code{Expr}) may contain embedded dollar symbols ``\lstinline[mathescape=false]!$!'' followed by a number at places where identifiers are legal. Such an expression represents an anonymous function, where each numbered percent symbol denotes the corresponding positional parameter, and the zero-numbered symbol denotes the anonymous function itself.\footnote{This is different from Scala where the parameters are referenced with an underscore and not numbered -- they are successive.}
 
-Define an {\em anonymous section} to be an expression of the form ~\lstinline!%$n$ as $T$!, where $T$ is a type, or else of the form ~\lstinline!%$n$!, provided that the percent symbol does not appear as the expression part of a typed expression. 
+Define an {\em anonymous section} to be an expression of the form ~\lstinline[mathescape=false]!$n as T!, where $T$ is a type, or else of the form ~\lstinline[mathescape=false]!$n!. 
 
 An expression $e$ of syntactic category \code{Expr} {\em binds} an anonymous section $u$, if the following conditions hold:
 \begin{enumerate}
@@ -935,14 +957,14 @@ An expression $e$ of syntactic category \code{Expr} {\em binds} an anonymous sec
 If an expression $e$ binds anonymous sections $u_1 \commadots u_n$, in order specified by the numbering (and with blanks in between filled by a fresh $u_i$), it is equivalent to the anonymous ~\lstinline!($u'_1$) -> $\ldots$ -> ($u'_n$) -> $e'$!, where each $u'_i$ results from $u_i$ by replacing the percent symbol with a fresh identifier and $e'$ results from $e$ by replacing each $u_i$ with $u'_i$. If $u_i$ was a part of a typed expression, the corresponding parameter is typed the same and the $u'_i$ in $e$ does not need to be typed anymore. 
 
 \example The anonymous functions in the left column use placeholder syntax. Each of these is equivalent to the anonymous function to its right. 
-\begin{lstlisting}
-%1                          x -> x
-%1 + 1                      x -> x + 1
-%1 * %2                     x -> y -> x * y
-(%1 as Integer) * 2         (x: Integer) -> x * 2
-if %1 then x else y end     (z: Boolean) -> if z then x else y end
-%1.map f                    x -> x.map f
-%1.map (%1 + 1)             x -> x.map (y -> y + 1)
+\begin{lstlisting}[mathescape=false]
+$1                          x -> x
+$1 + 1                      x -> x + 1
+$1 * $2                     x -> y -> x * y
+($1 as Integer) * 2         (x: Integer) -> x * 2
+if $1 then x else y end     (z: Boolean) -> if z then x else y end
+$1.map f                    x -> x.map f
+$1.map ($1 + 1)             x -> x.map (y -> y + 1)
 \end{lstlisting} 
 
 
@@ -1084,23 +1106,26 @@ Class qualifier may be a simple name referring to name of an enclosing type or s
 Expr
     ::= ...
       | Use_Expr
+      | Local_Open_Expr
+      | Import_Clause semi Expr
+Local_Bindings
+    ::= ...
+      | Use_Core_Expr
 Use_Expr 
-    ::= Use_Expr_As 
+    ::= 'use' Use_Core_Expr (Do_Block | In_Sep Expr ['end'])
+Use_Core_Expr
+    ::= Use_Expr_As
       | Use_Aspect
       | Use_Refinement
       | Use_Droppable
-      | Import_Clause [Do_Block | In_Sep Expr ['end']]
-      | 'let' Open_Clause In_Sep Expr ['end']
-      | Local_Open_Expr
 Use_Expr_As 
-    ::= 'use' Expr ('as' | 'as!' | 'as?')
-        [id ':'] Type [Do_Block | In_Sep Expr ['end']]
+    ::= Expr ('as' | 'as!' | 'as?') [id ':'] Type
 Use_Aspect
-    ::= 'use' 'aspect' Stable_Id [Do_Block | In_Sep Expr ['end']]
+    ::= 'aspect' Stable_Id
 Use_Refinement 
-    ::= 'use' 'refinement' Stable_Id [Do_Block | In_Sep Expr ['end']]
+    ::= 'refinement' Stable_Id
 Use_Droppable 
-    ::= 'use' [Storage_Modifier] Let_Binding In_Sep Expr ['end']
+    ::= [Storage_Modifier] Let_Value_Binding
 Local_Open_Expr
     ::= Long_Id '.' '{' Expr '}'
 \end{lstlisting}
@@ -1121,7 +1146,7 @@ Use expressions of the form ~\lstinline!use $v$ = $a$ in $e$!~ are droppable exp
 
 
 
-\subsection{Function Applications}
+\subsection{Function Applications, Message Sending}
 \label{sec:function-applications}
 
 \grammar\begin{lstlisting}[deletekeywords={no}]
@@ -1131,9 +1156,11 @@ Expr
 Application_Expr 
     ::= Regular_Precedence_Application_Expr 
       | High_Precedence_Application_Expr
+      | Super_Application_Expr
 Regular_Precedence_Application_Expr
     ::= Expr Arguments [Block_Argument]
-      | 'super' [Arguments] [Block_Argument]
+Super_Application_Expr
+    ::= 'super' [Arguments] [Block_Argument]
 High_Precedence_Application_Expr
     ::= Expr '.' '(' [Arguments] ')' [Block_Argument]
       | Expr ? no whitespace ? '(' [Argument] ')'
@@ -1418,23 +1445,6 @@ Type applications can be omitted if automatic type inference (\sref{sec:automati
 
 
 
-\subsection{Object Creation Expressions}
-\label{sec:object-creation-exprs}
-
-\grammar\begin{lstlisting}[deletekeywords={no}]
-Expr
-    ::= ...
-      | Object_Creation_Expr
-Object_Creation_Expr 
-    ::= 'new' Type_Expr 
-      | 'new' ? no whitespace ? Type_Args Type_Expr 
-      | 'new' '.' Type_Args Type_Expr 
-\end{lstlisting}
-
-
-
-
-
 \subsection{Blocks}
 \label{sec:blocks}
 
@@ -1504,7 +1514,7 @@ Aml uses variable closure when defining a block expression.
 
 If a block expression is used just as a statement, it implicitly inherits access to all variables and methods defined in the scope in which it itself is defined. 
 
-Variables are made available via inner hidden instance variables of the implicit function. This includes the \code{self} object of the outer scope, if any methods are to be executed from within the block. Those variables are referenced with a strong reference, and therefore may cause in some situations retain cycles -- this can be solved by using {\em capture lists}, which can override this default behaviour and store the reference as either \code{weak}, \code{soft} or \code{unowned} reference, to break the retain cycle.\footnote{Quite useful with lazy definitions of instance variables, where the expression is wrapped in an implicit block.} 
+Variables are made available via inner hidden instance variables of the implicit function. This includes the \code{self} object of the outer scope, if any methods are to be executed from within the block. Those variables are referenced with a strong reference, and therefore may cause in some situations retain cycles -- this can be solved by using {\em capture lists}, which can override this default behaviour and store the reference as either \code{weak} or \code{unowned} reference, to break the retain cycle.\footnote{Quite useful with lazy definitions of instance variables, where the expression is wrapped in an implicit block.} 
 
 If a block expression is used as an argument in a function application (\sref{sec:function-applications}), it is used as a functor, and is provided with read and write access to variables in the scope that the function application appears in, and with an access to the \code{self} reference, including any nested ~\lstinline!$C$.self!~ references (\sref{sec:self-this-super}). Write access to variables is provided in a manner equivalent to \code{out} arguments. 
 
@@ -1958,7 +1968,7 @@ If the found operator does not accept $n$ arguments, but instead has $n$ type pa
 
 
 
-\subsection{Assignments}
+\subsection{Assignment Expressions}
 
 \grammar\begin{lstlisting}
 Expr
@@ -1966,44 +1976,58 @@ Expr
       | Rebind_Expr
       | Update_Expr
 Rebind_Expr 
-    ::= [Expr '.'] id ':=' Expr
-      | Expr '.' Selection ':=' Expr
-      | Atomic_Pattern ':=' Expr
+    ::= Designator_Expr ':=' Expr
 Update_Expr
-   ::= Expr '.' '(' [Arguments] ')' ':=' Expr
+   ::= High_Precedence_Application_Expr ':=' Expr
      | '(' Regular_Precedence_Application_Expr ')' ':=' Expr
 \end{lstlisting}
 
-The interpretation of an assignment to a simple variable ~\lstinline!$x$ := $e$!~ depends on the definitions of $x$. If $x$ denotes a mutable variable, then the assignment changes the current value of $x$ to the result of evaluating the expression $e$. The type of $e$ is expected to conform to the type of $x$. 
+The interpretation of an assignment expression $e$ in the form of ~\lstinline!$x$ := $e'$!~ depends on the form of $x$, as described in the following sections. 
 
-If $x$ is defined as a property of some template, or the template contains a setter function ~\lstinline!set_$x$!~ as a member, then the assignment is interpreted as the invocation ~\lstinline!set_$x$($e$)!~ of that setter function. 
+\subsubsection{Rebind Expressions}
 
-Analogously, an assignment ~\lstinline!$x$.$f$ := $e$!~ is interpreted as the invocation ~\lstinline!$x$.set_$f$($e$)!. 
+Rebind expressions are assignment expressions where $x$ is a designator expression. 
 
-An assignment ~\lstinline!$x$.?$f$ := $e$!~ is interpreted as the invocation ~\lstinline!$x$.?set_$f$ ($e$)!. If $f$ is evaluated to \code{nil}, then the invocation is evaluated to \code{nil}. See (\sref{sec:designators}) for more on behaviour of the ``\lstinline!.?!'' navigation. 
+\begin{itemize}
+  \item If $x$ evaluates to a value for which implementation of the operator \code{:=} exists in the scope, then the expression $e$ is evaluated as an application of said operator, i.e. ~\lstinline!( := $x$ $e'$)!. 
+  \item Otherwise, the expression needs to be re-interpreted as a function application. 
+    \begin{itemize}
+      \item If $x$ is a single identifier, the expression $e$ is re-interpreted as ~\lstinline!$x$.rebind($e'$)!, if $x$ responds to the message \code{rebind}. With pragmas, the type of $x$ might choose a different message name, in which case, that one is used.
+      \item If $x$ is an expression of the form ~\lstinline!$x'$.$n$!, where $x'$ is an arbitrary expression and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x'$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+      \item If $x$ is an expression of the form ~\lstinline!$x'$.?$n$!, where $x'$ is an arbitrary expression of the type \code{'a option} and $n$ is an identifier, the expression $e$ is re-interpreted as 
+      \begin{lstlisting}
+      match $x'$ 
+        when Some val $x''$ 
+          then Some ($x''$.set_$n$($e'$))
+        else None 
+      end
+      \end{lstlisting} 
+      if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+      \item If $x$ is an expression of the form ~\lstinline!$x'$.!$n$!, where $x'$ is an arbitrary expression of the type \code{'a option} and $n$ is an identifier, the expression $e$ is re-interpreted as 
+	  \begin{lstlisting}
+	  match $x'$ 
+	    when Some val $x''$ 
+	      then $x''$.set_$n$($e'$)
+	    else (* raise error *) 
+	  end
+	  \end{lstlisting} 
+	  if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+	  \item If $x$ is an expression of the form ~\lstinline!#$n$ $x'$!, where $x'$ is an arbitrary expression and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x'$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+	  \item If $x$ is an expression of the form ~\lstinline!$x_1$#$n$ $x_2$!, where $x_1$ and $x_2$ are arbitrary expressions and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x_2$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.\footnote{In this case, $x_1$ is used to further specify typing within the expression $e$, since it selects member $n$ from the expression $x_1$ and that choice in turn defines the expected type of $x_2$.}
+      \item Otherwise, it is an error. 
+    \end{itemize}
+\end{itemize} 
 
-An assignment ~\lstinline!$x$ ($\args$) := $e$!~ with a function application to the left of the ``\lstinline!:=!'' operator is interpreted as ~\lstinline!$x$.update ($\args$)($e$)!, i.e. the invocation of an \code{update} function defined by $x$.  
+\subsubsection{Update Expressions}
 
-The interpretation of an assignment ~\lstinline!$x$ := $e$!~ has scope augmented with names from the expected type of $x$.
+Rebind expressions are assignment expressions where $x$ is a function application expression. 
 
-\example Here are some assignment expressions and their equivalent interpretations.
-\begin{lstlisting}
-f := e                       set_f (e)  (* or, self.set_f (e) *)
-x () := e                    x.update () (e)
-x (i) := e                   x.update (i) (e)
-x (i, j) := e                x.update (i, j) (e)
-x.f := e                     x.set_f (e)
-x.f () := e                  x.f.update () (e)
-x.f (i) := e                 x.f.update (i) (e)
-x.f (i, j) := e              x.f.update (i, j) (e)
-x () () := e                 x().update () (e)
-x (i) () := e                x(i).update () (e)
-x () (i) := e                x().update (i) (e)
-x (i) (j) := e               x(i).update (j) (e)
-x (i, j) (k) := e            x(i, j).update (k) (e)
-x (i, j) (k, l) := e         x(i, j).update (k, l) (e)
-x (i, j) := (e_1, e_2)       x.update (i, j) (e_1, e_2)
-\end{lstlisting}
+\begin{itemize}
+  \item If $x$ is of the form ~\lstinline!$x'$.($\args$)!, where $x'$ is an arbitrary expression, the expression $e$ is re-interpreted as ~\lstinline!$x'$.update($\args$ $e'$)!, if the type of $x'$ responds to the message \code{update}. With pragmas, the type of $x'$ might choose a different message name, in which case, that one is used.
+  \item If $x$ is of the form ~\lstinline!$x'$($\args$)!, the expression $e$ is re-interpreted as if it was of the form ~\lstinline!$x'$.($\args$)!. 
+  \item If $x$ is of the form ~\lstinline!($x'$ $\args$)!, where $x'$ is an arbitrary expression, the expression $e$ is re-interpreted as ~\lstinline!$x'$.update($\args$ $e'$)!
+\end{itemize}
+
 
 
 
@@ -2017,10 +2041,7 @@ Expr
     ::= ...
       | Binding_Expr
 Binding_Expr 
-    ::= ['implicit'] Val_Def In_Sep Expr ['end']
-      | 'let' 'structure' id {'(' [id ':' Struct_Type] ')'} [':' Struct_Type]
-        '=' Struct_Expr In_Sep Expr ['end']
-      | 'let' Struct_Defs In_Sep Expr ['end']
+    ::= Val_Def In_Sep Expr ['end']
 \end{lstlisting}
 
 
@@ -2101,7 +2122,7 @@ Expr
       | Type_Ref_Expr
 Type_Ref_Expr 
     ::= '(' 'type' Type_Expr ')'
-      | Annot_Type
+      | Simple_Type - Postfix_Parameterized_Type
 \end{lstlisting}
 
 % TBD: change Annot_Type to Atomic_Type or (Non_Atomic_Type)
@@ -2454,19 +2475,28 @@ The expression ~\lstinline!for $i$ = $e_1$ up to $e_2$ loop $e_3$ end!~ is equiv
 
 \grammar\begin{lstlisting}
 Match_Expr     
-    ::= 'match' Expr Match_Body
+    ::= Match_When_Expr
+      | Match_With_Expr
 Fallthrough_Expr 
     ::= 'next'
-Match_Body 
-    ::= [nl] When_Clauses 'end' ['match']
+Match_When_Expr
+    ::= 'match' Expr [nl] When_Clauses 'end'
+Match_With_Expr
+    ::= 'match' Expr 'with' [nl] With_Clauses 'end'
 When_Clauses
     ::= When_Clause {semi When_Clause} 
         [semi Else [nl] Expr]
-        [semi 'rescue' [nl] Rescue_Clauses]
+        [semi 'rescue' Rescue_Clauses]
+With_Clauses
+    ::= ['|'] With_Clause {semi '|' With_Clause}
+        [semi Else [nl] Expr]
+        [semi 'rescue' Rescue_Clauses]
 When_Clause 
-    ::= 'when' Pattern [Guard] ('then' | semi) When_Expr
+    ::= 'when' Pattern [If_Guard] ('then' | semi) When_Expr
 When_Expr
     ::= Expr + Fallthrough_Expr
+With_Clause
+    ::= Pattern [If_Guard] '->' When_Expr
 \end{lstlisting}
 
 Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given.
@@ -2770,28 +2800,46 @@ end
 \grammar\begin{lstlisting}
 Catch_Expr
     ::= 'begin' (Expr + ? Workflow only within Wf_Catch_Expr ?)
-        ['handle' [nl] Handle_Clauses]
-        'catch' [nl] Catch_Clauses
+        ['handle' Handle_Clauses]
+        'catch' Catch_Clauses
         ['ensure' [nl] Expr] 'end'
       | 'begin' (Expr + ? Workflow only within Wf_Catch_Expr ?)
-        'handle' [nl] Handle_Clauses
+        'handle' Handle_Clauses
         ['ensure' [nl] Expr] 'end'
 Throw_Expr
     ::= 'throw' Expr
 Catch_Clauses 
-    ::= Catch_Clause {semi Catch_Clause}
+    ::= Catch_When_Clauses
+      | Catch_With_Clauses
+      | '[' Type_Expr ']' 'with' Expr
+Catch_When_Clauses
+    ::= [nl] Catch_When_Clause {semi Catch_When_Clause}
         [semi Else Catch_Block]
-Catch_Clause 
-    ::= 'when' Pattern [Guard] ('then' | semi) Catch_Block
+Catch_With_Clauses
+    ::= 'with' ['|'] Catch_With_Clause {semi '|' Catch_With_Clause}
+        [semi Else Catch_Block]
+Catch_When_Clause 
+    ::= 'when' Pattern [If_Guard] ('then' | semi) Catch_Block
+Catch_With_Clause
+    ::= Pattern [If_Guard] '->' Catch_Block
 Catch_Block 
     ::= Expr + Rethrow_Expr + ? Workflow only within Wf_Catch_Expr ?
 Rethrow_Expr
     ::= 'rethrow' [Cond_Modifier1]
 Handle_Clauses 
-    ::= Handle_Clause {semi Handle_Clause}
+    ::= Handle_When_Clauses
+      | Handle_With_Clauses
+      | '[' Type_Expr ']' 'with' Expr
+Handle_When_Clauses
+    ::= [nl] Handle_When_Clause {semi Handle_When_Clause}
         [semi Else Handle_Block]
-Handle_Clause 
-    ::= 'when' Pattern [Guard] ('then' | semi) Handle_Block
+Handle_With_Clauses
+    ::= 'with' ['|'] Handle_With_Clause {'|' Handle_With_Clause}
+        [semi Else Handle_Block]
+Handle_When_Clause 
+    ::= 'when' Pattern [If_Guard] ('then' | semi) Handle_Block
+Handle_With_Clause
+    ::= Pattern [If_Guard] '->' Handle_Block
 Handle_Block
     ::= Expr + Resignal_Expr + ? Workflow only within Wf_Catch_Expr ?
 Resignal_Expr 
@@ -2841,14 +2889,22 @@ Raiseable_Body
       | Expr
 Rescue_Expr
     ::= [Label_Dcl] 'begin' (Expr + ? Workflow only within Wf_Rescue_Expr ?)
-        ['handle' [nl] Handle_Clauses]
-        ['catch' [nl] Catch_Clauses]
-        'rescue' [nl] Rescue_Clauses
+        ['handle' Handle_Clauses]
+        ['catch' Catch_Clauses]
+        'rescue' Rescue_Clauses
         ['ensure' semi Expr] 'end'
 Rescue_Clauses 
-    ::= Rescue_Clause {semi Rescue_Clause}
-Rescue_Clause 
-    ::= 'when' Pattern [Guard] ('then' | semi) Rescue_Block
+    ::= Rescue_When_Clauses
+      | Rescue_With_Clauses
+      | '[' Type_Expr ']' 'with' Expr
+Rescue_When_Clauses
+    ::= Rescue_When_Clause {semi Rescue_When_Clause}
+Rescue_With_Clauses
+    ::= 'with' ['|'] Rescue_With_Clause {'|' Rescue_With_Clause}
+Rescue_When_Clause 
+    ::= 'when' Pattern [If_Guard] ('then' | semi) Rescue_Block
+Rescue_With_Clause 
+    ::= Pattern [If_Guard] '->' Rescue_Block
 Rescue_Block
     ::= Expr + Retry_Expr + Reraise_Expr + ? Workflow only within Wf_Rescue_Expr ?
 Retry_Expr
@@ -2911,27 +2967,40 @@ If the runtime decides to evaluate the sub-expressions in parallel, occurrences 
 \subsection{Quasi-quotation}
 \label{sec:quasi-quotation}
 
-\grammar\begin{lstlisting}[mathescape=false]
-Quasiquote_Expr ::= '<@' Expr '@>'
-Splice_Expr     ::= '#{' Expr '}'
-                  | '${' Expr '}'
-                  | '%%' Expr (* as prefix operator *)
+\grammar\begin{lstlisting}
+Quasiquote_Expr 
+    ::= '<@' (Expr + Splice_Expr) '@>'
+      | '<@@' (Expr + Splice_Expr) '@@>'
 \end{lstlisting}
 
 Quasi-quote expression ``~\lstinline!<@ $e$ @>!~'' is basically a well-formed piece of Aml source code, wrapped in parentheses preceded by a backtick. The expression represents the compiled expression $e$ in means of an AST node. Alternative way to define a quasi-quoted expression is with the annotation \code{@[quasi-quote]}.
 
-Quasi-quote expressions may optionally be interpolated, so that values or other nodes may be injected into the represented AST. There are the following ways to interpolate the AST:
-\begin{itemize}
-  \item Interpolating expression ``~\lstinline!#{ $e$ }!~'', where $e$'s value is expanded into the AST as is. If the expression would require parentheses around it in the source, then parentheses have to be around the interpolating expression.\footnote{Note that the same delimiters are used to interpolate string literals.}
-  \item The \code{@[unquote]} annotation, which puts parentheses around the annotated expression.
-  \item The \code{@[splice]} annotation, where the annotated expression is expanded into the AST as it is. Otherwise equivalent to ``~\lstinline!#{ $e$ }!~''.
-\end{itemize}
-
-A quasi-quote without any interpolation is equivalent to a quote (\sref{sec:quotation}). 
-
 Quasi-quotes are useful in combination with macros (\sref{sec:macros}). 
 
-An interpolating (splice or unquote) expression (like ``~\lstinline!#{ $e$ }!~'') appearing outside of a quasi-quote expression produces a compile-time warning and is replaced with $e$ directly. 
+
+
+
+
+\subsection{Expression Splices}
+\label{sec:expression-splices}
+
+\grammar\begin{lstlisting}[mathescape=false,deletekeywords={not,with}]
+Splice_Expr
+    ::= '${' Expr '}'
+      | '$${' Expr '}'
+      | '%' ? Expr not starting with '%' ?
+      | '%%' ? Expr not starting with '%' ?
+\end{lstlisting}
+
+Quasi-quote expressions may optionally contain expression splices, so that values or other nodes may be injected into the represented AST. There are the following ways to interpolate the AST:
+\begin{itemize}
+  \item Splice expressions ``~\lstinline[mathescape=false]!${ e }!~'' and ``~\lstinline!%$e$!~'', typed as \code{Expression[$T$]}, where $e$'s value is expanded into the AST as is and $T$ is the expected type of $e$. If the expression would require parentheses around it in the source, then parentheses have to be around the splice expression.
+  \item The ``~\lstinline[mathescape=false]!$${ e }!~'' and ``~\lstinline!%%$e$!~'' splice expressions is typed as \code{Expression[Any]}. 
+  \item The \code{@[unquote]} annotation, which puts parentheses around the annotated expression.
+  \item The \code{@[splice]} annotation, where the annotated expression is expanded into the AST as it is. Otherwise equivalent to ``~\lstinline[mathescape=false]!${ e }!~''.
+\end{itemize}
+
+
 
 
 
@@ -2941,10 +3010,11 @@ An interpolating (splice or unquote) expression (like ``~\lstinline!#{ $e$ }!~''
 \label{sec:quotation}
 
 \grammar\begin{lstlisting}
-Quote_Expr      ::= '<@@' Expr '@@>'
+Quote_Expr
+    ::= '<#' Expr '#>'
 \end{lstlisting}
 
-A quote expression ``~\lstinline!<@@ $e$ @@>!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. 
+A quote expression ``~\lstinline!<# $e$ #>!~'' is similar to a quasi-quote, but without any interpolation, therefore, any apparent interpolation within a quote stays just that and is never expanded (unquoted or spliced). The annotation that marks an expression for quotation is \code{@[quote]}. 
 
 
 

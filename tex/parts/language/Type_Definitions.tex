@@ -407,6 +407,9 @@ Struct_Constraint
         (* substituting inside signature: *)
       | 'type' Simple_Type ':=' Type_Expr
       | 'struct' id ':=' Extended_Struct_Path
+Local_Bindings
+    ::= ...
+      | Struct_Defs
 Simple_Type 
     ::= ...
       | Structural_Type
@@ -448,7 +451,7 @@ A structure is usually given a name with the \code{structure} or \code{module} b
 \begin{lstlisting}
 structure Priority_Queue =
 struct
-  type Priority = Number.Integer end
+  type Priority = Number.Integer
   type 'a Queue = variant 
     case Empty
     case Node of Priority * 'a * 'a Queue * 'a Queue

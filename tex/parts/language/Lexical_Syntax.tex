@@ -53,8 +53,6 @@ plain_id
 id  ::= ['@' | '@@'] (plain_id | '``' {any_id}+ '``')
       | '`' plain_id '`'
       | '`' op_id '`'
-impl_par 
-    ::= '%' {digit_char}+
 id_char 
     ::= letter_char
       | digit_char

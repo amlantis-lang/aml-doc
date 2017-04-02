@@ -166,6 +166,7 @@ Field_Patterns
       | [semi] Field_Rest_Pattern
 Field_Pattern 
     ::= Record_Label '=' Pattern
+      | Var_Pattern [':' Type_Expr] ['as' Pattern]
 Field_Rest_Pattern
     ::= '_' ['=' Pattern]
 Struct_Pattern
