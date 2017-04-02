@@ -1127,3 +1127,23 @@ Note that when importing names via use clauses (or dynamic use clauses), the pre
 
 
 
+
+\section{Local Bindings}
+\label{sec:local-bindings}
+
+\grammar\begin{lstlisting}
+Let_Binding
+    ::= ...
+      | Local_Bindings
+Local_Bindings
+    ::= Local_Structure_Binding
+      | Open_Clause
+      | 'local' Let_Bindings_Sequence 'in' Let_Bindings_Sequence ['end']
+Local_Structure_Binding
+    ::= 'structure' id {'(' [id ':' Struct_Type] ')'} 
+        [':' Struct_Type] '=' Struct_Expr
+\end{lstlisting}
+
+
+
+
