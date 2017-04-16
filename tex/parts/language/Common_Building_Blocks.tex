@@ -381,8 +381,8 @@ A type parameter name may optionally be surrounded by angle brackets, ~\lstinlin
 [Ex <: Raiseable]
 [A <: Comparable[B], B <: A]
 [A, B >: A, C >: A <: B]
-[M[X], N[X]] (* requires the polymorphic arguments M and N 
-                to have the same type argument, accessible as X *)
+[M[X], N[X]]  {- requires the polymorphic arguments M and N 
+                 to have the same type argument, accessible as X -}
 [M[_], N[_]]
 [M[X <: Bound[X]], Bound[_]]
 [M[+X] <: Iterable[X]]
@@ -391,10 +391,10 @@ A type parameter name may optionally be surrounded by angle brackets, ~\lstinlin
 \end{lstlisting}
 The following type parameter clauses are illegal:
 \begin{lstlisting}
-[A >: A]                  (* illegal, 'A' has itself as bound *)
-[A <: B, B <: C, C <: A]  (* illegal, 'A' has itself as bound *)
-[A, B, C >: A <: B]       (* illegal lower bound 'A' of 'C'
-                             does not conform to upper bound 'B' *)
+[A >: A]                  -- illegal, 'A' has itself as bound
+[A <: B, B <: C, C <: A]  -- illegal, 'A' has itself as bound
+[A, B, C >: A <: B]       {- illegal lower bound 'A' of 'C'
+                             does not conform to upper bound 'B' -}
 \end{lstlisting}
 
 
@@ -446,15 +446,15 @@ P[Error, String] <: P[Throwable, Object]  .
 If the members of $P$ are mutable variables, the same variance annotation becomes illegal. 
 \begin{lstlisting}
 abstract class P [+A, +B](x: A, y: B) {
-  var @first: A = x   (* error: illegal variance: *)
-  var @second: B = y  (* 'A', 'B' occur in invariant position *)
+  var @first: A = x   -- error: illegal variance:
+  var @second: B = y  -- 'A', 'B' occur in invariant position
 }
 \end{lstlisting}
 If the mutable variables are object-private, the class definition becomes legal again: 
 \begin{lstlisting}
 abstract class R [+A, +B](x: A, y: B) {
-  private[self] var @first: A = x   (* ok *)
-  private[self] var @second: B = y  (* ok *)
+  private[self] var @first: A = x   -- ok
+  private[self] var @second: B = y  -- ok
 }
 \end{lstlisting}
 
@@ -462,7 +462,7 @@ abstract class R [+A, +B](x: A, y: B) {
 \begin{lstlisting}
 abstract class Sequence [+A] {
   def append (x: Sequence[A]): Sequence[A] end
-    (* error: illegal variance, 'A' occurs in contravariant position *)
+    -- error: illegal variance, 'A' occurs in contravariant position
 }
 \end{lstlisting}
 The problem can be avoided by generalizing the type of \code{append} by means of lower bound:
@@ -623,18 +623,18 @@ Attribute_Def
 Method_Type_Clauses
     ::= [Type_Param_Clause] [Given_Clauses]
 Single_Method_Identity
-    ::= ['(' 'alias' Expr ')']  (* a constant expression *)
+    ::= ['(' 'alias' Expr ')']  -- a constant expression
 Multi_Method_Identity
     ::= Single_Method_Identity (Multi_Method_Dispatch | Multi_Method_Select)
 Multi_Method_Dispatch
     ::= '(' 'dispatch' [Type_Expr] ['use' 
-        ('type'    (* each pattern must have a distinct type *)
-        | 'match'  (* will use constant patterns *)
-        | Expr)    (* will use a custom hierarchy *)
+        ('type'    -- each pattern must have a distinct type
+        | 'match'  -- will use constant patterns
+        | Expr)    -- will use a custom hierarchy
         ] ')'
 Multi_Method_Select
     ::= '(' 'when' Pattern ')'
-      | '(' 'for'  Expr    ')'  (* a constant expression *)
+      | '(' 'for'  Expr    ')'  -- a constant expression
 Single_Method_Body
     ::= [Function_Declarations] Expr
 Multi_Method_Bodies

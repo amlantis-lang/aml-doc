@@ -275,7 +275,7 @@ struct
     dep.apply (a, b)
   
   let run (*args: String): Unit = begin
-    (* ok: *)
+    -- ok:
     let r1: Matrix = multiply(
         (Matrix with {}).new, (Matrix with {}).new) in
     let r2: Vector = multiply(
@@ -285,8 +285,8 @@ struct
     let r4: Matrix = multiply(
         2, (Matrix with {}).new) in
     
-    (* error, no implicit value found for type
-         Mult_Dep[Matrix, Vector, Matrix]: *)
+    {- error, no implicit value found for type
+         Mult_Dep[Matrix, Vector, Matrix]:  -}
     let r5: Matrix = multiply(
         (Matrix with {}).new, (Vector with {}).new) in
     ()
@@ -390,7 +390,7 @@ object program
     begin
       print_line area rect 
       print_line area circle
-      print_line area %{}[Symbol, Any]  (* error, no such method *)
+      print_line area %{}[Symbol, Any]  -- error, no such method
     end
 end
 \end{lstlisting}

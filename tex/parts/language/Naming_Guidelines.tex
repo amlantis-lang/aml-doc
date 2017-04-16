@@ -43,7 +43,7 @@ A directory holding a module must have the same name as the module, contained in
 \begin{lstlisting}[deletekeywords={module,native},mathescape=false]
 /Aml/Language
 /Example/Your_Module
-    /source (* or `src` *)
+    /source  -- or `src`
         /aml
             /Some_Submodule 
             /macros
@@ -53,22 +53,22 @@ A directory holding a module must have the same name as the module, contained in
             /build.aml
             /module.dependencies.aml
             /module.dependencies.lock
-        /cpp14 (* or whichever the Aml VM is implemented in *)
+        /cpp14  -- or whichever the Aml VM is implemented in
             /native_method.hpp
             /native_method.cpp
-    /compiled (* or `com` *)
+    /compiled  -- or `com`
         /aml
             /Some_Submodule
             /Example/Your_Module.amlb
-            /Example/Your_Module/native/ (* optimized code *)
+            /Example/Your_Module/native/  -- optimized code
             /Example/Your_Module.amlpsi
         /cpp14
             /native_method.a
     /binaries (* or `bin` *)
         /an_executable.a
-        /run_your_module (* some executable file 
-                            using #! to run an Aml VM *)
-    /resources (* or `res` *)
+        /run_your_module  {- some executable file 
+                          using #! to run an Aml VM -}
+    /resources  -- or `res`
         /logo.png
     /.gitignore
     /.git
@@ -227,13 +227,13 @@ When an expression will not fit into a single line, break it according to the fo
 \example Here are some examples of breaking function applications: 
 
 \begin{lstlisting}
-(* preferable *)
+-- preferable
 function_1 (long_expression_1, long_expression_2, long_expression_3,
             long_expression_4, long_expression_5)
 val a = function_1 (long_expression_1,
                     function_2 (long_expression_2,
                                 long_expression_3))
-(* acceptable *)
+-- acceptable
 function_1 (long_expression_1, long_expression_2, 
     long_expression_3, long_expression_4, 
     long_expression_5)
@@ -247,10 +247,10 @@ val a = function_1 (
 \example Following are examples of breaking an expression with operators. The first is preferred, since the break occurs outside the parenthesized expression, which is at a higher level. 
 
 \begin{lstlisting}
-(* prefer *)
+-- prefer
 long_name_1 = long_name_2 * (long_name_3 + long_name_4 - long_name_5)
               + 4 * long_name_6
-(* avoid *)
+-- avoid
 long_name_1 = long_name_2 * (long_name_3 + long_name_4 
                              - long_name_5) + 4 * long_name_6
 \end{lstlisting}
@@ -258,7 +258,7 @@ long_name_1 = long_name_2 * (long_name_3 + long_name_4
 \example Following are examples of indenting method definitions. The first is the conventional case, the second would shift the second and third line to the far right if it used conventional indentation, so instead it indents two tabs. Also, if a visibility modifier is causing the line to be too long, consider using it as a pragma before the method definition instead (but remember that definitions following it will have the same visibility). 
 
 \begin{lstlisting}
-(* conventional indentation *)
+-- conventional indentation
 method some_method (an_arg: Integer, another_arg: Object, 
                     yet_another: String,
                     and_still_another: Object): Unit = {
@@ -276,21 +276,21 @@ private method self.very_long_method_name (an_arg: Integer,
 \example Line wrapping conditional statements should generally use the two tabs rule, since conventional one tab indentation makes seeing the body difficult. For example: 
 
 \begin{lstlisting}
-(* don't use this indentation *)
+-- don't use this indentation
 if ((condition_1 && condition_2)
   || (condition_3 && condition_4)
   || not (condition_5 && condition_6))
-  do_something_about_it (* this line is easy to miss *)
+  do_something_about_it  -- this line is easy to miss
 end
 
-(* use this indentation instead (notice the extra spaces) *)
+-- use this indentation instead (notice the extra spaces)
 if (       (condition_1 && condition_2)
     ||     (condition_3 && condition_4)
     || not (condition_5 && condition_6))
   do_something_about_it
 end
 
-(* or use this *)
+-- or use this
 if (     (condition_1 && condition_2)
   ||     (condition_3 && condition_4)
   || not (condition_5 && condition_6))
@@ -308,7 +308,7 @@ alpha = if a_long_boolean_expression
           gamma
         end
 
-(* or alternatively *)
+-- or alternatively
 alpha = if a_long_boolean_expression
   beta
 else

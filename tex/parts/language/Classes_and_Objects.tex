@@ -84,10 +84,10 @@ Object_Modifiers
 
 \grammar\begin{lstlisting}
 Class_Expr
-    ::= (* only in non-recursive occurrences: *)
+    ::= -- only in non-recursive occurrences:
         Parameterized_Type  
       | Function_Declarations [Expr semi] Class_Expr
-        (* in both recursive and non-recursive occurrences: *)
+        -- in both recursive and non-recursive occurrences:
       | '(' Class_Expr [':' Class_Type] ')'
       | 'fun' {Params_Clause}+ [Guard] '->' [Function_Declarations] Class_Expr
       | 'object' Class_Body 'end'
@@ -99,13 +99,13 @@ Class_Body
     ::= [Instance_Self_Type] {[nl] Class_Field}
 Instance_Self_Type
     ::= '(' id [':' Type_Expr] ')'
-        (* here, id can be also 'self', which is the default *)
+        -- here, id can be also 'self', which is the default
 Class_Use_Expr
     ::= Class_Use_Expr_As
       | Class_Use_Aspect
       | Class_Use_Refinement
       | Use_Clause In_Sep Class_Expr
-        (* no Class_Use_Droppable intentionally  *)
+        -- no Class_Use_Droppable intentionally 
 Class_Use_Expr_As
     ::= 'use' Expr ('as' | 'as!' | 'as?')
         [id ':'] Type In_Sep Class_Expr
@@ -1061,31 +1061,31 @@ As defined earlier, a class with a type parameter section \lstinline![$\tps$]! i
 \paragraph{Note}
 If full type inference is desired for a polymorphic class $c$, then constructs such as the following can be used:
 \begin{lstlisting}
-(* for polymorphic class with 1 type parameter *)
+-- for polymorphic class with 1 type parameter
 $c$[_] 
 
-(* for polymorphic class with 2 type parameters *)
+-- for polymorphic class with 2 type parameters
 $c$[_, _] 
 
-(* for polymorphic class with 3 type parameters *)
+-- for polymorphic class with 3 type parameters
 $c$[_, _, _] 
 
-(* for polymorphic class with 1 or more type parameters,
-   when there is only one such polymorphic class *)
+-- for polymorphic class with 1 or more type parameters,
+   when there is only one such polymorphic class
 $c$[*_]
 \end{lstlisting}
 
 \paragraph{Note}
 Partial type inference is also possible: 
 \begin{lstlisting}
-(* for polymorphic class with 2 type parameters *)
+-- for polymorphic class with 2 type parameters
 $c$[_, String] 
 
-(* for polymorphic class with 3 type parameters *)
+-- for polymorphic class with 3 type parameters
 $c$[_, Number, _] 
 
-(* for polymorphic class with 2 or more type parameters,
-   when there is only one such polymorphic class *)
+-- for polymorphic class with 2 or more type parameters,
+   when there is only one such polymorphic class
 $c$[String, *_]
 \end{lstlisting}
 
@@ -1199,7 +1199,7 @@ class $C$
 begin
   destructor
     @resource.close unless @resource.closed?
-    (* super is invoked implicitly here *)
+    -- super is invoked implicitly here
   end destructor
 end class
 \end{lstlisting}

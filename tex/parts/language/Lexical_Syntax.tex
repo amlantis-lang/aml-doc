@@ -114,7 +114,7 @@ op_id
       | 'or' ['else']
       | 'xor'
       | 'not'
-      | id  (* needs to exist in scope, useful for DSLs *)
+      | id  -- needs to exist in scope, useful for DSLs
 nary_op_id 
     ::= '?' {op_char}
 Symbolic_Op  
@@ -174,24 +174,24 @@ Delimiter characters are used as components of higher syntactic elements.
 \label{sec:newlinecharacters}
 
 \syntax\begin{lstlisting}
-nl   ::= (* Line Feed, LF; Multics, Unix, Unix-like... *)
+nl   ::= -- Line Feed, LF; Multics, Unix, Unix-like... 
          ? $\Unicode{000A}$ ? 
          
-         (* Carriage Return, CR; Mac OS 9-, ZX Spectrum... *)
+         -- Carriage Return, CR; Mac OS 9-, ZX Spectrum...
        | ? $\Unicode{000D}$ ? 
        
-         (* CR+LF; Windows, DOS, OS/2, Symbian OS... *)
+         -- CR+LF; Windows, DOS, OS/2, Symbian OS...
        | ? $\Unicode{000D}$ $\Unicode{000A}$ ?
        
-         (* LF+CR; RISC OS... *)
+         -- LF+CR; RISC OS...
        | ? $\Unicode{000A}$ $\Unicode{000D}$ ?
        
-         (* Unicode conformance *)
-       | ? $\Unicode{000B}$ ? (* Vertical Tab, VT *)
-       | ? $\Unicode{000C}$ ? (* Form Feed, FF *)
-       | ? $\Unicode{0085}$ ? (* NExt Line, NEL *)
-       | ? $\Unicode{2028}$ ? (* Line Separator, LS *)
-       | ? $\Unicode{2029}$ ? (* Paragraph Separator, PS *)
+         -- Unicode conformance
+       | ? $\Unicode{000B}$ ?  -- Vertical Tab, VT
+       | ? $\Unicode{000C}$ ?  -- Form Feed, FF
+       | ? $\Unicode{0085}$ ?  -- NExt Line, NEL
+       | ? $\Unicode{2028}$ ?  -- Line Separator, LS
+       | ? $\Unicode{2029}$ ?  -- Paragraph Separator, PS
        
 semi ::= {nl}+ | ';' {nl}
 tend ::= ';;'
@@ -256,7 +256,9 @@ integer_literal
 decimal_numeral
     ::= digit {['_'] digit}
 hex_numeral
-    ::= hex_prefix hex_digit {['_'] hex_digit}
+    ::= hex_prefix ['_'] hex_digits 
+hex_digits
+    ::= hex_digit {['_'] hex_digit}
 digit 
     ::= '0' | $\cdots$ | '9'
 hex_digit
@@ -264,24 +266,32 @@ hex_digit
       | 'a' | $\cdots$ | 'f' 
       | 'A' | $\cdots$ | 'F'
 octal_numeral 
-    ::= oct_prefix oct_digit {['_'] oct_digit}
+    ::= oct_prefix ['_'] oct_digits 
+oct_digits
+    ::= oct_digit {['_'] oct_digit}
 oct_digit
     ::= '0' | $\cdots$ | '7'
 binary_numeral 
-    ::= bin_prefix bin_digit {['_'] bin_digit}
+    ::= bin_prefix ['_'] bin_digits 
+bin_digits
+    ::= bin_digit {['_'] bin_digit}
 bin_digit
     ::= '0' | '1'
 sexagesimal_numeral
-    ::= sxgs_prefix sxgs_digit {',' sxgs_digit}
+    ::= sxgs_prefix ['_'] sxgs_digits 
+sxgs_digits
+    ::= sxgs_digit {',' sxgs_digit}
 sxgs_digit
     ::= ['0' | $\cdots$ | '5'] ('0' | $\cdots$ | '9')
 duodecimal_numeral
-    ::= ddec_prefix ddec_digit {['_'] ddec_digit}
+    ::= ddec_prefix ['_'] ddec_digits 
+ddec_digits
+    ::= ddec_digit {['_'] ddec_digit}
 ddec_digit
     ::= digit 
       | 'a' | 'b'
       | 'A' | 'B'
-(* in prefixes, the alternative with lowercase letter is preferred *)
+-- in prefixes, the alternative with lowercase letter is preferred:
 hex_prefix
     ::= '0x' | '0X' 
 bin_prefix
@@ -355,20 +365,20 @@ fp_literal
     ::= decimal_numeral '.' decimal_numeral [exponent_part_e] [float_type]
       | decimal_numeral exponent_part_e [float_type]
       | decimal_numeral float_type
-      | hex_numeral '.' hex_numeral [exponent_part_p [float_type]]
-      | hex_numeral '.' hex_numeral hex_exp float_type
+      | hex_numeral '.' hex_digits [exponent_part_p [float_type]]
+      | hex_numeral '.' hex_digits hex_exp float_type
       | hex_numeral exponent_part_p [float_type]
       | hex_numeral hex_exp float_type
-      | octal_numeral '.' octal_numeral [exponent_part_e] [float_type]
+      | octal_numeral '.' oct_digits [exponent_part_e] [float_type]
       | octal_numeral exponent_part_e [float_type]
       | octal_numeral float_type
-      | binary_numeral '.' binary_numeral [exponent_part_e] [float_type]
+      | binary_numeral '.' bin_digits [exponent_part_e] [float_type]
       | binary_numeral exponent_part_e [float_type]
       | binary_numeral float_type
-      | sexagesimal_numeral ';' sexagesimal_numeral [exponent_part_e] [float_type]
+      | sexagesimal_numeral ';' sxgs_digits [exponent_part_e] [float_type]
       | sexagesimal_numeral exponent_part_e [float_type]
       | sexagesimal_numeral float_type
-      | duodecimal_numeral '.' binary_numeral [exponent_part_e] [float_type]
+      | duodecimal_numeral '.' ddec_digits [exponent_part_e] [float_type]
       | duodecimal_numeral exponent_part_e [float_type]
       | duodecimal_numeral float_type
 exponent_part_e 
@@ -380,11 +390,11 @@ int_exp
 hex_exp 
     ::= 'p'
 float_type 
-    ::= 'h' (* Half float precision *)
-      | 'f' (* Single float precision *)
-      | 'd' (* Double float precision *)
-      | 'q' (* Quadruple float precision *)
-      | 'm' (* Decimal unlimited precision *)
+    ::= 'h'  -- Half float precision
+      | 'f'  -- Single float precision
+      | 'd'  -- Double float precision
+      | 'q'  -- Quadruple float precision
+      | 'm'  -- Decimal unlimited precision
 \end{lstlisting}
 
 Floating point and fixed point literals are of type \lstinline@Number@ as well as integral literals, and have fewer container types. Compiler infers the precision automatically, unless the \lstinline@float_type@ part is present. If \lstinline@float_type@ part is not present, then the expressions' expected type is used, and if expected type is unable to determine the floating/fixed point type, then a fixed point type is used, with precision set precise enough to store all given significant digits without loss. 
@@ -476,7 +486,7 @@ annotated_number
 \example Some number literals annotated with units of measure:
 \begin{lstlisting}
 let min_motorway_speed = 90 [<km/hour>] in
-(* in the end, same as: *)
+-- in the end, same as:
 let distance = 90 [<km>] in
 let time = 1 [<hour>] in
 min_motorway_speed = distance // time
@@ -503,25 +513,25 @@ Character escape sequences are used in strings as well, and are defined as follo
 
 \syntax\begin{lstlisting}[language=]
 char_escape_seq 
-    ::= '\'' (* Literal single-quote: ' *)
-      | '\"' (* Literal double-quote: " *)
-      | '\?' (* Literal question mark: ? *)
-      | '\\' (* Literal backslash: \ *)
-      | '\#' (* Literal hash: # *)
-      | '\$\Dollar$' (* Literal dollar: $\Dollar$ *)
-      | '\0' (* Binary zero (NUL, U+0000) *)
-      | '\a' (* BEL (alarm) character (U+0007) *)
-      | '\b' (* Backspace (U+0008) *)
-      | '\f' (* Form feed (FF, U+000C) *)
-      | '\n' (* End-of-line (U+000A) *)
-      | '\r' (* Carriage return (U+000D) *)
-      | '\t' (* Horizontal tab (U+0007) *)
-      | '\v' (* Vertical tab (U+000B) *)
-      | '\x$nn$' (* Byte value in hexadecimal *)
-      | '\u$nnnn$' (* Unicode character U+$nnnn$, hex digits *)
-      | '\U$nnnnnnnn$' (* Unicode character U+$nnnnnnnn$, hex digits *)
-      | '\&' {named_char}+ ';' (* Named character entity *)
-      | '\{' {named_char | ' '}+ '}' (* Named Unicode character *)
+    ::= '\''  -- Literal single-quote: '
+      | '\"'  -- Literal double-quote: "
+      | '\?'  -- Literal question mark: ?
+      | '\\'  -- Literal backslash: \
+      | '\#'  -- Literal hash: #
+      | '\$\Dollar$'  -- Literal dollar: $\Dollar$
+      | '\0'  -- Binary zero (NUL, U+0000)
+      | '\a'  -- BEL (alarm) character (U+0007)
+      | '\b'  -- Backspace (U+0008)
+      | '\f'  -- Form feed (FF, U+000C)
+      | '\n'  -- End-of-line (U+000A)
+      | '\r'  -- Carriage return (U+000D)
+      | '\t'  -- Horizontal tab (U+0007)
+      | '\v'  -- Vertical tab (U+000B)
+      | '\x$nn$'  -- Byte value in hexadecimal
+      | '\u$nnnn$'  -- Unicode character U+$nnnn$, hex digits
+      | '\U$nnnnnnnn$'  -- Unicode character U+$nnnnnnnn$, hex digits
+      | '\&' {named_char}+ ';'  -- Named character entity
+      | '\{' {named_char | ' '}+ '}'  -- Named Unicode character
       
 named_char 
     ::= 'a' | $\cdots$ | 'z' | 'A' | $\cdots$ | 'Z'
@@ -569,7 +579,7 @@ string_element
 int_string_element 
     ::= string_element 
       | interpolated_expr
-interpolated_expr  (* must not be preceded by an odd number of backslashes *)
+interpolated_expr   -- must not be preceded by an odd number of backslashes
     ::= '${' Expr '}'
       | '$' ? no whitespace ? id
       | '#{' Expr '}' [? no whitespace ? int_format_flags]
@@ -640,17 +650,42 @@ Regular expressions are defined in (\sref{sec:pacre}).
 
 Tokens may be separated by whitespace characters and/or comments. Comments come in two forms: 
 
-A multi-line comment is a sequence of characters between \lstinline@(* and *)@. Multi-line comments may be nested. There is a whitespace (including newlines) required after \lstinline@(*@ and before \lstinline@*)@ in the outermost multi-line comment. 
+A multi-line comment is a sequence of characters between \lstinline@{- and -}@. Multi-line comments may be nested.
 
-A single-line comment in Aml is a multi-line comment, written all on one line. That's all. No special syntax for that. 
+A single-line comment in Aml is either a multi-line comment, written all on one line, or everything that follows after the token ``\,\lstinline@--@\,'' on a single line.
 
-Documentation comments are multi-line comments that start with \lstinline@(*! and end with *)@. A whitespace is required after the opening token. 
+Documentation comments are multi-line comments that start with \lstinline@{-| and end with -}@. A whitespace is required after the opening token in this case. 
 
-As a special case (not only) for UNIX-like systems that support the notation, the initial lines of source file that start with the sequence ``\lstinline@#!@'' are ignored. 
+As a special case (not only) for UNIX-like systems that support the notation, the initial lines of source file that start with the sequence ``\lstinline[language={[ExtraComments]Aml}]@#!@'' are ignored. 
 
 Whitespace serves two purposes: to separate tokens in the source file, and to determine whether an operator is prefix or infix, and is otherwise ignored. The following characters are considered whitespace: space (\Unicode{0020}, `` ''), horizontal tab (\Unicode{0009}) and characters of Unicode class \code{Zs}. Newlines (\sref{sec:newlinecharacters}) are also considered as whitespace, after their special purpose is fulfilled. 
 
 Whitespace tokens and comments are not discarded during lexical analysis, but instead after lexical filtering, by rules described in (\sref{sec:lexical-filtering}).
+
+\example Standard comments in \Aml.
+\begin{lstlisting}[language={Aml},deletekeywords={of}]
+-- This is a single line comment.
+
+{- This is a
+multi-line 
+comment. 
+-}
+ 
+{-| A documentation comment.
+Following grammar element is documented by it.
+-}
+
+{--}
+   "Removing the right bracket above makes this a part of the comment."
+ --}
+\end{lstlisting}
+
+\example ``Shebang'' comments in \Aml. 
+\begin{lstlisting}[language={[ExtraComments]Aml}]
+#!/usr/bin/env amlrun
+
+{- Program source follows. -}
+\end{lstlisting}
 
 
 

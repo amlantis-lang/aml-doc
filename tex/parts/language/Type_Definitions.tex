@@ -13,10 +13,10 @@
 \grammar\begin{lstlisting}
 Type_Definition 
     ::= 'type' Typedef {'and' ['type'] Typedef} 'end'
-        (* see additional rules below *)
+        -- see additional rules below
 Type_Declaration
     ::= 'type' Typedcl {'and' ['type'] Typedcl} 'end'
-        (* see additional rules below *)
+        -- see additional rules below
       | 'type' Type_Name [Type_Abstract]
 Type_Name
     ::= [Type_Context] id [Type_Param_Clause] [Given_Clauses]
@@ -64,16 +64,16 @@ type My_Collection[+'x] <: Iterable['x]
 
 The following are illegal:
 \begin{lstlisting}
-type Abs = Comparable[Abs] end (* recursive type alias *)
+type Abs = Comparable[Abs] end -- recursive type alias
 
-type S <: T  (* S, T are bounded by themselves *)
+type S <: T  -- S, T are bounded by themselves
 type T <: S
 
-type T >: Comparable[T.That] (* can't select from T,
-                                T is an abstract type *)
+type T >: Comparable[T.That]  {- can't select from T,
+                              T is an abstract type -}
 type My_Collection <: Iterable
-  (* type constructor members must explicitly state
-     their type parameters *)
+  {- type constructor members must explicitly state
+  their type parameters -}
 \end{lstlisting}
 
 \subsection{Type Aliases}
@@ -274,7 +274,7 @@ Gadt_Type_Representation
     ::= Gadt_Field {semi Gadt_Field}
 Gadt_Field 
     ::= {Annotation} 'case' id ':' [Types '->'] Type_Expr
-        (* ':' instead of 'of' is the important distinction here *)
+        -- ':' instead of 'of' is the important distinction here
 \end{lstlisting}
 
 
@@ -404,7 +404,7 @@ Struct_Ascription
 Struct_Constraint 
     ::= 'type' Simple_Type Type_Equation
       | 'struct' Struct_Path '=' Extended_Struct_Path
-        (* substituting inside signature: *)
+        -- substituting inside signature:
       | 'type' Simple_Type ':=' Type_Expr
       | 'struct' id ':=' Extended_Struct_Path
 Local_Bindings
@@ -509,8 +509,8 @@ Signatures are interfaces of structures. A signature specifies which components 
 \begin{lstlisting}
 signature A_Priority_Queue =
 sig
-  type Priority = Number.Integer end (* concrete type *)
-  type 'a Queue                      (* abstract type *)
+  type Priority = Number.Integer end -- concrete type
+  type 'a Queue                      -- abstract type
   val empty: 'a Queue
   val insert: 'a Queue -> Number.Integer -> 'a -> 'a Queue
   val extract: 'a Queue -> Number.Integer * 'a * 'a Queue
@@ -652,7 +652,7 @@ type Mass =
   digits 7 range 0.0 ..< 1.0e+35 
 end
 
-(* a subtype with a smaller range *)
+-- a subtype with a smaller range
 type Probability = 
   Real range 0.0 ... 1.0
 end 
@@ -724,7 +724,7 @@ Type_Class_Dcl_Body
       | Type_Equation
 Type_Class_Spec
     ::= Struct_Spec
-      | Struct_Def  (* to define "default" implementations if instance omits it *)
+      | Struct_Def  -- to define "default" implementations if instance omits it
 Type_Class_Instance_Def
     ::= ['class'] 'instance' Type_Instance_Id Type_Class_Instance_Body
 Type_Class_Instance_Body 

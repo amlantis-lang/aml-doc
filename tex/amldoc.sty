@@ -119,6 +119,12 @@
 
 \usepackage{listings}
 
+\lstdefinelanguage[ExtraComments]{Aml}{
+  morecomment=[l]\#!,%
+  morecomment=[l]--,%
+  morecomment=[n]{\{-}{-\}},%
+}[comments]%
+
 \lstdefinelanguage{Aml}{
   alsoletter={-!?},%
   morekeywords={%
@@ -334,10 +340,8 @@
     yield!,%
     yielding},%
   sensitive,%
-  morecomment=[l]\#!,%
-  morecomment=[n]{(*\ }{*)},%
-  morecomment=[n]{(*!\ }{*)},%
-  morecomment=[n]{(**\ }{*)},%
+  morecomment=[l]--,%
+  morecomment=[n]{\{-}{-\}},%
 }[keywords,comments]
 
 % activate the language and predefine settings

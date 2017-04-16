@@ -89,15 +89,15 @@ A macro is defined as a regular function, but it's body is required to pass invo
 \end{enumerate}
 
 \example The following code is an example implementation of a simple \code{assert} macro. 
-\begin{lstlisting}[deletekeywords={message,assert}]
-(* import a blackbox context *)
+\begin{lstlisting}[deletekeywords={message,assert},mathescape=false]
+-- import a blackbox context
 use Aml/Language.Reflection.Macros.Blackbox.Context
 
-(* define the macro *)
+-- define the macro
 macro assert (condition: Boolean, message: String_Like): Unit = 
     Asserts.assert_impl
 
-(* implement the macro *)
+-- implement the macro
 object Asserts
   method assert_impl 
       (c: Context)

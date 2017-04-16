@@ -212,9 +212,9 @@ let
   val a2 = A() 
 in
   begin
-    a2.f a1.B()   (* type mismatch, found a1.B, required a2.B *)
-    a2.g a1.B()   (* prints "Got a B." to stdout *)
-    a2.f a2.B()   (* prints "Got my B." to stdout *)
+    a2.f a1.B()   -- type mismatch, found a1.B, required a2.B
+    a2.g a1.B()   -- prints "Got a B." to stdout
+    a2.f a2.B()   -- prints "Got my B." to stdout
   end
 \end{lstlisting}
 This is due to the fact that the \code{class B} is defined as a class instance member of \code{class A}, not as a class object member (either via object definition (\sref{sec:object-definitions}) or some form of metaclass access (\sref{sec:metaclasses})). Therefore, \code{a1.B} refers to type member \code{B} of the instance \code{a1}, but not of \code{a2}. Moreover, \code{A.B} is not defined here. 
@@ -253,34 +253,34 @@ The type designator ~\lstinline!self!~ refers to the singleton type ~\lstinline!
 
 \example Some type designators and their expansions are listed below, the type designator being on the left and the expansion on the right of ``\code{=}''. 
 \begin{lstlisting}
-t = $\epsilon$.type#t         (* "global space", not real code *)
-(* predefined import of Aml/Language *)
+t = $\epsilon$.type#t         -- "global space", not real code
+-- predefined import of Aml/Language
 Number = Aml/Language.type#Number 
 
 val An_Object = object
   type t = $\ldots$ end
-  t = An_Object.type#t        (* bound by standalone object *)
+  t = An_Object.type#t        -- bound by standalone object
 end
 
 class A_Class = object
   type t = $\ldots$ end
   method a_method = begin
-    t = A_Class.self.type#t   (* bound by class *)
-    t = self.type#t           (* bound by class *)
+    t = A_Class.self.type#t   -- bound by class
+    t = self.type#t           -- bound by class
   end
   class << self
     type u = $\ldots$ end
-    u = A_Class.type#u        (* bound by class object *)
-    t = A_Class.self.type#t   (* bound by class *)
+    u = A_Class.type#u        -- bound by class object
+    t = A_Class.self.type#t   -- bound by class
   end
   
-  t = A_Class.self.type#t     (* bound by class *)
-  A_Class.t = A_Class.self.type#t  (* -||- *)
-  A_Class.u = A_Class.type#u  (* bound by class object *)
+  t = A_Class.self.type#t     -- bound by class
+  A_Class.t = A_Class.self.type#t  -- -||-
+  A_Class.u = A_Class.type#u  -- bound by class object
   
-  u = A_Class.type#u          (* not bound by class, thus bound by class object;
+  u = A_Class.type#u          -- not bound by class, thus bound by class object;
                                  if class A_Class defined u itself, it would shadow 
-                                 the definition in the class object *)
+                                 the definition in the class object
 end
 \end{lstlisting}
 % TBD fix the above to fit updated grammar, also finally resolve the class object vs class instances
@@ -365,29 +365,29 @@ Function[named: List[String], String]
 Given the type definitions of the previous example, the following types are malformed: 
 
 \begin{lstlisting}
-Tree_Map[I]               (* wrong number of parameters *)
-Tree_Map[List[I], Number] (* type parameter List not within bound *)
+Tree_Map[I]               -- wrong number of parameters
+Tree_Map[List[I], Number] -- type parameter List not within bound
 
-F[Number, Boolean]        (* Number is not a type constructor *)
-F[Tree_Map, Number]       (* Tree_Map takes two parameters, 
-                             F expects a type constructor taking one *)
+F[Number, Boolean]        -- Number is not a type constructor
+F[Tree_Map, Number]       -- Tree_Map takes two parameters, 
+                             F expects a type constructor taking one
 
-G[S, Number]              (* type S constrains its parameter to
+G[S, Number]              -- type S constrains its parameter to
                              conform to String, 
                              G expects type constructor with a parameter
-                             that conforms to Number *)
+                             that conforms to Number
 \end{lstlisting}
 
 \example Alternative syntax; given the type definitions above, the following parameterized types are also well-formed:
 
 \begin{lstlisting}
-(I, String) Tree_Map (* equivalent to Tree_Map[I, String] *)
-I List               (* equivalent to List[I] *)
-'I List              (* equivalent to List['I] *)
-String List          (* equivalent to List[String] *)
-Boolean List List    (* equivalent to List[List[Boolean]] *)
+(I, String) Tree_Map -- equivalent to Tree_Map[I, String]
+I List               -- equivalent to List[I]
+'I List              -- equivalent to List['I]
+String List          -- equivalent to List[String]
+Boolean List List    -- equivalent to List[List[Boolean]]
 
-(* equivalent to Function[List[String], String] *)
+-- equivalent to Function[List[String], String]
 (named: List[String], String) Function
 \end{lstlisting}
 
@@ -505,8 +505,8 @@ Unions are indeed virtually ``tagged'' with the actual type that they represent 
 The first syntax shows a named union type, while the second shows an anonymous union type (which may still be given a name later). If any of the types that are a part of a union type is a union type itself, the two types are merged. The syntax used for the anonymous version is correlating with infix type syntax, but this syntax gives it the meaning of a union type, which is preferred to infix type syntax. In fact, it might be implemented with an infix type that generates union types:
 
 \begin{lstlisting}
-type or [A, B] is Union[A, B] 
-end type
+type or [A, B] = Union[A, B] 
+end
 \end{lstlisting}
 
 Union types also employ the following set of rules, given some types \code{X}, \code{Y} and \code{Z}:
@@ -575,7 +575,7 @@ First_Function_Arg_Type
 Function_Arg_Type
     ::= [('~' | '~?') id ':' | '*' | '**' | '&'] Atomic_Type_Expr
 Signalling_Types
-    ::= Signalling_Kind {'and' Signalling_Kind}  (* each kind at most once *)
+    ::= Signalling_Kind {'and' Signalling_Kind}  -- each kind at most once
 Signalling_Kind
     ::= 'signals' (Simple_Type | '(' Type_Expr {',' Type_Expr} ')')
       | 'throws'  (Simple_Type | '(' Type_Expr {',' Type_Expr} ')')
@@ -674,21 +674,22 @@ A functional dependency expresses dependencies between type parameters of a func
 Given_Dcl 
     ::= ...
       | Stable_Id Type_Equation
-      | Stable_Id '>:' Type ['<:' Type]
-      | Stable_Id '<:' Type
+      | Stable_Id '>:' Type_Expr ['<:' Type_Expr]
+      | Stable_Id '<:' Type_Expr
       | Type_Vars ':' '(' Member_Signature {semi Member_Signature} ')'
       | Stable_Id ':' '(' Constructor_Signature ')'
 Type_Vars 
     ::= Stable_Id
       | '(' Stable_Id {'or' Stable_Id} ')'
 Member_Signature
-    ::= ['object' | 'class'] 'member' fun_id ':' Type
-      | ['object' | 'class'] 'message' fun_id ':' Type
-      | ['object' | 'class'] 'attribute' fun_id ':' Type
-      | ['object' | 'class'] 'operator' op_id ':' Type
-      | ['object' | 'class'] 'property' id ':' Type ['with' Property_Signature_Extra]
+    ::= ['object' | 'class'] 'member' fun_id ':' Type_Expr
+      | ['object' | 'class'] 'message' fun_id ':' Type_Expr
+      | ['object' | 'class'] 'attribute' fun_id ':' Type_Expr
+      | ['object' | 'class'] 'operator' op_id ':' Type_Expr
+      | ['object' | 'class'] 'property' id ':' Type_Expr 
+        ['with' Property_Signature_Extra]
 Constructor_Signature
-    ::= 'new' ':' Type  (* just type of parameters, no result type *)
+    ::= 'new' ':' Type_Expr  -- just type of parameters, no result type
 Property_Signature_Extra
     ::= 'get' ['and' 'set']
       | 'set' ['and' 'get']
@@ -841,11 +842,12 @@ Simple_Type
     ::= ...
       | Simple_Type ? no whitespace ? Nullable_Mod
 Nullable_Mod 
-    ::= '?' 
-      | '!'
+    ::= '?'
 \end{lstlisting}
 
-A nullable type has the form \lstinline!$T$?!, which is an abbreviation for \lstinline!Option[$T$]!, and the form \lstinline@$T$!@, which is an abbreviation for \lstinline!Implicitly_Unwrapped_Option[$T$]!.
+A nullable type has the form \lstinline!$T$?!, which is an abbreviation for \lstinline!Option[$T$]!.
+
+For intersection types (\sref{sec:intersection-types}), the nullability modifier has to be applied to the first connected type, i.e. \lstinline!$T_1$? with $T_2$ and $T_3 \ldots T_n$!, which is then equivalent the type \lstinline!Option[$T_1$ with $T_2$ and $T_3 \ldots T_n$]!. 
 
 
 
@@ -1002,7 +1004,7 @@ These notions are defined mutually recursively as follows.
 
 \grammar\begin{lstlisting}[morekeywords={Any},deletekeywords={also}]
 Simple_Type ::= 'Any'
-(* also: *)
+-- also:
 Simple_Type ::= 'Aml/Language.Any'
 \end{lstlisting}
 
@@ -1025,7 +1027,7 @@ The \code{Any} virtual type is the actual root of the type system of Aml, althou
 
 \grammar\begin{lstlisting}[morekeywords={Dynamic},deletekeywords={also}]
 Simple_Type ::= 'Dynamic'
-(* also: *)
+-- also:
 Simple_Type ::= 'Aml/Language.Dynamic'
 \end{lstlisting}
 
@@ -1225,8 +1227,8 @@ The term {\em least upper bound} of a set of types (and the closely related term
 
 Aml implicitly uses the union type representation for least upper bounds. The union type already presents quite a few simplifications of itself. This behaviour can be changed per-scope, per-file or even per-module, using a pragma:
 \begin{lstlisting}
-pragma least-upper-bound(.Union)  (* implicit *)
-pragma least-upper-bound(.Common) (* optionally *)
+pragma least-upper-bound(Union)  -- implicit
+pragma least-upper-bound(Common) -- optionally
 \end{lstlisting}
 These pragmas are a part of Aml's \code{Language} module. % TBD: specify where these pragmas are exactly located
 

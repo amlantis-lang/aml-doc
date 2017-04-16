@@ -14,6 +14,8 @@
 \section{Patterns}
 \label{sec:patterns}
 
+% TBD: bag pattern - add a way to extract the tally as well?
+
 \grammar\begin{lstlisting}
 Pattern
     ::= Atomic_Pattern
@@ -22,13 +24,13 @@ Atomic_Pattern
     ::= Atomic_Var_Pattern
       | Bound_Pattern
       | Typed_Pattern
-        (* a portion of Type_Pattern *)
+        -- a portion of Type_Pattern
       | ':?' (Simple_Type - Postfix_Parameterized_Type)  
       | Type_Instance_Pattern
       | Wildcard_Pattern
       | Constant_Pattern
       | Grouped_Pattern
-        (* a portion of Named_Pattern *)
+        -- a portion of Named_Pattern
       | Stable_Id  
       | List_Pattern
       | Array_Pattern
@@ -704,7 +706,7 @@ let list_size list =
   when %[_] then 1
   when %[_; _] then 2
   when %[_; _; _] then 3
-  otherwise list.size  (* duh *)
+  otherwise list.size  -- duh
   end match
 \end{lstlisting}
 Note that in the example, the type that would be inferred for \code{list} is \code{Sequence[Any]}. 
