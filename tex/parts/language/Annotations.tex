@@ -102,8 +102,8 @@ object Asserts
   method assert_impl 
       (c: Context)
       (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit =
-    <@ unless #{cond}
-         raise #{msg}
+    <@ unless ${cond}
+         raise ${msg}
        else
          ()
        end @>
