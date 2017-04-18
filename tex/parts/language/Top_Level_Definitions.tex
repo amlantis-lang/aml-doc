@@ -31,7 +31,7 @@ Signature_Packaging
     ::= {Pragma} 'module' 'signature' Struct_Path Sig_Packaging
 Impl_Packaging
     ::= semi [Impl_Pkg_Seq] ['end']  
-        (* 'end' is only optional if the module is alone in the file *)
+        -- 'end' is only optional if the module is alone in the file
 Impl_Pkg_Seq
     ::= Impl_Pkg_Stat {semi Impl_Pkg_Stat}
 Impl_Pkg_Stat 
