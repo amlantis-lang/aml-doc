@@ -530,6 +530,7 @@ char_escape_seq
       | '\x$nn$'  -- Byte value in hexadecimal
       | '\u$nnnn$'  -- Unicode character U+$nnnn$, hex digits
       | '\U$nnnnnnnn$'  -- Unicode character U+$nnnnnnnn$, hex digits
+      | '\u{$n_1 \ldots n_m$}'  -- Unicode character U+$n_1 \ldots n_m$, hex digits, $n < 8$
       | '\&' {named_char}+ ';'  -- Named character entity
       | '\{' {named_char | ' '}+ '}'  -- Named Unicode character
       
