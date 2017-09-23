@@ -73,7 +73,7 @@ Let_Fun_Binding
     ::= ['fun'] fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses Fun_Type_Expr
         '=' [Function_Declarations] Expr
 Fun_Type_Expr
-    ::= [':' Type_Expr] [':>' Type_Expr]
+    ::= [(':' | 'returns') Type_Expr] [':>' Type_Expr]
 \end{lstlisting}
 
 A value declaration \lstinline@let $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 

@@ -1779,15 +1779,15 @@ a /<> b  -- unordered or equal
 a /<= b  -- unordered or greater than
 a /< b   -- unordered, equal or greater than
 a />= b  -- unordered or less than
-a />     -- unordered, less than or equal
-a <=>    -- compare
+a /> b   -- unordered, less than or equal
+a <=> b  -- compare
 \end{lstlisting}
 
 Extended comparison operators (arguments are a tuple on the right hand side of the operator):
 \begin{lstlisting}
 a = ($\ldots$)   -- `a` equal to all arguments
-a /= ($\ldots$)  -- `a` not equal to all arguments,
-            but arguments may be equal to each other
+a /= ($\ldots$)  {- `a` not equal to all arguments,
+              but arguments may be equal to each other -}
 a > ($\ldots$)   -- `a` greater than all arguments
 a >= ($\ldots$)  -- `a` greater than or equal all arguments
 a < ($\ldots$)   -- `a` less than all arguments

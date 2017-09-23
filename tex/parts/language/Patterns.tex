@@ -530,20 +530,19 @@ An equatable pattern contributes the type \code{Equatable} to type of parameter,
 
 
 
-\subsubsection{Constructor Patterns}
-\label{sec:constructor-patterns}
+\subsubsection{Extractor Patterns}
+\label{sec:extractor-patterns}
 
-If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that is a class object, then the pattern is a {\em constructor pattern}. 
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that is a class object, then the pattern is {\em an extractor pattern}. 
 
 To match a constructor pattern, the class object's \code{unapply} is applied to the input value:
 \begin{itemize}
   \item If the result value is of type \code{Option[$T_1 \commadots T_n$]}, and is not \code{None}, then the pattern matches if the extractions match the wrapped tuple. 
   \item If the result value is of type \code{Option[$T$]}, and is not \code{None}, then the pattern matches if the extractions match the wrapped value. 
   \item If the result value is of type \code{Boolean}, then the pattern matches if the value is \code{yes}. 
-  \item If the class object does not respond to \code{unapply}, but the associated class has a primary constructor with one or more parameters, the argument that is used for the first parameter is used as result of \code{unapply} instead, unwrapped from \code{Option[$T$]} (and it may be a tuple) -- as if the class was a case class. 
 \end{itemize} 
 
-A constructor pattern contributes the class associated with the class object to type of parameter, when used in function parameter list. 
+An extractor pattern contributes the class associated with the class object to type of parameter, when used in function parameter list. 
 
 
 
