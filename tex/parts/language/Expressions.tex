@@ -866,7 +866,7 @@ method transpose['a](xss: List[List['a]]): List[List['a]] =
 
 \grammar\begin{lstlisting}
 Function_Expr
-    ::= 'fun' {Anonymous_Params_Clause}+ [If_Guard] [':' Type] 
+    ::= 'fun' {Anonymous_Params_Clause}+ [If_Guard] Fun_Type_Expr
         '->' [Lambda_Declarations] Expr
       | 'function' [Lambda_Declarations 'match'] When_Clauses 'end'
 Block_Expr
@@ -875,7 +875,9 @@ Match_Block_Expr
     ::= '{' When_Clauses '}'
       | 'do' When_Clauses 'done'
 Anonymous_Params_Clause
-    ::= Params_Clause
+    ::= Param_Clause
+      | Variadic_Param
+      | Implicit_Params
       | '(' 'rec' [id] ')'
 \end{lstlisting}
 

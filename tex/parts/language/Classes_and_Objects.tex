@@ -89,7 +89,7 @@ Class_Expr
       | Function_Declarations [Expr semi] Class_Expr
         -- in both recursive and non-recursive occurrences:
       | '(' Class_Expr [':' Class_Type] ')'
-      | 'fun' {Params_Clause}+ [Guard] '->' [Function_Declarations] Class_Expr
+      | 'fun' [Param_Clauses] [Guard] '->' [Function_Declarations] Class_Expr
       | 'object' Class_Body 'end'
       | 'begin' Class_Expr 'end'
       | Class_Use_Expr
