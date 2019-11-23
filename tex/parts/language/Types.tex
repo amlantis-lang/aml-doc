@@ -369,26 +369,22 @@ Tree_Map[I]               -- wrong number of parameters
 Tree_Map[List[I], Number] -- type parameter List not within bound
 
 F[Number, Boolean]        -- Number is not a type constructor
-F[Tree_Map, Number]       -- Tree_Map takes two parameters, 
-                             F expects a type constructor taking one
+F[Tree_Map, Number]       {- Tree_Map takes two parameters, 
+                             F expects a type constructor taking one -}
 
-G[S, Number]              -- type S constrains its parameter to
+G[S, Number]              {- type S constrains its parameter to
                              conform to String, 
                              G expects type constructor with a parameter
-                             that conforms to Number
+                             that conforms to Number -}
 \end{lstlisting}
 
-\example Alternative syntax; given the type definitions above, the following parameterized types are also well-formed:
+\example Alternative syntax enabled by postfix type declaration:
 
 \begin{lstlisting}
-(I, String) Tree_Map -- equivalent to Tree_Map[I, String]
-I List               -- equivalent to List[I]
-'I List              -- equivalent to List['I]
-String List          -- equivalent to List[String]
-Boolean List List    -- equivalent to List[List[Boolean]]
-
--- equivalent to Function[List[String], String]
-(named: List[String], String) Function
+Integer list         -- equivalent to List[Integer]
+'i list              -- equivalent to List['i]
+String list          -- equivalent to List[String]
+Boolean list list    -- equivalent to List[List[Boolean]]
 \end{lstlisting}
 
 
@@ -709,12 +705,12 @@ Existential_Clauses
     ::= 'for' 'some' '{' Quantification_Dcl {semi Quantification_Dcl} '}'
 Quantification_Dcl
     ::= Type_Declaration
-      | 'val' id ':' Type
+      | 'val' id ':' Type_Expr
 Type_Arg
     ::= ...
       | Wildcard_Type_Arg
 Wildcard_Type_Arg
-    ::= '?' ['>:' Type] ['<:' Type] 
+    ::= '?' ['>:' Type_Expr] ['<:' Type_Expr] 
 \end{lstlisting}
 
 An existential type has the form ~\lstinline@$T$ for some { $Q$ }@, where $Q$ is a sequence of type declarations (\sref{sec:type-decls-aliases}). Let ~\lstinline@$t_1$[$\tps_1$] >: $L_1$ <: $U_1\ \commadots\ t_n$[$\tps_n$] >: $L_n$ <: $U_n$@~ be the types declared in $Q$ (any of the type parameter sections ~\lstinline![$\tps_i$]!~ might be missing). The scope of each type $t_i$ includes the type $T$ and the existential clause $Q$. The type variables $t_i$ (occurring in the sequence $Q$) are said to be {\em bound} in the type ~\lstinline!$T$ for some { $Q$ }!. Type variables that occur in a type $T$, but which are not bound in $T$, are said to be {\em free} in $T$. 
@@ -890,6 +886,30 @@ The constraint function is only applied when a value is tested for membership of
 
 \paragraph{Note}
 Constrained types are an implementation of {\em dependent types} in Aml. Dependent types are basically functions from values to types, where the value part is present in the defined constraint and/or the constraint block. 
+
+
+
+
+
+\subsection{Types with Explicit Eagerness}
+\label{sec:explicit-eagerness-types}
+
+\grammar\begin{lstlisting}[deletekeywords={no}]
+Simple_Type
+    ::= ...
+      | Eagerness_Type_Prefix ? no whitespace ? Simple_Type
+Eagerness_Type_Prefix
+    ::= Explicitly_Strict_Type_Prefix
+      | Explicitly_Lazy_Type_Prefix
+Explicitly_Strict_Type_Prefix
+    ::= '!'
+Explicitly_Lazy_Type_Prefix
+    ::= '~'
+\end{lstlisting}
+
+An {\em explicitly strict type} \lstinline@!$T$@ is requesting \Aml to reduce the expression bound to type $T$ in a strict way, even when it would resolve to non-strict reduction otherwise.
+ 
+An {\em explicitly lazy type} \lstinline@~$T$@ is requesting \Aml to reduce the expression bound to type $T$ in a non-strict way, even when it would resolve to strict reduction otherwise.
 
 
 
@@ -1299,7 +1319,7 @@ In Aml, there are a few types and their values that represent emptiness of some 
   
   The dedicated keyword \code{nil} is the value of that type. 
   
-  \item The \code{Unit} type. It is basically a \code{Tuple} type with zero type parameters. 
+  \item The \code{Unit} type. It is the only \code{Tuple} type with no type parameters and no data members. 
   
   It's semantical meaning is that no value is even expected. It is used for functions that should never return any meaningful value (but they do return control back to their users), and that are technically procedures, whose purpose lies in side-effects. 
   

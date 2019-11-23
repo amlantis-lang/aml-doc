@@ -20,16 +20,20 @@ Type_Declaration
       | 'type' Type_Name [Type_Abstract]
 Type_Name
     ::= [Type_Context] id [Type_Param_Clause] [Given_Clauses]
-      | [Type_Context] Prefix_Type_Param_Clause id [Given_Clauses]
+Postfix_Type_Name
+    ::= [Type_Context] Prefix_Type_Param_Clause id [Given_Clauses]
 Typedef 
     ::= Type_Name [Type_Information]
 Typedcl
     ::= Type_Name [Type_Abstract]
+      | Postfix_Type_Equation
 Type_Information
     ::= [Type_Equation [Type_Re-export] | Type_Abstract]
       | [Type_Representation]
 Type_Equation 
     ::= '=' Type_Expr
+Postfix_Type_Equation
+    ::= 'postfix' Postfix_Type_Name '=' Type_Expr
 Type_Abstract 
     ::= ['>:' Type_Expr] ['<:' Type_Expr] {'<%' Type_Expr} {':' Type_Expr}
 Type_Re-export
@@ -78,6 +82,9 @@ type My_Collection <: Iterable
 
 \subsection{Type Aliases}
 A {\em type alias} \lstinline@type $t$ = $T$ end@ defines $t$ to be an alias name for the type $T$. Since---for type safety and consistence reasons---types are constant and can not be replaced by another type when bound to a constant name, type aliases are permanent. A type remembers the first given constant name, no alias can change that. The left hand side of a type alias may have a type parameter clause, e.g. \lstinline@type $t$[$\tps$] = $T$ end@. The scope of a type parameter extends over to the right hand side $T$ and the type parameter clause $\tps$ itself. 
+
+\subsection{Postfix Type Aliases}
+A {\em postfix type alias} \lstinline@type postfix $p$ $t$ = $T$ end@ defines $t$ to be a postfix alias for the type $T$ parameterized by prefix type parameters $p$. This enables the use of $t$ as a postfix type.
 
 \subsection{New Types}
 A {\em new type} \lstinline@type $t$ = new $T$ end@ defines a new type $t$ whose representation is the same as that of an already existing type $T$. It differs from a {\em type alias} in that it creates a distinct type that must be used to explicitly coerce to and from the aliased type.\footnote{This is not unlike Haskell's \lstinline[language=Haskell]@newtype@.} Type conversions from and to the aliased type ought to be runtime overhead-free, unless used with the \code{Dynamic} type.

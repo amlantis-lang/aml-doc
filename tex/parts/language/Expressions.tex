@@ -1954,17 +1954,19 @@ Expr
       | Rebind_Expr
       | Update_Expr
 Rebind_Expr 
-    ::= Designator_Expr ':=' Expr
+    ::= Designator_Expr '<-' Expr
 Update_Expr
-   ::= High_Precedence_Application_Expr ':=' Expr
-     | '(' Regular_Precedence_Application_Expr ')' ':=' Expr
+   ::= High_Precedence_Application_Expr '<-' Expr
+     | '(' Regular_Precedence_Application_Expr ')' '<-' Expr
 \end{lstlisting}
 
-The interpretation of an assignment expression $e$ in the form of ~\lstinline!$x$ := $e'$!~ depends on the form of $x$, as described in the following sections. 
+The interpretation of an assignment expression $e$ in the form of ~\lstinline!$x$ <- $e'$!~ depends on the form of $x$, as described in the following sections. 
 
 \subsubsection{Rebind Expressions}
 
 Rebind expressions are assignment expressions where $x$ is a designator expression. 
+
+% TODO: redo the following with <- being the language feature and := being a regular operator (with standard library implementations for certain types, like 'a ref and 'a var.
 
 \begin{itemize}
   \item If $x$ evaluates to a value for which implementation of the operator \code{:=} exists in the scope, then the expression $e$ is evaluated as an application of said operator, i.e. ~\lstinline!( := $x$ $e'$)!. 
