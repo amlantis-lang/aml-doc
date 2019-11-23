@@ -15,13 +15,9 @@ Mutability_Modifier
     ::= 'constant' 
       | 'mutable' 
       | 'immutable'
-Eagerness 
-    ::= 'eager' 
-      | 'lazy'
 Storage_Modifier
-    ::= [Eagerness] Mutability_Modifier [Reference_Modifier]
-      | [Eagerness] Reference_Modifier
-      | Eagerness
+    ::= Mutability_Modifier [Reference_Modifier]
+      | Reference_Modifier
 In_Sep
     ::= [nl] 'in' [nl] 
       | semi
@@ -76,22 +72,13 @@ Fun_Type_Expr
     ::= [(':' | 'returns') Type_Expr] [':>' Type_Expr]
 \end{lstlisting}
 
-A value declaration \lstinline@let $x$: $T$@ (or \lstinline@let $x$: $T$@) introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error. More specifically, a value declaration \lstinline+val @$x$: $T$+ introduces $x$ as a name of an instance value of type $T$, and a value declaration \lstinline+val @@$x$: $T$+ introduces $x$ as a name of a class instance value of type $T$. 
+A value declaration \lstinline@let $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error.
 
-A value definition \lstinline@val $x$: $T$ = $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
+A value definition \lstinline@let $x$: $T$ = $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
 
 A value in this sense\footnote{Everything in Aml is a value -- remember, Aml is also a functional language, to some extent.} is an immutable variable. A declared value can be assigned just once\footnote{A similar way that \lstinline[language=Java]@final@ variables or members in Java can be assigned just once, but Java furthermore requires that this assignment will happen in every code path, Aml does not impose such requirement.}, a defined value is already assigned from its definition. 
 
 The value type $T$ may be always omitted, in that case the type is inferred and bound to the name. If a type $T$ is omitted, the type of expression $e$ is assumed. If a type $T$ is given, then $e$ is expected to conform to it (\sref{sec:conformance}). 
-
-Evaluation of the value definition implies evaluation of its right-hand side $e$, unless it has a modifier \code{lazy} -- in that case, evaluation is deferred to the first time the value is accessed. 
-
-A {\em lazy value} is of the form
-\begin{quote}\begin{lstlisting}
-lazy let $x$: $T$ = $e$
-\end{lstlisting}\end{quote}
-
-A lazy value may only be defined, and a value of the same name (binding) may be declared prior to the value definition, but never as a lazy value. 
 
 The effect of the value definition is to bind $x$ to the value of $e$ converted to type $T$. 
 
@@ -646,6 +633,7 @@ Multi_Method_Body
 
 Param_Clauses 
     ::= {Param_Clause} [Variadic_Param] [Block_Capture_Param] [Implicit_Params]
+      | {Param_Clause} [Variadic_Param] [Implicit_Params] [Block_Capture_Param] 
 Param_Clause  
     ::= Value_Param_Clause
       | Locally_Abstract_Type_Param_Clause
@@ -710,7 +698,7 @@ Optional_Record_Param
     ::= Stable_Id '=' Optional_Param
       | Optional_Param
 Param_Extra 
-    ::= [Eagerness] [Mutability_Modifier]
+    ::= [Mutability_Modifier]
 Reflected_Param_Extra
     ::= ['reflect'] Param_Extra
 Param_Type
@@ -816,10 +804,10 @@ Aml utilizes five argument evaluation strategies. Every strategy defers evaluati
 Evaluations strategies are only applied to arguments as whole, not to any possible sub-expressions or nested data. 
 
 \paragraph{Call-by-value, strict}
-Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is the default evaluation strategy, applied to all parameters, unless otherwise specified. Such arguments are evaluated prior function invocation and are not re-evaluated. 
+Also known as {\em call-by-object}, {\em call-by-object-sharing} or {\em call-by-sharing}, is a strategy such that arguments are evaluated prior function invocation and are not re-evaluated. This strategy may be inferred by \Aml, or enforced by using explicitly strict type.
 
 \paragraph{Call-by-reference, strict}
-Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in Aml, by usage of wrapper objects. Those are described in (\sref{sec:by-ref-parameters}).
+Also known as {\em pass-by-reference}, the function can modify the original argument variable. Those are only indirectly supported in \Aml, by usage of wrapper objects. Those are described in (\sref{sec:by-ref-parameters}).
 
 \paragraph{Call-by-name, non-strict}
 The argument is not evaluated until accessed, and is re-evaluated each time it is accessed, providing another tool to create DSLs. Those are described in (\sref{sec:by-name-parameters}). 
@@ -857,13 +845,9 @@ By-name parameters with default value expressions evaluate the default value exp
 \subsubsection{By-Need Parameters}
 \label{sec:by-need-parameters}
 
-The parameter definition may be preceded by \code{lazy} keyword. This indicates that the corresponding argument is not evaluated before function application, but instead is evaluated the first time used within the function. 
-
-The by-need modifier is disallowed for implicit parameters (\sref{sec:implicit-parameters}).
+A parameter definition may be denoted by a parameter-less function type, or an explicitly lazy parameter type. This indicates that the corresponding argument is explicitly not evaluated before function application, but instead is evaluated the first time used within the function. 
 
 By-need parameters with default value expressions evaluate the default value expression the first time the parameter is accessed, like optional parameters that evaluate the default value expression only once. 
-
-If a parameter is prefixed with \code{eager} instead, it can't be prefixed with \code{lazy}, or be by-need or by-name. 
 
 
 

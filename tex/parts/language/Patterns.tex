@@ -54,7 +54,6 @@ Non_Atomic_Pattern
       | Cons_Pattern
       | Annotated_Pattern
       | Nested_Pattern
-      | Lazy_Pattern
 Var_Pattern 
     ::= Atomic_Var_Pattern
       | ['implicit'] [Storage_Modifier] ['val'] var_id
@@ -876,18 +875,6 @@ match xs
 end
 \end{lstlisting}
 If \code{xs} is a list with two elements for which \code{f x y} returns \code{Some z}, then the whole pattern matches, and the match expression evaluates to \code{x + y + z}, otherwise it evaluates to \code{0}. 
-
-
-
-
-\subsection{Lazy Patterns}
-\label{sec:lazy-patterns}
-
-\grammar\begin{lstlisting}
-Lazy_Pattern 
-    ::= 'lazy' Pattern
-      | 'eager' Pattern
-\end{lstlisting}
 
 
 

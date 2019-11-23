@@ -343,7 +343,7 @@ Comments should not be enclosed in any decorative boxes made of asterisks or wha
 
 Preferable is to put declarations at the beginning of scopes (blocks). Variable declarations in the middle of code should be avoided. The only exception is in expressions like generators. 
 
-To optimize variable creation, variables do not have to be defined before first used -- Aml provides the \code{lazy} modifier for variables, which takes care of that. 
+To optimize variable creation, variables do not have to be defined before first used -- \Aml provides laziness by default and explicit laziness.
 
 
 
@@ -351,7 +351,7 @@ To optimize variable creation, variables do not have to be defined before first 
 
 \subsection{Initialization}
 
-Try to initialize every variable as soon as possible, or use the \code{lazy} modifier on it. 
+Try to initialize every variable as soon as possible. 
 
 
 

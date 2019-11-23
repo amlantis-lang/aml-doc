@@ -63,8 +63,8 @@ Refinement_Specification
     ::= 'refinement' Parameterized_Type ':' Trait_Type
     
 Class_Modifiers
-    ::= [Access_Modifier] ['implicit'] ['open'] ['case' | ['sealed'] 'abstract']
-      | [Access_Modifier] ['implicit'] ['open'] ('final' | 'sealed')
+    ::= [Access_Modifier] ['implicit'] ['open'] 
+        ('final' | 'sealed' | 'abstract' | 'case')
 Trait_Modifiers
     ::= [Access_Modifier] ['open']
 Object_Modifiers
@@ -771,7 +771,15 @@ If $M'$ is labeled \lstinline!private!, then $M'$ must be labeled \lstinline!pri
 If $M'$ is incomplete (\sref{sec:modifiers}) in $C$, then $M$ should be labeled \lstinline!abstract override!. 
 
 \item
-If $M$ and $M'$ are both concrete value definitions, then either none of them is marked \lstinline!lazy!, or both must be marked \lstinline!lazy!. 
+If $M$ and $M'$ are both concrete value definitions, then one of the following must hold for them:
+\begin{itemize} 
+\item both $M$ and $M'$ are explicitly strict,
+\item both $M$ and $M'$ are explicitly lazy,
+\item $M'$ is explicitly strict and $M$ is not explicit in eagerness, meaning it inherits strictness from $M'$,
+\item $M'$ is explicitly lazy and $M$ is not explicit in eagerness, meaning it inherits laziness from $M'$,
+\item none of $M$ and $M'$ explicitly defines eagerness.
+\end{itemize}
+
 \end{itemize}
 
 To generalize the conditions, the modifier of $M$ must be the same or less restrictive than the modifier of $M'$. 
@@ -808,7 +816,6 @@ Modifier         ::= Local_Modifier
                    | Access_Modifier
                    | 'override' [Class_Qualifier]
 Local_Modifier   ::= 'implicit'
-                   | Eagerness
                    | 'final'
                    | 'sealed'
                    | 'abstract'
@@ -816,40 +823,6 @@ Access_Modifier  ::= 'public'
                    | ('protected' | 'private') [Access_Qualifier]
 Access_Qualifier ::= '[' (id | 'self') ']'
 \end{lstlisting}
-
-Access modifiers may appear in two forms:
-
-\paragraph{\em Accessibility flag modifier}
-Such a modifier appears in a template (\sref{sec:templates}) or a module definition (\sref{sec:modules}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Only access modifiers can be used this way. 
-
-\paragraph{\em Directly applied modifier}
-Such a modifier appears on a line preceding a member to which the modifier is solely applied, or a list of arguments with symbols that the modifier will be applied to. A directly applied modifier expression has a result type of \code{Symbol}, so that it may be used as a regular function and chained. 
-
-\example An example of an accessibility flag modifier:
-\begin{lstlisting}
-class C
-begin
-  public
-    def hello; end
-  private
-    def private_hello; end
-end class
-\end{lstlisting}
-
-\example An example of directly applied modifier:
-\begin{lstlisting}
-class C
-begin
-  def hello; end
-  def private_hello; end
-  def salute; end
-  public :hello
-  private :private_hello, :salute
-  protected def goodbye; end
-end class
-\end{lstlisting}
-
-By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} access modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private[self]!). 
 
 Modifiers affect the accessibility and usage of the identifiers bound by them. If several modifiers are given, their order does not matter, but the same modifier may not occur more than once and combinations of \code{public}, \code{protected} \& \code{private} are not allowed (using them as accessibility flag modifiers overwrites the previous accessibility, not combines them). If a member declaration has a modifier applied to it, then the subsequent member definition has the same modifier already applied to it as well, without the need to explicitly state that. It is an error if the modifier applied to the member definition would contradict the modifier applied to the member declaration. 
 
@@ -916,18 +889,16 @@ The rules governing the validity and meaning of a modifier are as follows:
 \example The following code illustrates the use of qualified and unqualified private: 
 \begin{lstlisting}
 module Outer_Mod.Inner_Mod
-  class Outer
-  begin
-    class Inner
-    begin
-      private[self] def e() end def
-      private def f() end def
-      private[Outer] def g() end def
-      private[Inner_Mod] def h() end def
-      private[Outer_Mod] def i() end def
-    end class
-  end class
-end module
+  class Outer = object
+    class Inner = object
+      private[self] method e = ()
+      private method f = ()
+      private[Outer] method g = ()
+      private[Inner_Mod] method h = ()
+      private[Outer_Mod] method i = ()
+    end
+  end
+end
 \end{lstlisting}
 Here, accesses to the method \code{e} can appear anywhere within the instance of \code{Inner}, provided that the instance is also the receiver at the same time. Accesses to the method \code{f} can appear anywhere within the class \code{Inner}, including all receivers of the same class. Accesses to the method \code{g} can appear anywhere within the class \code{Outer}, but not outside of it. Accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod.Inner_Mod}, but not outside of it, similar to package-private methods in Java. Finally, accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod}, including modules and classes contained in it, but not outside of these.
 
@@ -962,28 +933,9 @@ This is just for the sake of completeness, since change from public to public is
 \section{Class Definitions}
 \label{sec:class-definitions}
 
-\grammar\begin{lstlisting}
-Class_Definition    ::= ['monitored'] 'class' Class_Def
-Class_Def           ::= id [Type_Param_Clause] [Given_Clauses]
-                        [Class_Param_Clauses] Class_Tmpl_Env
-Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
-                        {Class_Param_Clause}
-                        ['(' 'implicit' Class_Params ')']
-Class_Param_Clause  ::= '(' [Class_Params] ')'
-Class_Params        ::= Class_Param {',' Class_Param}
-Class_Param         ::= Param
-Class_Tmpl_Env      ::= Tmpl_Env_With_Pars ['class']
-                      | Tmpl_Env_Brackets
-                      | Tmpl_Env_No_Pars ['class']
-Tmpl_Env_With_Pars  ::= 'extends' [Early_Defs] Class_Parents
-                        semi ['begin'] [Template_Body] 'end'
-Tmpl_Env_Brackets   ::= ['extends' [Early_Defs]] 
-                        '{' [Template_Body] '}'
-Tmpl_Env_No_Pars    ::= ['begin' [Template_Body]] 'end'
-\end{lstlisting}
-
 A class definition defines the type signature, behaviour and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behaviour defined in its metaclass (\sref{sec:metaclasses}). 
 
+% this is wrong! follow the new grammar!
 The most general form of a class definition is
 \begin{lstlisting}
 class $c$ [$\tps$]

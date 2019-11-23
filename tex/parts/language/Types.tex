@@ -279,8 +279,8 @@ class A_Class = object
   A_Class.u = A_Class.type#u  -- bound by class object
   
   u = A_Class.type#u          -- not bound by class, thus bound by class object;
-                                 if class A_Class defined u itself, it would shadow 
-                                 the definition in the class object
+                              -- if class A_Class defined u itself, it would shadow 
+                              -- the definition in the class object
 end
 \end{lstlisting}
 % TBD fix the above to fit updated grammar, also finally resolve the class object vs class instances
@@ -336,7 +336,7 @@ Given the generic type definitions:
 
 \begin{lstlisting}
 class Tree_Map['a <: Comparable['a], 'b] = object $\ldots$ end
-class 'a List = object $\ldots$ end
+class 'a list = object $\ldots$ end
 class I = object inherit Comparable[I]; $\ldots$ end
 
 class F['m[_], 'x] = object $\ldots$ end
@@ -886,7 +886,7 @@ A constrained type constructs a subset of allowed members of its component type.
 
 Constrained types, in face of overloading, trigger eager argument expression evaluation, so that the constrained type of a parameter can even be checked.\footnote{Therefore, constrained types are not really suitable candidates for parameters that are supposed to be lazy-evaluated, unless the early evaluation is intended.}
 
-The constraint function is only applied when a value is tested for membership of the constrained type. This has implications on type soundness -- if the tested value is modified after the type test, it may not be a member of the constrained type subset any more, but it is definitely still a member of the component type.\footnote{This is because values in \Aml are not allowed to change their type membership in runtime.}
+The constraint function is only applied when a value is tested for membership of the constrained type, i.e. at binding time, be it argument type check, result type check or any other. This has implications on type soundness -- if the tested value is modified after the binding is done, it may not be a member of the constrained type subset any more, but it is definitely still a member of the component type.\footnote{This is because values in \Aml are not allowed to change their type membership in runtime.}
 
 \paragraph{Note}
 Constrained types are an implementation of {\em dependent types} in Aml. Dependent types are basically functions from values to types, where the value part is present in the defined constraint and/or the constraint block. 
