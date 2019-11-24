@@ -50,7 +50,7 @@ var_id
 plain_id 
     ::= upper id_rest
       | var_id
-id  ::= ['@' | '@@'] (plain_id | '``' {any_id}+ '``')
+id  ::= (plain_id | '``' {any_id}+ '``')
       | '`' plain_id '`'
       | '`' op_id '`'
 id_char 
