@@ -2424,6 +2424,7 @@ The expression ~\lstinline!for $i$ = $e_1$ up to $e_2$ loop $e_3$ end!~ is equiv
 Match_Expr     
     ::= Match_When_Expr
       | Match_With_Expr
+      | Match_With_Conditions
 Fallthrough_Expr 
     ::= 'next'
 Match_When_Expr
@@ -2444,9 +2445,17 @@ When_Expr
     ::= Expr + Fallthrough_Expr
 With_Clause
     ::= Pattern [If_Guard] '->' When_Expr
+Match_With_Conditions
+    ::= 'when' '{' Match_Conditions '}'
+Match_Conditions
+    ::= Match_Condition {semi Match_Condition} 
+        [semi Else [nl] Expr]
+        [semi 'rescue' Rescue_Clauses]
+Match_Condition
+    ::= Expr '->' When_Expr
 \end{lstlisting}
 
-Pattern matching is described in (\sref{sec:pattern-matching}). Here, the syntax of expressions that make use of pattern matching is given.
+Pattern matching is described in (\sref{sec:pattern-matching}). Here, the grammar of expressions that make use of pattern matching is given.
 
 
 
