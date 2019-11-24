@@ -56,7 +56,7 @@ Non_Atomic_Pattern
       | Nested_Pattern
 Var_Pattern 
     ::= Atomic_Var_Pattern
-      | ['implicit'] [Storage_Modifier] ['val'] var_id
+      | ['implicit'] [Storage_Modifier] 'val' var_id
 Atomic_Var_Pattern 
     ::= var_id
 Bound_Pattern 
@@ -257,14 +257,12 @@ Regular expression patterns contribute the \code{String_Like} type to type of pa
 
 \grammar\begin{lstlisting}
 Var_Pattern 
-    ::= ['implicit'] [Storage_Modifier] ['val'] var_id
+    ::= ['implicit'] [Storage_Modifier] 'val' var_id
 \end{lstlisting}
 
 A variable pattern $x$ is a simple identifier which starts with a lower case letter. It matches any value and binds the variable name to that value. The type of $x$ is the expected type of the pattern as given from the outside. 
 
 A variable pattern contributes the implicit type of a variable to type of parameter, when used in function parameter list. It is by default \code{Auto}. 
-
-A variable pattern is implicitly prefixed with \code{val}, and thus the bound variable is immutable, and prefixing it explicitly is redundant. Use the \code{val} prefix in cases where the bound name would shadow another name, making the pattern ambiguous -- but a variable pattern is selected. To disable the meaning of a variable pattern, enclose the \code{id} in backticks: \code{`id`}.
 
 A variable pattern prefixed with \code{implicit} is made eligible to be passed as implicit argument (\sref{sec:implicit-parameters}). The value that is eligible is however the current value at the instant of function application with implicit arguments -- therefore if the variable is mutable, it might be a different value than the one bound from the pattern match. 
 
