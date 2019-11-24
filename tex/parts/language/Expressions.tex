@@ -857,7 +857,7 @@ Anonymous_Params_Clause
       | '(' 'rec' [id] ')'
 \end{lstlisting}
 
-The anonymous function ~\lstinline!fun $x_1$: $T_1\,\ldots\,x_n$: $T_n$ -> $b$!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.\footnote{In future versions of Aml, a syntax where curly brackets are not required to be surrounding an anonymous function's body may be allowed.}
+The anonymous function ~\lstinline!fun $x_1$: $T_1\,\ldots\,x_n$: $T_n$ -> $b$!~ maps parameters $x_i$ of types $T_i$ to a result value given by evaluation of block $b$. The scope of each formal parameter $x_i$ is $e$. Formal parameters must have pairwise distinct names.
 
 If the expected type of an anonymous function is of the form ~\lstinline!Function[$S_1 \commadots S_n$, $R$]!, the expected type of $b$ is $R$ and the type $T_i$ of any of the parameters $x_i$ can be omitted, in which case $T_i = S_i$ is assumed. If there is no expected type of the anonymous function, then for each parameter $x_i$ which has no explicit type $T_i$, $T_i$ is assumed to be \code{Object}, and the type of the result value is also assumed to be \code{Object}. 
 
