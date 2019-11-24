@@ -215,17 +215,15 @@ Assignment to properties (\lstinline@obj.our_property <- new_value@) is translat
 
 
 
-
-
 \subsection{Property Implementations}
 \label{sec:property-impl}
 
 \begin{lstlisting}[deletekeywords={with}]
 Prop_Get_Impl 
-    ::= Specialised_Block_Expr((() | IVar_Param_Clause))
+    ::= Specialised_Block_Expr((() | IVar_Param_Clause '->'))
       | '_'
 Prop_Set_Impl 
-    ::= Specialised_Block_Expr((IVar_Param_Clause [Param_Clause]))
+    ::= Specialised_Block_Expr((IVar_Param_Clause [Param_Clause] '->'))
       | '_'
 IVar_Param_Clause
     ::= Param_Clause
@@ -240,6 +238,20 @@ Property getter with no parameter does not get access to its instance variable, 
 Property setter with one parameter does not get access to its instance variable, only the new value to be set, property setter with two parameters gets access to its instance variable through the first parameter, its type is \lstinline@'$t$ var@, where $t$ is the type of the property, and the second parameter's type is then the new value to set.
 
 The type of instance variable can be constant, meaning only reading its content is possible through the reference.
+
+\example The following is a well-formed property declaration and definition:
+\begin{lstlisting}
+-- declaration:
+val (get, set) temporal: Local_Time option
+
+-- definition:
+let temporal: Local_Time option
+  val = nil
+  get { ivar -> !ivar }  -- the default implementation
+  set { ivar value -> ivar := value }  -- also a default implementation
+\end{lstlisting}
+
+Properties may be of function types as well as value types, in which case the implementation would return a function value instead of terminal (non-function) value.
 
 
 
