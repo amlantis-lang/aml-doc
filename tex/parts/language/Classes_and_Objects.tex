@@ -130,12 +130,12 @@ Class_Structure_Field
 Class_Structure_Include
     ::= 'include' Long_Id [Cond_Modifier]
 Class_Template_Member_Field
-    ::= [Class_Member_Modifiers] Ivar_Def
+    ::= [Class_Member_Modifiers] Ival_Def
       | [Class_Member_Modifiers] Property_Def
       | [Class_Member_Modifiers] Method_Def
       | [Class_Member_Modifiers] Operator_Def
       | [Class_Member_Modifiers] Attribute_Def
-      | ['abstract'] [Class_Member_Modifiers] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifiers] Ival_Spec
       | ['abstract'] [Class_Member_Modifiers] Property_Spec
       | ['abstract'] [Class_Member_Modifiers] Message_Dcl
       | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
@@ -164,12 +164,12 @@ Class_Conditional_Field(Nested)
     ::= ('if' | 'unless') Boolean_Condition ('then' | semi) Nested
         [[semi] Else Nested] 'end'
 
-Ivar_Def
+Ival_Def
     ::= Ivar_Modifiers 'val' id [':' Type_Expr] '=' Expr
-Ivar_Spec
-    ::= Ivar_Modifiers 'val' id [':' Type_Expr] {',' id [':' Type_Expr]}
-      | Ivar_Modifiers 'val' '(' id {',' id} ')' [':' Type_Expr]
-Ivar_Modifiers
+Ival_Spec
+    ::= Ival_Modifiers 'val' id [':' Type_Expr] {',' id [':' Type_Expr]}
+      | Ival_Modifiers 'val' '(' id {',' id} ')' [':' Type_Expr]
+Ival_Modifiers
     ::= ['implicit'] [Access_Modifier] [Storage_Modifier]
 Class_Member_Modifiers
     ::= ['implicit'] [Access_Modifier] ['final'] ['override' [Class_Qualifier]]

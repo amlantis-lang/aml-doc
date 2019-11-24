@@ -167,7 +167,7 @@ The following shorthands are recognized:
 
 \grammar\begin{lstlisting}[deletekeywords={of,up,to}]
 Property_Spec
-    ::= 'property' ['(' Prop_Specs ')'] id ':' Type
+    ::= 'val' ['(' Prop_Specs ')'] id ':' Type_Expr
 Prop_Specs 
     ::= Prop_Spec {',' Prop_Spec}
 Prop_Spec 
@@ -176,7 +176,7 @@ Prop_Spec
       | 'unowned'
       | Mutability_Modifier
 Property_Def
-    ::= 'property' ['(' Prop_Specs ')'] id [':' Type] Prop_Impls
+    ::= 'let' ['(' Prop_Specs ')'] id [':' Type_Expr] Prop_Impls
 Prop_Impls 
     ::= [nl] 'with' Prop_Impl {[nl] 'and' Prop_Impl}
       | [nl] 'by' Expr 
@@ -185,28 +185,18 @@ Prop_Impl
     ::= ([Access_Modifier] 'get' Prop_Get_Impl)
       | ([Access_Modifier] 'set' Prop_Set_Impl)
       | ([Access_Modifier] 'val' '=' Expr)
-      | Prop_Hook_Impl
-Prop_Hook_Impl
-    ::= ('will' 'set' Prop_Hook_1_Impl)
-      | ('did' 'set' Prop_Hook_0_Impl)
-      | ('will' 'get' Prop_Hook_0_Impl)
-      | ('did' 'get' Prop_Hook_0_Impl)
 \end{lstlisting}
 
-A property declaration \lstinline@property $x$: $T$@~ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
+A property declaration \lstinline@val $x$: $T$@~ introduces a property without a defined initial value of type $T$. Property declaration does not specify any actual implementation details of how or where the declared value is stored.
 
-A property definition \lstinline@property $x$: $T$ with get $\ldots$ and set $\ldots$@~ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behaviour and storage of a property, but may as well opt-in for auto-generated implementation, by specifying the implementation block as ``~\code{_}~'', which is: 
+A property definition \lstinline@let $x$: $T$ with get $\ldots$ and set $\ldots$@~ introduces a property with a possibly defined initial value of type $T$. Property definition may specify implementation details of the behaviour and storage of a property, but may as well opt-in for auto-generated implementation, by specifying the implementation block as ``~\code{_}~'', which is: 
 
 \begin{enumerate}
-  \item Storage of the property's value is in an instance variable (or a class instance variable in case of class properties) of the same name as is the name of the property: \lstinline@property $x$@ is stored in an instance variable \lstinline+@$x$+. 
-
-  \item Properties defined with only \code{get} are stored in immutable instance variables (\sref{sec:value-def}). 
-
   \item Properties defined with \code{set}\footnote{It is also possible to declare/define properties that are \code{set}-only. That makes them {\em write-only}, as opposed to {\em read-only} properties with \code{get}-only.} are stored in mutable instance variables (\sref{sec:variable-def}). 
 
-  \item Properties defined with \code{weak} are stored as weak references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@. 
+  \item Properties defined with \code{weak} are stored as weak references. A property \lstinline@val $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@. 
 
-  \item Properties defined with \code{unowned} are stored as unowned references. A property \lstinline@property $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@ and implicitly unwrapped. 
+  \item Properties defined with \code{unowned} are stored as unowned references. A property \lstinline@val $x$: $T$@ is stored in an instance of type \lstinline@Weak_Reference[$T$]@ and implicitly unwrapped. 
 
   \item The getter and setter, including both implicit and explicit versions, automatically wrap (assignment) or unwrap (evaluation) the corresponding reference type.
 \end{enumerate}
@@ -218,7 +208,9 @@ message $x$ (): $T$
 message set_$x$ (y: $T$): Unit
 \end{lstlisting}
 
-Assignment to properties is translated automatically into a setter function call and reading of properties does not need any translation due to implicit conversions (\sref{sec:implicit-conversions}). 
+Assignment to properties (\lstinline@obj.our_property <- new_value@) is translated automatically into a setter function call and reading of properties does not need any translation due to implicit conversions (\sref{sec:implicit-conversions}). 
+
+
 
 
 
@@ -230,23 +222,24 @@ Assignment to properties is translated automatically into a setter function call
 
 \begin{lstlisting}[deletekeywords={with}]
 Prop_Get_Impl 
-    ::= Specialised_Block_Expr(())
+    ::= Specialised_Block_Expr((() | IVar_Param_Clause))
       | '_'
 Prop_Set_Impl 
-    ::= Specialised_Block_Expr(Param_Clause)
+    ::= Specialised_Block_Expr((IVar_Param_Clause [Param_Clause]))
       | '_'
-Prop_Hook_0_Impl
-    ::= Specialised_Block_Expr(())
-Prop_Hook_1_Impl
-    ::= Specialised_Block_Expr((Param_Clause | ()))
+IVar_Param_Clause
+    ::= Param_Clause
 \end{lstlisting}
 
 Property implementations are restricted to parameterless block expressions for getters and with one parameter for setters. If the property is specified with a \code{get} or \code{set}, but without a getter or setter defined, then a default implementation is provided for the missing definitions, based on the property specifications. 
 
 If a property setter (\code{set}) does not specify return type, then it is inferred as \code{Unit}. 
 
-Property implementation preceded by ``\code{will}'' will be executed before the instance variable is either read from (\code{will get}) or written to (\code{will set}), or before the property getter or setter respectively is evaluated, if the implementation is explicit. Property implementation preceded by ``\code{did}'' will be executed after the instance variable is either read from (\code{did get}) or written to (\code{did set}), or after the property getter or setter respectively is evaluated, if the implementation is explicit. If the \code{will set} specifies a parameter, the new value is passed to it as argument. These hooks are not evaluated during object's construction, and this behaviour can be modified by annotations. 
+Property getter with no parameter does not get access to its instance variable, property getter with one parameter gets access to its instance variable through that single parameter, its type is \lstinline@'$t$ var@, where $t$ is the type of the property.
 
+Property setter with one parameter does not get access to its instance variable, only the new value to be set, property setter with two parameters gets access to its instance variable through the first parameter, its type is \lstinline@'$t$ var@, where $t$ is the type of the property, and the second parameter's type is then the new value to set.
+
+The type of instance variable can be constant, meaning only reading its content is possible through the reference.
 
 
 
@@ -256,8 +249,6 @@ Property implementation preceded by ``\code{will}'' will be executed before the 
 \label{sec:ref-types}
 
 Reference type modifiers are the syntax category \code{Reference_Modifier}. The implicit modifier would be \code{strong}, but it does not have a corresponding keyword.\footnote{This may or may not change in the future.} 
-
-Reference type modifiers are applied to variables, whose \code{id} begins with ``\lstinline!@!'' (class instance variables) or with ``\lstinline!@@!'' (class object variables). Such variable may appear as a part of pattern matching, in that case, the modifier is applied as well. By default, all other declared or defined variables are inferred to be \code{strong}. If a variable is declared with a non-\code{strong} reference type, then it does not have to be explicitly defined with the same reference type, and it is an error if it is defined with a different reference type. 
 
 \Aml provides automatic wrapping and unwrapping of variables that are declared or defined non-\code{strong} in context where the wrapped type is expected. Strong references are (usually) not wrapped in anything. 
 
