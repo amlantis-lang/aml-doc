@@ -1239,9 +1239,9 @@ $\Ts$ stands for the vector of types defined in the type parameter section $\tps
 A clone constructor is also implicitly added to every case class, but limited to the first value parameter section. The following definition of the implicitly added clone constructor shares the definition of parameters: 
 \begin{lstlisting}
 clone [$\tps$]($\ps'_1$): $c$[$\tps$]
-  self[cloned].@$xs_{1,1}$ := $xs_{1,1}$
+  self[cloned].$xs_{1,1}$ <- $xs_{1,1}$
   $\ldots$
-  self[cloned].@$xs_{1,n}$ := $xs_{1,n}$
+  self[cloned].$xs_{1,n}$ <- $xs_{1,n}$
 end clone
 \end{lstlisting}
 Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) parameter section. All instance variables are shallow-copied into the new cloned object. 

@@ -968,7 +968,6 @@ Simple_Expr
 Designator_Expr 
     ::= Path
       | Expr '.' Selection
-      | [Expr '.'] Dynamic_Var_Selection
       | Type_Member_Selection
 Selection 
     ::= Simple_Selection
@@ -983,8 +982,6 @@ Optional_Selection
     ::= '?' (Simple_Selection | Tuple_Selection)
 Forced_Selection
     ::= '!' (Simple_Selection | Tuple_Selection)
-Dynamic_Var_Selection
-    ::= '@{' Expr '}'
 Type_Member_Selection
     ::= Expr ('#' | '.#') (Simple_Selection | Tuple_Selection)
       | '#' ? no whitespace ? (Simple_Selection | Tuple_Selection)
@@ -1014,33 +1011,6 @@ The expected type of a designator's prefix is undefined. The type of a designato
 The selection ~\lstinline!$e$.$x$!~ is evaluated by first evaluating the qualifier expression $e$, which yields an object $r$. The selection's result is then the member $m$ of $r$ that is either defined by $m$ or defined by a definition overriding $m$. 
 
 A selection ~\lstinline!$e$.$x$!, where $x$ is formed by decimal digits, is useful for selecting members whose name is a decimal number. Tuple types have such members, and other types may define such members by enclosing their names in doubled backquotes, e.g. ~\lstinline!method ``1`` () = 1!. The expression $e$ must not be a number literal. 
-
-A selection ~\lstinline!$e$.$x$!, where $x$ is of the form ~\lstinline!@$a$!, is an instance value or variable selection; and where $x$ is of the form ~\lstinline!@@$a$!, the selection is a class instance value or variable selection, a shorthand for the selection ~\lstinline[deletekeywords={class}]!$e$.'class.@$x$!.\footnote{The ``\,\lstinline[deletekeywords={class}]!.'class!\,'' syntax construct is attribute selection (\sref{sec:attribute-selection}).}
-
-A designator of the form ~\lstinline!@$x$!~ is an instance value or variable selection, a shorthand for ~\lstinline!self.@$x$!. A designator of the form ~\lstinline!@@$x$!~ is a class instance value or variable selection, a shorthand for ~\lstinline[deletekeywords={class}]!self.'class.@$x$!. 
-
-\example Instance value or variable selections. 
-\begin{lstlisting}[deletekeywords={class}]
-obj.@ivar
-
-obj.@@cvar 
--- same as:
-obj.'class.@cvar
-
-@ivar
--- same as:
-self.@ivar
-
-@@cvar
--- same as:
-self.'class.@cvar
-
--- dynamic ivar selection
-obj.@{expr}
-
--- dynamic cvar selection
-obj.@@{expr}
-\end{lstlisting}
 
 The distinctive form in which instance and class instance value or variable selections appears practically means that objects have separate namespaces\footnote{Therefore names of instance values or variables never clash with names of other members of the instance.} for their instance variables (state) and all other members (methods, nested classes etc.). 
 
@@ -1787,23 +1757,25 @@ a or b   -- bitwise or (when applied to numbers)
 a ||| b  -- bitwise or
 a xor b  -- bitwise xor (when applied to numbers)
 a ^^^ b  -- bitwise xor
----a     -- bitwise not (prefix, unary)
+¬a       -- bitwise not (U+00AC, NOT SIGN)
 not a    -- bitwise not (prefix, unary; when applied to numbers)
 \end{lstlisting}
 
 Standard boolean (logical) operators:
 \begin{lstlisting}
 -- short circuited:
-a & b        -- boolean and
+a && b       -- boolean and
 a and b      -- boolean and
-a | b        -- boolean or
+a || b       -- boolean or
 a or b       -- boolean or
 -- non short circuited:
-a && b       -- boolean and
+a &&& b      -- boolean and
 a and also b -- boolean and
-a || b       -- boolean or
+a ||| b      -- boolean or
 a or else b  -- boolean or
+a ^^ b       -- boolean xor
 a xor b      -- boolean xor
+¬a           -- boolean not (U+00AC, NOT SIGN)
 not a        -- boolean not (prefix, unary; when applied to booleans)
 \end{lstlisting}
 

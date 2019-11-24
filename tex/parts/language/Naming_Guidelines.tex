@@ -173,14 +173,8 @@ Define these early, so that they can be used in the following code.
 \item {\bfseries Superclass instance method invocations} \hfill \\
 Use this section to call superclass instance methods. Imagine methods like \code{has_many} from RoR's \code{ActiveRecord}\footnote{RoR stands for Ruby on Rails.}. 
 
-\item {\bfseries Class instance variables} \hfill \\
-These are variables whose names are prefixed with a double at-sign ``\code{@@}''. Their order should be in decreasing visibility (\sref{sec:modifiers}). Alternatively, if the class object has a separate definition using \code{object} keyword, that should be following the class definition in the same file, preserving the order defined in this list. This also applies to class instance methods. 
-
 \item {\bfseries Class instance methods} \hfill \\
 These methods are defined for the class object and may appear in a separate object definition. Their order should be in decreasing visibility (\sref{sec:modifiers}). Furthermore, factory methods should precede all other methods. 
-
-\item {\bfseries Instance variables} \hfill \\
-These are variables whose names are prefixed with a single at-sign ``\code{@}''. Their order should be in decreasing visibility (\sref{sec:modifiers}).
 
 \item {\bfseries Auxiliary constructors} \hfill \\
 Their order should be in decreasing visibility (\sref{sec:modifiers}).
