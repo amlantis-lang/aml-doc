@@ -1938,37 +1938,32 @@ The interpretation of an assignment expression $e$ in the form of ~\lstinline!$x
 
 Rebind expressions are assignment expressions where $x$ is a designator expression. 
 
-% TODO: redo the following with <- being the language feature and := being a regular operator (with standard library implementations for certain types, like 'a ref and 'a var.
-
 \begin{itemize}
-  \item If $x$ evaluates to a value for which implementation of the operator \code{:=} exists in the scope, then the expression $e$ is evaluated as an application of said operator, i.e. ~\lstinline!( := $x$ $e'$)!. 
-  \item Otherwise, the expression needs to be re-interpreted as a function application. 
-    \begin{itemize}
-      \item If $x$ is a single identifier, the expression $e$ is re-interpreted as ~\lstinline!$x$.rebind($e'$)!, if $x$ responds to the message \code{rebind}. With pragmas, the type of $x$ might choose a different message name, in which case, that one is used.
-      \item If $x$ is an expression of the form ~\lstinline!$x'$.$n$!, where $x'$ is an arbitrary expression and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x'$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
-      \item If $x$ is an expression of the form ~\lstinline!$x'$.?$n$!, where $x'$ is an arbitrary expression of the type \code{'a option} and $n$ is an identifier, the expression $e$ is re-interpreted as 
-      \begin{lstlisting}
+  \item If $x$ is a single identifier, the expression $e$ is re-interpreted as ~\lstinline!$x$.rebind($e'$)!, if $x$ responds to the message \code{rebind}. With pragmas, the type of $x$ might choose a different message name, in which case, that one is used.
+  \item If $x$ is an expression of the form ~\lstinline!$x'$.$n$!, where $x'$ is an arbitrary expression and $n$ is an identifier resolved to a property in type of $x'$, and such property has got a setter (implicit or explicit), then $e$ is an argument of the new value to the property's setter.
+  \item If $x$ is an expression of the form ~\lstinline!$x'$.$n$!, where $x'$ is an arbitrary expression and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x'$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+  \item If $x$ is an expression of the form ~\lstinline!$x'$.?$n$!, where $x'$ is an arbitrary expression of the type \code{'a option} and $n$ is an identifier, the expression $e$ is re-interpreted as: 
+    \begin{lstlisting}
       match $x'$ 
         when Some val $x''$ 
           then Some ($x''$.set_$n$($e'$))
         else None 
       end
-      \end{lstlisting} 
-      if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
-      \item If $x$ is an expression of the form ~\lstinline!$x'$.!$n$!, where $x'$ is an arbitrary expression of the type \code{'a option} and $n$ is an identifier, the expression $e$ is re-interpreted as 
-	  \begin{lstlisting}
+    \end{lstlisting} 
+    That is, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+  \item If $x$ is an expression of the form ~\lstinline!$x'$.!$n$!, where $x'$ is an arbitrary expression of the type \code{'a option} and $n$ is an identifier, the expression $e$ is re-interpreted as: 
+    \begin{lstlisting}
 	  match $x'$ 
 	    when Some val $x''$ 
 	      then $x''$.set_$n$($e'$)
 	    else -- raise error 
 	  end
-	  \end{lstlisting} 
-	  if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
-	  \item If $x$ is an expression of the form ~\lstinline!#$n$ $x'$!, where $x'$ is an arbitrary expression and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x'$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
-	  \item If $x$ is an expression of the form ~\lstinline!$x_1$#$n$ $x_2$!, where $x_1$ and $x_2$ are arbitrary expressions and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x_2$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.\footnote{In this case, $x_1$ is used to further specify typing within the expression $e$, since it selects member $n$ from the expression $x_1$ and that choice in turn defines the expected type of $x_2$.}
-      \item Otherwise, it is an error. 
-    \end{itemize}
-\end{itemize} 
+	\end{lstlisting} 
+    That is, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+  \item If $x$ is an expression of the form ~\lstinline!#$n$ $x'$!, where $x'$ is an arbitrary expression and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x'$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.
+  \item If $x$ is an expression of the form ~\lstinline!$x_1$#$n$ $x_2$!, where $x_1$ and $x_2$ are arbitrary expressions and $n$ is an identifier (or a decimal number), the expression $e$ is re-interpreted as ~\lstinline!$x_2$.set_$n$($e'$)!, if the type of $x'$ responds to the message ~\lstinline!set_$n$!.\footnote{In this case, $x_1$ is used to further specify typing within the expression $e$, since it selects member $n$ from the expression $x_1$ and that choice in turn defines the expected type of $x_2$.}
+  \item Otherwise, it is an error. 
+\end{itemize}
 
 \subsubsection{Update Expressions}
 
