@@ -1289,7 +1289,7 @@ The expression ~\lstinline!&$e$!~ (or alternatively ~\lstinline!&($e$)!) is well
 \begin{lstlisting}[deletekeywords={range}]
 &(Math.sin)             fun x -> { Math.sin x }
 &(Array.range)          fun x1 x2 -> { Array.range x1 x2 }
-( * 42)                 fun x -> { x * 42 }
+(* 42)                  fun x -> { x * 42 }
 \end{lstlisting}
 
 Note that if $e$ resolves to a parameterless method of type ~\lstinline!() -> $T$!~ or if $e$ has a method type ~\lstinline!() $\mapsto\ T$!, it is evaluated to type $T$ (\sref{sec:method-conversions}) -- and the method value syntax provides a way to prevent this. 
@@ -1513,6 +1513,7 @@ Infix_Expr
       | Expr op_id Expr ['use' Simple_Type]
       | Expr nary_op_id Expr {':' Expr} ['use' Simple_Type] 
       | Range_Expr
+      | Fold_Expr
 Application_Expr
     ::= ...
       | Op_Application_Expr
@@ -1530,6 +1531,10 @@ Prefix_Expr
     ::= [op_id | 'not' ? whitespace ? | '...'] (Expr - Prefix_Expr)
 Range_Expr
     ::= Expr ('..' | '..<') Expr [FP_Delta [FP_Digits]]
+Fold_Expr
+    ::= '(' Expr op_id '...' op_id Expr ')'  -- op_ids must be the same
+      | '(' Expr op_id '...' ')'
+      | '(' '...' op_id Expr ')'
 Slice_Expr
     ::= -- slice of 1 element
         Expr 
