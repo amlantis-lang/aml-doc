@@ -216,7 +216,7 @@ Variant_Field
 Type_Constr_Dcl
     ::= {Annotation} 'case' id ['of' Type_Constr_Params]
 Type_Constr_Params
-    ::= Types
+    ::= Tuple_of_Types
 \end{lstlisting}
 
 Variant types are similar to a simplified form for a series of case classes (\sref{sec:case-classes}) and case objects (\sref{sec:case-objects}), with shared interface and a common ancestor. Pattern matching is possible on variant types, as it would be done on case classes and case objects. 
@@ -280,7 +280,7 @@ Variant_Type_Def
 Gadt_Type_Representation 
     ::= Gadt_Field {semi Gadt_Field}
 Gadt_Field 
-    ::= {Annotation} 'case' id ':' [Types '->'] Type_Expr
+    ::= {Annotation} 'case' id ':' [Tuple_of_Types '->'] Type_Expr
         -- ':' instead of 'of' is the important distinction here
 \end{lstlisting}
 
@@ -433,9 +433,10 @@ Pkg_Constraint
 Struct_Path
     ::= Long_Id
 Extended_Struct_Path 
-    ::= Extended_Struct_Name {'.' Extended_Struct_Name}
+    ::= Extended_Struct_Name {'.' Extended_Struct_Path}
 Extended_Struct_Name 
     ::= id {'(' [Extended_Struct_Path] ')'}
+      | '(' id {Extended_Struct_Path} ')'
 Long_Id
     ::= ...
       | Extended_Struct_Path
@@ -564,20 +565,20 @@ structure Set_Functor =
 functor (Element_Type: Ordered_Type) ->
   struct
     type Element = Element_Type.T end
-    type Set = Element List end
-    let empty = %[]
+    type Set = Element list end
+    let empty = []
     let rec add x s = match s
-      when %[] then %[x]
-      when %[head, *tail] then 
+      when [] then [x]
+      when [head, *tail] then 
         match Element_Type.compare x head
         when Equal then s
-        when Less then x :: s
-        when Greater then head :: add x tail
+        when Less then [x :: s]
+        when Greater then [head :: add x tail]
         end
       end
     let rec is_member? x s = match s
-      when %[] then no
-      when %[head, *tail] then 
+      when [] then no
+      when [head, *tail] then 
         match Element_Type.compare x head
         when Equal then yes
         when Less then no
@@ -757,12 +758,67 @@ Type_Instance_Id
 
 
 
+\section{Dependent Types}
+\label{sec:dependent-types}
 
+\grammar\begin{lstlisting}[deletekeywords={with,where,as}]
+Given_Dcl
+    ::= ...
+      | 'val' id ':' Type_Expr
+Type_Dependency_Params_Def
+    ::= 'given' '{' Type_Dependency_Param {semi Type_Dependency_Param} '}'
+Type_Dependency_Param
+    ::= Existential_Type_Dependency_Param
+      | Universal_Type_Dependency_Param
+Existential_Type_Dependency_Param
+    ::= 'some' id [':' Type_Expr] ['where' Expr]
+Universal_Type_Dependency_Param
+    ::= 'all' id [':' Type_Expr] ['where' Expr]
+Parameterized_Type
+    ::= ...
+      | Parameterized_Type ['.'] '(' Expr ')'
+      
+Type_Equation
+    ::= ...
+      | '=' Type_Expr 
+        [Type_Dependency_Params_Def] [Type_Constraint_Clause]
+      | '=' Function_Expr
+Variant_Field
+    ::= ...
+      | Type_Constr_Dcl 
+        [Type_Dependency_Params_Def] [Type_Constraint_Clause]
+Gadt_Field
+    ::= ...
+      | {Annotation} 'case' id ':' [Tuple_of_Types '->'] Type_Expr 
+        [Type_Dependency_Params_Def] [Type_Constraint_Clause]
+Record_Component
+    ::= ...
+      | {Annotation} {Record_Modifier} id ':' Type_Expr
+        [Type_Dependency_Params_Def] [Type_Constraint_Clause]
+\end{lstlisting}
 
+Dependent types allow types to receive any value (including, but more importantly not limited to, types) as its argument, in order to construct 
 
+\example A simple dependent type:
+\begin{lstlisting}
+type Natural_Int =
+  Integer where (self) -> (self >= 0)
+and type Recursively_Counted_List ['t] given { val n: Natural_Int } = variant
+  case nil(0)
+  case cons(n + 1) 
+    of 't * Counted_List['t](n)
+    given { all n }
+and type Counted_List ['t] given { val n: Natural_Int } =
+  't list 
+    given { all n }
+    where (self) -> (self.length = n)
+end
 
+let list_of_five_ints: Counted_List[Integer](5) = [1; 2; 3; 4; 5]
+in ()
+\end{lstlisting}
 
-
+Notice that the function that represents the dependent type could decide to return more than one component type, based on some computation. That means runtime type check may need to be performed on values of this dependent type.
 
 
 

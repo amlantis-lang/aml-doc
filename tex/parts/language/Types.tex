@@ -432,11 +432,11 @@ Intersection-like types may be given in closed polymorphic variant types, likely
 Simple_Type 
     ::= ...
       | '(' Types ')'
-Types
-    ::= Named_Subtype {',' Named_Subtype}
+Tuple_of_Types
+    ::= Type_Expr {',' Type_Expr}
 Infix_Type 
     ::= ...
-      | Named_Subtype {'*' Named_Subtype}
+      | Type_Expr {'*' Type_Expr}
 \end{lstlisting}
 
 A tuple type ($T_1 \commadots T_n$) is an alias for the class \lstinline@Tuple[$T_1 \commadots T_n$]@, where $n \geq 1$. 
@@ -871,18 +871,15 @@ Types \code{T} that have got the \code{Default[$T$]} type class implemented have
 \grammar\begin{lstlisting}
 Type_Constraint_Clause 
     ::= 'where' Constraint_Block
-Simple_Type
-    ::= ...
-      | '@(' Expr ')'
 Constraint_Block 
     ::= [Param_Clauses '->'] '(' Expr ')'
 \end{lstlisting}
 
 A constrained type constructs a subset of allowed members of its component type. Such a subset is defined as members for which the constraint function returns boolean \code{yes}. Constraints defined within the component type are implicitly available in such function. 
 
-Constrained types, in face of overloading, trigger eager argument expression evaluation, so that the constrained type of a parameter can even be checked.\footnote{Therefore, constrained types are not really suitable candidates for parameters that are supposed to be lazy-evaluated, unless the early evaluation is intended.}
+Constrained types, in face of overloading, force strict argument expression evaluation, so that the constrained type of a parameter can be checked at binding time.\footnote{Therefore, constrained types are not really suitable candidates for parameters that are supposed to be non-strictly evaluated, unless the strict evaluation is intended.}
 
-The constraint function is only applied when a value is tested for membership of the constrained type, i.e. at binding time, be it argument type check, result type check or any other. This has implications on type soundness -- if the tested value is modified after the binding is done, it may not be a member of the constrained type subset any more, but it is definitely still a member of the component type.\footnote{This is because values in \Aml are not allowed to change their type membership in runtime.}
+The constraint function is only applied when a value is tested for membership of the constrained type, i.e. at {\em binding time}, be it argument type check, result type check or any other. This has implications on type soundness -- if the tested value is modified after the binding is done, it may not be a member of the constrained type subset any more, but it is definitely still a member of the component type.\footnote{This is because values in \Aml are not allowed to change their type membership in runtime.}
 
 \paragraph{Note}
 Constrained types are an implementation of {\em dependent types} in Aml. Dependent types are basically functions from values to types, where the value part is present in the defined constraint and/or the constraint block. 
