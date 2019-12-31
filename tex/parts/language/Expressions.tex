@@ -50,7 +50,7 @@ Expr
       | Method_Expr
       | Structure_Ref_Expr
       | Member_Constraint_Invocation_Expr
-      | Expr semi Expr
+      | Do_Binding
       | Scope_Stat
 \end{lstlisting}
 
@@ -141,9 +141,11 @@ Words
 Word
     ::= {id_char}+
 List_Expr
-    ::= '[' [Expr {semi Expr}] ']'
-      | '%[' [Expr {semi Expr}] ']'
+    ::= '[' [Expr {semi Expr}] [List_Cons_Expr] ']'
+      | '%[' [Expr {semi Expr}] [List_Cons_Expr]']'
       | '%w[' [Words] ']'
+List_Cons_Expr
+    ::= '::' Expr
 \end{lstlisting}
 
 Expressions of the forms ~\lstinline![$e_1$; $\ldots$; $e_n$]!, ~\lstinline!%[$e_1$; $\ldots$; $e_n$]!~ and ~\lstinline!%w[$w_1$ $\ldots$ $w_n$]!~ are list expressions. Specifically, 
@@ -242,11 +244,11 @@ Simple_Expr
       | Set_Expr
       | Bag_Expr
 Set_Expr
-    ::= '%(' [Expr {semi Expr}] ')'
+    ::= '%(' [Expr {semi Expr}] [List_Cons_Expr] ')'
       | '#(' [Expr {semi Expr}] ')'
 Bag_Expr
-    ::= '%(|' [Expr {semi Expr}] '|)'
-      | '#(|' [Expr {semi Expr}] '|)'
+    ::= '%(|' [Expr {semi Expr}] [List_Cons_Expr] '|)'
+      | '#(|' [Expr {semi Expr}] [List_Cons_Expr] '|)'
 \end{lstlisting}
 
 An expression of the form ~\lstinline!%($e_1$; $\ldots$; $e_n$)! is a set expression. 
@@ -1046,7 +1048,6 @@ Class qualifier may be a simple name referring to name of an enclosing type or s
 
 
 
-
 \subsection{Use Expressions}
 \label{sec:use-expressions}
 
@@ -1421,10 +1422,11 @@ Block_Params
 Block_Code_Expr
     ::= [Lambda_Declarations] Expr
 Do_Block 
-    ::= '{' Expr '}' 
-      | 'do' Expr 'done'
+    ::= '{' Expr {semi Expr} '}' 
+      | 'do' Expr {semi Expr} 'done'
 Do_Binding 
-    ::= 'do' Expr ['done']
+    ::= 'do' Expr {semi Expr} ['done']
+      | 'do' '{' Expr {semi Expr} '}' 
 \end{lstlisting}
 
 A block expression ~\lstinline!{ $s_1$; $\ldots$; $s_n$; $e$ }!~ is constructed from a sequence of block statements $s_1 \commadots s_n$ and a final expression $e$. The statement sequence may not contain two definitions or declarations that bind the same name in the same namespace, except for local function definitions, which then create overloaded local function definitions (behaving pretty much like regular overloaded functions). The final expression may be omitted, in which case the unit value ~\lstinline!()!~ is assumed. 
