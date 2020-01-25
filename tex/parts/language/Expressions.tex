@@ -826,7 +826,7 @@ method transpose['a] (xss: List[List['a]]): List[List['a]] =
 \end{lstlisting} 
 The comprehension is translated to: 
 \begin{lstlisting}
-method transpose['a](xss: List[List['a]]): List[List['a]] = 
+method transpose['a] (xss: List[List['a]]): List[List['a]] = 
   (0 .. xss(0).length)
     .map { 
       when i 
@@ -846,7 +846,8 @@ method transpose['a](xss: List[List['a]]): List[List['a]] =
 Function_Expr
     ::= 'fun' {Anonymous_Params_Clause}+ [If_Guard] Fun_Type_Expr
         '->' [Lambda_Declarations] Expr
-      | 'function' [Lambda_Declarations 'match'] When_Clauses 'end'
+      | 'function' [Lambda_Declarations 'match'] '{' With_Clauses '}'
+      | 'function' [Lambda_Declarations 'match'] [nl] When_Clauses 'end'
 Block_Expr
     ::= Match_Block_Expr
 Match_Block_Expr
@@ -2437,7 +2438,7 @@ Fallthrough_Expr
 Match_When_Expr
     ::= 'match' Expr [nl] When_Clauses 'end'
 Match_With_Expr
-    ::= 'match' Expr 'with' [nl] With_Clauses 'end'
+    ::= 'match' Expr 'with' '{' With_Clauses '}'
 When_Clauses
     ::= When_Clause {semi When_Clause} 
         [semi Else [nl] Expr]
