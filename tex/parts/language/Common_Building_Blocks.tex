@@ -35,22 +35,6 @@ Even more simply put, declarations declare a binding with a type (or type-less),
 
 
 
-\section{Value Names}
-\label{sec:val-var-names}
-
-Syntax rules defined in the following sections do not restrict users from choosing whatever value or variable name they want. However, there are a few conventions that are recommended to follow, because otherwise, an inconsistency in naming could arise in face of pattern matching (\sref{sec:pattern-matching}):
-
-\begin{itemize}
-  \item If a value or variable is to contain a type (such as a class), use upper-case first letter in its name (unless it makes more sense to have a lower-case first letter due to the name itself). 
-  \item In other cases, where a value or variable is to contain a non-type value, use lower-case first letter in its name, without exceptions. 
-\end{itemize}
-
-This is to keep up consistency with pattern matching, where the type will usually be presented with a name that starts with an upper-case letter (but does not need to if necessary), but all bound variables have to start with a lower-case letter, without exceptions. So basically, these conventions follow the restrictions imposed by pattern matching. 
-
-
-
-
-
 \section{Value Definitions}
 \label{sec:value-def}
 
@@ -66,13 +50,11 @@ Let_Value_Binding
     ::= Pattern [Type_Param_Clause] [':' Type_Expr]
         '=' Expr
 Let_Fun_Binding
-    ::= ['fun'] fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses Fun_Type_Expr
+    ::= 'fun' fun_id [Type_Param_Clause] [Given_Clauses] Param_Clauses Fun_Type_Expr
         '=' [Function_Declarations] Expr
 Fun_Type_Expr
     ::= [(':' | 'returns') Type_Expr] [':>' Type_Expr]
 \end{lstlisting}
-
-A value declaration \lstinline@let $x$: $T$@ introduces $x$ as a name of a value of type $T$. May appear in any block of code and an attempt to use it prior to initialisation with a value is an error.
 
 A value definition \lstinline@let $x$: $T$ = $e$@ defines $x$ as a name of the value that results from evaluation of expression $e$.
 
@@ -83,8 +65,6 @@ The value type $T$ may be always omitted, in that case the type is inferred and 
 The effect of the value definition is to bind $x$ to the value of $e$ converted to type $T$. 
 
 A value definition using the keyword \code{let} is equivalent to value definitions using the keyword \code{val}. Value declarations do not use the keyword \code{let}. 
-
-A value declaration without any type is basically only declaring the name, so that a binding is introduced and the actual value is for another code to define.\footnote{Usually, that another code should be a \code{constructor} or the class-level block in another file, maybe.}
 
 A value definition can alternatively have a pattern (\sref{sec:patterns}) as left-hand side (the name). If $p$ is a pattern other than a simple name or a name followed by a colon and a type, then the value definition \lstinline@val $p$ = $e$@ is expanded as follows: 
 
