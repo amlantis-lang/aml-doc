@@ -872,7 +872,7 @@ Types \code{T} that have got the \code{Default[$T$]} type class implemented have
 Type_Constraint_Clause 
     ::= 'where' Constraint_Block
 Constraint_Block 
-    ::= [Param_Clauses '->'] '(' Expr ')'
+    ::= '{' [var_id '->'] Expr '}'
 \end{lstlisting}
 
 A constrained type constructs a subset of allowed members of its component type. Such a subset is defined as members for which the constraint function returns boolean \code{yes}. Constraints defined within the component type are implicitly available in such function. 

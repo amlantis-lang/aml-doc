@@ -771,9 +771,9 @@ Type_Dependency_Param
     ::= Existential_Type_Dependency_Param
       | Universal_Type_Dependency_Param
 Existential_Type_Dependency_Param
-    ::= 'some' id [':' Type_Expr] ['where' Expr]
+    ::= 'some' id [':' Type_Expr]
 Universal_Type_Dependency_Param
-    ::= 'all' id [':' Type_Expr] ['where' Expr]
+    ::= 'all' id [':' Type_Expr]
 Parameterized_Type
     ::= ...
       | Parameterized_Type ['.'] '(' Expr ')'
@@ -802,7 +802,11 @@ Dependent types allow types to receive any value (including, but more importantl
 \example A simple dependent type:
 \begin{lstlisting}
 type Natural_Int =
-  Integer where (self) -> (self >= 0)
+  Integer where { self -> self >= 0 }
+and type Natural_Int_Number given { val n: Natural_Int } =
+  Natural_Int
+    given { some n }
+    where { self -> self = n }
 and type Recursively_Counted_List ['t] given { val n: Natural_Int } = variant
   case nil(0)
   case cons(n + 1) 
@@ -811,7 +815,7 @@ and type Recursively_Counted_List ['t] given { val n: Natural_Int } = variant
 and type Counted_List ['t] given { val n: Natural_Int } =
   't list 
     given { all n }
-    where (self) -> (self.length = n)
+    where { self -> self.length = n }
 end
 
 let list_of_five_ints: Counted_List[Integer](5) = [1; 2; 3; 4; 5]
