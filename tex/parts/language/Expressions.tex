@@ -939,13 +939,13 @@ If an expression $e$ binds anonymous sections $u_1 \commadots u_n$, in order spe
 
 \example The anonymous functions in the left column use placeholder syntax. Each of these is equivalent to the anonymous function to its right. 
 \begin{lstlisting}[mathescape=false]
-$1                          x -> x
-$1 + 1                      x -> x + 1
-$1 * $2                     x -> y -> x * y
-($1 as Integer) * 2         (x: Integer) -> x * 2
-if $1 then x else y end     (z: Boolean) -> if z then x else y end
-$1.map f                    x -> x.map f
-$1.map ($1 + 1)             x -> x.map (y -> y + 1)
+$1                          fun x -> x
+$1 + 1                      fun x -> x + 1
+$1 * $2                     fun x -> y -> x * y
+($1 as Integer) * 2         fun (x: Integer) -> x * 2
+if $1 then x else y end     fun (z: Boolean) -> if z then x else y end
+$1.map f                    fun x -> x.map f
+$1.map ($1 + 1)             fun x -> x.map (fun y -> y + 1)
 \end{lstlisting} 
 
 
