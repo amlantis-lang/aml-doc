@@ -11,95 +11,50 @@
 \section{Units of Measure}
 
 \syntax\begin{lstlisting}
-Typedef 
+Type_Representation 
     ::= ...
-      | id 'is' 'abstract' 'measure' 
-      | id 'is' 'measure' [semi] measure_def
+      | '=' 'abstract' 'measure' 
+      | '=' 'measure' ['(' Long_Id ')'] [semi] measure_def
       
 measure_def 
-    ::= '_' (* anonymous measure, inferrable by compiler *)
+    ::= '_' -- anonymous measure, inferrable by compiler
       | measure_simple
 measure_simple
     ::= measure_sequence
-      | measure_simple '*' measure_simple  (* product, e.g. "'U * 'V" *)
-      | measure_simple '/' measure_simple  (* quotient, e.g. "'U / 'V" *)
-      | '/' measure_simple  (* reciprocal, e.g. "/'U" *)
-      | '1'  (* dimensionless *)
+      | measure_simple '*' measure_simple  -- product, e.g. "'U * 'V"
+      | measure_simple '/' measure_simple  -- quotient, e.g. "'U / 'V"
+      | '/' measure_simple  -- reciprocal, e.g. "/'U"
+      | '1'  -- dimensionless
 measure_sequence
     ::= measure_power [measure_sequence]
 measure_power
     ::= measure_atom
-      | measure_atom '^' rational_literal  (* power of measure, e.g. "m^2" *)
+      | measure_atom '^' integer_literal  -- power of measure, e.g. "m^2"
 measure_atom
-    ::= Type_Var  (* variable measure, e.g. "'U" *)
-      | Long_Id  (* named measure, e.g. "ft" *)
-      | '(' measure_simple ')'  (* parenthesized measure, e.g. "(N m)" *)
+    ::= Type_Var  -- variable measure, e.g. "'U"
+      | Long_Id  -- named measure, e.g. "ft"
+      | '(' measure_simple ')'  -- parenthesized measure, e.g. "(N m)"
       
 measure_literal
-    ::= '_'  (* anonymous measure, inferrable by compiler *)
+    ::= '_'  -- anonymous measure, inferrable by compiler
       | measure_literal_simple
 measure_literal_simple
-    ::= measure_literal_sequence  (* implicit product, e.g. "m s^-3" *)
-      | measure_literal_simple '*' measure_literal_simple  (* product, e.g. "m * s^4" *)
-      | measure_literal_simple '/' measure_literal_simple  (* quotient, e.g. "m/s^3" *)
-      | '/' measure_literal_simple  (* reciprocal, e.g. "/s" *)
-      | '1'  (* dimensionless *)
+    ::= measure_literal_sequence  -- implicit product, e.g. "m s^-3"
+      | measure_literal_simple 
+        '*' measure_literal_simple  -- product, e.g. "m * s^4"
+      | measure_literal_simple 
+        '/' measure_literal_simple  -- quotient, e.g. "m/s^3"
+      | '/' measure_literal_simple  -- reciprocal, e.g. "/s"
+      | '1'  -- dimensionless
 measure_literal_sequence
     ::= measure_literal_power [measure_literal_sequence]
 measure_literal_power
     ::= measure_literal_atom
-      | measure_literal_atom '^' rational_literal  (* power of measure, e.g. "m^2" *)
+      | measure_literal_atom '^' integer_literal  -- power of measure, e.g. "m^2"
 measure_literal_atom
-    ::= Long_Id  (* named measure, e.g. "ft" *)
-      | '(' measure_literal_simple ')'  (* parenthesized measure, e.g. "(N m)" *)
+    ::= Long_Id  -- named measure, e.g. "ft"
+      | '(' measure_literal_simple ')'  -- parenthesized measure, e.g. "(N m)"
 \end{lstlisting}
 
 Numbers in Aml can have associated units of measure, which are typically used to indicate length, volume, mass, distance and so on. By using quantities with units, the runtime is allowed to verify that arithmetic relationships have the correct units, which helps prevent programming errors. 
-
-\example The following defines the measure \code{cm} (centimeter).
-\begin{lstlisting}
-type cm is measure
-end type
-\end{lstlisting}
-
-\example The following defines the measure \code{ml} (milliliter) as a cubic centimeter (\lstinline!cm ^ 3!).
-\begin{lstlisting}
-type ml is measure
-  ml := cm ^ 3
-end type
-\end{lstlisting}
-
-\example The following shows possible usage of abstract units of measure. 
-\begin{lstlisting}
-type distance is abstract measure
-end type
-
-type m extends distance is measure
-  m := km / 1000
-end type
-
-type km extends distance is measure
-  km := m * 1000
-end type
-
-type mi extends distance is measure
-  mi := km * 0.621
-  mi := (m * 1000) * 0.621 (* this can be inferred! *)
-end type
-\end{lstlisting}
-This enables types aggregated with units of measure require a number tagged with any distance unit of measure and still work with correct units. 
-
-Every unit of measure is defined in the same scope as any other type would be, but the application of units of measure to numbers or {\em aggregated unit types} require to import units of measure by name into the scope where a unit of measure from a different unrelated module would be used. 
-
-\paragraph{\em Types Aggregated with Units of Measure}
-In addition to type parameters of each type, every type may be parameterized with a units of measure aggregation. These parameters are each put into angle brackets, and the only available bound is an upper bound for abstract unit of measure type. 
-
-\syntax\begin{lstlisting}[mathescape=false]
-Variant_Type_Param ::= '<' (id | '_') ['<:' id] '>'
-\end{lstlisting}
-
-Names of unit of measure parameters must not clash with names of type parameters or other unit of measure parameters, otherwise it is a compile-time error. 
-
-\paragraph{\em Persistence of Units of Measure}
-There is a huge difference between the way F\# handles units of measure and Aml's way. In F\#, the unit of measure information is lost after compilation, but persists in Aml in runtime, since verification of units of measure is deferred also to runtime, as it is limited during compilation. This also means that the information may be accessed in runtime, e.g. using it to print the unit information on screen.
 

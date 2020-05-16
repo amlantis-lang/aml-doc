@@ -10,6 +10,7 @@
 \RequirePackage{color}
 \RequirePackage{colortbl}
 \usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{fontspec}
 
 \RequirePackage{a4}
 \setlength{\textheight}{22.5cm}
@@ -95,17 +96,17 @@
 \renewcommand{\headrulewidth}{0.5pt}
 
 % set up typefaces
-\defaultfontfeatures{Mapping=tex-text}
-\setmainfont[Scale=0.9,Mapping=tex-text,ItalicFont=Linux Libertine Italic,BoldFont=Linux Libertine Bold,BoldItalicFont=Linux Libertine Bold Italic]{Linux Libertine Display}
-\setromanfont[Scale=0.9,Mapping=tex-text,ItalicFont=Linux Libertine Italic,BoldFont=Linux Libertine Bold,BoldItalicFont=Linux Libertine Bold Italic]{Linux Libertine Display}
-\setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Linux Biolinum}%{Helvetica Neue Condensed Bold}
+\defaultfontfeatures{Mapping=tex-text,Ligatures=TeX,Numbers=OldStyle}
+\setmainfont[Scale=0.9,Mapping=tex-text]{Linux Libertine O}
+\setromanfont[Scale=0.9,Mapping=tex-text]{Linux Libertine O}
+\setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Linux Biolinum O}%{Helvetica Neue Condensed Bold}
 % retrieve at: https://github.com/belluzj/fantasque-sans
 %\setmonofont[Scale=MatchLowercase,Mapping=]{Fantasque Sans Mono}
 % retrieve at: http://sourcefoundry.org/hack/
-\setmonofont[Scale=MatchLowercase,Mapping=]{Hack}
-\setmathfont(Digits,Latin,Greek)[Scale=MatchLowercase,ItalicFont=Linux Libertine Italic,BoldFont=Linux Libertine Bold,BoldItalicFont=Linux Libertine Bold Italic]{Linux Libertine Display}
-\newfontfamily\headingfont[]{Linux Biolinum}%{Helvetica Neue Condensed Bold}
-\newfontfamily\chapterfont[]{Linux Biolinum}%{Helvetica Neue Thin}
+\setmonofont[Scale=MatchLowercase,Mapping=]{Fira Code}
+\setmathfont(Digits,Latin,Greek)[Scale=MatchLowercase]{Linux Libertine O}
+\newfontfamily\headingfont[]{Linux Biolinum O}%{Helvetica Neue Condensed Bold}
+\newfontfamily\chapterfont[]{Linux Biolinum O}%{Helvetica Neue Thin}
 \renewcommand{\maketitlehooka}{\headingfont}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{8pt plus 2pt minus 2pt}
@@ -119,13 +120,20 @@
 
 \usepackage{listings}
 
+\lstdefinelanguage[ExtraComments]{Aml}{
+  morecomment=[l]\#!,%
+  morecomment=[l]--,%
+  morecomment=[n]{\{-}{-\}},%
+}[comments]%
+
 \lstdefinelanguage{Aml}{
   alsoletter={-!?},%
-  morekeywords={abstract,%
+  morekeywords={%
+    abstract,%
     advice,%
-    advice-execution,%
     after,%
     alias,%
+    all,%
     also,%
     and,%
     annotation,%
@@ -136,24 +144,21 @@
     as!,%
     aspect,%
     assert,%
-    atomic,%
     attribute,%
     begin,%
     before,%
-    bitfield,%
     break,%
     broken,%
+    by,%
     case,%
     catch,%
     class,%
-    clone,%
     cloned,%
     constant,%
     constraint,%
     constructor,%
     convenience,%
     declare,%
-    def,%
     defer,%
     delta,%
     destructor,%
@@ -162,35 +167,34 @@
     do,%
     do!,%
     done,%
-    downto,%
-    eager,%
+    down,%
+    downcast,%
     else,%
-    elsif,%
     end,%
     ensure,%
     enum,%
+    eval,%
     execution,%
     exhausted,%
     exit,%
-    extends,%
+    extension,%
     family,%
     failure,%
     final,%
     for,%
-    for-all,%
-    for-some,%
     foreign,%
+    fun,%
     function,%
     functor,%
     get,%
     given,%
+    global,%
     goto,%
     handle,%
     handler,%
     if,%
-    immutable,%
-    implements,%
     implicit,%
+    immutable,%
     in,%
     include,%
     infix,% infix non-associative
@@ -199,7 +203,6 @@
     inherit,%
     instance,%
     interface,%
-    intersection,%
     invariant,%
     invoke,%
     is,%
@@ -208,7 +211,9 @@
     label,%
     lazy,%
     let,%
+    let?,%
     let!,%
+    local,%
     loop,%
     macro,%
     match,%
@@ -218,7 +223,6 @@
     message,%
     method,%
     module,%
-    monitored,%
     multi,%
     mutable,%
     native,%
@@ -226,6 +230,7 @@
     next,%
     nil,%
     no,%
+    nonfix,%
     not,%
     not!,%
     object,%
@@ -236,7 +241,6 @@
     operator,%
     optional,%
     or,%
-    origin,%
     otherwise,%
     out,%
     outer,%
@@ -245,11 +249,10 @@
     per-self,%
     per-target,%
     pointcut,%
+    postfix,%
     pragma,%
     prefer,%
-    prepend,%
     private,%
-    property,%
     protected,%
     protocol,%
     public,%
@@ -260,10 +263,8 @@
     range,%
     rec,%
     recursive,%
-    record,%
     redo,%
     ref,%
-    refine,%
     refinement,%
     reflect,%
     release,%
@@ -279,20 +280,20 @@
     return,%
     return!,%
     returning,%
-    requires,%
-    reverse,%
+    returns,%
+    required,%
     scope,%
     sealed,%
     self,%
     set,%
-    seq,%
+    sequence,%
     sig,%
     signal,%
     signalling,%
     signals,%
     signature,%
     skip,%
-    soft,%
+    some,%
     step,%
     struct,%
     structure,%
@@ -303,7 +304,6 @@
     tailcall,%
     target,%
     then,%
-    this,%
     throw,%
     throwing,%
     throws,%
@@ -313,33 +313,34 @@
     try,%
     try?,%
     try!,%
-    tuple,%
     type,%
     undefined,%
     unless,%
     unowned,%
     until,%
-    union,%
-    upgrade,%
+    up,%
+    upcast,%
     use,%
     use!,%
     val,%
+    val?,%
     var,%
+    var?,%
     variant,%
     yes,%
     weak,%
     when,%
+    where,%
     while,%
     with,%
+    without,%
     xor,%
     yield,%
     yield!,%
     yielding},%
   sensitive,%
-  morecomment=[l]\#!,%
-  morecomment=[n]{(*\ }{*)},%
-  morecomment=[n]{(*!\ }{*)},%
-  morecomment=[n]{(**\ }{*)},%
+  morecomment=[l]--,%
+  morecomment=[n]{\{-}{-\}},%
 }[keywords,comments]
 
 % activate the language and predefine settings
@@ -386,7 +387,7 @@
 \newcommand{\sref}[1]{\S\ref{#1}}
 \newcommand{\comma}{,\,}
 \newcommand{\commadots}{\comma \ldots \comma}
-\newcommand{\conforms}{<:}
+\newcommand{\conforms}{\ifmmode \mathtt{\ <:\ } \else <: \fi}
 \newcommand{\gap}{\quad\quad}
 
 \newcounter{Example}[section]
