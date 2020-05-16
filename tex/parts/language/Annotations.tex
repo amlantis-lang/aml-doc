@@ -10,20 +10,36 @@
 
 \newpage
 
-% TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits lik Function_n may use it in its type parameters to apply the parameter extras to the apply method
+% TBD: add annotations that define named parameter types, captured named parameters, repeated parameter and captured block parameter, so that traits like Function[...] may use it in its type parameters to apply the parameter extras to the apply method
 
-\syntax\begin{lstlisting}
-Annotation            ::= '@[' Simple_Type [Arguments] ']'
-Tmpl_Def              ::= Annotation_Definition
-Annotation_Definition ::= 'annotation' Class_Def
-Expr                  ::= Pragma
-Pragma                ::= 'pragma' Simple_Type [NB_Arg_Exprs]
-Dcl                   ::= Macro_Dcl
-Macro_Dcl             ::= 'def' 'macro' Fun_Sig 'end' ['def']
-Def                   ::= Macro_Def
-Macro_Def             ::= 'def' 'macro' Fun_Sig [Fun_Dec] 
-                          [semi Fun_Stats] 'end' ['def']
-                        | 'def' 'macro' Fun_Sig ':=' [Fun_Dec2] Expr
+\grammar\begin{lstlisting}
+Expr
+    ::= ...
+      | Pragma_Expr
+Class_Expr
+    ::= ...
+      | Class_Pragma_Expr
+Annotation_Definition 
+    ::= 'annotation' Class_Def
+Macro_Dcl
+    ::= 'macro' Fun_Sig 'end'
+Macro_Def 
+    ::= 'macro' Fun_Sig '=' [Fun_Dec] Expr
+Annotation 
+    ::= '@[' Long_Id [Arguments] {semi Long_Id [Arguments]} ']'
+Nested_Annotation
+    ::= Inner_Annotation
+      | Standalone_Annotation
+Inner_Annotation
+    ::= '[@' Long_Id [Arguments] {semi Long_Id [Arguments]} ']'
+Standalone_Annotation
+    ::= '[@@' Long_Id [Arguments] {semi Long_Id [Arguments]} ']'
+Pragma_Expr 
+    ::= 'pragma' Long_Id [Arguments] (Do_Block | In_Sep Expr ['end'])
+      | 'pragma' Long_Id '(' [Arguments] ')' (Do_Block | In_Sep Expr ['end'])
+Class_Pragma_Expr 
+    ::= 'pragma' Long_Id [Arguments] In_Sep Class_Expr
+      | 'pragma' Long_Id '(' [Arguments] ')' In_Sep Class_Expr
 \end{lstlisting}
 
 Annotations, pragmas \& macros are a way to provide metadata to both the compiler and runtime of Aml, possibly affecting the resulting bytecode and abstract syntax trees. 
@@ -73,25 +89,25 @@ A macro is defined as a regular function, but it's body is required to pass invo
 \end{enumerate}
 
 \example The following code is an example implementation of a simple \code{assert} macro. 
-\begin{lstlisting}[deletekeywords={message,assert}]
-(* import a blackbox context *)
+\begin{lstlisting}[deletekeywords={message,assert},mathescape=false]
+-- import a blackbox context
 use Aml/Language.Reflection.Macros.Blackbox.Context
 
-(* define the macro *)
-def macro assert (condition: Boolean, message: String_Like): Unit := 
+-- define the macro
+macro assert (condition: Boolean, message: String_Like): Unit = 
     Asserts.assert_impl
 
-(* implement the macro *)
-object Asserts {
-  def assert_impl 
+-- implement the macro
+object Asserts
+  method assert_impl 
       (c: Context)
-      (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit :=
-    <@ unless #{cond}
-         raise #{msg}
+      (cond: c.Expr[Boolean], msg: c.Expr[String_Like]): Unit =
+    <@ unless ${cond}
+         raise ${msg}
        else
          ()
        end @>
-}
+end
 \end{lstlisting}
 
 Macros can be applied as an intermediate step by IDEs, so that their resulting transformations could be viewed prior to proceeding with compilation. 
@@ -103,7 +119,7 @@ Macros can be applied as an intermediate step by IDEs, so that their resulting t
 \subsection{Whitebox \& Blackbox Macros}
 \label{sec:whitebox-blackbox-macros}
 
-{\em Blackbox macros} are such macros that exactly follow their type signature, including the result type, and therefore can be treated as blackboxes. Their implementations are irrelevant to understanding their behavior. On the otherhand, {\em whitebox macros} do not necessarily follow their type signature, which they have, but only as an approximation, which may or may not be precise. Therefore, whitebox macros may be used to create e.g. type providers, functional dependency materialization or extractor macros. 
+{\em Blackbox macros} are such macros that exactly follow their type signature, including the result type, and therefore can be treated as blackboxes. Their implementations are irrelevant to understanding their behaviour. On the otherhand, {\em whitebox macros} do not necessarily follow their type signature, which they have, but only as an approximation, which may or may not be precise. Therefore, whitebox macros may be used to create e.g. type providers, functional dependency materialization or extractor macros. 
 
 Blackbox macros have the following restrictions applied to them:
 \begin{enumerate}

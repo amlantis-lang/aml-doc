@@ -88,7 +88,13 @@ All lexical and grammar syntax definitions use a customized form of EBNF. These 
     Exception, an anonymous element that contains all of \code{element}, except for elements defined by \code{except} (which can be a grouping). 
   \item \lstinline!category ::= element! \newline
     Used for definitions; signals that \code{category} is made of \code{element}, as in EBNF. The same \code{category} could appear on the left side multiple times for \code{element$_1$} \ldots\ \code{element$_n$}, in that case, it is taken that \lstinline!category ::= element$_1$ | $\ldots$ | element$_n$!.
-  \item \lstinline!(* comment *)! \newline
+  \item \lstinline!category ::= element + extra! \newline
+    Extension, a category in which all occurrences of \code{element} can also be \code{extra}, including those occurring in \code{extra} itself. 
+  \item \lstinline!category(param, param, ...) ::= element! \newline
+    A category parameterized by one or more elements that may appear as a part of its definition.
+  \item \lstinline!category(element, element, ...)! \newline
+    A category element parameterized by another elements.
+  \item \lstinline!-- comment! or \lstinline!{- comment -}! \newline
     An additional information about the given syntax element, could contain additional restrictions described textually. 
 \end{itemize}
 

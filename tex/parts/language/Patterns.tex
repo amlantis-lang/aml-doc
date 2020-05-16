@@ -14,110 +14,166 @@
 \section{Patterns}
 \label{sec:patterns}
 
-\syntax\begin{lstlisting}[deletekeywords={as,with}]
-Pattern             ::= Atomic_Pattern
-                      | Non_Atomic_Pattern
-Atomic_Pattern      ::= Var_Pattern
-                      | Bound_Pattern
-                      | Typed_Pattern
-                      | ':?' Type (* a portion of Type_Pattern *)
-                      | Wildcard_Pattern
-                      | Constant_Pattern
-                      | Grouped_Pattern
-                      | Stable_Id (* a portion of Named_Pattern *)
-                      | List_Pattern
-                      | Array_Pattern
-                      | Dict_Pattern
-                      | Multimap_Pattern
-                      | Bag_Pattern
-                      | Record_Pattern
-                      | Struct_Pattern
-                      | '(' Pattern ')'
-Non_Atomic_Pattern  ::= Type_Pattern
-                      | Type_Bound_Pattern
-                      | Infix_Pattern
-                      | Or_Pattern
-                      | And_Pattern
-                      | Named_Pattern
-                      | Tag_Pattern
-                      | Tuple_Pattern
-                      | Cons_Pattern
-                      | Annotated_Pattern
-Var_Pattern         ::= ['implicit'] ['val' | 'var'] var_id
-Bound_Pattern       ::= Pattern 'as' Var_Pattern
-Wildcard_Pattern    ::= '_'
-Constant_Pattern    ::= Constant
-Typed_Pattern       ::= '(' Type_Bound_Pattern ')'
-Type_Pattern        ::= ['type' 'is' | ':?'] Type
-Type_Bound_Pattern  ::= Pattern ':' Type
-Grouped_Pattern     ::= '(' Pattern ')'
-Infix_Pattern       ::= Pattern (id | op_id) Pattern
-Or_Pattern          ::= Pattern '|' Pattern
-And_Pattern         ::= Pattern '&' Pattern
-Named_Pattern       ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
-                      | '.' Stable_Id [Tuple_Extractions]
-Tag_Pattern         ::= Tag_Name [Tuple_Extractions]
-Tuple_Pattern       ::= Pattern {',' Pattern}+
-                      | Tuple_Extractions
-List_Pattern        ::= '%[' [Seq_Extractions] ']'
-Array_Pattern       ::= '%[|' [Seq_Extractions] '|]'
-Dict_Pattern        ::= '%{' [Dict_Extractions] '}'
-Multimap_Pattern    ::= '%{{' [Dict_Extractions] '}}'
-Bag_Pattern         ::= '%(' [Seq_Extractions] ')'
-Cons_Pattern        ::= Pattern '::' Pattern
-Annotated_Pattern   ::= {Annotation}+ Pattern
-Extractions         ::= Pattern 
-                      | Positional_Extracts {',' Labelled_Extracts}
-                      | Labelled_Extracts
-Tuple_Extractions   ::= Extractions
-                      | '(' Extractions ')'
-Positional_Extracts ::= Pattern {',' Pattern} 
-                        [',' Rest_Extracts {',' Pattern}]
-                      | Rest_Extracts {',' Pattern}
-Rest_Extracts       ::= Optional_Extract {',' Optional_Extract} 
-                        [',' Rest_Extract]
-                      | Rest_Extract
-Optional_Extract    ::= '?' Pattern
-                      | '?' ['val' | 'var'] id ':' Type
-                      | '?' '_' ':' Type
-                      | '?(' Pattern ':=' Value_Expr ')'
-Rest_Extract        ::= '*' ['val' | 'var'] id [':' Type]
-                      | '*' '_' [':' Type]
-Labelled_Extracts   ::= Labelled_Pattern {',' Labelled_Pattern} 
-                        [',' Capture_Extract]
-                      | Capture_Extract
-Labelled_Pattern    ::= '~' ['val' | 'var'] id 
-                      | '~(' ['val' | 'var'] id [':' Type] ')'
-                      | '~' ['val' | 'var'] id ':' Pattern
-                      | '~' ['val' | 'var'] id ':' 
-                        '(' Pattern [':' Type] ')'
-                      | '~?' ['val' | 'var'] id
-                      | '~?(' ['val' | 'var'] id [':' Type] [':=' Value_Expr] ')'
-                      | '~?' ['val' | 'var'] id ':' Pattern
-                      | '~?' ['val' | 'var'] id ':' 
-                        '(' Pattern [':' Type] [':=' Value_Expr] ')'
-Capture_Extract     ::= '**' var_id [':' Type]
-                      | '**' '_' [':' Type]
-Seq_Extractions     ::= Pattern {semi Pattern} [semi Seq_Rest_Extracts] 
-                        {semi Pattern}
-                      | Seq_Rest_Extracts {semi Pattern}
-Seq_Rest_Extracts   ::= Optional_Extract {semi Optional_Extract} 
-                        [semi Rest_Extract]
-                      | Rest_Extract
-Dict_Extractions    ::= Dict_Extraction {semi Dict_Extraction}
-                        [semi Capture_Extract]
-                      | Capture_Extract
-                      | Seq_Extractions
-Dict_Extraction     ::= Dict_Key '=>' Pattern
-Dict_Key            ::= Literal
-                      | '_'
-                      | Value_Expr
-Record_Pattern      ::= 'record' '{' Field_Patterns '}'
-Field_Patterns      ::= Field_Pattern {semi Field_Pattern} [semi '_']
-                      | '_'
-Field_Pattern       ::= Stable_Id '=>' Pattern
-Struct_Pattern      ::= 'structure' Pkg_Type
-Pattern_Param       ::= Value_Expr
+% TBD: bag pattern - add a way to extract the tally as well?
+
+\grammar\begin{lstlisting}
+Pattern
+    ::= Atomic_Pattern
+      | Non_Atomic_Pattern
+Atomic_Pattern 
+    ::= Atomic_Var_Pattern
+      | Bound_Pattern
+      | Typed_Pattern
+        -- a portion of Type_Pattern
+      | ':?' (Simple_Type - Postfix_Parameterized_Type)  
+      | Type_Instance_Pattern
+      | Wildcard_Pattern
+      | Constant_Pattern
+      | Grouped_Pattern
+        -- a portion of Named_Pattern
+      | Stable_Id  
+      | List_Pattern
+      | Array_Pattern
+      | Vector_Pattern
+      | Dict_Pattern
+      | Multimap_Pattern
+      | Bag_Pattern
+      | Record_Pattern
+      | Struct_Pattern
+      | '(' Pattern ')'
+Non_Atomic_Pattern 
+    ::= Var_Pattern
+      | Type_Pattern
+      | Type_Bound_Pattern
+      | Infix_Pattern
+      | Or_Pattern
+      | And_Pattern
+      | Named_Pattern
+      | Tag_Pattern
+      | Tuple_Pattern
+      | Cons_Pattern
+      | Annotated_Pattern
+      | Nested_Pattern
+Var_Pattern 
+    ::= Atomic_Var_Pattern
+      | ['implicit'] [Storage_Modifier] 'val' var_id
+Atomic_Var_Pattern 
+    ::= var_id
+Bound_Pattern 
+    ::= Pattern 'as' Var_Pattern
+Wildcard_Pattern 
+    ::= '_'
+Constant_Pattern 
+    ::= Constant
+Typed_Pattern 
+    ::= '(' Type_Bound_Pattern ')'
+Type_Pattern 
+    ::= ['is' | ':?'] Type_Expr
+Type_Bound_Pattern 
+    ::= Pattern ':' Type_Expr
+Type_Instance_Pattern 
+    ::= Singleton_Type
+      | Projected_Type
+Grouped_Pattern 
+    ::= '(' Pattern ')'
+Infix_Pattern 
+    ::= Pattern (Infix_Op - ('and also', 'or else')) Pattern
+Or_Pattern 
+    ::= Pattern '|' Pattern
+And_Pattern 
+    ::= Pattern '&' Pattern
+Named_Pattern 
+    ::= Stable_Id {Pattern_Param} [Atomic_Extractions]
+Tag_Pattern
+    ::= Tag_Name [Pattern]
+Tuple_Pattern 
+    ::= Pattern {',' Pattern}+
+      | Tuple_Extractions
+List_Pattern
+    ::= '[' [Seq_Extractions] ']'
+      | '%[' [Seq_Extractions] ']'
+Array_Pattern
+    ::= '[|' [Seq_Extractions] '|]'
+      | '%[|' [Seq_Extractions] '|]'
+Vector_Pattern
+    ::= '#[' [Seq_Extractions] ']'
+Dict_Pattern 
+    ::= '%{' [Dict_Extractions] '}'
+      | '#{' [Dict_Extractions] '}'
+Multimap_Pattern 
+    ::= '%{|' [Dict_Extractions] '|}'
+      | '#{|' [Dict_Extractions] '|}'
+Set_Pattern
+    ::= '%(' [Seq_Extractions] ')'
+      | '#(' [Seq_Extractions] ')'
+Bag_Pattern
+    ::= '%(|' [Seq_Extractions] '|)'
+      | '#(|' [Seq_Extractions] '|)'
+Cons_Pattern 
+    ::= Pattern '::' Pattern
+Annotated_Pattern 
+    ::= {Annotation}+ Pattern
+Nested_Pattern
+    ::= Pattern 'with' Pattern '=' Expr
+Extractions
+    ::= Pattern 
+      | Positional_Extracts
+Tuple_Extractions 
+    ::= Atomic_Tuple_Extractions
+      | Non_Atomic_Tuple_Extractions
+Atomic_Extractions
+    ::= Atomic_Tuple_Extractions
+      | Record_Pattern
+Atomic_Tuple_Extractions 
+    ::= '(' Extractions ')'
+Non_Atomic_Tuple_Extractions 
+    ::= Extractions
+Positional_Extracts 
+    ::= Pattern {',' Pattern} [',' Rest_Extracts {',' Pattern}]
+      | Rest_Extracts {',' Pattern}
+Rest_Extracts
+    ::= Optional_Extract {',' Optional_Extract} [',' Rest_Extract]
+      | Rest_Extract
+Optional_Extract 
+    ::= '?' Pattern
+      | '?' id [':' Type_Expr]
+      | '?' '_' [':' Type_Expr]
+      | '?(' Pattern '=' Expr ')'
+Rest_Extract 
+    ::= '*' id [':' Type_Expr]
+      | '*' '_' [':' Type_Expr]
+Seq_Extractions
+    ::= Pattern {semi Pattern} [semi Seq_Rest_Extracts] {semi Pattern}
+      | Seq_Rest_Extracts {semi Pattern}
+Seq_Rest_Extracts 
+    ::= Optional_Extract {semi Optional_Extract} [semi Rest_Extract]
+      | Rest_Extract
+Dict_Extractions 
+    ::= Dict_Extraction {semi Dict_Extraction} [semi Capture_Extract]
+      | Capture_Extract
+      | Seq_Extractions
+Dict_Extraction
+    ::= Dict_Key '=' Pattern
+Dict_Key 
+    ::= '_'
+      | Expr
+Capture_Extract 
+    ::= '**' var_id [':' Type_Expr]
+      | '**' '_' [':' Type_Expr]
+Record_Pattern 
+    ::= '{' Field_Patterns '}'
+Field_Patterns 
+    ::= Field_Pattern {semi Field_Pattern} [semi Field_Rest_Pattern]
+      | [semi] Field_Rest_Pattern
+Field_Pattern 
+    ::= Record_Label '=' Pattern
+      | Var_Pattern [':' Type_Expr] ['as' Pattern]
+Field_Rest_Pattern
+    ::= '_' ['=' Pattern]
+Struct_Pattern
+    ::= '(' 'structure' id ['as' Pkg_Type] ')'
+Pattern_Param 
+    ::= Expr
 \end{lstlisting}
 
 \begin{table}[h!]
@@ -142,7 +198,7 @@ Pattern_Param       ::= Value_Expr
 
 
 
-\subsection{Atomic \& Non-Atomic Patterns}
+\subsection[Atomic \& Non-Atomic Patterns]{Atomic \& Non-Atomic Patterns}
 \label{sec:atomic-patterns}
 \label{sec:non-atomic-patterns}
 
@@ -155,15 +211,16 @@ We call {\em atomic patterns} those of pattern forms that can appear consecutive
 \subsection{Constant Patterns}
 \label{sec:constant-patterns}
 
-\syntax\begin{lstlisting}
-Constant_Pattern ::= Constant
+\grammar\begin{lstlisting}
+Constant_Pattern 
+    ::= Constant
 \end{lstlisting}
 
 A constant pattern $L$ matches any value that is structurally equal (defined by the \code{Equatable} trait, ``\code{=}'' operator returning ``\code{yes}'') to the constant value $L$. The type of $L$ must conform to the expected type of the matched value. 
 
 \example An example of a constant pattern. 
 \begin{lstlisting}
-let rotate_3 := function
+let rotate_3 = function
   when 0 then "two"
   when 1 then "zero"
   when 2 then "one"
@@ -179,8 +236,9 @@ A constant pattern contributes the type of the constant to type of parameter, wh
 \subsubsection{Regular Expression Patterns}
 \label{sec:regexp-patterns}
 
-\syntax\begin{lstlisting}
-Pattern ::= Constant
+\grammar\begin{lstlisting}
+Pattern 
+    ::= Constant
 \end{lstlisting}
 
 A regular expression pattern $p$ ({\em regexp pattern}) is a variant of constant pattern, designed to match \code{String_Like} values. Literally, the pattern $p$ matches a value $v$, if $v$ is of a type that conforms to \code{String_Like} and its contents match the regular expression. Moreover, sub-patterns bind to variable names of a name of the form ~\lstinline!match_$n$!, where $n$ is either the position of the sub-pattern (unless the sub-pattern is explicitly not captured), or the name of a named sub-pattern. 
@@ -197,15 +255,14 @@ Regular expression patterns contribute the \code{String_Like} type to type of pa
 \subsection{Variable Patterns}
 \label{sec:variable-patterns}
 
-\syntax\begin{lstlisting}
-Var_Pattern      ::= ['implicit'] ['val' | 'var'] var_id
+\grammar\begin{lstlisting}
+Var_Pattern 
+    ::= ['implicit'] [Storage_Modifier] 'val' var_id
 \end{lstlisting}
 
 A variable pattern $x$ is a simple identifier which starts with a lower case letter. It matches any value and binds the variable name to that value. The type of $x$ is the expected type of the pattern as given from the outside. 
 
 A variable pattern contributes the implicit type of a variable to type of parameter, when used in function parameter list. It is by default \code{Auto}. 
-
-A variable pattern is implicitly prefixed with \code{val}, and thus the bound variable is immutable, and prefixing it explicitly is redundant. A variable pattern may also be prefixed with \code{var} instead, then the bound variable is mutable. 
 
 A variable pattern prefixed with \code{implicit} is made eligible to be passed as implicit argument (\sref{sec:implicit-parameters}). The value that is eligible is however the current value at the instant of function application with implicit arguments -- therefore if the variable is mutable, it might be a different value than the one bound from the pattern match. 
 
@@ -219,8 +276,9 @@ A variable pattern contributes the type \code{Aml/Language.Any} to type of param
 \subsection{Wildcard Patterns}
 \label{sec:wildcard-patterns}
 
-\syntax\begin{lstlisting}
-Wildcard_Pattern ::= '_'
+\grammar\begin{lstlisting}
+Wildcard_Pattern 
+    ::= '_'
 \end{lstlisting}
 
 The pattern ``\code{_}'' is a wildcard pattern that matches any input and does not bind any value to any variable. 
@@ -229,17 +287,17 @@ A wildcard pattern contributes the type \code{Aml/Language.Any} to type of param
 
 \example In this example, if \code{x} is 0, the match returns 1, if \code{x} has any other value, the match returns 0. The second definition is equivalent. 
 \begin{lstlisting}
-let categorize := function
+let categorize = function
   when 1 then 0
   when 0 then 1
   when _ then 0
-end function
+end
 
-let categorize_alternative := function
+let categorize_alternative = function
   when 1 then 0
   when 0 then 1
   otherwise 0
-end function
+end
 \end{lstlisting}
 
 Wildcard patterns may also be used in extractions to ignore the input at the given site. 
@@ -251,9 +309,9 @@ Wildcard patterns may also be used in extractions to ignore the input at the giv
 \subsection{Named Patterns}
 \label{sec:named-patterns}
 
-\syntax\begin{lstlisting}
-Named_Pattern ::= Stable_Id {Pattern_Param} [Tuple_Extractions]
-                | '.' Stable_Id [Tuple_Extractions]
+\grammar\begin{lstlisting}
+Named_Pattern 
+    ::= Stable_Id {Pattern_Param} [Atomic_Tuple_Extractions]
 \end{lstlisting}
 
 In a named pattern, the \code{Stable_Id} part must not start with a lowercase letter as defined in \code{var_id}, otherwise it would be interpreted as a variable pattern. 
@@ -272,7 +330,6 @@ If that condition is met, then the \code{Stable_Id} part may resolve into the fo
   \item A value implementing \code{Pattern_Matching} (\sref{sec:pattern-matching-values}).
   \item A (likely constant) value implementing \code{Equatable} (\sref{sec:equatable-patterns}).\footnote{The runtime should issue a warning if the value is not constant, since that condition would make the pattern match possibly behave differently at different execution times.}
   \item A class object (\sref{sec:metaclasses}) of a class that defines a primary constructor with one or more parameters (\sref{sec:constructor-patterns}).
-  \item A type (see \sref{sec:type-patterns}).
 \end{itemize}
 
 After the \code{Stable_Id} is resolved, the named pattern is treated according to the following subsections. 
@@ -286,23 +343,21 @@ After the \code{Stable_Id} is resolved, the named pattern is treated according t
 
 If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an enumeration element, the pattern is an enumeration pattern. Such pattern then matches inputs that are equal to the enumeration element. The form \code{Stable_Id} is used if the corresponding enumeration element takes no arguments or if arguments are to be ignored, and the form \code{Stable_Id Tuple_Extractions} is used if it takes arguments, which are then matched according to the \code{Tuple_Extractions} (\sref{sec:extractions-in-patterns}). 
 
-Shortcuts are provided for enumeration elements, which are relative to the enumeration type: \code{.Stable_Id} and \code{.Stable_Id Tuple_Extractions}. The \code{Stable_Id} is then searched in the enumeration type instead of the current scope. 
-
 An enumeration pattern contributes the enumeration type to type of parameter, when used in function parameter list. 
 
 \example An example of an enumeration pattern with extractions:
 \begin{lstlisting}
-type Data is enum
-  Kind_1 of Number * Number
-  Kind_2 of String * String
-end type
+type Data = enum
+  case Kind_1 of Number * Number
+  case Kind_2 of String * String
+end
 
-let some_data := Data.Kind_1(4, 2)
+let some_data = Data.Kind_1 (4, 2)
 
-let result := match some_data
-  when .Kind_1(a, b) then a + b
-  when .Kind_2(s1, s2) then s1.length + s2.length
-end match
+let result = match some_data
+  when Kind_1 (a, b) then a + b
+  when Kind_2 (s1, s2) then s1.length + s2.length
+end
 \end{lstlisting}
 Which gives \code{result} a value of \code{6}. 
 
@@ -339,7 +394,7 @@ Open variant type case patterns are by all means equivalent to variant type case
 
 
 
-\subsubsection{Throwable \& Raiseable Type Case Patterns}
+\subsubsection[Throwable \& Raiseable Type Case Patterns]{Throwable \& Raiseable Type Case Patterns}
 \label{sec:throwable-patterns}
 
 Throwable and raiseable type case patterns are equivalent to open variant patterns (\sref{sec:open-variant-patterns}).
@@ -348,7 +403,7 @@ Throwable and raiseable type case patterns are equivalent to open variant patter
 
 
 
-\subsubsection{Case Class \& Case Object Patterns}
+\subsubsection[Case Class \& Case Object Patterns]{Case Class \& Case Object Patterns}
 \label{sec:case-class-patterns}
 \label{sec:case-object-patterns}
 
@@ -370,8 +425,9 @@ A case class pattern contributes the class associated with the class object to t
 \subsubsection{Active Patterns}
 \label{sec:active-patterns}
 
-\syntax\begin{lstlisting}
-Active_Pattern_Ids ::= '(|' id {'|' id} ['|' '_'] '|)'
+\grammar\begin{lstlisting}
+Active_Pattern_Ids 
+    ::= '(|' id {'|' id} ['|' '_'] '|)'
 \end{lstlisting}
 
 If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an {\em active pattern case name} $C_i$, then the pattern is an active pattern. $C_i$ is associated with an {\em active pattern function} $f$ in one of the following forms:
@@ -381,25 +437,25 @@ If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to an {\em active 
   \item \lstinline!(|$C$|_|) input! \\
     Partial. The function accepts one argument and must return a value of type \code{Option[$T$]}, where $T$ is any type. 
   \item \lstinline!(|$C_1$|$\ldots$|$C_n$|) input! \\
-    Multi-case. The function accepts one argument and must return a value of type ~\lstinline!Choice[$T_1\commadots T_n$]!. 
+    Multi-case. The function accepts one argument and must return a value of type ~\lstinline!$T_1$ or $\ldots$ or $T_n$!. 
   \item \lstinline!(|$C_1$|$\ldots$|$C_n$|_|) input! \\
-    Multi-case partial. The function accepts one argument and must return a value of type ~\lstinline!Option[Choice[$T_1\commadots T_n$]]!. 
+    Multi-case partial. The function accepts one argument and must return a value of type ~\lstinline!Option[$T_1$ or $\ldots$ or $T_n$]!. 
   \item \lstinline!(|$C_1$|) arg$_1 \ldots$ arg$_n$ input! \\
     Single case with parameters. The function accepts $n+1$ arguments, where the last argument (\code{input}) is the value to match, and can return any type. 
   \item \lstinline!(|$C_1$|_|) arg$_1 \ldots$ arg$_n$ input! \\
     Partial with parameters. The function accepts $n+1$ arguments, where the last argument (\code{input}) is the value to match, and must return a value of type \code{Option[$T$]}. 
   \item \lstinline!(|$C_1$|$\ldots$|$C_n$|_|) input! \\
-    Multi-case partial with parameters. The function accepts $n+1$ arguments, where the last argument (\code{input}) is the value to match, and must return a value of type ~\lstinline!Option[Choice[$T_1\commadots T_n$]]!.
+    Multi-case partial with parameters. The function accepts $n+1$ arguments, where the last argument (\code{input}) is the value to match, and must return a value of type ~\lstinline!Option[$T_1$ or $\ldots$ or $T_n$]!.
 \end{itemize}
 
 When an active pattern function accepts more than 1 argument, the \code{Pattern_Param}s are interpreted as expressions that are passed to the active pattern function. 
 
-The active pattern function $f$ is applied at runtime to the pattern input, along with any arguments. The pattern matches if the active pattern function returns $v$, ~\lstinline!Choice_$k$_of_$n$($v$)!, \code{Some($v$)}, or ~\lstinline!Some(Choice_$k$_of_$n$ $v$)! when applied to the pattern input. If the pattern argument \code{Tuple_Extractions} is present, then it is matched against $v$. If this does not match, the whole active pattern does not match. 
+The active pattern function $f$ is applied at runtime to the pattern input, along with any arguments. The pattern matches if the active pattern function returns $v$, ~\lstinline!$v$!, or \code{Some($v$)} when applied to the pattern input. If the pattern argument \code{Tuple_Extractions} is present, then it is matched against $v$. If this does not match, the whole active pattern does not match. 
 
 \example This example shows how to define and use a partial active pattern function:
 \begin{lstlisting}
-let (|Positive|_|) input := if input > 0 then Some input else None end
-let (|Negative|_|) input := if input < 0 then Some -input else None end
+let (|Positive|_|) input = if input > 0 then Some input else None end
+let (|Negative|_|) input = if input < 0 then Some -input else None end
 
 match 3
 when Positive n then "positive, n = #{n}"
@@ -410,23 +466,22 @@ end match
 
 \example This example then shows how to define and use a multi-case active pattern function:
 \begin{lstlisting}
-let (|A|B|C|) input := 
+let (|A|B|C|) input = 
   if input < 0 then A
-  elsif input = 0 then B
+  else if input = 0 then B
   else C
   end if
   
 match 3
-when A then "negative"
-when B then "zero"
-when C then "positive"
+  when A then "negative"
+  when B then "zero"
+  when C then "positive"
 end match
 \end{lstlisting}
-Notice in this example that the expressions like \code{A} are elaborated to \code{A(())}, and as the non-constant constructor of \code{Choice} types accepts one argument, the type of that argument is \code{Unit}, as well as the corresponding type argument. 
 
 \example An example of a parameterized active pattern function:
 \begin{lstlisting}[deletekeywords={not,of}]
-let (|Is_Multiple_Of|_|) n input := 
+let (|Is_Multiple_Of|_|) n input = 
   if input mod n = 0
   then Some input / n
   else None
@@ -472,20 +527,19 @@ An equatable pattern contributes the type \code{Equatable} to type of parameter,
 
 
 
-\subsubsection{Constructor Patterns}
-\label{sec:constructor-patterns}
+\subsubsection{Extractor Patterns}
+\label{sec:extractor-patterns}
 
-If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that is a class object, then the pattern is a {\em constructor pattern}. 
+If \code{Stable_Id} from (\sref{sec:named-patterns}) resolves to a value that is a class object, then the pattern is {\em an extractor pattern}. 
 
 To match a constructor pattern, the class object's \code{unapply} is applied to the input value:
 \begin{itemize}
-  \item If the result value is of type \code{Option[$T_1 \commadots T_n$]}, and is not \code{None}, then the pattern matches if the extractions matches the wrapped tuple. 
-  \item If the result value is of type \code{Option[$T$]}, and is not \code{None}, then the pattern matches if the extractions matches the wrapped value. 
+  \item If the result value is of type \code{Option[($T_1 \commadots T_n$)]}, and is not \code{None}, then the pattern matches if the extractions match the wrapped tuple. 
+  \item If the result value is of type \code{Option[$T$]}, and is not \code{None}, then the pattern matches if the extractions match the wrapped value. 
   \item If the result value is of type \code{Boolean}, then the pattern matches if the value is \code{yes}. 
-  \item If the class object does not respond to \code{unapply}, but the associated class has a primary constructor with one or more parameters, the argument that is used for the first parameter is used as result of \code{unapply} instead, unwrapped from \code{Option[$T$]} (and it may be a tuple) -- as if the class was a case class. 
 \end{itemize} 
 
-A constructor pattern contributes the class associated with the class object to type of parameter, when used in function parameter list. 
+An extractor pattern contributes the class associated with the class object to type of parameter, when used in function parameter list. 
 
 
 
@@ -494,8 +548,9 @@ A constructor pattern contributes the class associated with the class object to 
 \subsection{Polymorphic Variant Patterns}
 \label{sec:polymorphic-variant-patterns}
 
-\syntax\begin{lstlisting}
-Tag_Pattern ::= Tag_Name [Tuple_Extractions]
+\grammar\begin{lstlisting}
+Tag_Pattern 
+    ::= Tag_Name [Pattern]
 \end{lstlisting}
 
 Polymorphic variant type case patterns ~\lstinline!`$t$ $p$! matches all polymorphic variants whose tag is equal to $t$, and whose arguments can be extracted by tuple extractions $p$, if $p$ is present. 
@@ -507,8 +562,9 @@ Polymorphic variant type case patterns ~\lstinline!`$t$ $p$! matches all polymor
 \subsection{Pattern Binders}
 \label{sec:pattern-binders}
 
-\syntax\begin{lstlisting}
-Bound_Pattern ::= Pattern 'as' Var_Pattern
+\grammar\begin{lstlisting}
+Bound_Pattern 
+    ::= Pattern 'as' Var_Pattern
 \end{lstlisting}
 
 A pattern binder ~\lstinline!$p$ as $x$!~ consists of a variable pattern $x$ (\sref{sec:variable-patterns}) and a pattern $p$. The type of the variable $x$ is the type $T$ resulting from the pattern $p$. This pattern matches any value $v$ matched by the pattern $p$, provided the type of $v$ is also an instance of $T$, and it binds the variable name to that value. 
@@ -517,7 +573,7 @@ A pattern binder contributes the type contributed by the pattern $p$ to type of 
 
 \example In the following example, \code{person} binds to the whole \code{Person} object. 
 \begin{lstlisting}
-def f (someone: Person) := match someone
+let f (someone: Person) = match someone
   when Person("John Galt", _, _) as person then $\ldots$
 end match
 \end{lstlisting}
@@ -526,11 +582,12 @@ end match
 
 
 
-\subsection{Disjunctive ``Or'' Patterns}
+\subsection[Disjunctive “Or” Patterns]{Disjunctive ``Or'' Patterns}
 \label{sec:disjunctive-patterns}
 
-\syntax\begin{lstlisting}
-Or_Pattern ::= Pattern '|' Pattern
+\grammar\begin{lstlisting}
+Or_Pattern 
+    ::= Pattern '|' Pattern
 \end{lstlisting}
 
 A disjunctive pattern matches an input value against one of two patterns: ~\lstinline!pattern1 | pattern2!. 
@@ -549,11 +606,12 @@ Disjunctive patterns contribute union of types contributed by both sub-patterns 
 
 
 
-\subsection{Conjunctive ``And'' Patterns}
+\subsection[Conjunctive “And” Patterns]{Conjunctive ``And'' Patterns}
 \label{sec:conjunctive-patterns}
 
-\syntax\begin{lstlisting}
-And_Pattern ::= Pattern '&' Pattern
+\grammar\begin{lstlisting}
+And_Pattern 
+    ::= Pattern '&' Pattern
 \end{lstlisting}
 
 A conjunctive pattern matches an input value against two patterns sequentially: ~\lstinline!pattern1 & pattern2!. 
@@ -571,13 +629,16 @@ Conjunctive patterns contribute intersection of types contributed by both sub-pa
 \subsection{Typed Patterns}
 \label{sec:typed-patterns}
 
-\syntax\begin{lstlisting}
-Typed_Pattern      ::= '(' Type_Bound_Pattern ')'
-Type_Bound_Pattern ::= Pattern ':' Type
-Type_Pattern       ::= ['type' 'is' | ':?'] Type
+\grammar\begin{lstlisting}
+Typed_Pattern 
+    ::= '(' Type_Bound_Pattern ')'
+Type_Bound_Pattern 
+    ::= Pattern ':' Type
+Type_Pattern 
+    ::= ['is' | ':?'] Type
 \end{lstlisting}
 
-A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!type is $T$!~ and
+A typed pattern of the form ~\lstinline!($p$: $T$)!~ consists of a pattern $p$ and a type pattern $T$. A typed pattern may also be of the forms ~\lstinline!$T$!, ~\lstinline!is $T$!~ and
 ~\lstinline!:? $T$!, all of which are equivalent. 
 
 Aml does not distinguish type-annotated patterns from dynamic type-test patterns -- all such patterns are dynamic type-test patterns, with implications from a type-annotated pattern. 
@@ -597,8 +658,9 @@ A typed pattern contributes the type $T$ to type of parameter, when used in func
 \subsection{List Patterns}
 \label{sec:list-patterns}
 
-\syntax\begin{lstlisting}
-List_Pattern ::= '%[' [Seq_Extractions] ']'
+\grammar\begin{lstlisting}
+List_Pattern 
+    ::= '%[' [Seq_Extractions] ']'
 \end{lstlisting}
 
 List patterns use \code{Seq_Extractions}, shared among multiple pattern kinds, but described in this section. 
@@ -611,14 +673,14 @@ More elaborate forms of list patterns include sequential extractions (\code{Seq_
   \item {\em Optional extractions}. These add to the maximal length of a sequence - the count of optional extractions added to the count of mandatory extractions is the maximal length of a sequence. Optional extractions (\code{Optional_Extract}) come in 4 forms:
     \begin{enumerate}
       \item ~\lstinline!?$p$!, which may bind variables only if there is a variable pattern bound to the matched value. The type of such variable pattern is \code{Option[$T$]}, and if a value $v$ is present for the extraction, \code{Some($v$)} is bound to the variable, \code{None} otherwise. 
-      \item ~\lstinline!?$x$: $T$!, ~\lstinline!? val $x$: $T$!, ~\lstinline!? var $x$: $T$!, which are specific forms of the first form, where the variable pattern is $x$, combined with a typed pattern (\sref{sec:typed-patterns}). 
+      \item ~\lstinline!?$x$: $T$!, which are specific forms of the first form, where the variable pattern is $x$, combined with a typed pattern (\sref{sec:typed-patterns}). 
       \item ~\lstinline!?_: $T$!, which is a specific form of the first form, where the variable pattern is a wildcard pattern, combined with a typed pattern (\sref{sec:typed-patterns}). 
-      \item ~\lstinline!?($p$ := $e$)!, which is different from the previous forms. Moreover, $p$ is required to bind the input value to a variable, but when there is no value to match it with, the expression $e$ is evaluated and bound to the variable pattern from $p$. Thus, \code{None} would never be bound, and the type of the bound variable is not wrapped in \code{Option[$T$]}.\footnote{If $p$ uses wildcard pattern instead of variable pattern to bind the input value to a variable, $e$ might be evaluated for side-effects.} 
+      \item ~\lstinline!?($p$ = $e$)!, which is different from the previous forms. Moreover, $p$ is required to bind the input value to a variable, but when there is no value to match it with, the expression $e$ is evaluated and bound to the variable pattern from $p$. Thus, \code{None} would never be bound, and the type of the bound variable is not wrapped in \code{Option[$T$]}.\footnote{If $p$ uses wildcard pattern instead of variable pattern to bind the input value to a variable, $e$ might be evaluated for side-effects.} 
     \end{enumerate}
   \item {\em Rest extraction}. There may be only up to one rest extraction. When a rest extraction is present, the maximal length of a sequence is virtually infinite, overriding any other finite maximal length. Rest extractions come in just 2 forms:
     \begin{enumerate}
       \item ~\lstinline!*_!~ \& ~\lstinline!*_: $T$!, which do not bind any elements, but optionally require the elements to be of the given type $T$. This form is only useful to match lists whose elements that are matched by this form are of no importance, and also to generally match lists of length $n$ and more without binding the extra elements. 
-      \item ~\lstinline!*$x$!, ~\lstinline!*$x$: $T$!, ~\lstinline!*var $x$!, ~\lstinline!*var $x$: $T$!, ~\lstinline!*val $x$!~ \& ~\lstinline!*val $x$: $T$!, which bind the matched elements into a new sublist\footnote{Using a \code{slice} operation on the full list.}, which is bound to the variable $x$. 
+      \item ~\lstinline!*$x$!, ~\lstinline!*$x$: $T$!, which bind the matched elements into a new sublist\footnote{Using a \code{slice} operation on the full list.}, which is bound to the variable $x$. 
     \end{enumerate}
 \end{enumerate}
 
@@ -634,13 +696,13 @@ A list pattern contributes \code{Sequence[$T$]}\footnote{Usually \code{Linear_Se
 
 \example An example of a list pattern.
 \begin{lstlisting}
-let list_size (list) := 
+let list_size list = 
   match list 
   when %[] then 0
   when %[_] then 1
   when %[_; _] then 2
   when %[_; _; _] then 3
-  otherwise list.size
+  otherwise list.size  -- duh
   end match
 \end{lstlisting}
 Note that in the example, the type that would be inferred for \code{list} is \code{Sequence[Any]}. 
@@ -648,11 +710,13 @@ Note that in the example, the type that would be inferred for \code{list} is \co
 
 
 
-\subsection{``Cons'' Patterns}
+
+\subsection[“Cons” Patterns]{``Cons'' Patterns}
 \label{sec:cons-patterns}
 
-\syntax\begin{lstlisting}
-Cons_Pattern ::= Pattern '::' Pattern
+\grammar\begin{lstlisting}
+Cons_Pattern 
+    ::= Pattern '::' Pattern
 \end{lstlisting}
 
 A {\em ``cons'' pattern} is a different form of a list pattern (\sref{sec:list-patterns}), matching sequence's ``head'' (first element) by the first pattern and sequence's ``tail'' (all elements but the first one) by the second pattern. 
@@ -672,8 +736,9 @@ Cons patterns contribute the same type as list patterns to parameters.
 \subsection{Array Patterns}
 \label{sec:array-patterns}
 
-\syntax\begin{lstlisting}
-Array_Pattern ::= '%[|' [Seq_Extractions] '|]'
+\grammar\begin{lstlisting}
+Array_Pattern 
+    ::= '%[|' [Seq_Extractions] '|]'
 \end{lstlisting}
 
 Array pattern is very much like a list pattern (\sref{sec:list-patterns}), except that it matches only indexed sequences. 
@@ -682,18 +747,18 @@ An array pattern contributes \code{Indexed_Sequence[$T$]} to type of parameter, 
 
 \example An example of an array pattern.
 \begin{lstlisting}[deletekeywords={of}]
-let vector_length (vector) := 
+let vector_length vector = 
   match vector 
   when %[| v1 |] then v1
-  when %[| v1; v2 |] then Math.sqrt (v1 ^ 2 + v2 ^ 2)
-  when %[| v1; v2; v3 |] then Math.sqrt (v1 ^ 2 + v2 ^ 2 + v3 ^ 2)
+  when %[| v1; v2 |] then Math.sqrt (v1^2 + v2^2)
+  when %[| v1; v2; v3 |] then Math.sqrt (v1^2 + v2^2 + v3^2)
   otherwise raise "Unsupported size of %d." % vector.size
   end match
 \end{lstlisting}
 Note that in the example, the type that would be inferred for \code{vector} is \code{Array_Like[Number_Like]}, but it could go even further: 
-\begin{lstlisting}Array_Like[Number_Like] with constraint { size >= 1 and size <= 3 }
+\begin{lstlisting}
+Array_Like[Number_Like] with constraint { 1 <= size <= 3 }
 \end{lstlisting}
-
 
 
 
@@ -702,8 +767,9 @@ Note that in the example, the type that would be inferred for \code{vector} is \
 \subsection{Dictionary Patterns}
 \label{sec:dict-patterns}
 
-\syntax\begin{lstlisting}
-Dict_Pattern ::= '%{' [Dict_Extractions] '}'
+\grammar\begin{lstlisting}
+Dict_Pattern 
+    ::= '%{' [Dict_Extractions] '}'
 \end{lstlisting}
 
 Dictionary patterns use \code{Dict_Extractions}, shared with multimap patterns (\sref{sec:multimap-patterns}), but described only here. 
@@ -734,8 +800,9 @@ A dictionary pattern contributes \code{Dictionary[$K$, $T$]} to type of paramete
 \subsection{Multimap Patterns}
 \label{sec:multimap-patterns}
 
-\syntax\begin{lstlisting}
-Multimap_Pattern ::= '%{{' [Dict_Extractions] '}}'
+\grammar\begin{lstlisting}
+Multimap_Pattern 
+    ::= '%{{' [Dict_Extractions] '}}'
 \end{lstlisting}
 
 Multimap patterns are very much like dictionary patterns (\sref{sec:dict-patterns}), but the elements that are mapped to keys are always sequences and not (almost arbitrary) values. 
@@ -747,8 +814,9 @@ Multimap patterns are very much like dictionary patterns (\sref{sec:dict-pattern
 \subsection{Bag Patterns}
 \label{sec:bag-patterns}
 
-\syntax\begin{lstlisting}
-Bag_Pattern ::= '%(' [Seq_Extractions] ')'
+\grammar\begin{lstlisting}
+Bag_Pattern 
+    ::= '%(' [Seq_Extractions] ')'
 \end{lstlisting}
 
 A bag pattern is similar to list patterns (\sref{sec:list-patterns}), except that it matches elements of the input bag in non-deterministic order, unless the input bag actually preserves some ordering of elements. 
@@ -764,15 +832,47 @@ A bag pattern contributes \code{Bag[$T$]} to type of parameter, when used in fun
 \subsection{Record Patterns}
 \label{sec:record-patterns}
 
-\syntax\begin{lstlisting}
-Record_Pattern ::= 'record' '{' Field_Patterns '}'
+\grammar\begin{lstlisting}
+Record_Pattern 
+    ::= '{' Field_Patterns '}'
 \end{lstlisting}
 
 A record pattern enables values of record types to be decomposed into a number of record fields. 
 
-The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$ }!~ matches records that define exactly the fields $f_1$ to $f_n$, and such that the value associated with $f_i$ matches the pattern $p_i$, for $i = 1 \commadots n$. If there are multiple record types that have the same fields, then at least one of $f_i$ have to specify the field with a path to the intended type\footnote{The first field should be used for this.}: \code{$T$.$f$}, where $T$ is a path to the record type, and $f$ is the field. 
+The record pattern ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_n$ }!~ matches records that define exactly the fields $f_1$ to $f_n$, and such that the value associated with $f_i$ matches the pattern $p_i$, for $i = 1 \commadots n$. If there are multiple record types that have the same fields, then at least one of $f_i$ have to specify the field with a path to the intended type\footnote{The first field should be used for this.}: \code{$T$.$f$}, where $T$ is a path to the record type, and $f$ is the field. 
 
-The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$; _ }!~ matches records that define at least the fields $f_1$ to $f_n$, with the same rules as the previous record pattern, where the extra fields, if any, are simply discarded.\footnote{Such a pattern is more prone to ambiguous record types. In such a case, the record type has to be resolved by specifying the path to it in at least one of the fields.}
+The record pattern ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_n$; _ }!~ matches records that define at least the fields $f_1$ to $f_n$, with the same rules as the previous record pattern, where the extra fields, if any, are simply discarded.\footnote{Such a pattern is more prone to ambiguous record types. In such a case, the record type has to be resolved by specifying the path to it in at least one of the fields.}
+
+Record patterns or the forms ~\lstinline!{ $f_1$ = $p_1$; $\ldots$; $f_1$ = $p_{n-1}$; _ = $p_n$ }!~ and ~\lstinline!{ _ = $p_1$ }!~ match the extra fields into a new record that is then matched against $p_n$ and $p_1$ respectively. 
+
+Record patterns match tuples too, if all record labels are decimal numbers. 
+
+
+
+
+
+\subsection{Nested Pattern Matches}
+\label{sec:nested-pattern-matches}
+
+\grammar\begin{lstlisting}
+Nested_Pattern 
+    ::= Pattern 'with' (Pattern - Nested_Pattern) '=' Expr
+\end{lstlisting}
+
+A nested pattern match of the form ~\lstinline!$p_1$ with $p_2$ = $e_2$!~ matches first against the pattern $p_1$, evaluates $e_2$ and matches its result against $p_2$. Values bound from $p_1$ are available inside $e_2$. The pattern binds the combined set of bound values from both $p_1$ and $p_2$, if any. The pattern fails to match if either $p_1$ or $p_2$ does not match. The pattern $p_1$ may itself be or contain another nested pattern match, but $p_2$ must not. 
+
+A nested pattern contributes the type of the pattern $p_1$ to type of parameter, when used in function parameter list. 
+
+\example An example of a nested pattern match.
+\begin{lstlisting}
+match xs
+  when [x; y] 
+    with Some z = f x y 
+    then x + y + z
+  otherwise 0
+end
+\end{lstlisting}
+If \code{xs} is a list with two elements for which \code{f x y} returns \code{Some z}, then the whole pattern matches, and the match expression evaluates to \code{x + y + z}, otherwise it evaluates to \code{0}. 
 
 
 
@@ -781,11 +881,12 @@ The record pattern ~\lstinline!record { $f_1$ => $p_1$; $\ldots$; $f_1$ => $p_n$
 \subsection{Structure Patterns}
 \label{sec:structure-patterns}
 
-\syntax\begin{lstlisting}
-Struct_Pattern ::= 'structure' Pkg_Type
+\grammar\begin{lstlisting}
+Struct_Pattern 
+    ::= '(' 'structure' id [':' Pkg_Type] ')'
 \end{lstlisting}
 
-A structure pattern ~\lstinline!structure $T$!~ matches a structure with type $T$. To bind the matched structure to a variable, the construct ~\lstinline!structure $T$ as $s$!~ can be used, binding the structure to the name $s$. 
+A structure pattern ~\lstinline!(structure $n$: $T$)!~ matches a structure with type $T$ and binds it to the value name $n$. The type $T$ may be omitted, if it can be inferred from the enclosing pattern. 
 
 % Currently, no decomposing of structures is possible. Could be added later, if it would make sense. 
 
@@ -800,9 +901,10 @@ A structure pattern ~\lstinline!structure $T$!~ matches a structure with type $T
 \subsection{Tuple Patterns}
 \label{sec:tuple-patterns}
 
-\syntax\begin{lstlisting}
-Tuple_Pattern ::= Pattern {',' Pattern}+
-                | Tuple_Extractions
+\grammar\begin{lstlisting}
+Tuple_Pattern 
+    ::= Pattern {',' Pattern}+
+      | Tuple_Extractions
 \end{lstlisting}
 
 A {\em tuple pattern} has multiple forms, simplest of which is a sequence of 2 or more sub-patterns, which directly influence the required parity of any input tuple, not allowing any optional elements. Elements of the tuple are matched by their position in the tuple, which corresponds to position of each sub-pattern. 
@@ -826,18 +928,6 @@ Positional extractions are very much like sequential extractions, delimited by a
 
 Positional extractions are used to extract elements from the sequence of all non-labelled elements of the matched tuple, and then separately labelled extractions are used to extract elements from the map (from labels to elements) of all labelled elements of that tuple. Both extractions must succeed in order for the pattern that uses tuple extractions to match. In some cases, positional and labelled elements of the matched tuple may overlap -- that has only one consequence: the overlapping elements may be matched more than once. 
 
-Labelled extractions (\code{Labelled_Pattern}) are similar to dictionary extractions, where the keys are of type \code{Symbol} and represented in the syntactic form with the \code{id} element. Capture extraction is shared with dictionary patterns (\sref{sec:dict-patterns}), where the type of keys in the sub-dictionary is \code{Symbol}, and all remaining elements are bound into it, preserving their labels in the keys. There are multiple kinds of labelled extractions: 
-\begin{enumerate}
-  \item The forms ~\lstinline!~$v$!~ and ~\lstinline!~($v$ $[$: $T$$]$)!~ are shorthands for respectively ~\lstinline!~$v$: val $v$!~ and ~\lstinline!~$v$: (val $v$ $[$: $T$$]$)!. 
-  \item The form ~\lstinline!~$v$: $p$!, which matches an input value labelled $v$, and matches the value against the pattern $p$. This form subsumes the form ~\lstinline!~$v$: val $v$!, which is using a variable pattern $v$ to bind the input value, and also the form ~\lstinline!~$v$: (val $v$ $[$: $T$$]$)!, which uses a typed pattern instead of a simple variable pattern, but needs grouping parentheses. 
-  \item The form ~\lstinline!~$v$: ($p$ $[$: $T$$]$)!~ is extension to the previous form and restricts inputs for the sub-pattern $p$ to conform to $T$, if $T$ is present. 
-  \item The form ~\lstinline!~?$v$!~ is a shorthand for the form ~\lstinline!~?$v$: val $v$!. 
-  \item The form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!~ is a shorthand for the form ~\lstinline!~?$v$: (val $v$ $[$: $T$$]$ $[$:= $e$$]$)!. 
-  \item The form ~\lstinline!~?$v$: ($p$ $[$: $T$$]$ $[$:= $e$$]$)!, which subsumes the form ~\lstinline!~?($v$ $[$: $T$$]$ $[$:= $e$$]$)!, matches an input value labelled $v$, and if such value is not present in the input tuple, then the result bound to a variable by $p$ depends on whether $e$ is present: if it is, the result of its evaluation is bound directly, otherwise \code{Option[$T$]} wrapper is used instead, very much like with optional extractions in sequence extractions. 
-  \item The forms ~\lstinline!**$v$!~ and ~\lstinline!**$v$: $T$!, which match all remaining unmatched input values, into a variable $v$ typed \code{Dictionary[Symbol, $T$]}, where $T$ is \code{Any}, if $T$ is not given.
-  \item The forms ~\lstinline!**_!~ and ~\lstinline!**_: $T$!, which match all remaining unmatched input values, discarding those values. The values must be of the type $T$, if given. 
-\end{enumerate}
-
 The sequence of matched elements depends on which kinds of extractions are present:
 \begin{itemize}
   \item If only positional extractions are present, all elements are matched, stripped of their labels. 
@@ -852,8 +942,9 @@ The sequence of matched elements depends on which kinds of extractions are prese
 \subsection{Infix Operation Patterns}
 \label{sec:infix-patterns}
 
-\syntax\begin{lstlisting}
-Infix_Pattern ::= Pattern (id | op_id) Pattern
+\grammar\begin{lstlisting}
+Infix_Pattern 
+    ::= Pattern (Infix_Op - ('and also', 'or else')) Pattern
 \end{lstlisting}
 
 An infix operation pattern ~\lstinline!$p_1$ $\op$ $p_2$!~ is a syntax sugar for the named pattern (\sref{sec:named-patterns}) ~\lstinline!$\op$($p_1$, $p_2$)!. The precedence, associativity and binding direction of operators in patterns is the same as in expressions (\sref{sec:prefix-infix-ops}).
@@ -867,8 +958,9 @@ An infix operation pattern ~\lstinline!$p$ $\op$ ($q_1 \commadots q_n$)!~ is a s
 \subsection{Grouped Patterns}
 \label{sec:grouped-patterns}
 
-\syntax\begin{lstlisting}
-Grouped_Pattern ::= '(' Pattern ')'
+\grammar\begin{lstlisting}
+Grouped_Pattern 
+    ::= '(' Pattern ')'
 \end{lstlisting}
 
 Patterns can be grouped together to achieve the desired associativity. 
@@ -882,8 +974,9 @@ Grouped patterns contribute the least upper bound of all types contributed by th
 \subsection{Annotated Patterns}
 \label{sec:annotated-patterns}
 
-\syntax\begin{lstlisting}
-Annotated_Pattern ::= {Annotation}+ Pattern
+\grammar\begin{lstlisting}
+Annotated_Pattern 
+    ::= {Annotation}+ Pattern
 \end{lstlisting}
 
 Annotated patterns do not generally have any special matching rules, unless their annotations specify a different behaviour. 
@@ -908,52 +1001,9 @@ An irrefutable pattern is a pattern that always matches its input (hence irrefut
 
 
 
-
-\section{Type Patterns}
-\label{sec:type-patterns}
-
-\syntax\begin{lstlisting}
-Type_Pat ::= Type
-\end{lstlisting}
-
-Type patterns consist of types, type variables and wildcards. A type pattern $T$ is of one of the following forms: 
-\begin{itemize}
-  \item[] A reference to a class $C$, ~\lstinline!$p$.$C$!, ~\lstinline!$p$.type!~ or ~\lstinline!$T$#$C$!. This type pattern matches any non-\code{nil} instance of the given class (therefore, it does match the empty tuple ~\lstinline!()!~ with type \code{Unit}). Note that the prefix of the class, if it is given, is irrelevant for determining class instances, unlike in Scala. 
-
-  The bottom type \code{Nothing} (with singleton instance \code{nil}) is the only type pattern that matches \code{nil} (only), but its preferable to match against ~\lstinline!Option[$T$]! with implicit conversion of \code{nil} to object \code{None}. 
-
-  \item[] A singleton type ~\lstinline!$p$.type!. This type pattern matches only the value denoted by the path $p$ (only the single value denoted by the path $p$, since \code{nil} is not matched). 
-
-  \item[] A parameterized type pattern ~\lstinline!$T$[$a_1 \ldots a_n$, <$u_1 \ldots u_m$>]!, where the $a_i$ are type variable patterns or wildcards ``\lstinline!_!'' and $u_i$ are unit of measure kinds. This type pattern matches all values which match $T$ for some arbitrary instantiation of the type variables and wildcards.  
-
-  \item[] A compound type pattern ~\lstinline!$T_1$ with $\ldots$ with $T_n$!, where each $T_i$ is a type pattern. This type pattern matches all values that are matched by each of the type patterns $T_i$, and in this sense it is equivalent to the pattern ~\lstinline!$T_1$ & $\ldots$ & $T_n$!. 
-
-  \item[] A union type pattern ~\lstinline!($T_1$ or $\ldots$ or $T_n$)!, where each $T_i$ is a type pattern. The pattern has to be enclosed in parentheses, so that it does not get mistaken by the compiler for a pattern with the same syntax. This type pattern matches all values that are matched by at least one $T_i$. 
-
-  \item[] An intersection type pattern ~\lstinline!($T_1$ and $\ldots$ and $T_n$)!, where each $T_i$ is a type pattern. The pattern has to be enclosed in parentheses, so that it does not get mistaken by the compiler for a pattern with the same syntax. This type pattern matches all values that are matched by every $T_i$. 
-\end{itemize}
-
-Types are not subject to any type erasure (\sref{sec:reified-types}), so it is basically safe to use any other type as type pattern, unlike in Scala. 
-
-A {\em type variable pattern} is a simple identifier which starts with a lower case letter, or with a single quote: \code{'$x$}. Such type variable patterns are bound to the types extracted from the reified input type's type arguments by their position. The form with a leading single quote must not resolve to a name already existing in the scope of the pattern match, for it to be a type variable pattern. 
-
-A type pattern contributes the type itself to type of parameter, when used in function parameters list, where all type variable patterns are replaced by wildcard placeholders from existential types (\sref{par:placeholder-existential-types}).
-
-
-
-
-
 \section{Pattern Matching Expressions}
 
-\syntax\begin{lstlisting}
-Match_Expr     ::= Pat_Match_Expr
-Pat_Match_Expr ::= 'match' Value_Expr Match_Body
-Match_Body     ::= semi When_Clauses 'end' ['match']
-                 | '{' When_Clauses '}'
-When_Clauses   ::= When_Clause {semi When_Clause} 
-                   [semi Else Cond_Block]
-When_Clause    ::= 'when' Pattern [Guard] ('then' | semi) Cond_Block
-\end{lstlisting}
+For grammar, refer to (\sref{sec:case-exprs}).
 
 A pattern matching expression 
 \begin{lstlisting}
@@ -985,11 +1035,7 @@ A when clause that is not the first appearing may be prefixed with \code{next} o
 \section{Pattern Matching Anonymous Functions}
 \label{sec:pattern-matching-anon-fun}
 
-\syntax\begin{lstlisting}
-Block_Expr ::= '{' When_Clauses '}'
-Anon_Fun   ::= 'function' When_Clauses 'end' ['function']
-             | 'function' '{' When_Clauses '}'
-\end{lstlisting}
+For grammar, refer to (\sref{sec:anonymous-functions}).
 
 An anonymous pattern matching function can be defined by the form
 \begin{lstlisting}
@@ -1001,71 +1047,46 @@ function
 end
 \end{lstlisting}
 
-An anonymous function can alternatively be defined by a sequence of cases
-\begin{lstlisting}
-{ when $p_1$ then $b_1$ 
-  $\ldots$ 
-  when $p_k$ then $b_k$ 
-  else $b_{k+1}$ }
-\end{lstlisting}
-which appears as an expression without a prior \code{match}. The expression is expected to be of a block type, unless it is expected to be a function type, in that case it is converted to ~\lstinline!Function[$S_1 \commadots S_k$, $T$]!~ automatically for $k \geq 1$, and for $k = 0$ the expression does not match the expected function type in function applications (\sref{sec:function-applications}).\footnote{This is due to Aml not knowing the expected types in advance, but this anonymous function expression is able to match any non-empty arguments list, which is simply passed into the implicit pattern matching expression.} 
-
 The expression is taken to be equivalent to the anonymous function:
 \begin{lstlisting}
-($x_1$: $S_1 \commadots x_j$: $S_j$) -> {
-  match ($x_1 \commadots x_j$) {
+fun ($x_1$: $S_1 \commadots x_j$: $S_j$) ->
+  match ($x_1 \commadots x_j$)
     when $p_1$ then $b_1$
     $\ldots$
     when $p_k$ then $b_k$
     else $b_{k+1}$
-  }
-}
+  end
 \end{lstlisting}
 
 Here, each $x_i$ is a fresh name. As was shown in (\sref{sec:anonymous-functions}), this anonymous function is in turn equivalent to the following instance creation expression, where $T$ is the weak least upper bound of the types of all $b_i$. 
 
 \begin{lstlisting}
-(Function[$S_1 \commadots S_j$, $T$] with {
-  def apply ($x_1$: $S_1 \commadots x_j$: $S_j$): $T$ := match ($x_1 \commadots x_j$)
+object (Function[$S_1 \commadots S_j$, $T$])
+  method apply ($x_1$: $S_1 \commadots x_j$: $S_j$): $T$ = match ($x_1 \commadots x_j$)
     when $p_1$ then $b_1$
     $\ldots$
     when $p_k$ then $b_k$
     else $b_{k+1}$
-  end match
-}).new
+  end
+end
 \end{lstlisting}
 
 \example Here is a method which uses a fold-left operation ~\lstinline!/:!~ to compute the scalar product of two vectors:
 \begin{lstlisting}
-def scalar_product (xs: List[Double], ys: List[Double]) := 
+let scalar_product (xs: List[Double], ys: List[Double]) = 
   (0.0 /: xs.zip(ys)) {
     when (a, (b, c)) then a + b * c
   }
 \end{lstlisting}
 The when clauses in this code are equivalent to the following anonymous function:
 \begin{lstlisting}
-(x, y) -> { 
-  match (x, y) {
+fun (x, y) -> 
+  match (x, y)
     when (a, (b, c)) then a + b * c
-  }
-}
+  end
 \end{lstlisting}
-Note that the fold-left operation ~\lstinline!/:!~ is an operator ending in a colon ``\lstinline!:!'', and therefore right-associative, and therefore the expression is interpreted as specified in (\sref{sec:infix-operations}) for right-associative operations: 
 
-\begin{minipage}{\linewidth}
-\begin{lstlisting}[mathescape=false]
-{ 
-  val x$ := 0.0; 
-  xs
-    .zip(ys)
-    .`/:`(x$)((x, y) -> {
-      match (x, y) {
-        when (a, (b, c)) then a.`+`(b.`*`(c))
-      }
-    })
-}  . 
-\end{lstlisting}
-\end{minipage}
+An anonymous pattern matching function can also be defined with a single atomic pattern and more simple syntax. 
 
 
 

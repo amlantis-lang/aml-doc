@@ -7,40 +7,351 @@
 
 \newpage
 
-\syntax\begin{lstlisting}
-Tmpl_Def             ::= Class_Definition
-                       | Object_Definition
-                       | Trait_Definition
-                       | Protocol_Definition
-                       | Interface_Definition
-                       | Refinement_Definition
-                       | Aspect_Definition
-                       | Annotation_Definition
-                       | Type_Definition
-Class_Definition     ::= [Mutability] ['case'] 'class' Class_Def
-Object_Definition    ::= [Mutability] ['case'] 'object' Object_Def
-Trait_Definition     ::= [Mutability] 'trait' Trait_Def
-Protocol_Definition  ::= 'protocol' Pro_Def
-Interface_Definition ::= [Mutability] ['case'] 'interface' Ifc_Def
+\section{Blueprints of Objects}
+\label{sec:blueprints-objects}
+
+\grammar\begin{lstlisting}
+Objects_Definition
+    ::= Objects_Binding {'and' Objects_Binding}
+Objects_Binding
+    ::= Class_Definition
+      | Object_Definition
+      | Trait_Definition
+      | Protocol_Specification
+      | Extension_Definition
+      | Refinement_Definition
+Objects_Specification
+    ::= Objects_Spec {'and' Objects_Spec}
+Objects_Spec
+    ::= Class_Specification
+      | Object_Specification
+      | Trait_Specification
+      | Protocol_Specification
+      | Extension_Specification
+      | Refinement_Specification
+
+Class_Definition
+    ::= Class_Modifiers 'class' Type_Name 
+        [Access_Modifier] [Param_Clauses] [':' Class_Type]
+        ('=' Class_Expr | '+=' Trait_Expr)
+Object_Definition 
+    ::= Object_Modifiers 'val' Type_Name [':' Trait_Type]
+        ['=' | '+='] Standalone_Object_Expr
+Trait_Definition 
+    ::= Trait_Modifiers 'trait' Type_Name [':' Trait_Type]
+        ('=' | '+=') Trait_Expr
+Extension_Definition
+    ::= Trait_Modifiers 'extension' [id 'for'] Parameterized_Type
+        [Given_Clauses] [':' Class_Body_Type]
+        ('=' | '+=') Extension_Expr
+Refinement_Definition
+    ::= 'refinement' Parameterized_Type [':' Trait_Type]
+        '=' Trait_Expr
+
+Class_Specification
+    ::= Class_Modifiers 'class' Type_Name [Param_Clauses] ':' Class_Type
+Object_Specification
+    ::= Object_Modifiers 'val' Type_Name ':' Object_Type
+Trait_Specification
+    ::= Trait_Modifiers 'trait' Type_Name ':' Trait_Type
+Protocol_Specification
+    ::= 'protocol' Type_Name ':' Class_Body_Type
+Extension_Specification
+    ::= Trait_Modifiers 'extension' [id 'for'] Parameterized_Type 
+        [Given_Clauses] ':' Class_Body_Type
+Refinement_Specification
+    ::= 'refinement' Parameterized_Type ':' Trait_Type
+    
+Class_Modifiers
+    ::= [Access_Modifier] ['implicit'] ['open'] 
+        ('final' | 'sealed' | 'abstract' | 'case')
+Trait_Modifiers
+    ::= [Access_Modifier] ['open']
+Object_Modifiers
+    ::= [Access_Modifier] ['implicit'] ['open'] ['case']  
 \end{lstlisting}
 
-Classes (\sref{sec:class-definitions}) \& objects (\sref{sec:object-definitions}) are both defined in terms of {\em templates}. 
 
 
 
 
 
-\section{Templates}
-\label{sec:templates}
+\section{Class Definitions \& Specifications}
+\label{sec:class-defs-specs}
 
-\syntax\begin{lstlisting}
-Class_Parents  ::= Constr {['prepend'] 'with' Annot_Type} 
-Trait_Parents  ::= Annot_Type {['prepend'] 'with' Annot_Type}
-Template_Body  ::= [Self_Type] Template_Stat {semi Template_Stat}
-Self_Type      ::= 'requires' 'self' ':' Type semi
-                 | 'requires' [id ':'] Type semi
-                 | 'use' ['self'] 'as' id [':' Type] semi
+\subsection{Class Definitions}
+\label{sec:class-defs}
+
+\grammar\begin{lstlisting}
+Class_Expr
+    ::= -- only in non-recursive occurrences:
+        Parameterized_Type  
+      | Function_Declarations [Expr semi] Class_Expr
+        -- in both recursive and non-recursive occurrences:
+      | '(' Class_Expr [':' Class_Type] ')'
+      | 'fun' [Param_Clauses] [Guard] '->' [Function_Declarations] Class_Expr
+      | 'object' Class_Body 'end'
+      | 'begin' Class_Expr 'end'
+      | Class_Use_Expr
+      | Class_Binding_Expr
+      | Expr semi Class_Expr
+Class_Body
+    ::= [Instance_Self_Type] {[nl] Class_Field}
+Instance_Self_Type
+    ::= '(' id [':' Type_Expr] ')'
+        -- here, id can be also 'self', which is the default
+Class_Use_Expr
+    ::= Class_Use_Expr_As
+      | Class_Use_Aspect
+      | Class_Use_Refinement
+      | Use_Clause In_Sep Class_Expr
+        -- no Class_Use_Droppable intentionally 
+Class_Use_Expr_As
+    ::= 'use' Expr ('as' | 'as!' | 'as?')
+        [id ':'] Type In_Sep Class_Expr
+Class_Use_Aspect
+    ::= 'use' 'aspect' Stable_id In_Sep Class_Expr
+Class_Use_Refinement
+    ::= 'use' 'refinement' Stable_Id In_Sep Class_Expr
+Class_Binding_Expr
+    ::= ['implicit'] Val_Def In_Sep Class_Expr
+      | 'let' 'structure' id {'(' [id ':' Struct_Type] ')'} [':' Struct_Type]
+        '=' Struct_Expr In_Sep Class_Expr
+
+Class_Field
+    ::= Class_Structure_Field
+      | Class_Member_Field
+      | Class_Extra_Field
+      | Class_Interface_Fields
+Class_Structure_Field
+    ::= 'inherit' Long_Id [Arguments] ['as' id] [Cond_Modifier]
+      | 'inherit' 'val' (Expr - Binding_Expr) 'as' id [Cond_Modifier]
+      | Class_Structure_Include
+Class_Structure_Include
+    ::= 'include' Long_Id [Cond_Modifier]
+Class_Template_Member_Field
+    ::= [Class_Member_Modifiers] Ival_Def
+      | [Class_Member_Modifiers] Property_Def
+      | [Class_Member_Modifiers] Method_Def
+      | [Class_Member_Modifiers] Operator_Def
+      | [Class_Member_Modifiers] Attribute_Def
+      | ['abstract'] [Class_Member_Modifiers] Ival_Spec
+      | ['abstract'] [Class_Member_Modifiers] Property_Spec
+      | ['abstract'] [Class_Member_Modifiers] Message_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Attribute_Dcl
+Class_Member_Field
+    ::= Class_Template_Member_Field
+      | [Class_Member_Modifiers] Constructor_Def
+      | Destructor_Def
+Class_Extra_Field
+    ::= [Access_Modifier] 'invariant' Expr
+      | Objects_Definition
+      | Objects_Specification
+      | [Class_Member_Modifiers] Type_Definition
+      | Alias_Def
+      | Access_Modifier {nl Class_Field}+
+      | Do_Binding
+      | {Annotation}+ Class_Field
+      | Nested_Annotation
+      | 'local' Struct_Defs 'in' Class_Field {[nl] Class_Field} 'end'
+      | Class_Conditional_Field(Class_Field)
+Class_Interface_Fields
+    ::= 'interface' Annot_Type {'and' Annot_Type}
+        'with' {[nl] Trait_Concrete_Field}
+        'end'
+Class_Conditional_Field(Nested)
+    ::= ('if' | 'unless') Boolean_Condition ('then' | semi) Nested
+        [[semi] Else Nested] 'end'
+
+Ival_Def
+    ::= Ivar_Modifiers 'val' id [':' Type_Expr] '=' Expr
+Ival_Spec
+    ::= Ival_Modifiers 'val' id [':' Type_Expr] {',' id [':' Type_Expr]}
+      | Ival_Modifiers 'val' '(' id {',' id} ')' [':' Type_Expr]
+Ival_Modifiers
+    ::= ['implicit'] [Access_Modifier] [Storage_Modifier]
+Class_Member_Modifiers
+    ::= ['implicit'] [Access_Modifier] ['final'] ['override' [Class_Qualifier]]
+Alias_Def
+    ::= 'alias' Alias_Id '=' Alias_Id
+Alias_Id 
+    ::= symbol_literal
+      | id
+      | op_id
 \end{lstlisting}
+
+
+
+
+
+\subsection{Class Specifications}
+\label{sec:class-specs}
+
+\grammar\begin{lstlisting}
+Class_Type
+    ::= Class_Function_Type
+      | Class_Body_Type
+Class_Function_Type
+    ::= Function_Arg_Type '->' Class_Type
+      | Function_Arg_Type '->' Signalling_Types '->' Class_Body_Type
+Class_Body_Type
+    ::= Parameterized_Type
+      | 'object' ['(' Type_Expr ')'] {[nl] Class_Field_Spec} 'end'
+
+Class_Field_Spec
+    ::= Class_Structure_Field_Spec
+      | Class_Member_Field_Spec
+      | Class_Extra_Field_Spec
+      | Class_Interface_Fields_Spec
+Class_Structure_Field_Spec
+    ::= 'inherit' Long_Id [Cond_Modifier]
+      | 'inherit' 'val' 'of' Type_Expr
+      | Class_Structure_Include
+Class_Member_Field_Spec
+    ::= ['abstract'] [Class_Member_Modifier] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifier] Property_Spec
+      | ['abstract'] [Class_Member_Modifier] Message_Dcl
+      | ['abstract'] [Class_Member_Modifier] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifier] Attribute_Dcl
+      | [Class_Member_Modifiers] Constructor_Dcl
+Class_Extra_Field_Spec
+    ::= Objects_Specification
+      | [Class_Member_Modifiers] Type_Declaration
+      | Alias_Def
+      | Access_Modifier {nl Class_Field_Spec}+
+      | {Annotation}+ Class_Field_Spec
+      | Nested_Annotation
+      | Class_Conditional_Field(Class_Field_Spec)
+Class_Interface_Fields_Spec
+    ::= 'interface' Annot_Type {'and' Annot_Type} 'end'
+\end{lstlisting}
+
+
+
+
+
+\section{Standalone Object Definitions \& Specifications}
+\label{sec:standalone-object-defs-specs}
+
+\subsection{Standalone Object Definitions}
+\label{sec:standalone-object-defs}
+
+\grammar\begin{lstlisting}
+Standalone_Object_Expr
+    ::= 'object' Object_Body 'end'
+Object_Body
+    ::= [Instance_Self_Type] {[nl] Object_Field}
+Object_Field
+    ::= Class_Structure_Field
+      | Class_Template_Member_Field
+      | Class_Extra_Field
+      | Class_Interface_Fields
+\end{lstlisting}
+
+\subsection{Standalone Object Specifications}
+\label{sec:standalone-object-specs}
+
+\grammar\begin{lstlisting}
+
+\end{lstlisting}
+
+
+
+
+
+
+\section{Trait Definitions \& Specifications}
+\label{sec:trait-defs-specs}
+
+\subsection{Trait Definitions}
+\label{sec:trait-defs}
+
+\grammar\begin{lstlisting}
+Trait_Expr
+    ::= 'object' Trait_Body 'end'
+Trait_Body
+    ::= [Instance_Self_Type] {[nl] Trait_Field}
+
+Trait_Field
+    ::= Trait_Structure_Field
+      | Trait_Concrete_Field
+Trait_Concrete_Field
+    ::= Trait_Member_Field
+      | Trait_Extra_Field
+      | Class_Structure_Include
+      | Class_Interface_Fields
+Trait_Structure_Field
+    ::= 'inherit' Long_Id ['as' id] [Cond_Modifier]
+Trait_Member_Field
+      | [Class_Member_Modifiers] Property_Def
+      | [Class_Member_Modifiers] Method_Def
+      | [Class_Member_Modifiers] Operator_Def
+      | [Class_Member_Modifiers] Attribute_Def
+      | ['abstract'] [Class_Member_Modifiers] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifiers] Property_Spec
+      | ['abstract'] [Class_Member_Modifiers] Message_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Attribute_Dcl
+Trait_Extra_Field
+    ::= [Access_Modifier] 'invariant' Expr
+      | Objects_Definition
+      | Objects_Specification
+      | [Class_Member_Modifiers] Type_Definition
+      | Alias_Def
+      | Access_Modifier {nl Trait_Field}+
+      | Do_Binding
+      | {Annotation}+ Trait_Field
+      | Nested_Annotation
+      | Class_Conditional_Field(Trait_Field)
+\end{lstlisting}
+
+
+
+
+
+
+\subsection{Trait Specifications}
+\label{sec:trait-specs}
+
+\grammar\begin{lstlisting}
+Trait_Type
+    ::= Parameterized_Type
+      | 'object' ['(' Type_Expr ')'] {[nl] Trait_Field_Spec} 'end'
+
+Trait_Field_Spec
+    ::= Trait_Structure_Field_Spec
+      | Trait_Concrete_Field_Spec
+Trait_Structure_Field_Spec
+    ::= 'inherit' Long_Id [Cond_Modifier]
+Trait_Concrete_Field_Spec
+    ::= Trait_Member_Field_Spec
+      | Trait_Extra_Field_Spec
+      | Class_Structure_Include
+      | Class_Interface_Fields_Spec
+Trait_Member_Field_Spec
+      | ['abstract'] [Class_Member_Modifiers] Ivar_Spec
+      | ['abstract'] [Class_Member_Modifiers] Property_Spec
+      | ['abstract'] [Class_Member_Modifiers] Message_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Operator_Dcl
+      | ['abstract'] [Class_Member_Modifiers] Attribute_Dcl
+Trait_Extra_Field_Spec
+    ::= [Access_Modifier] 'invariant' Expr
+      | Objects_Definition
+      | Objects_Specification
+      | [Class_Member_Modifiers] Type_Definition
+      | Alias_Def
+      | Access_Modifier {nl Trait_Field_Spec}+
+      | Do_Binding
+      | {Annotation}+ Trait_Field_Spec
+      | Nested_Annotation
+      | Class_Conditional_Field(Trait_Field_Spec)
+\end{lstlisting}
+
+
+
+
+
 
 A template defines the type signature, behaviour and initial state of a trait, class of objects or of a single object. Templates for part of instance creation expressions (constructors, see \sref{sec:constructor-invocations} \& \sref{sec:constructor-destructor-def}), class definitions and object definitions. A template ~\lstinline!$sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }!~ consists of constructor invocation $sc$, which defines the template's {\em superclass}, trait references $mt_1 \commadots mt_n$ $(n \geq 0)$, which statically define the template's included traits\footnote{Including protocols, which are also traits.}, and a statement sequence $\stats$, which contains initialization code and additional member definitions \& declarations for the template. Unlike in Scala, all trait references in class/trait parents need not to be exhaustive, as more prepended/included traits may be defined as a part of the template body. Trait references declared using \code{prepend with} are prepended to the template body instead of included (\sref{sec:include-classes}). 
 
@@ -52,13 +363,9 @@ The {\em least proper supertype} of a template is the class type or compound typ
 
 The statement sequence $\stats$ contain member definitions that define new members or overwrite members in the parent classes. It is called also the {\em class-level block}, as it does not need to contain only member definitions for the template, but also arbitrary other expressions that construct the class object and that are executed while the class is being loaded, in the context of the class. If the template forms part of an abstract class or trait definition, the statement part $\stats$ may also contain declarations of abstract members. If the template forms part of a concrete class definition, $\stats$ may still contain declarations of abstract type members, but not of abstract term members. Unlike in Scala, the expressions in $\stats$ are not forming the primary constructor of the class, but a multi-constructor\footnote{The classes are open in Aml, a single class may have its statements spread across multiple source files (\sref{sec:open-templates}).} of the class itself. 
 
-The sequence of template statements may be prefixed with a formal parameter definition prefixed with \code{requires} or \code{use}, i.e. ~\lstinline!use self as $x$!, ~\lstinline!use self as $x$: $T$!, ~\lstinline!requires $T$!~ or ~\lstinline!requires $x$: $T$!. If a formal parameter $x$ is given, it can be used as an alias for the reference \code{self} throughout the body of the template, including any nested types. If the formal parameter $x$ comes with a type $T$, this definition affects the {\em self type} $S$ of the underlying class or objects as follows: Let $C$ be the type of the class or trait or object defining the template. If a type $T$ is given for the formal self parameter, $S$ is the greatest lower bound of $T$ and $C$. If no type $T$ is given, $S$ is simply $C$. Inside the template, the type of \code{self} is assumed to be $S$. 
+The sequence of template statements may be prefixed with a formal parameter definition prefixed with \code{use}, i.e. ~\lstinline!use self as val $x$ in $t$!, ~\lstinline!use self as val $x$: $T$ in $t$!~ or ~\lstinline!use self as $T$ in $t$!, where $x$ is an alias for \code{self}, $T$ is the prescribed type for $x$ (or \code{self} if no $x$ given), and $t$ is the rest of the template in which the formal parameter definition appears. If a formal parameter $x$ is given, it can be used as an alias for the reference \code{self} throughout the body of the template, including any nested types. If the formal parameter $x$ comes with a type $T$, this definition affects the {\em self type} $S$ of the underlying class or objects as follows: Let $C$ be the type of the class or trait or object defining the template. If a type $T$ is given for the formal self parameter, $S$ is the greatest lower bound of $T$ and $C$. If no type $T$ is given, $S$ is simply $C$. Inside the template, the type of \code{self} is assumed to be $S$. 
 
 The self type of a class or object must conform to the self types of all classes which are inherited by the template $t$. 
-
-A second form of self type definition reads just ~\lstinline!requires self: $S$!~. It prescribes the type $S$ for \code{self} without introducing an alias name for it. 
-
-% TBD: add distinction between use/requires to Aml naming guidelines (use-rename, requires-affect self type)
 
 \example Consider the following class definitions:
 \begin{lstlisting}
@@ -93,42 +400,13 @@ Auxiliary templates do not need to be eager loaded. There are basically three ma
 
 
 
-\subsection{Autoloading}
-\label{sec:autoloading}
-
-Autoloading is a mechanism of putting code from different source files and source directories together in runtime. There are two kinds of autoloading.
-
-\paragraph{Implicit autoloading}
-This kind of autoloading is basically the expected layout of source files, source directories and terms inside of a directory. Given that a root directory represents a module sources root, each template definition is expected to appear in a file that directly appears in this directory, preferably with a name of the included template. If multiple templates appear in one source file, then the implicit autoloading uses the mechanism of template index to track location of these templates. However, if the name of the template is generated dynamically in runtime (i.e. not via template definition or a constant initialization), then it needs to be loaded using explicit autoloading. 
-
-\paragraph{Explicit autoloading}
-This kind of autoloading is basically a custom definition of the layout of source files, source directories and terms inside of a directory. Explicit autoloading happens every time a member is accessed in a template and it is not defined. Explicit autoloading is defined in means of using the \code{autoload} method, provided by the \code{Class} class, and therefore available inside of any template definition. The method has the following overloaded declarations: 
-\begin{lstlisting}
-type Autoloaded_Term is Symbol or Regexp 
-end type
-def autoload (term: Autoloaded_Term, 
-              path: String): Unit
-end def
-def autoload (term: Autoloaded_Term := nil, 
-              callback: (t: Autoloaded_Term) -> Boolean): Unit
-end def
-\end{lstlisting}
-The first overloaded variant generates an autoloading record that will autoload the source file from the given path. The second overloaded variant expects a callback that will return a boolean indicating whether the term was successfully autoloaded or not, also having the actual autoloaded term as an optional argument -- if the argument is omitted, then the callback is registered for every autoloading attempt.
-
-With explicit autoloading, the runtime is allowed to keep track of templates that make use of explicit autoloading to optimize member resolution. If an explicit autoloading is added in runtime, the version number of the template has to be updated to invalidate member caches. 
-
-
-
-
-
-
 
 \subsection{Constructor Invocations}
 \label{sec:constructor-invocations}
 
-\syntax\begin{lstlisting}
-Constr ::= Annot_Type {'(' [Exprs] ')'}
-         | '(' ')'
+\grammar\begin{lstlisting}
+Base_Call 
+    ::= Annot_Type {'(' [Argument] ')'}
 \end{lstlisting}
 
 Constructor invocations define the type, members and initial state of objects created by an instance creation expression, or of parts of an object's definition, which are inherited by a class or object definition. A constructor invocation is a function application ~\lstinline!$c$[$\targs$]($\args_1$)$\ldots$($\args_n$)!~, where $c$ is a path to the superclass or an alias for the superclass, $\targs$ is a type argument list, $\args_1 \commadots \args_n$ are argument lists, and there is a constructor of that class which is applicable to the given arguments. 
@@ -155,9 +433,9 @@ Primary constructor evaluation happens in the following order in respect to the 
 \label{sec:eigenclasses}
 
 \paragraph{\em Metaclasses}
-A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behavior and properties of its instances, a metaclass defines the behavior of its class. Classes are first-class citizens in Aml. 
+A {\em metaclass} is a class whose instances are classes. Just as an ordinary class defines the behaviour and properties of its instances, a metaclass defines the behaviour of its class. Classes are first-class citizens in Aml. 
 
-Everything is an object in Aml. Every object has a class that defines the structure (i.e. the instance variables) and behavior of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
+Everything is an object in Aml. Every object has a class that defines the structure (i.e. the instance variables) and behaviour of that object (i.e. the messages the object can receive and the way it responds to them). Together this implies that a class is an object and therefore a class needs to be an instance of a class (called metaclass). 
 
 Class methods actually belong to the metaclass, just as instance methods actually belong to the class. All metaclasses are instances of only one class called \code{Metaclass}, which is a subclass of the class \code{Class}. 
 
@@ -193,7 +471,7 @@ Another way to access an eigenclass is to use the \lstinline!class << obj; $\ldo
 \paragraph{\em Metaclass Access}
 Metaclasses of classes may be accessed using the following language construct. 
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Metaclass_Access ::= 'class' '<<' Metaclass_Obj semi 
                      [Template_Body] 'end'
 Metaclass_Obj    ::= Type | Path | 'self' | id
@@ -493,7 +771,15 @@ If $M'$ is labeled \lstinline!private!, then $M'$ must be labeled \lstinline!pri
 If $M'$ is incomplete (\sref{sec:modifiers}) in $C$, then $M$ should be labeled \lstinline!abstract override!. 
 
 \item
-If $M$ and $M'$ are both concrete value definitions, then either none of them is marked \lstinline!lazy!, or both must be marked \lstinline!lazy!. 
+If $M$ and $M'$ are both concrete value definitions, then one of the following must hold for them:
+\begin{itemize} 
+\item both $M$ and $M'$ are explicitly strict,
+\item both $M$ and $M'$ are explicitly lazy,
+\item $M'$ is explicitly strict and $M$ is not explicit in eagerness, meaning it inherits strictness from $M'$,
+\item $M'$ is explicitly lazy and $M$ is not explicit in eagerness, meaning it inherits laziness from $M'$,
+\item none of $M$ and $M'$ explicitly defines eagerness.
+\end{itemize}
+
 \end{itemize}
 
 To generalize the conditions, the modifier of $M$ must be the same or less restrictive than the modifier of $M'$. 
@@ -521,84 +807,22 @@ It is an error if the inheritance closure of a class type consists of an infinit
 
 
 
-\subsection{Early Definitions}
-\label{sec:early-defs}
-
-\syntax\begin{lstlisting}
-Early_Defs ::= '{' [Early_Def {semi Early_Def}] '}' 
-               'with'
-Early_Def  ::= {Annotation} {Modifier} (Var_Def | Val_Def)
-\end{lstlisting}
-
-A template may start with an {\em early definition} clause, which serves to define certain field values before the supertype constructor is called. In a template
-\begin{lstlisting}
-{
-  val $p_1$: $T_1$ := $e_1$
-  $\ldots$
-  val $p_n$: $T_n$ := $e_n$
-} with $sc$ with $mt_1$ with $\ldots$ with $mt_n$
-\end{lstlisting}
-The initial pattern definitions of $p_1 \commadots p_n$ are called {\em early definitions}. They define fields which form part of the template. Every early definition must define at least one field. 
-
-Any reference to \code{self} in the right-hand side of an early definition refers to the identity of \code{self} just outside the template, not inside of it. As a consequence, it is impossible for any early definition to refer to the object being constructed by the template, or refer to any of its fields, except for any other preceding early definition in the same section. 
-
-
-
-
-
-
 
 \section{Modifiers}
 \label{sec:modifiers}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Modifier         ::= Local_Modifier
                    | Access_Modifier
                    | 'override' [Class_Qualifier]
 Local_Modifier   ::= 'implicit'
-                   | 'lazy'
                    | 'final'
                    | 'sealed'
                    | 'abstract'
 Access_Modifier  ::= 'public'
                    | ('protected' | 'private') [Access_Qualifier]
 Access_Qualifier ::= '[' (id | 'self') ']'
-Mutability       ::= 'mutable' | 'immutable'
 \end{lstlisting}
-
-Access modifiers may appear in two forms:
-
-\paragraph{\em Accessibility flag modifier}
-Such a modifier appears in a template (\sref{sec:templates}) or a module definition (\sref{sec:modules}) alone on a single line. All subsequent members in the same class-level block than have accessibility of this modifier applied to them, if allowed to (does not apply to destructors). Only access modifiers can be used this way. 
-
-\paragraph{\em Directly applied modifier}
-Such a modifier appears on a line preceding a member to which the modifier is solely applied, or a list of arguments with symbols that the modifier will be applied to. A directly applied modifier expression has a result type of \code{Symbol}, so that it may be used as a regular function and chained. 
-
-\example An example of an accessibility flag modifier:
-\begin{lstlisting}
-class C
-begin
-  public
-    def hello; end
-  private
-    def private_hello; end
-end class
-\end{lstlisting}
-
-\example An example of directly applied modifier:
-\begin{lstlisting}
-class C
-begin
-  def hello; end
-  def private_hello; end
-  def salute; end
-  public :hello
-  private :private_hello, :salute
-  protected def goodbye; end
-end class
-\end{lstlisting}
-
-By default\footnote{That is, without any explicit modifier being applied.}, the \code{public} access modifier affects every member of the class type, except for instance variables and class instance variables, which are object-private (\lstinline!private[self]!). 
 
 Modifiers affect the accessibility and usage of the identifiers bound by them. If several modifiers are given, their order does not matter, but the same modifier may not occur more than once and combinations of \code{public}, \code{protected} \& \code{private} are not allowed (using them as accessibility flag modifiers overwrites the previous accessibility, not combines them). If a member declaration has a modifier applied to it, then the subsequent member definition has the same modifier already applied to it as well, without the need to explicitly state that. It is an error if the modifier applied to the member definition would contradict the modifier applied to the member declaration. 
 
@@ -640,7 +864,7 @@ The rules governing the validity and meaning of a modifier are as follows:
 
   We call a member $M$ of a class or trait {\em incomplete} if it is either abstract (i.e. defined by a declaration), or it is labeled \code{abstract} and \code{override} and every member overridden by $M$ is again incomplete. 
 
-  The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behavior can be turned off only in tests, if needed, and is implicitly turned on. 
+  The \code{abstract override} modifier combination does not influence the concept whether a member is concrete or abstract. A member is {\em abstract} if only a declaration is given for it; it is {\em concrete} if a full definition is given. This behaviour can be turned off only in tests, if needed, and is implicitly turned on. 
 
   The \code{abstract override} modifier combination can be thus used with a full definition in a trait and yet affect the class or trait with which it is used, so that a member access to member \code{abstract override $M$}, such as \lstinline!super.$M$!, is legal. But, the \code{abstract override} modifier combination does not need to be applied to a definition, a declaration is good enough for it. 
 
@@ -659,28 +883,22 @@ The rules governing the validity and meaning of a modifier are as follows:
   \item The \code{sealed} local modifier applies to class definitions. A \code{sealed} class can not be directly inherited, except if the inheriting class or trait is defined in the same source file as the inherited sealed class. However, subclasses of a sealed class have no restriction in inheritance, unless they are final or sealed again. 
 
   Additionally, an annotation \lstinline!@[Sealed]! exists for classes and class members that triggers only warnings in case of inheriting outside the same source file, but does not prevent the inheritance. Thus, the annotation only signals an intention, the keyword modifier signals a requirement. 
-  
-  \item The \code{mutable} mutability modifier guarantees that all member values of the type that it is applied to will not be immutable, hence not frozen. It transitively applies to all subtypes, and is disallowed when any of the parents of the type is declared to be immutable. It is an error to freeze values that are declared mutable. 
-  
-  \item The \code{immutable} mutability modifier guarantees that all member values of the type that it is applied to will be immutable, hence frozen. It transitively applies to all subtypes, and is disallowed when any of the parents of the type is declared to be mutable. When applied to classes, it does so by implicitly freezing all values right before all their constructors are finished\footnote{Freezing is re-entrant and irreversible. If a constructor freezes a value explicitly, nothing is wrong.}. 
 
   \item The \code{lazy} local modifier applies to value definitions. A \code{lazy} value is initialized the first time it is accessed (which might eventually never happen). Attempting to access a lazy value during its initialization is a blocking invocation until the value is initialized of failed to initialize. If an exception is thrown during initialization, the value is considered uninitialized and the initialization is restarted on later access, re-evaluating its right hand side. 
 
 \example The following code illustrates the use of qualified and unqualified private: 
 \begin{lstlisting}
 module Outer_Mod.Inner_Mod
-  class Outer
-  begin
-    class Inner
-    begin
-      private[self] def e() end def
-      private def f() end def
-      private[Outer] def g() end def
-      private[Inner_Mod] def h() end def
-      private[Outer_Mod] def i() end def
-    end class
-  end class
-end module
+  class Outer = object
+    class Inner = object
+      private[self] method e = ()
+      private method f = ()
+      private[Outer] method g = ()
+      private[Inner_Mod] method h = ()
+      private[Outer_Mod] method i = ()
+    end
+  end
+end
 \end{lstlisting}
 Here, accesses to the method \code{e} can appear anywhere within the instance of \code{Inner}, provided that the instance is also the receiver at the same time. Accesses to the method \code{f} can appear anywhere within the class \code{Inner}, including all receivers of the same class. Accesses to the method \code{g} can appear anywhere within the class \code{Outer}, but not outside of it. Accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod.Inner_Mod}, but not outside of it, similar to package-private methods in Java. Finally, accesses to the method \code{h} can appear anywhere within the module \code{Outer_Mod}, including modules and classes contained in it, but not outside of these.
 
@@ -715,28 +933,9 @@ This is just for the sake of completeness, since change from public to public is
 \section{Class Definitions}
 \label{sec:class-definitions}
 
-\syntax\begin{lstlisting}
-Class_Definition    ::= [Mutability] 'class' Class_Def
-Class_Def           ::= id [Type_Param_Clause] [Given_Clauses]
-                        [Class_Param_Clauses] Class_Tmpl_Env
-Class_Param_Clauses ::= {Annotation} [Access_Modifier] 
-                        {Class_Param_Clause}
-                        ['(' 'implicit' Class_Params ')']
-Class_Param_Clause  ::= '(' [Class_Params] ')'
-Class_Params        ::= Class_Param {',' Class_Param}
-Class_Param         ::= Param
-Class_Tmpl_Env      ::= Tmpl_Env_With_Pars ['class']
-                      | Tmpl_Env_Brackets
-                      | Tmpl_Env_No_Pars ['class']
-Tmpl_Env_With_Pars  ::= 'extends' [Early_Defs] Class_Parents
-                        semi ['begin'] [Template_Body] 'end'
-Tmpl_Env_Brackets   ::= ['extends' [Early_Defs]] 
-                        '{' [Template_Body] '}'
-Tmpl_Env_No_Pars    ::= ['begin' [Template_Body]] 'end'
-\end{lstlisting}
+A class definition defines the type signature, behaviour and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behaviour defined in its metaclass (\sref{sec:metaclasses}). 
 
-A class definition defines the type signature, behavior and initial state of a class of objects (the instances of the defined class) and of the class object, which is the class instance itself, with behavior defined in its metaclass (\sref{sec:metaclasses}). 
-
+% this is wrong! follow the new grammar!
 The most general form of a class definition is
 \begin{lstlisting}
 class $c$ [$\tps$]
@@ -773,7 +972,7 @@ $t$ is a template (\sref{sec:templates}) of the form
 \begin{lstlisting}
 $sc$ with $mt_1$ with $\ldots$ with $mt_n$ { $\stats$ }
 \end{lstlisting}
-for $(n \geq 0)$, which defines the base classes, behavior and initial state of objects of the class. The extends clause ~\lstinline!extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$!~ can be omitted, in which case ~\lstinline!extends Object!~ is implied. The only class that defines $sc$ as ~\lstinline!()!~ is \code{Object} (meaning that it has no superclass) and it is an error if any other class attempts to do the same. 
+for $(n \geq 0)$, which defines the base classes, behaviour and initial state of objects of the class. The extends clause ~\lstinline!extends $sc$ with $mt_1$ with $\ldots$ with $mt_n$!~ can be omitted, in which case ~\lstinline!extends Object!~ is implied. The only class that defines $sc$ as ~\lstinline!()!~ is \code{Object} (meaning that it has no superclass) and it is an error if any other class attempts to do the same. 
 
 \end{itemize}
 
@@ -814,31 +1013,31 @@ As defined earlier, a class with a type parameter section \lstinline![$\tps$]! i
 \paragraph{Note}
 If full type inference is desired for a polymorphic class $c$, then constructs such as the following can be used:
 \begin{lstlisting}
-(* for polymorphic class with 1 type parameter *)
+-- for polymorphic class with 1 type parameter
 $c$[_] 
 
-(* for polymorphic class with 2 type parameters *)
+-- for polymorphic class with 2 type parameters
 $c$[_, _] 
 
-(* for polymorphic class with 3 type parameters *)
+-- for polymorphic class with 3 type parameters
 $c$[_, _, _] 
 
-(* for polymorphic class with 1 or more type parameters,
-   when there is only one such polymorphic class *)
+-- for polymorphic class with 1 or more type parameters,
+   when there is only one such polymorphic class
 $c$[*_]
 \end{lstlisting}
 
 \paragraph{Note}
 Partial type inference is also possible: 
 \begin{lstlisting}
-(* for polymorphic class with 2 type parameters *)
+-- for polymorphic class with 2 type parameters
 $c$[_, String] 
 
-(* for polymorphic class with 3 type parameters *)
+-- for polymorphic class with 3 type parameters
 $c$[_, Number, _] 
 
-(* for polymorphic class with 2 or more type parameters,
-   when there is only one such polymorphic class *)
+-- for polymorphic class with 2 or more type parameters,
+   when there is only one such polymorphic class
 $c$[String, *_]
 \end{lstlisting}
 
@@ -853,7 +1052,7 @@ $c$[String, *_]
 The primary constructor is a special function, more special in its syntax than any other function in Aml. Its definition can spread across three syntactically different places inside of a class definition: formal value parameters, explicit field declarations, explicit primary constructor body. Primary constructor without explicitly defined parameters is equivalent to the default constructor. 
 
 \paragraph{\em Primary constructor parameters}
-These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behavior overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
+These are described as a part of class definitions (\sref{sec:class-definitions}). Technically, a primary constructor is happy being left with nothing but the parameter definitions, since these are always automatically mapped to instance values\footnote{Making this behaviour overrideable may be discussed, but it might interfere with case classes.} and also implicitly adds accessor methods to the class with appropriate visibility, defined explicitly by accessor modifiers (\sref{sec:modifiers}) or implicitly as \code{public}. 
 
 \paragraph{\em Explicit primary constructor fields}
 These are expressions inside the class template (\sref{sec:templates}) that refer to the formal value parameters, and they become an implicit part of the primary constructor. The evaluation happens after early definitions are evaluated and before explicit primary constructor body is evaluated, but combinations of the two approaches should be avoided for the sake of readability -- the only expressions that the formal value parameters should appear in are simple instance variable definitions. 
@@ -861,46 +1060,18 @@ These are expressions inside the class template (\sref{sec:templates}) that refe
 \paragraph{\em Explicit primary constructor body}
 If a primary constructor should do something more than simply map parameters to instance values, then its explicit body comes in. It may co-exist with explicit primary constructor fields, which are then executed right after a call to the super-constructor (either in implicit position, or an explicit one). 
 
-\syntax\begin{lstlisting}
-Def             ::= PCtor_Def
-PCtor_Def       ::= 'constructor' PCtor_Fun_Def
-PCtor_Fun_Def   ::= 'do' (Constr_Expr | Constr_Block)
-Constr_Expr     ::= Self_Invocation
-                  | Constr_Block2
-Self_Invocation ::= 'self' Arguments
-                  | Sup_Invocation
-Sup_Invocation  ::= 'super' [Arguments]
-Constr_Block    ::= Constr_Block1 | Constr_Block2
-Constr_Block1   ::= [semi Constr_Block3] 'end' ['constructor']
-Constr_Block2   ::= '{' [Constr_Block3] '}'
-Constr_Block3   ::= [[Block_Stat {semi Block_Stat} semi] 
-                    Self_Invocation semi] 
-                    Block_Stat {semi Block_Stat}
-                  | Self_Invocation
-\end{lstlisting}
-
 \paragraph{Auxiliary constructors}
 Besides the primary constructor, a class may define additional constructors with different parameter sections, that form together with the primary constructor an overloaded constructor definition. Every auxiliary constructor is constrained in means that it has to either invoke another constructor defined before itself, or any superclass constructor. Therefore classes in Aml have multiple entry points, but with great power comes great responsibility: user must ensure that every constructor path defines all necessary members. It is an error if a constructor invocation leads to an instance with abstract members. If a constructor does not explicitly invoke another constructor, an invocation of the implicit constructor is inserted implicitly as the first invocation in the constructor. 
 
-\syntax\begin{lstlisting}
-Ctor_Def     ::= ['convenience'] 'constructor' Ctor_Fun_Def
-Ctor_Fun_Def ::= [Param_Clauses] (':=' Constr_Expr | Constr_Block)
-
-Dtor_Def     ::= 'destructor' Dtor_Fun_Def
-Dtor_Fun_Def ::= (':=' Dtor_Expr | Dtor_Block)
-Dtor_Expr    ::= Sup_Invocation
-               | Dtor_Block2
-Dtor_Block   ::= Dtor_Block1 | Dtor_Block2
-Dtor_Block1  ::= [semi Dtor_Block3] 'end' ['destructor']
-Dtor_Block2  ::= '{' [Dtor_Block3] '}'
-Dtor_Block3  ::= [[Block_Stat {semi Block_Stat} semi] 
-                 Sup_Invocation semi] 
-                 Block_Stat {semi Block_Stat}
-               | Sup_Invocation
+\grammar\begin{lstlisting}
+Constructor_Def
+    ::= ['convenience'] 'constructor' [Param_Clauses] '=' [Function_Declarations] Expr
+Destructor_Def 
+    ::= 'destructor' '=' [Function_Declarations] Expr
 \end{lstlisting}
 
 \paragraph{\em Implicit constructor}
-An implicit constructor is an automatically generated constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (either implicit one, which is \code{nil}, or explicit ones used in their definitions), so that an explicit empty constructor would not have to be specified. Implicit constructor can only be generated if all members have a default value and the superclass has a parameterless designated constructor. 
+An implicit constructor is an automatically generated constructor. This is what Java and C\# call ``default constructor''. An implicit constructor ``does nothing'' but invokes the super-constructor and initializes all members specific to the constructed object to their default values (if possible), so that an explicit empty constructor would not have to be specified. Implicit constructor can only be generated if all members have a default value and the superclass has a parameterless designated constructor. 
 
 \paragraph{\em Designated constructor}
 A designated constructor is such a constructor that initializes all members of the class. The primary constructor always has to be also a designated constructor. A designated constructor can only call a constructor of the immediate superclass\footnote{This is a relaxation from Swift by Apple, which only allows to call a designated constructor of the immediate superclass.}. A single class may have multiple designated constructors, but either way all instance members have to be initialized and at least one designated constructor has to exist. Note that new instance members may be added dynamically in runtime -- but those are also initialized at the time they are added by the dynamic code. Also note that the constructor of the superclass may be dealing with an incomplete object\footnote{As the constructors may further edit the new object later.}, therefore a designated constructor must make sure that all instance members are initialized (either with their default values, or ones set up by the constructor), before it delegates up to the constructor of the superclass. 
@@ -924,9 +1095,9 @@ The following lists present the order in which object construction occurs.
   \item Somebody calls the \code{new} instance method of \code{Class} with arguments for the desired constructor. 
   \item A constructor is picked up with a 1:1 mapping to the arguments of \code{new}. 
   \item A memory is allocated for the new object. The memory is not yet initialized, and so is not the object. 
-  \item Runtime keeps track of all declared instance variables and their defined-ness during object construction.\footnote{This is again relaxation from Swift by Apple. The object might be fully initialized earlier, or later.} 
+  \item Constructors are applied. Runtime keeps track of all declared instance variables and their defined-ness during object construction.\footnote{This is again relaxation from Swift by Apple. The object might be fully initialized earlier, or later.} 
   \item As soon as every instance variable is properly defined, the \code{self} object becomes available for regular use. 
-  \item After this point, the object is considered fully initialized, and the phase is complete. 
+  \item After this point, the object is considered fully initialized, and the phase is complete. Instance values may no longer be modified after this point. 
 \end{enumerate}
 
 {\bfseries Phase 2}
@@ -942,26 +1113,28 @@ Constructors may have modified accessibility, so that only certain functions can
 \example An example of a designated constructor of class $C$.
 \begin{lstlisting}
 class $C$
-  constructor (param)
-    val @resource := param
-    super()
-  end constructor
+begin
+  constructor (param) =
+    val @resource = param in
+    super
+    
 end class
 \end{lstlisting}
 
 \example An example of a pair of constructors of class $C$. 
 \begin{lstlisting}
 class $C$
-  constructor (param)
-    val @resource := param
-    super()
-  end constructor
-  convenience constructor := self(42)
+begin
+  constructor (param) =
+    val @resource = param in
+    super
+    
+  convenience constructor = self (42)
 end class
 \end{lstlisting}
 
 \paragraph{\em Constant instance variables}
-Any constructor may modify a constant instance variable during its evaluation, even multiple times. This behavior passes on to any methods that are invoked during the object's construction, but should be used with caution. 
+Any constructor may modify a constant instance variable during its evaluation, even multiple times. This behaviour passes on to any methods that are invoked during the object's construction, but should be used with caution. 
 
 \paragraph{\em Explicit destructor}
 An explicit destructor does not have any accessibility. The super-destructor is invoked implicitly at the end of its execution, unless explicitly invoked earlier. Destructors are parameterless and have a further requirement that they can not increment the reference count of the object being destructed -- doing so could result in zombie objects. To further emphasize that, the \code{this} and \code{self} keywords are disallowed in a destructor body, and invoking any method that does use the \code{self}-value is forbidden. The VM is required to raise an error in case \code{self} would be attempted to be retained again, to prevent zombie objects apocalypse. 
@@ -975,78 +1148,34 @@ Destructors, unlike constructors, can not have any accessibility modifiers. They
 \example An example of an explicit destructor of class $C$. 
 \begin{lstlisting}
 class $C$
+begin
   destructor
     @resource.close unless @resource.closed?
-    (* super is invoked implicitly here *)
+    -- super is invoked implicitly here
   end destructor
 end class
 \end{lstlisting}
 
+\paragraph{Process of object destruction}
 
+\begin{enumerate}
+  \item An object becomes eligible for destruction (see below). 
+  \item Strong retain count drops to zero. 
+  \item All weak references within the object are removed. Includes weak references, unowned references and soft references. If any of the referenced objects then become eligible for destruction, their destruction happens in the same order as soon as this object's destruction finishes. 
+  \item The object's destructor is applied. When that finishes, the destructor from its superclass is applied and so on. 
+  \item After the root destructor is applied, strong reference count to the destructed object is checked. If it is non-zero, a runtime error is raised (\code{Object_Resurrection_Error}).
+  \item All strong references within the object are removed. If any of the referenced objects then become eligible for destruction, their destruction happens in the same order as soon as this object's destruction finishes. 
+  \item Memory is reclaimed. 
+\end{enumerate}
 
-
-
-
-\subsection{Clone Constructor Definitions}
-\label{sec:clone-def}
-
-\syntax\begin{lstlisting}
-CCtor_Def     ::= ['convenience'] 'clone' CCtor_Fun_Def
-CCtor_Fun_Def ::= [Type_Param_Clause] [Given_Clauses] [Param_Clauses] 
-                  (':=' Constr_Expr | Clone_Block)
-Clone_Block   ::= [semi Constr_Block3] 'end' ['clone']
-                | Constr_Block2
-\end{lstlisting}
-
-Clone constructors are pretty much like constructor, except for they are not invoked indirectly by \code{allocate} on \code{Class}, but by ~\lstinline[deletekeywords={clone}]!clone!~ on the cloned instance. Regular constructors are not invoked on the cloned objects, since they were already invoked on the original object. 
-
-Clone constructor implicitly returns the new cloned object, unless returning explicitly a different object (which would possibly invoke its regular constructors). The original object is available with the \code{self[origin]}, \code{this[origin]} and \code{super[origin]} constructs (the latter being only useful as prefix in function applications), the new cloned object is available with the \code{self[cloned]}, \code{this[cloned]} and \code{super[cloned]} constructs. The ~\lstinline!self[cloned]!~ construct is only legal in a body of the clone constructor. Clone constructors are invoked in the context of the original object, but the original object still has to be accessed with the defined construct. 
-
-Clone constructors have the ability to modify immutable instance variables, but only of the new cloned object (\code{self[cloned]}) -- the original object is already constructed. 
-
-Clone constructors pass on the eigenclass (if any) of the original object to the cloned object, thus elevating it to an almost regular class -- a prototype class, a class that resides not in a constant, but in a class instance, in an object (but that original object may be still assigned to a constant anyway). 
-
-A different clone constructor of the same class may be invoked by using the \code{self} keyword as a function name. If a clone constructor invokes a different clone constructor of the same class this way, the super-clone-constructor is not implicitly invoked (since it is invoked in the other clone constructors). The same rules for using \code{self[cloned]} (as \code{self}) as in constructors apply. 
-
-The \code{Object} class has a default root clone constructor, which carries the modifier \code{protected} (\sref{sec:modifiers}). Therefore, any custom clone constructor has to be explicitly protected in a less restrictive way, or public, in order to allow direct object cloning from outside of the class that defines it. 
-
-\paragraph{Implicit clone constructor}
-An implicit clone constructor is an automatically generated bridge clone constructor to the parameterless default clone constructor. An implicit clone constructor ``does nothing'' but invokes the super-clone-constructor and makes a shallow copy of every member specific to the cloned object. 
-
-\paragraph{Designated clone constructor}
-A designated clone constructor can only invoke inherited clone constructors from superclass. 
-
-\paragraph{Convenience clone constructor}
-A convenience clone constructor is a clone constructor marked with the keyword \code{convenience}. They can only invoke clone constructors from the same class. 
-
-\paragraph{Accessibility of clone constructors}
-Clone constructors may have modified accessibility, so that only certain functions can invoke them indirectly. The accessibility is then transitioned from the calling context. 
-
-\example An example of a default clone constructor of class $C$, performing a deep copy. 
-\begin{lstlisting}
-class $C$
-  clone
-    (* super is invoked implicitly here *)
-    self[cloned].@resource := self[origin].@resource.clone
-  end constructor
-end class
-\end{lstlisting}
-
-
-
-
-
-\subsection{Upgrade Constructor Definitions}
-\label{sec:upgrade-def}
-
-\syntax\begin{lstlisting}
-UCtor_Def     ::= ['convenience'] 'upgrade' 'constructor' 
-                  UCtor_Fun_Def
-UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
-                  (':=' Constr_Expr | Constr_Block)
-\end{lstlisting}
-
-
+\paragraph{Objects eligible for destruction}
+An object {\em eligible for destruction} must meet the following conditions:
+\begin{itemize}
+  \item Strong reference count has dropped to zero. 
+  \item There are no soft references to the object. 
+  \item If there are soft references to the object, the runtime is allowed to drop all of them in case of low memory. Definition of such condition is implementation-specific. 
+  \item The object is eligible for destruction regardless of any weak references remaining. 
+\end{itemize}
 
 
 
@@ -1055,8 +1184,8 @@ UCtor_Fun_Def ::= '(' id [':' 'self' '.' 'type'] ')'
 \subsection{Case Classes}
 \label{sec:case-classes}
 
-\syntax\begin{lstlisting}
-Class_Definition ::= [Mutability] 'case' 'class' Class_Def
+\grammar\begin{lstlisting}
+Class_Definition ::= ['monitored'] 'case' 'class' Class_Def
 \end{lstlisting}
 
 If a class definition is prefixed with \code{case}, the class is said to be a {\em case class}. 
@@ -1069,16 +1198,16 @@ The formal parameters are handled differently from regular classes. The formal p
 
 A case class definition of \lstinline!$c$[$\tps$]($\ps_1$)$\ldots$($\ps_n$)! with type parameters $\tps$, and value parameters $\ps$ implicitly adds some methods to the corresponding class object, making it suitable as an extractor object (\sref{sec:case-class-patterns}), and are defined as follows:
 \begin{lstlisting}
-object $c$ {
-  def apply[$\tps$]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
+object $c$ 
+  method apply[$\tps$]($\ps_1$)$\ldots$($\ps_n$): $c$[$\tps$] := 
       $c$[$\Ts$].new($xs_1$)$\ldots$($xs_n$)
-  def unapply[$\tps$]($x$: $c$[$\tps$]?): Option[$e$] :=
+  method unapply[$\tps$]($x$: $c$[$\tps$]?): Option[$e$] :=
       unless $x$ = nil
         Some($x$.$xs_{11} \commadots x$.$xs_{1k}$)
       else
         None
       end
-}
+end
 \end{lstlisting}
 
 Here, $\Ts$ stands for the vector of types defined in the type parameter section $\tps$, each $xs_i$ denotes the parameter names of the parameter section $\ps_i$, $xs_{11} \commadots xs_{1k}$ denote the names of all parameters in the first parameter section $xs_1$, and $e$ denotes the type that \code{Option} is parameterized with. If a type parameter section is missing in the class $c$, it is also missing in the \code{apply} and \code{unapply} methods. The definition of \code{apply} is missing also if the class $c$ is marked \code{abstract}.\footnote{Because the implied \code{apply} method creates new objects and abstract classes can't have any instances of themselves.}
@@ -1105,26 +1234,18 @@ A method named \code{copy} is implicitly added to every case class, unless the c
 def copy [$\tps$]($\ps'_1$)$\ldots$($\ps'_n$): $c$[$\tps$] :=
     $c$[$\Ts$].new($xs_1$)$\ldots$($xs_n$)
 \end{lstlisting}
-$\Ts$ stands for the vector of types defined in the type parameter section $\tps$. Each $xs_i$ denotes the parameter names of the parameter section $\ps'_i$.  Each value parameter of the first parameter list $\ps'_1$ has the form ~\lstinline!:$x_{1,j}$ : $T_{1,j}$ := self.$x_{1,j}$!, and the other parameters $\ps'_{i,j}$ of the clone constructor are defined as ~\lstinline!:$x_{1,j}$ : $T_{1,j}$!. Note that these parameters are defined as named parameters (\sref{sec:named-parameters}), and that the parameters of the first value parameter section have default values using \code{self}, which is available, since the copied object is already ``complete''. 
+$\Ts$ stands for the vector of types defined in the type parameter section $\tps$. Each $xs_i$ denotes the parameter names of the parameter section $\ps'_i$.  Each value parameter of the first parameter list $\ps'_1$ has the form ~\lstinline!:$x_{1,j}$ : $T_{1,j}$ := self.$x_{1,j}$!, and the other parameters $\ps'_{i,j}$ of the clone constructor are defined as ~\lstinline!:$x_{1,j}$ : $T_{1,j}$!. Note that these parameters are defined as named parameters (\sref{sec:labelled-parameters}), and that the parameters of the first value parameter section have default values using \code{self}, which is available, since the copied object is already ``complete''. 
 
 A clone constructor is also implicitly added to every case class, but limited to the first value parameter section. The following definition of the implicitly added clone constructor shares the definition of parameters: 
 \begin{lstlisting}
 clone [$\tps$]($\ps'_1$): $c$[$\tps$]
-  self[cloned].@$xs_{1,1}$ := $xs_{1,1}$
+  self[cloned].$xs_{1,1}$ <- $xs_{1,1}$
   $\ldots$
-  self[cloned].@$xs_{1,n}$ := $xs_{1,n}$
+  self[cloned].$xs_{1,n}$ <- $xs_{1,n}$
 end clone
 \end{lstlisting}
 Here, $xs_{1,n}$ denotes the (named) parameter names of the first (and only) parameter section. All instance variables are shallow-copied into the new cloned object. 
 
-Every case class implicitly overrides some method definitions of class \code{Object}, unless a definition of the same method is already given in the case class itself or a concrete definition of the same method is given in some base class (including traits) of the case class, different from \code{Object}. Namely: 
-\begin{itemize}
-  \item[] Method ~\lstinline!equals: (Object) $\mapsto$ Boolean!~ (equivalent to operator ``\lstinline!=!'') is structural equality, where two instances are equal if they both belong to the case class in question and they have equal (with respect to \code{equals}) elements. 
-
-  \item[] Method ~\lstinline!hash_code: () $\mapsto$ Number.Integer_Unsigned!~ computes a hash code. 
-
-  \item[] Method ~\lstinline!to_string: () $\mapsto$ String!~ returns a string representation which contains the name of the case class and its elements. 
-\end{itemize}
 
 
 
@@ -1133,8 +1254,8 @@ Every case class implicitly overrides some method definitions of class \code{Obj
 \section{Trait Definitions}
 \label{sec:traits}
 
-\syntax\begin{lstlisting}
-Trait_Definition ::= [Mutability] 'trait' Trait_Def
+\grammar\begin{lstlisting}
+Trait_Definition ::= 'trait' Trait_Def
 Trait_Def        ::= id [Type_Param_Clause] [Given_Clauses]
                      Trait_Tmpl_Env
 Trait_Tmpl_Env   ::= Tmpl_Env_With_Pars ['trait']
@@ -1150,15 +1271,13 @@ If $D$ is not a trait, then its actual supertype is simply its least proper supe
 
 \example The following trait defines the property of being comparable to objects of some type. It contains an abstract operator \lstinline!<! and default implementations of the other comparison operators \lstinline!<=!, \lstinline!>! and \lstinline!>=!. Operators are methods, too. The trait also requires the self-type to be \code{T}. 
 \begin{lstlisting}
-trait Comparable[T <: Comparable[T]] {
-  requires T
-  operator < (that: T): Boolean end
-  operator <=(that: T): Boolean := self < that or self = that
-  operator > (that: T): Boolean := that < self
-  operator >=(that: T): Boolean := that <= self
+trait Comparable['T <: Comparable['T]] {
+  operator < (a: 'T) (b: 'T): Boolean end
+  operator <=(a: 'T) (b: 'T): Boolean := not (a < b) and not (a > b)
+  operator > (a: 'T) (b: 'T): Boolean := b < a
+  operator >=(a: 'T) (b: 'T): Boolean := b <= a
 }
 \end{lstlisting}
-
 
 
 
@@ -1174,7 +1293,7 @@ There are two separate branches of refinements in Aml, both are quite similar, b
   \item[] Second, refinements that are basically traits designed to be locally prepended to classes. The second branch is described here. 
 \end{itemize}
 
-\syntax\begin{lstlisting}
+\grammar\begin{lstlisting}
 Refinement_Definition ::= 'refinement' Refinement_Def
 Refinement_Def        ::= id 'refine' Type {'and' Type} 
                           Refinement_Tmpl_Env
@@ -1204,8 +1323,8 @@ A refinement is though allowed to refine classes that are \code{final} or \code{
 \section{Protocol Definitions}
 \label{sec:protocols}
 
-\syntax\begin{lstlisting}
-Protocol_Definition ::= 'protocol' Pro_Def
+\grammar\begin{lstlisting}
+Protocol_Definition ::= ['monitored'] 'protocol' Pro_Def
 Pro_Def             ::= id [Type_Param_Clause] [Given_Clauses]
                         Pro_Tmpl_Env
 Pro_Tmpl_Env        ::= Tmpl_Env_With_Pars ['protocol']
@@ -1232,38 +1351,16 @@ Protocol references are preferred to traits to be used by library designers to d
 
 
 
-\section{Interface Definitions}
-\label{sec:interfaces}
-
-\syntax\begin{lstlisting}
-Interface_Definition ::= [Mutability] Ifc_Kind 'interface' Ifc_Def
-Ifc_Kind             ::= ['case'] 'class' 
-                       | ['case'] 'object'
-                       | 'trait'
-                       | 'refinement'
-Ifc_Def              ::= id [Type_Param_Clause] [Given_Clauses]
-                         [Class_Param_Clauses] Ifc_Tmpl_Env
-Ifc_Tmpl_Env         ::= Tmpl_Env_With_Pars ['interface']
-                       | Tmpl_Env_Brackets
-                       | Tmpl_Env_No_Pars ['interface']
-\end{lstlisting}
-
-Interfaces are filtered versions of classes and traits with only declarations and without early definitions or any definitions at all, except for auxiliary constructor definitions that become empty constructor declarations (without function bodies). Interfaces can be generated from classes or traits by simple transformations and manually edited as needed. Their only purpose is to be used in {\em module interfaces}, so that implementation is not distributed along, but only declarations in interfaces and protocols are. 
-
-
-
-
-
 \section{Object Definitions}
 \label{sec:object-definitions}
 
-\syntax\begin{lstlisting}
-Object_Definition ::= [Mutability] 'object' Object_Def
+\grammar\begin{lstlisting}
+Object_Definition ::= 'object' Object_Def
 Object_Def        ::= id Object_Tmpl_Env
 Object_Tmpl_Env   ::= Tmpl_Env_With_Pars ['object']
                     | Tmpl_Env_Brackets
                     | Tmpl_Env_No_Pars ['object']
-Expr              ::= [Mutability] 'object' Object_Tmpl_Env
+Expr              ::= 'object' Object_Tmpl_Env
 \end{lstlisting}
 
 Object definitions define singleton instances. If no superclass is given, \code{Aml/Language.Object} is implied, unless the object definition has the same name as an existing or enclosing class -- then \lstinline!Class[$C$]! is implied and the object definition is called a {\em class object}. If a class of the same name exists defined in source code after the object definition, then the object must explicitly extend \code{Aml/Language.Class[]}, without any type arguments\footnote{This is to prevent the automatic extension of \code{Aml/Language.Object}.} -- it is sufficient to write down \code{Class}, if that name is imported to resolve to \code{Aml/Language.Class}, which it usually is. If the class definition is not connected to a class, then rules from compound types apply (\sref{sec:compound-types}), the object definition is simply called a {\em singleton object definition} and is a single object of a new (anonymous) class. This is unlike in Scala, where objects are defined as terms, in a scope separate from types: Aml has one scope for both types and terms. 
@@ -1292,8 +1389,8 @@ Every trait applied to a class object does not affect the associated class itsel
 \subsection{Case Objects}
 \label{sec:case-objects}
 
-\syntax\begin{lstlisting}
-Object_Definition ::= [Mutability] 'case' 'object' Object_Def
+\grammar\begin{lstlisting}
+Object_Definition ::= ['monitored'] 'case' 'object' Object_Def
 \end{lstlisting}
 
 Case objects are pretty much similar to case classes (\sref{sec:case-classes}). Case objects can not be class objects at the same time. Their template (\sref{sec:templates}) is the singleton object form of an object definition (\sref{sec:object-definitions}). 
