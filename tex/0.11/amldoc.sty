@@ -2,7 +2,7 @@
 %!TEX encoding = UTF-8 Unicode
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{amldoc}[2014/04/20 v0.3 Aml style customization]
+\ProvidesPackage{amldoc}[2020/06/26 v0.11 Aml style customization]
 
 \RequirePackage{fourier}
 \usepackage[a4paper]{geometry}
@@ -99,14 +99,11 @@
 \defaultfontfeatures{Mapping=tex-text,Ligatures=TeX,Numbers=OldStyle}
 \setmainfont[Scale=0.9,Mapping=tex-text]{Linux Libertine O}
 \setromanfont[Scale=0.9,Mapping=tex-text]{Linux Libertine O}
-\setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Linux Biolinum O}%{Helvetica Neue Condensed Bold}
-% retrieve at: https://github.com/belluzj/fantasque-sans
-%\setmonofont[Scale=MatchLowercase,Mapping=]{Fantasque Sans Mono}
-% retrieve at: http://sourcefoundry.org/hack/
+\setsansfont[Scale=MatchLowercase,Mapping=tex-text]{Linux Biolinum O}
 \setmonofont[Scale=MatchLowercase,Mapping=]{Fira Code}
 \setmathfont(Digits,Latin,Greek)[Scale=MatchLowercase]{Linux Libertine O}
-\newfontfamily\headingfont[]{Linux Biolinum O}%{Helvetica Neue Condensed Bold}
-\newfontfamily\chapterfont[]{Linux Biolinum O}%{Helvetica Neue Thin}
+\newfontfamily\headingfont[]{Linux Biolinum O}
+\newfontfamily\chapterfont[]{Linux Biolinum O}
 \renewcommand{\maketitlehooka}{\headingfont}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{8pt plus 2pt minus 2pt}
@@ -387,7 +384,6 @@
 \newcommand{\sref}[1]{\S\ref{#1}}
 \newcommand{\comma}{,\,}
 \newcommand{\commadots}{\comma \ldots \comma}
-\newcommand{\conforms}{\ifmmode \mathtt{\ <:\ } \else <: \fi}
 \newcommand{\gap}{\quad\quad}
 
 \newcounter{Example}[section]
@@ -412,31 +408,6 @@
 \newcommand{\bda}{\[\ba}
 \newcommand{\eda}{\ea\]}
 \newcommand{\Dollar}{\mbox{\$}}
-
-\newcommand{\stats}{\mbox{\sl stats}}
-\newcommand{\args}{\mbox{\sl args}}
-\newcommand{\targs}{\mbox{\sl targs}}
-\newcommand{\cas}{\mbox{\sl cas}}
-\newcommand{\as}{\mbox{\sl as}}
-\newcommand{\tps}{\mbox{\sl tps}}
-\newcommand{\ps}{\mbox{\sl ps}}
-\newcommand{\Ts}{\mbox{\sl Ts}}
-\newcommand{\Tp}{\mbox{\sl Tp}}
-\newcommand{\op}{\mbox{\sl op}}
-\newcommand{\psig}{\mbox{\sl psig}}
-\newcommand{\shape}{\mbox{\sl shape}}
-\newcommand{\enums}{\mbox{\sl enums}}
-\newcommand{\digits}{\mbox{\sl digits}}
-\newcommand{\fpdelta}{\mbox{\sl delta}}
-\newcommand{\id}{\mbox{\sl id}}
-\newcommand{\weight}{\mbox{\sl weight}}
-\newcommand{\pweight}{\mbox{\sl pweight}}
-\newcommand{\cweight}{\mbox{\sl cweight}}
-\newcommand{\rweight}{\mbox{\sl rweight}}
-\newcommand{\tpweight}{\mbox{\sl tpweight}}
-\newcommand{\exptype}{\mbox{\sl et}}
-\newcommand{\udef}{\mbox{\sl undefined}}
-\newcommand{\superth}{\mbox{\scriptsize th}}
 
 \newcommand{\Aml}{\lstinline!Aml!\xspace}
 \newcommand{\AmlCore}{\lstinline!Aml/Core!\xspace}
