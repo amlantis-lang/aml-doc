@@ -1,0 +1,39 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\documentclass[12pt,a4paper,twoside,titlepage]{book}
+\usepackage[english]{babel}
+\usepackage[section]{placeins}
+
+\usepackage{amldoc}
+
+\begin{document}
+
+\frontmatter
+\title{AFR-0\\ \large The Amlantis System Specification}
+\renewcommand{\docversion}{0.10}
+\author{Markéta Lisová}
+\maketitle
+\clearemptydoublepage
+\dominitoc
+\input{parts/preface}
+\tableofcontents
+
+\mainmatter
+\sloppy
+
+\input{parts/introduction}
+\input{parts/language}
+\input{parts/language_system}
+\input{parts/language_se}
+\input{parts/library}
+\input{parts/runtime}
+\input{parts/tools}
+\input{parts/extensions}
+
+\appendix
+\part{Appendix}
+\input{SyntaxSummary}
+\input{Changelog}
+
+\end{document}
