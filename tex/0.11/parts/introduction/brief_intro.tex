@@ -1,0 +1,47 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter*{A Brief Introduction to the Amlantis System}
+\label{sec:brief-intro}
+
+Amlantis System is a collection of specifications of programming and data definition languages and their related tools, runtimes and libraries. 
+
+Those specifications do not always require particular implementations, but attempt to avoid undefined behaviours as much as possible. 
+
+Amlantis also provides an open source reference implementation of those specifications, but it is indeed possible for other people to write their own implementations or forks\footnote{Forks and pull requests are preferred way of help!} of this default implementation, probably focusing on optimising other aspects of the system, maybe exploring new options of future development to be pull-requested into the default implementation. 
+
+
+
+
+
+\section*{A Few Notes on the Name}
+
+Amlantis' name has quite some history. The project started being named {\em Coral}, but that collided with another language of a similar name, \href{https://en.wikipedia.org/wiki/Coral_66}{{\em CORAL 66}}. Then it got renamed to {\em Gear}, but that again collided with another language of the same name, which seemed inactive at the time, \href{https://github.com/zippers/gear}{{\em zippers/gear}}. Than an idea was born and Aml was named {\em Amlantis}, which is whatever you want it to be. It could be a misspelling of {\em Atlantis}\footnote{Intentionally -- because otherwise, it would be named Atlantis, but there is already a city of that name.}, it could be an acronym like {\em A ML Language}, or maybe even something like {\em A ML Language And Neat Technology Improvement System}, or maybe {\em Caml} without the {\em C}. For the meaning of the cryptic {\em ML} part, search for the {\em Standard ML} or {\em OCaml}. 
+
+
+
+
+
+\newpage
+
+\section*{The Amlantis Languages}
+\label{sec:amlantis-languages}
+
+The Amlantis System is a home to more than only one programming language -- in fact, it can be home to any number of languages, ones that Amlantis users can either extend from existing languages create or even create new ones entirely. Every language build within the Amlantis System shares a common type system and value models, and thus are interoperable.
+
+The minimal Amlantis System contains these languages:
+
+\begin{itemize}
+  \item \AmlBase, a minimal Lisp-like\footnote{One might say that \AmlBase is a grandchild of Racket and Clojure.} language that is easy to parse and limited in functionality.
+  \item \AmlCore, an ML-like\footnote{One might say that \AmlCore is a grandchild of OCaml, SML and F\SharpSign.} language that is easier to read and harder to parse, fully featured in functionality.
+  \item \Aml, an ML-like\footnote{One might say that \Aml is a grandchild of \AmlCore, Haskell and Ada.} language that extends \AmlCore, is easier to read and the hardest one to parse, also fully featured in functionality, and introducing more grammar than its parent \AmlCore.
+\end{itemize}
+
+More languages may be added to this list over time.
+
+
+
+
+
+
+
