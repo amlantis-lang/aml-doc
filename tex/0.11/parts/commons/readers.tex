@@ -1,0 +1,45 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Readers}
+\label{sec:commons-readers}
+
+Amlantis System provides multiple interfaces to talk to it with. Those interfaces would be:
+
+\begin{itemize}
+  \item A REPL console, where user's text input is immediately read, evaluated, printed and requested again.
+  \item Source code, where user's text input is stored for reuse in general, usually to either do some scripting, or building modules and complex applications. 
+  \item Bytecode or native (machine) code files, which originate from textual source code.
+\end{itemize}
+
+More ways to interact with the Amlantis System might be possible in the future. Some ideas for that would include natural speech interface (at least in English).
+
+Either way, for now, text-based interface to all Amlantis System components require it to have a component that is able to read the text. We call them {\em Readers}.
+
+Every Reader needs a source port to read from. Such a port could be console input for the REPL, a file on local filesystem, a TCP connection, socket, or just an in-memory string\footnote{More about strings later.}. Reading program source starts with a top-most Reader, which we may call the {\em Root Reader}. Such Reader does not know about which language it is reading (whereas recursively-descendent created Readers may inherit such knowledge), so we say it is reading in a {\em language-less mode}.
+
+The Root Reader's \lstinline!read-language! method is used on the top-most initial port. 
+
+% TODO: specify how the read-language is called, what are its arguments?
+
+
+
+\newpage
+
+\section{Language-less Root Reader Abilities}
+
+The language-less Root Reader can recognise basic delimiters, such as all whitespace and newlines. 
+
+Delimited by these, it can recognise the following forms:
+
+\begin{itemize}
+  \item Shebang, such as \lstinline@#!/usr/bin/env aml@, to point to the generic Amlantis System component.
+  \item Reader switch, \lstinline@#reader $path$ $\ldots$@, which specifies a reader to use for the following forms, and switches to it.
+  \item Language switch, \lstinline@#lang $name$ $\ldots$@, which expands right away into \lstinline@#reader $name$.Lang.Reader $\ldots$@.\footnote{It may expand to other forms as well in certain order, due to be defined later.}
+\end{itemize}
+
+For now, that's it. In the next iteration, the list may include line comments or alias for \lstinline@#lang@ in order to support languages such as R\textsuperscript{6}RS.
+
+
+
+
