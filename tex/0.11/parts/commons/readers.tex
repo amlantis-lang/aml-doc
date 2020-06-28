@@ -34,9 +34,11 @@ Delimited by these, it can recognise the following forms:
 
 \begin{itemize}
   \item Shebang, such as \lstinline@#!/usr/bin/env aml@, to point to the generic Amlantis System component.
-  \item Reader switch, \lstinline@#reader $path$ $\ldots$@, which specifies a reader to use for the following forms, and switches to it.
-  \item Language switch, \lstinline@#lang $name$ $\ldots$@, which expands right away into \lstinline@#reader $name$.Lang.Reader $\ldots$@.\footnote{It may expand to other forms as well in certain order, due to be defined later.}
+  \item Reader switch, \lstinline@#reader $name$ $\ldots$@, which specifies a reader to use for the following forms, and switches to it. The $name$ should be a simple identifier.\footnote{Specification for identifiers will be provided later.}
+  \item Language switch, \lstinline@#lang $name$ $\ldots$@, which expands right away into \lstinline@#reader $name$.Lang.Reader $\ldots$@.\footnote{It may expand to other forms as well in certain order, due to be defined later.} The $name$ should be a simple identifier.\footnote{Specification for identifiers will be provided later.}
 \end{itemize}
+
+% TODO: specify simple identifiers!
 
 For now, that's it. In the next iteration, the list may include line comments or alias for \lstinline@#lang@ in order to support languages such as R\textsuperscript{6}RS.
 
