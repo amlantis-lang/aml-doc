@@ -1,0 +1,92 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Syntax}
+\label{ch:aml-base-syntax}
+
+The syntax of \AmlBase is based on Lisp-1 and blatantly borrowing from languages such as Scheme, Racket or Clojure.
+
+
+
+
+\section[The Aml/Base.Lang.Reader]{The \lstinline!Aml/Base.Lang.Reader!}
+\label{sec:aml-base-lang-reader}
+
+
+
+
+\subsection{Delimiters and Dispatch}
+
+Along with whitespace (as defined by Unicode "White\_Space" property), the following characters are delimiters:
+
+\begin{lstlisting}
+  ( ) [ ] { } " ' , ; `
+\end{lstlisting}
+
+The \lstinline@#@ character has got a special meaning, determined by the following character or characters; see below for details. 
+
+After skipping whitespace, the \AmlBase reader dispatches based on the next character or characters in the source port this way:
+
+\begin{tabular}{ r l }
+  \lstinline!(! & starts a pair or list. \\
+  \lstinline![! & starts a pair or list. \\
+  \lstinline!{! & starts a pair or list. \\
+  \lstinline!)! & matches \lstinline!(! or raises error. \\
+  \lstinline!]! & matches \lstinline![! or raises error. \\
+  \lstinline!}! & matches \lstinline!{! or raises error. \\
+  \lstinline!"! & starts a string. \\
+  \lstinline!'! & starts a quote. \\
+  \lstinline!`! & starts a quasiquote. \\
+  \lstinline!,! & starts a splicing unquote. \\
+  \lstinline!;! & starts a line comment. \\
+  
+  \lstinline!#reader! & starts a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
+  \lstinline!#lang! & starts a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
+  
+  {\em otherwise} & starts a symbol. \\
+\end{tabular}
+
+
+
+
+
+\subsection{Reading via an Extension}
+\label{subsec:sec:aml-base-lang-reader-extension}
+
+When the reader dispatches on the \lstinline!#reader! form, it recursively applies another reader to the current source port. 
+
+% TODO: there is more supposed to be happening before a switch to another reader is made, like, consulting the current reader guard
+
+First, the reader recursively reads the next datum after \lstinline!#reader!, and uses it as path to the another reader. Such reader is then loaded, and \lstinline!read! is used when this reader is in \lstinline!read! mode, or else, \lstinline!read-syntax! is used when this reader is in \lstinline!read-syntax! mode.
+
+The \lstinline!#lang! reader form is similar. It must be followed by a single whitespace character (preferably a single space, ASCII 32), and then followed by an identifier form. The complete form is then terminated by a new line, or end-of-file. A sequence \lstinline!#lang $name$! is equivalent to \lstinline!#reader $name$.Lang.Reader!. 
+
+% TODO: allow arguments for the readers? 
+
+For compatibility with e.g. R\textsuperscript{6}RS, \lstinline@#!@ is an alias for \lstinline!#lang! followed by a space when it is followed by alphanumeric ASCII, \lstinline!+!, \lstinline!-! or \lstinline!_!. 
+
+
+
+
+
+\subsubsection{S-Expression Reader Language}
+
+\begin{lstlisting}
+#lang s-exp $path$
+\end{lstlisting}
+
+
+
+
+
+\subsubsection{Chaining Reader Language}
+
+\begin{lstlisting}
+#lang reader $path$
+\end{lstlisting}
+
+
+
+
+
+

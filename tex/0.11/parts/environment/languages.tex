@@ -1,0 +1,115 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter{Languages}
+\label{ch:environment-languages}
+
+Amlantis System provides multiple interfaces to talk to it with. Those interfaces would be:
+
+\begin{itemize}
+  \item A REPL console, where user's text input is immediately read, evaluated, printed and requested again.
+  \item Source code, where user's text input is stored for reuse in general, usually to either do some scripting, or building modules and complex applications. 
+  \item Bytecode or native (machine) code files, which originate from textual source code.
+\end{itemize}
+
+More ways to interact with the Amlantis System might be possible in the future.\footnote{Some ideas for that would include natural speech interface (at least in English).}
+
+Either way, for now, text-based interface to all Amlantis System tools require it to have a component that is able to read the text. We call them {\em Language Readers} (or shortly just {\em Readers} for the rest of this chapter). After reading the text, it has to be given meaning and transformed into a system of values that the Amlantis System understands by {\em Language Expanders} (or shortly just {\em Expanders} for the rest of this chapter). The result of that can be eventually evaluated.
+
+
+
+
+
+\section{Syntax Model}
+\label{sec:environment-language-syntax-model}
+
+The syntax of programs in the Amlantis System is determined by the following process: 
+
+\begin{itemize}
+  \item \label{itm:environment-language-read-pass} A {\em read} pass, which comprise processing a text source port into a syntax object. Such syntax object does not contain any bindings. The read pass is implemented by Readers (\sref{sec:environment-language-readers}).
+  \item \label{itm:environment-language-expand-pass} An {\em expand} pass, where the syntax object from previous pass is transformed into a syntax object with full program information. All bindings are defined in such syntax object. The expand pass is implemented by Expanders (\sref{sec:environment-language-expanders}).
+
+\end{itemize}
+
+A fully-featured language provides implementation for both read and expand passes. Such implementation may as well reuse implementation of another language. A language may as well provide just its Reader, in case the resulting value can be expanded by the expander of \AmlBase. Alternatively, a language may provide just its Expander, providing bindings that may differ from those in \AmlBase.
+
+
+
+
+
+\subsection{Syntax Objects}
+\label{subsec:environment-language-syntax-objects}
+
+A {\em syntax object} is a combination of an arbitrary Amlantis System value with lexical information, source-location information and syntax properties.\footnote{Racket, where inspiration for this mechanism comes from, also has tamper status within those syntax objects. We may decide to add that later.}
+
+Although syntax objects may contain any value, the expand pass (\sref{itm:environment-language-expand-pass}) will need to be able to handle the value and any value it itself contains. Therefore, it is recommended to limit the values embedded into syntax objects to the following types:
+
+\begin{itemize}
+  \item Atoms:
+  \begin{itemize}
+    \item Booleans.
+    \item Numbers.
+    \item Characters.
+    \item Strings.
+    \item Bytes and byte strings.
+    \item Symbols.
+    \item Unit and Undefined.
+    % TODO: Racket might add here "keywords", but we may not need those.
+  \end{itemize}
+  \item Basic collection and composite objects:
+  \begin{itemize}
+    \item Tuples.
+    \item Pairs and Lists.
+    \item Vectors.
+    \item Maps.
+  \end{itemize}
+\end{itemize}
+% TODO: link the list to definitions of those types
+
+
+
+
+\section{Readers}
+\label{sec:environment-language-readers}
+
+Every Reader needs a source port to read from. Such a port could be console input for the REPL, a file on local filesystem, a TCP connection, socket, or just an in-memory string\footnote{More about strings later.}. Reading program source starts with a top-most Reader, which we may call the {\em Root Reader}, which is implicitly (unless defined otherwise) \lstinline!Aml/Base.Lang.Reader!.
+
+Readers are required to implement two methods: \lstinline!read! and \lstinline!read-syntax!. 
+
+The \lstinline!read! method must accept a source port as its only argument, and it can return any type of value.
+
+The \lstinline!read-syntax! method must accept a source name argument along with second argument of the source port, and it must return either the \lstinline!System/IO.Eof! value, or a \lstinline!System/Lang.Syntax_Object! value.
+
+The Root Reader's \lstinline!read-syntax! method is used on the top-most initial port.\footnote{Might be different in future, when we allow it to use \lstinline!read! instead. That is not very useful now though.}
+
+% TODO: specify how the read-syntax is called, what are its arguments?
+
+
+
+
+
+\subsection{Root Reader Abilities}
+\label{subsec:environment-language-root-reader}
+
+The Root Reader can recognise basic delimiters, such as all whitespace and newlines, which aid it in switching to another source code language. Given that the Root Reader is in fact \lstinline!Aml/Base.Lang.Reader!, its abilities are not limited to these.
+
+Delimited by those, it can recognise the following forms:
+
+\begin{itemize}
+  \item Shebang, such as \lstinline@#!/usr/bin/env aml@, to point to the entry-level Amlantis System tool.
+  \item Reader switch, \lstinline@#reader $name$ $\ldots$@, which specifies a reader to use for the following forms, and switches to it. The $name$ should be a simple identifier.\footnote{Specification for identifiers will be provided later.}
+  \item Language switch, \lstinline@#lang $name$ $\ldots$@, which expands right away into \lstinline@#reader $name$.Lang.Reader $\ldots$@.\footnote{It may expand to other forms as well in certain order, due to be defined later.} The $name$ should be a simple identifier.\footnote{Specification for identifiers will be provided later.}
+\end{itemize}
+
+% TODO: specify simple identifiers!
+
+% TODO: the above should be a part of Aml/Base.Lang.Reader
+
+
+
+
+\section{Expanders}
+\label{sec:environment-language-expanders}
+
+% TODO: specify how expanders work
+
