@@ -20,7 +20,7 @@ The syntax of \AmlBase is based on Lisp-1 and blatantly borrowing from languages
 Along with whitespace (as defined by Unicode "White\_Space" property), the following characters are delimiters:
 
 \begin{lstlisting}
-  ( ) [ ] { } " ' , ; `
+  ( ) [ ] { } " ' ` , ~ ;
 \end{lstlisting}
 
 The \lstinline@#@ character has got a special meaning, determined by the following character or characters; see below for details. 
@@ -29,19 +29,47 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 
 \begin{tabular}{ r l }
   \lstinline!(! & starts a pair or list. \\
-  \lstinline![! & starts a pair or list. \\
-  \lstinline!{! & starts a pair or list. \\
+  \lstinline![! & starts a pair, list, or array. \\
+  \lstinline!{! & starts a structure. \\
   \lstinline!)! & matches \lstinline!(! or raises error. \\
   \lstinline!]! & matches \lstinline![! or raises error. \\
   \lstinline!}! & matches \lstinline!{! or raises error. \\
+  
   \lstinline!"! & starts a string. \\
   \lstinline!'! & starts a quote. \\
   \lstinline!`! & starts a quasiquote. \\
-  \lstinline!,! & starts a splicing unquote. \\
+  \lstinline!,! & starts a (possibly splicing) unquote. \\
+  \lstinline!~! & starts a keyword. \\
   \lstinline!;! & starts a line comment. \\
   
+  \lstinline!#y! & true. \\
+  \lstinline!#n! & false. \\
+  \lstinline!#t! or \lstinline!#T! & true. \\
+  \lstinline!#f! or \lstinline!#F! & false. \\  
+  
+  \lstinline!#(! & starts a set. \\
+  \lstinline!#[! & starts a vector. \\
+  \lstinline!#[! & starts a vector. \\
+  
+  \lstinline!#\! & starts a character. \\
+  \lstinline!#"! & starts a byte string. \\
+  \lstinline!#:! & starts a symbol. \\
+  \lstinline!#'! & starts a syntax quote. \\
+  \lstinline!#`! & starts a syntax quasiquote. \\
+  \lstinline!#,! & starts a syntax (possibly splicing) unquote. \\
+  
+  \lstinline!#<<! & starts a string. \\
+  
+  \lstinline!#|! & starts a block comment. \\
+  \lstinline!#;! or \lstinline!#_! & starts an S-Expression comment. \\
+  ``\lstinline@#! @'' & starts a line comment; note that the space is necessary. \\
+  \lstinline@#!/@ & starts a line comment. \\
+  
+  \lstinline@#!@ & may start a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
   \lstinline!#reader! & starts a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
   \lstinline!#lang! & starts a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
+  
+  \lstinline!#$other$! & starts a handler defined in current readtable or raises error. \\
   
   {\em otherwise} & starts a symbol. \\
 \end{tabular}
