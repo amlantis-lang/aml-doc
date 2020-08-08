@@ -20,7 +20,7 @@ The syntax of \AmlBase is based on Lisp-1 and blatantly borrowing from languages
 Along with whitespace (as defined by Unicode "White\_Space" property), the following characters are delimiters:
 
 \begin{lstlisting}
-  ( ) [ ] { } " ' ` , ~ ;
+  ( ) [ ] { } " ' ` ~ ;
 \end{lstlisting}
 
 The \lstinline@#@ character has got a special meaning, determined by the following character or characters; see below for details. 
@@ -36,10 +36,9 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!}! & matches \lstinline!{! or raises error. \\
   
   \lstinline!"! & starts a string. \\
-  \lstinline!'! & starts a quote. \\
-  \lstinline!`! & starts a quasiquote. \\
-  \lstinline!,! & starts a (possibly splicing) unquote. \\
-  \lstinline!~! & starts a keyword. \\
+  \lstinline!'! & starts a type variable. \\
+  \lstinline!`! & starts a polymorphic tag. \\
+  \lstinline!~! & starts a label. \\
   \lstinline!;! & starts a line comment. \\
   
   \lstinline!#y! & true. \\
@@ -49,14 +48,20 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   
   \lstinline!#(! & starts a set. \\
   \lstinline!#[! & starts a vector. \\
-  \lstinline!#[! & starts a vector. \\
+  \lstinline!#{! & starts a dictionary. \\
   
   \lstinline!#\! & starts a character. \\
   \lstinline!#"! & starts a byte string. \\
-  \lstinline!#:! & starts a symbol. \\
-  \lstinline!#'! & starts a syntax quote. \\
-  \lstinline!#`! & starts a syntax quasiquote. \\
-  \lstinline!#,! & starts a syntax (possibly splicing) unquote. \\
+  \lstinline!#~! & starts a symbol. \\
+  \lstinline!#:! & starts a keyword. \\
+  \lstinline!#'! & starts a quote. \\
+  \lstinline!#`! & starts a quasi-quote. \\
+  \lstinline!#,! & starts a (possibly splicing) unquote. \\
+  \lstinline!#s'! & starts a syntax quote. \\
+  \lstinline!#s`! & starts a syntax quasi-quote. \\
+  \lstinline!#s,! & starts a syntax (possibly splicing) unquote. \\
+  \lstinline!#^! & starts a meta data. \\
+  \lstinline!##! & starts a parameterized read. \\
   
   \lstinline!#<<! & starts a string. \\
   
