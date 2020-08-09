@@ -17,7 +17,7 @@ The syntax of \AmlBase is based on Lisp-1 and blatantly borrowing from languages
 
 \subsection{Delimiters and Dispatch}
 
-Along with whitespace (as defined by Unicode "White\_Space" property), the following characters are delimiters:
+Along with whitespace (as defined by Unicode ``White\_Space'' property), the following characters are delimiters:
 
 \begin{lstlisting}
   ( ) [ ] { } " ' ` ~ ;
@@ -27,64 +27,193 @@ The \lstinline@#@ character has got a special meaning, determined by the followi
 
 After skipping whitespace, the \AmlBase reader dispatches based on the next character or characters in the source port this way:
 
+\begin{table}
 \begin{tabular}{ r l }
-  \lstinline!(! & starts a pair or list. \\
-  \lstinline![! & starts a pair, list, or array. \\
-  \lstinline!{! & starts a structure. \\
+  \lstinline!(! & starts a pair or list; see \nameref{subsec:aml-base-lang-reader-lists}. \\
+  \lstinline![! & starts a pair, list, or array; see \nameref{subsec:aml-base-lang-reader-lists}. \\
+  \lstinline!{! & starts a structure; see \nameref{subsec:aml-base-lang-reader-structures}. \\
   \lstinline!)! & matches \lstinline!(! or raises error. \\
   \lstinline!]! & matches \lstinline![! or raises error. \\
   \lstinline!}! & matches \lstinline!{! or raises error. \\
   
-  \lstinline!"! & starts a string. \\
-  \lstinline!'! & starts a type variable. \\
-  \lstinline!`! & starts a polymorphic tag. \\
-  \lstinline!~! & starts a label. \\
-  \lstinline!;! & starts a line comment. \\
+  \lstinline!"! & starts a string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
+  \lstinline!'! & starts a type variable; see \nameref{subsec:aml-base-lang-reader-tyvars}. \\
+  \lstinline!`! & starts a tag or symbol; see \nameref{subsec:aml-base-lang-reader-polytags} and \nameref{subsec:aml-base-lang-reader-symbols}. \\
+  \lstinline!~! & starts a label; see \nameref{subsec:aml-base-lang-reader-labels}. \\
+  \lstinline!;! & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   
-  \lstinline!#y! & true. \\
-  \lstinline!#n! & false. \\
-  \lstinline!#t! or \lstinline!#T! & true. \\
-  \lstinline!#f! or \lstinline!#F! & false. \\  
+  \lstinline!#y! & true; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
+  \lstinline!#n! & false; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
+  \lstinline!#t! or \lstinline!#T! & true; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
+  \lstinline!#f! or \lstinline!#F! & false; see \nameref{subsec:aml-base-lang-reader-booleans}. \\  
   
-  \lstinline!#(! & starts a set. \\
-  \lstinline!#[! & starts a vector. \\
-  \lstinline!#{! & starts a dictionary. \\
+  \lstinline!#(! & starts a set; see \nameref{subsec:aml-base-lang-reader-sets}. \\
+  \lstinline!#[! & starts a vector; see \nameref{subsec:aml-base-lang-reader-vectors}. \\
+  \lstinline!#{! & starts a dictionary; see \nameref{subsec:aml-base-lang-reader-dictionaries}. \\
   
-  \lstinline!#\! & starts a character. \\
-  \lstinline!#"! & starts a byte string. \\
-  \lstinline!#~! & starts a symbol. \\
-  \lstinline!#:! & starts a keyword. \\
-  \lstinline!#'! & starts a quote. \\
-  \lstinline!#`! & starts a quasi-quote. \\
-  \lstinline!#,! & starts a (possibly splicing) unquote. \\
-  \lstinline!#s'! & starts a syntax quote. \\
-  \lstinline!#s`! & starts a syntax quasi-quote. \\
-  \lstinline!#s,! & starts a syntax (possibly splicing) unquote. \\
-  \lstinline!#^! & starts a meta data. \\
-  \lstinline!##! & starts a parameterized read. \\
+  \lstinline!#\! & starts a character; see \nameref{subsec:aml-base-lang-reader-characters}. \\
+  \lstinline!#"! & starts a byte string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
+  \lstinline!#~! & starts a symbol; see \nameref{subsec:aml-base-lang-reader-symbols}. \\
+  \lstinline!#:! & starts a keyword; see \nameref{subsec:aml-base-lang-reader-keywords}. \\
+  \lstinline!#'! & starts a quote; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
+  \lstinline!#`! & starts a quasi-quote; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
+  \lstinline!#,! & starts a (possibly splicing) unquote; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
+  \lstinline!#s'! & starts a syntax quote; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
+  \lstinline!#s`! & starts a syntax quasi-quote; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
+  \lstinline!#s,! & starts a syntax (possibly splicing) unquote; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
+  \lstinline!#^! & starts a metadata; see \nameref{subsec:aml-base-lang-reader-metadata}. \\
+  \lstinline!##! & starts a parameterized read; see \nameref{subsec:aml-base-lang-reader-parameterized-reads}. \\
   
-  \lstinline!#<<! & starts a string. \\
+  \lstinline!#<<! & starts a string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
   
-  \lstinline!#|! & starts a block comment. \\
-  \lstinline!#;! or \lstinline!#_! & starts an S-Expression comment. \\
-  ``\lstinline@#! @'' & starts a line comment; note that the space is necessary. \\
-  \lstinline@#!/@ & starts a line comment. \\
+  \lstinline!#|! & starts a block comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
+  \lstinline!#;! or \lstinline!#_! & starts an S-Expression comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
+  ``\lstinline@#! @'' & starts a line comment; note that the space is necessary; see \nameref{subsec:aml-base-lang-reader-comments}. \\
+  \lstinline@#!/@ & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   
-  \lstinline@#!@ & may start a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
-  \lstinline!#reader! & starts a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
-  \lstinline!#lang! & starts a reader extension use; see \nameref{subsec:sec:aml-base-lang-reader-extension}. \\
+  \lstinline@#!@ & may start a reader extension use; see \nameref{subsec:aml-base-lang-reader-extension}. \\
+  \lstinline!#reader! & starts a reader extension use; see \nameref{subsec:aml-base-lang-reader-extension}. \\
+  \lstinline!#lang! & starts a reader extension use; see \nameref{subsec:aml-base-lang-reader-extension}. \\
   
   \lstinline!#$other$! & starts a handler defined in current readtable or raises error. \\
   
-  {\em otherwise} & starts a symbol. \\
+  {\em otherwise} & starts a symbol; see \nameref{subsec:aml-base-lang-reader-symbols}. \\
 \end{tabular}
+\caption{\label{tab:aml-base-lang-reader-dispatch}Table of Dispatches recognized by \lstinline!Aml/Base.Lang.Reader!.}
+\end{table}
+
+
+
+
+
+\subsection{Reading Symbols}
+\label{subsec:aml-base-lang-reader-symbols}
+
+
+
+
+
+\subsection{Reading Numbers}
+\label{subsec:aml-base-lang-reader-numbers}
+
+
+
+
+
+\subsection{Reading Booleans}
+\label{subsec:aml-base-lang-reader-booleans}
+
+
+
+
+
+\subsection{Reading Pairs, Lists \& Arrays}
+\label{subsec:aml-base-lang-reader-lists}
+
+
+
+
+
+\subsection{Reading Structures}
+\label{subsec:aml-base-lang-reader-structures}
+
+
+
+
+
+\subsection{Reading Strings}
+\label{subsec:aml-base-lang-reader-strings}
+
+
+
+
+
+\subsection{Reading Characters}
+\label{subsec:aml-base-lang-reader-characters}
+
+
+
+
+
+\subsection{Reading Quotes}
+\label{subsec:aml-base-lang-reader-quotes}
+
+
+
+
+
+\subsection{Reading Comments}
+\label{subsec:aml-base-lang-reader-comments}
+
+
+
+
+
+\subsection{Reading Vectors}
+\label{subsec:aml-base-lang-reader-vectors}
+
+
+
+
+
+\subsection{Reading Sets}
+\label{subsec:aml-base-lang-reader-sets}
+
+
+
+
+
+\subsection{Reading Dictionaries}
+\label{subsec:aml-base-lang-reader-dictionaries}
+
+
+
+
+
+\subsection{Reading Keywords}
+\label{subsec:aml-base-lang-reader-keywords}
+
+
+
+
+
+\subsection{Reading Type Variables}
+\label{subsec:aml-base-lang-reader-tyvars}
+
+
+
+
+
+\subsection{Reading Polymorphic Tags}
+\label{subsec:aml-base-lang-reader-polytags}
+
+
+
+
+
+\subsection{Reading Labels}
+\label{subsec:aml-base-lang-reader-labels}
+
+
+
+
+
+\subsection{Reading Metadata}
+\label{subsec:aml-base-lang-reader-metadata}
+
+
+
+
+
+\subsection{Reading Parameterized Reads}
+\label{subsec:aml-base-lang-reader-parameterized-reads}
 
 
 
 
 
 \subsection{Reading via an Extension}
-\label{subsec:sec:aml-base-lang-reader-extension}
+\label{subsec:aml-base-lang-reader-extension}
 
 When the reader dispatches on the \lstinline!#reader! form, it recursively applies another reader to the current source port. 
 
