@@ -37,7 +37,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!}! & matches \lstinline!{! or raises error. \\
   
   \lstinline!"! & starts a string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
-  \lstinline!'! & starts a type variable; see \nameref{subsec:aml-base-lang-reader-tyvars}. \\
+  \lstinline!'! & starts a quote or a type variable; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
   \lstinline!`! & starts a tag or symbol; see \nameref{subsec:aml-base-lang-reader-polytags} and \nameref{subsec:aml-base-lang-reader-symbols}. \\
   \lstinline!~! & starts a label; see \nameref{subsec:aml-base-lang-reader-labels}. \\
   \lstinline!;! & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
@@ -172,13 +172,6 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 
 \subsection{Reading Keywords}
 \label{subsec:aml-base-lang-reader-keywords}
-
-
-
-
-
-\subsection{Reading Type Variables}
-\label{subsec:aml-base-lang-reader-tyvars}
 
 
 
