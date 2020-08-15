@@ -16,6 +16,7 @@ The syntax of \AmlBase is based on Lisp-1, the so-called ``S-Expressions'' (shor
 
 
 \subsection{Delimiters and Dispatch}
+\label{subsec:aml-base-lang-reader-delimiters-dispatch}
 
 Along with whitespace (as defined by Unicode ``White\_Space'' property), the following characters are delimiters:
 
@@ -86,8 +87,14 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 
 
 
+\newpage
+
 \subsection{Reading Symbols}
 \label{subsec:aml-base-lang-reader-symbols}
+
+A sequence of source characters that does not start with any of the sequences defined in \nameref{subsec:aml-base-lang-reader-delimiters-dispatch} is parsed as either a symbol or a number. The sequence ``\lstinline!#~!'' also starts a symbol. A successful number parse takes precedence over symbol parse, see \nameref{subsec:aml-base-lang-reader-numbers}. 
+
+Symbols that consist entirely of ``operator'' characters (Unicode character classes Sm, So, except for \lstinline!0x0060!) are treated specially, TBD\footnote{This is yet to be properly defined, but generally a property will be added to the form marking it ``operator''.}.
 
 
 
