@@ -189,7 +189,7 @@ In the table below, we define the parameterized $digits_n$, $exp_n$ and $prefix_
   ‹$exp_8$› & \lstinline!::=! ‹$exp_{10}$› \\
   ‹$exp_2$› & \lstinline!::=! ‹$exp_{10}$› \\
   
-  ‹$digits_n$› & \lstinline!::=! ‹$digit_n$› (``\lstinline!_!''\textsubscript{opt} ‹$digit_n$›)* \\
+  ‹$digits_n$› & \lstinline!::=! ‹$digit_n$› (``\lstinline!_!''\textsubscript{opt} ‹$digit_n$›)\textsuperscript{*} \\
 \end{longtable}
 
 In the grammar below, we define the special case of sexagesimal numbers. Some of the rules here override those for non-sexagesimal numbers.
@@ -201,7 +201,7 @@ In the grammar below, we define the special case of sexagesimal numbers. Some of
   ‹$prefix_{60}$› & \lstinline!::=! ``\lstinline!0s!'' \\
   ‹$exp_{60}$› & \lstinline!::=! ‹$exp_{10}$› \\
   
-  ‹$digits_{60}$› & \lstinline!::=! ‹$digit_{60}$› (``\lstinline!,!'' ‹$digit_{60}$›)* \\
+  ‹$digits_{60}$› & \lstinline!::=! ‹$digit_{60}$› (``\lstinline!,!'' ‹$digit_{60}$›)\textsuperscript{*} \\
   ‹$inexact$-$simple_{60}$› & \lstinline!::=! ‹$digits_{60}$› ``\lstinline!;!'' ‹$digits_{60}$› \\
 \end{longtable}
 
