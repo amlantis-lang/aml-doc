@@ -29,7 +29,7 @@ The \lstinline@#@ character has got a special meaning, determined by the followi
 After skipping whitespace, the \AmlBase reader dispatches based on the next character or characters in the source port this way:
 
 \begin{table}
-\begin{tabular}{ r l }
+\begin{longtable}{ r l }
   \lstinline!(! & starts a pair or list; see \nameref{subsec:aml-base-lang-reader-lists}. \\
   \lstinline![! & starts a pair, list, or array; see \nameref{subsec:aml-base-lang-reader-lists}. \\
   \lstinline!{! & starts a structure; see \nameref{subsec:aml-base-lang-reader-structures}. \\
@@ -37,12 +37,14 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!]! & matches \lstinline![! or raises error. \\
   \lstinline!}! & matches \lstinline!{! or raises error. \\
   
+\pagebreak[2]
   \lstinline!"! & starts a string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
   \lstinline!'! & starts a quote or a type variable; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
   \lstinline!`! & starts a tag or symbol; see \nameref{subsec:aml-base-lang-reader-polytags} and \nameref{subsec:aml-base-lang-reader-symbols}. \\
   \lstinline!~! & starts a label; see \nameref{subsec:aml-base-lang-reader-labels}. \\
   \lstinline!;! & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   
+\pagebreak[2]
   \lstinline!#y! & true; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
   \lstinline!#n! & false; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
   \lstinline!#t! or \lstinline!#T! & true; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
@@ -52,6 +54,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!#[! & starts a vector; see \nameref{subsec:aml-base-lang-reader-vectors}. \\
   \lstinline!#{! & starts a dictionary; see \nameref{subsec:aml-base-lang-reader-dictionaries}. \\
   
+\pagebreak[2]
   \lstinline!#\! & starts a character; see \nameref{subsec:aml-base-lang-reader-characters}. \\
   \lstinline!#"! & starts a byte string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
   \lstinline!#~! & starts a symbol; see \nameref{subsec:aml-base-lang-reader-symbols}. \\
@@ -65,6 +68,10 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!#^! & starts a metadata; see \nameref{subsec:aml-base-lang-reader-metadata}. \\
   \lstinline!##! & starts a parameterized read; see \nameref{subsec:aml-base-lang-reader-parameterized-reads}. \\
   
+\pagebreak[2]
+  \lstinline!#e! or \lstinline!#E! & starts a number; see \nameref{subsec:aml-base-lang-reader-numbers}. \\
+  \lstinline!#i! or \lstinline!#I! & starts a number; see \nameref{subsec:aml-base-lang-reader-numbers}. \\
+  
   \lstinline!#<<! & starts a string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
   
   \lstinline!#|! & starts a block comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
@@ -72,6 +79,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   ``\lstinline@#! @'' & starts a line comment; note that the space is necessary; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   \lstinline@#!/@ & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   
+\pagebreak[2]
   \lstinline@#!@ & may start a reader extension use; see \nameref{subsec:aml-base-lang-reader-extension}. \\
   \lstinline!#reader! & starts a reader extension use; see \nameref{subsec:aml-base-lang-reader-extension}. \\
   \lstinline!#lang! & starts a reader extension use; see \nameref{subsec:aml-base-lang-reader-extension}. \\
@@ -79,7 +87,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!#$other$! & starts a handler defined in current readtable or raises error. \\
   
   {\em otherwise} & starts a symbol; see \nameref{subsec:aml-base-lang-reader-symbols}. \\
-\end{tabular}
+\end{longtable}
 \caption{\label{tab:aml-base-lang-reader-dispatch}Table of Dispatches recognized by \lstinline!Aml/Base.Lang.Reader!.}
 \end{table}
 
@@ -112,6 +120,90 @@ Symbols that consist entirely of ``operator'' characters (Unicode character clas
 
 \subsection{Reading Numbers}
 \label{subsec:aml-base-lang-reader-numbers}
+
+A sequence of source characters that does not start with any of the sequences defined in \nameref{subsec:aml-base-lang-reader-delimiters-dispatch} is parsed as a number when it matches the following grammar, in which $n$ is a variable.
+
+A number is optionally prefixed by an exactness specifying form, case-insensitively, \lstinline!#e! (exact) or \lstinline!#i! (inexact), which specifies its parsing as an exact or inexact number. Such form can be followed by whitespace, which is simply ignored.
+
+% TODO: add specification for number exactness
+
+In the grammar below, each literal lowercase letter stands for both itself and its uppercase form.
+
+\grammar
+\begin{longtable}{ r l }
+  ‹$number_n$› & \lstinline!::=! ‹$prefix_n$› ‹$exact_n$› | ‹$inexact_n$› \\
+  
+  ‹$exact_n$› & \lstinline!::=! ‹$exact$-$rational_n$› | ‹$exact$-$complex_n$› \\
+  ‹$exact$-$rational_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$unsigned$-$rational_n$› \\
+  ‹$unsigned$-$rational_n$› & \lstinline!::=! ‹$unsigned$-$integer_n$› \\
+  \nopagebreak[3] & \lstinline! | ! ‹$unsigned$-$integer_n$› ``\lstinline!/!'' ‹$unsigned$-$integer_n$› \\
+  
+  ‹$exact$-$integer_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$unsigned$-$integer_n$› \\
+  ‹$unsigned$-$integer_n$› & \lstinline!::=! ‹$digits_n$›\textsuperscript{+} \\
+  
+  ‹$exact$-$complex_n$› & \lstinline!::=! ‹$exact$-$rational_n$›\textsubscript{opt} ‹$sign$› ‹$unsigned$-$rational_n$› ``\lstinline!i!'' \\
+    
+\pagebreak 
+  ‹$inexact_n$› & \lstinline!::=! ‹$inexact$-$real_n$› | ‹$inexact$-$complex_n$› \\
+  ‹$inexact$-$real_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$inexact$-$simple_n$› (‹$exp_n$› ‹$exact$-$integer_n$›)\textsubscript{opt} \\
+  ‹$inexact$-$unsigned_n$› & \lstinline!::=! ‹$inexact$-$simple_n$› \\
+  ‹$inexact$-$simple_n$› & \lstinline!::=! ‹$digits_n$› ``\lstinline!.!'' ‹$digits_n$› \\
+  \nopagebreak[3] & \lstinline! | ! ‹$digits_n$› ``\lstinline!/!'' ‹$digits_n$› \\
+    
+  ‹$inexact$-$complex_n$› & \lstinline!::=! ‹$inexact$-$real_n$›\textsubscript{opt} ‹$sign$› ‹$inexact$-$unsigned_n$› ``\lstinline!i!'' \\
+  
+  ‹$sign$› & \lstinline!::=! ``\lstinline!+!'' | ``\lstinline!-!'' \\
+  
+\pagebreak[3] 
+  ‹$general$-$number_n$› & ‹$exactness$›\textsubscript{opt} ‹$number_n$› \\
+  ‹$exactness$› & \lstinline!::=! ``\lstinline!#e!'' | ``\lstinline!#i!'' \\
+\end{longtable}
+
+In the table below, we define the parameterized $digits_n$, $exp_n$ and $prefix_n$ for all supported $n$s.
+
+\grammar
+\begin{longtable}{ r l }
+  % hexadecimal
+  ‹$digit_{16}$› & \lstinline!::=! ‹$digit_{12}$› | ``\lstinline!c!'' | ``\lstinline!d!'' | ``\lstinline!e!'' | ``\lstinline!f!'' \\
+  ‹$prefix_{16}$› & \lstinline!::=! ``\lstinline!0x!'' \\
+  
+  % duodecimal
+  ‹$digit_{12}$› & \lstinline!::=! ‹$digit_{10}$› | ``\lstinline!a!'' | ``\lstinline!b!'' \\
+  ‹$prefix_{12}$› & \lstinline!::=! ``\lstinline!0d!'' \\
+  
+  % decimal
+  ‹$digit_{10}$› & \lstinline!::=! ‹$digit_8$› | ``\lstinline!8!'' | ``\lstinline!9!'' \\
+  ‹$prefix_{10}$› & \lstinline!::=! empty sequence \\
+  
+  % octal
+  ‹$digit_8$› & \lstinline!::=! ‹$digit_2$› | ``\lstinline!2!'' | ``\lstinline!3!'' | ``\lstinline!4!'' | ``\lstinline!5!'' | ``\lstinline!6!'' | ``\lstinline!7!'' \\
+  ‹$prefix_8$› & \lstinline!::=! ``\lstinline!0o!'' \\
+  
+  % binary
+  ‹$digit_2$› & \lstinline!::=! ``\lstinline!0!'' | ``\lstinline!1!'' \\
+  ‹$prefix_2$› & \lstinline!::=! ``\lstinline!0b!'' \\
+  
+  ‹$exp_{16}$› & \lstinline!::=! ``\lstinline!p!'' \\
+  ‹$exp_{12}$› & \lstinline!::=! ‹$exp_{10}$› \\
+  ‹$exp_{10}$› & \lstinline!::=! ``\lstinline!e!'' \\
+  ‹$exp_8$› & \lstinline!::=! ‹$exp_{10}$› \\
+  ‹$exp_2$› & \lstinline!::=! ‹$exp_{10}$› \\
+  
+  ‹$digits_n$› & \lstinline!::=! ‹$digit_n$› (``\lstinline!_!''\textsubscript{opt} ‹$digit_n$›)* \\
+\end{longtable}
+
+In the grammar below, we define the special case of sexagesimal numbers. Some of the rules here override those for non-sexagesimal numbers.
+
+\grammar
+\begin{longtable}{ r l }
+  % sexagesimal
+  ‹$digit_{60}$› & \lstinline!::=! (``\lstinline!0!'' | ``\lstinline!1!'' | ``\lstinline!2!'' | ``\lstinline!3!'' | ``\lstinline!4!'' | ``\lstinline!5!'')\textsubscript{opt} ‹$digit_{10}$› \\
+  ‹$prefix_{60}$› & \lstinline!::=! ``\lstinline!0s!'' \\
+  ‹$exp_{60}$› & \lstinline!::=! ‹$exp_{10}$› \\
+  
+  ‹$digits_{60}$› & \lstinline!::=! ‹$digit_{60}$› (``\lstinline!,!'' ‹$digit_{60}$›)* \\
+  ‹$inexact$-$simple_{60}$› & \lstinline!::=! ‹$digits_{60}$› ``\lstinline!;!'' ‹$digits_{60}$› \\
+\end{longtable}
 
 
 
