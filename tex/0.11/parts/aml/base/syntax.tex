@@ -45,8 +45,8 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!;! & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   
 \pagebreak[2]
-  \lstinline!#y! & true; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
-  \lstinline!#n! & false; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
+  \lstinline!#y! or \lstinline!#Y! & true; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
+  \lstinline!#n! or \lstinline!#N! & false; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
   \lstinline!#t! or \lstinline!#T! & true; see \nameref{subsec:aml-base-lang-reader-booleans}. \\
   \lstinline!#f! or \lstinline!#F! & false; see \nameref{subsec:aml-base-lang-reader-booleans}. \\  
   
@@ -205,12 +205,16 @@ In the grammar below, we define the special case of sexagesimal numbers. Some of
   ‹$inexact$-$simple_{60}$› & \lstinline!::=! ‹$digits_{60}$› ``\lstinline!;!'' ‹$digits_{60}$› \\
 \end{longtable}
 
+% TODO: add examples of number parses
+
 
 
 
 
 \subsection{Reading Booleans}
 \label{subsec:aml-base-lang-reader-booleans}
+
+The forms \lstinline!#yes!, \lstinline!#y!, \lstinline!#true!, \lstinline!#t! (case-insensitive) followed by a delimiter are the complete input syntax for the \lstinline!System.Boolean.Yes! constant, and \lstinline!#no!, \lstinline!#n!, \lstinline!#false!, \lstinline!#f! (case-insensitive) followed by a delimiter are the complete input syntax for the \lstinline!System.Boolean.No! constant.
 
 
 
