@@ -214,7 +214,7 @@ In the grammar below, we define the special case of sexagesimal numbers. Some of
 \subsection{Reading Booleans}
 \label{subsec:aml-base-lang-reader-booleans}
 
-The forms \lstinline!#yes!, \lstinline!#y!, \lstinline!#true!, \lstinline!#t! (case-insensitive) followed by a delimiter are the complete input syntax for the \lstinline!System.Boolean.Yes! constant, and \lstinline!#no!, \lstinline!#n!, \lstinline!#false!, \lstinline!#f! (case-insensitive) followed by a delimiter are the complete input syntax for the \lstinline!System.Boolean.No! constant.
+The forms ``\lstinline!#yes!'', ``\lstinline!#y!'', ``\lstinline!#true!'', ``\lstinline!#t!'' (case-insensitive) followed by a delimiter are the complete input syntax for the \lstinline!System.Boolean.Yes! constant, and ``\lstinline!#no!'', ``\lstinline!#n!'', ``\lstinline!#false!'', ``\lstinline!#f!'' (case-insensitive) followed by a delimiter are the complete input syntax for the \lstinline!System.Boolean.No! constant.
 
 
 
@@ -285,6 +285,17 @@ The forms \lstinline!#yes!, \lstinline!#y!, \lstinline!#true!, \lstinline!#t! (c
 
 \subsection{Reading Keywords}
 \label{subsec:aml-base-lang-reader-keywords}
+
+The sequence ``\lstinline!#:!'' starts a keyword. The parsing is the same as for a symbol preceded by ``\lstinline!#~!'', except for this initial sequence, and the part after this initial sequence is never parsed as a number. 
+
+\example A few examples of parsing a keyword:
+
+\begin{tabular}{ r l }
+  \lstinline!#:Plum! & reads equal to \lstinline!(string->keyword "Plum")! \\
+  \lstinline!#:42! & reads equal to \lstinline!(string->keyword "42")! \\
+\end{tabular}
+
+
 
 
 
