@@ -111,6 +111,7 @@ Symbols that consist entirely of ``operator'' characters (Unicode character clas
 \begin{tabular}{ r l }
   \lstinline!Plum! & reads equal to \lstinline!(string->symbol "Plum")! \\
   \lstinline!Plu#m! & reads equal to \lstinline!(string->symbol "Plu#m")! \\
+  \lstinline!Pl.um! & reads equal to \lstinline!(string->symbol "Pl.um")! \\
   \lstinline!#~Plum! & reads equal to \lstinline!(string->symbol "#~Plum")! \\
   \lstinline!string->symbol! & reads equal to \lstinline!(string->symbol "string->symbol")! \\
 \end{tabular}
@@ -138,12 +139,13 @@ In the grammar below, each literal lowercase letter stands for both itself and i
   ‹$unsigned$-$rational_n$› & \lstinline!::=! ‹$unsigned$-$integer_n$› \\
   \nopagebreak[3] & \lstinline! | ! ‹$unsigned$-$integer_n$› ``\lstinline!/!'' ‹$unsigned$-$integer_n$› \\
   
+\pagebreak 
   ‹$exact$-$integer_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$unsigned$-$integer_n$› \\
   ‹$unsigned$-$integer_n$› & \lstinline!::=! ‹$digits_n$›\textsuperscript{+} \\
   
   ‹$exact$-$complex_n$› & \lstinline!::=! ‹$exact$-$rational_n$›\textsubscript{opt} ‹$sign$› ‹$unsigned$-$rational_n$› ``\lstinline!i!'' \\
     
-\pagebreak 
+\pagebreak[3] 
   ‹$inexact_n$› & \lstinline!::=! ‹$inexact$-$real_n$› | ‹$inexact$-$complex_n$› \\
   ‹$inexact$-$real_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$inexact$-$simple_n$› (‹$exp_n$› ‹$exact$-$integer_n$›)\textsubscript{opt} \\
   ‹$inexact$-$unsigned_n$› & \lstinline!::=! ‹$inexact$-$simple_n$› \\
@@ -236,6 +238,35 @@ The forms ``\lstinline!#yes!'', ``\lstinline!#y!'', ``\lstinline!#true!'', ``\ls
 
 \subsection{Reading Strings}
 \label{subsec:aml-base-lang-reader-strings}
+
+Sequences of input characters that start with ``\lstinline!"!'' begin parsing characters to form a string, until another ``\lstinline!"!'' is found (that is not escaped by a single ``\lstinline!\!''). 
+
+Within a string sequence, the following ``escape sequences'' are recognized:
+
+\begin{itemize}
+  \item ``\lstinline!\'!'': single quote
+  \item ``\lstinline!\"!'': double-quotes (does not terminate the string form)
+  \item ``\lstinline!\\!'': backslash (the second is not an escaping backslash)
+  \item ``\lstinline!\0!'': binary zero (NUL, \lstinline!U+0000!)
+  \item ``\lstinline!\a!'': BEL (alarm) character (\lstinline!U+0007!)
+  \item ``\lstinline!\b!'': backspace (\lstinline!U+0008!)
+  \item ``\lstinline!\e!'': escape (\lstinline!U+001B!)
+  \item ``\lstinline!\f!'': form feed (\lstinline!U+000C!)
+  \item ``\lstinline!\n!'': end-of-line (\lstinline!U+000A!)
+  \item ``\lstinline!\r!'': carriage return (\lstinline!U+000D!)
+  \item ``\lstinline!\t!'': horizontal tab (character tabulation, \lstinline!U+0009!)
+  \item ``\lstinline!\v!'': vertical tab (line tabulation, \lstinline!U+000B!)
+  
+  \item ``\lstinline!\x$nn$!'': Unicode for the hexadecimal number specified by $nn$, where each $n$ is a~‹$digit_{16}$›.
+  \item ``\lstinline!\u$nnnn$!'': Unicode for the hexadecimal number specified by $nnnn$, where each $n$ is a~‹$digit_{16}$›, the character \lstinline!U+$nnnn$!.
+  \item ``\lstinline!\U$nnnnnnnn$!'': Unicode for the hexadecimal number specified by $nnnn$, where each $n$ is a~‹$digit_{16}$›, the character \lstinline!U+$nnnnnnnn$!.
+  
+  \item ``\lstinline!\u{$n_1 \ldots n_m$}!'': Unicode for the hexadecimal number specified by $n_1 \ldots n_m$, where each $n_i$ is a~‹$digit_{16}$› and $m < 8$, the character \lstinline!U+$n_1 \ldots n_m$!.
+  
+  % TODO: add "named unicode character and named character entity: \&nbsp; and \{AMPERSAND}
+  
+  \item ``\lstinline!\!‹$newline$›'': elided, where ‹$newline$› is either an end-of-line, carriage return, or carriage return end-of-line combination. This sequence is not added to the string form.
+\end{itemize}
 
 
 
