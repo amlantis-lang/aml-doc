@@ -239,7 +239,7 @@ The forms ``\lstinline!#yes!'', ``\lstinline!#y!'', ``\lstinline!#true!'', ``\ls
 \subsection{Reading Strings}
 \label{subsec:aml-base-lang-reader-strings}
 
-Sequences of input characters that start with ``\lstinline!"!'' begin parsing characters to form a string, until another ``\lstinline!"!'' is found (that is not escaped by a single ``\lstinline!\!''). 
+Sequences of input characters that start with ``\lstinline!"!'' begin parsing characters to form a string, until another ``\lstinline!"!'' is found (that is not escaped by a single ``\lstinline!\!''). % TODO: add link to spec of strings
 
 Within a string sequence, the following ``escape sequences'' are recognized:
 
@@ -267,6 +267,10 @@ Within a string sequence, the following ``escape sequences'' are recognized:
   
   \item ``\lstinline!\!‹$newline$›'': elided, where ‹$newline$› is either an end-of-line, carriage return, or carriage return end-of-line combination. This sequence is not added to the string form.
 \end{itemize}
+
+When the sequence of input characters starts with ``\lstinline!#"!'' instead of just ``\lstinline!"!'', the parsed string form is a byte string. % TODO: add link to spec of byte strings
+
+Sequences of input characters that start with ``\lstinline!#<<!'' begin parsing characters to form a string, in this form called {\em here string}. The characters following ``\lstinline!#<<!'' until a newline character define a terminator for the string. The content of the resulting string form includes all characters between the line containing ``\lstinline!#<<!'' and a line whose entire content is the specified terminator. The first and last line of such form are not included in the resulting string form. No escape sequences are recognized in {\em here strings}. % TODO: Aml/Core and Aml may support more versions of here strings, including code interpolation
 
 
 
