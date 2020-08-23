@@ -259,7 +259,7 @@ Within a string sequence, the following ``escape sequences'' are recognized:
   
   \item ``\lstinline!\x$nn$!'': Unicode for the hexadecimal number specified by $nn$, where each $n$ is a~‹$digit_{16}$›.
   \item ``\lstinline!\u$nnnn$!'': Unicode for the hexadecimal number specified by $nnnn$, where each $n$ is a~‹$digit_{16}$›, the character \lstinline!U+$nnnn$!.
-  \item ``\lstinline!\U$nnnnnnnn$!'': Unicode for the hexadecimal number specified by $nnnn$, where each $n$ is a~‹$digit_{16}$›, the character \lstinline!U+$nnnnnnnn$!.
+  \item ``\lstinline!\U$nnnnnnnn$!'': Unicode for the hexadecimal number specified by $nnnnnnnn$, where each $n$ is a~‹$digit_{16}$›, the character \lstinline!U+$nnnnnnnn$!.
   
   \item ``\lstinline!\u{$n_1 \ldots n_m$}!'': Unicode for the hexadecimal number specified by $n_1 \ldots n_m$, where each $n_i$ is a~‹$digit_{16}$› and $m < 8$, the character \lstinline!U+$n_1 \ldots n_m$!.
   
@@ -279,6 +279,28 @@ Sequences of input characters that start with ``\lstinline!#<<!'' begin parsing 
 \subsection{Reading Characters}
 \label{subsec:aml-base-lang-reader-characters}
 
+Sequences of input characters that start with ``\lstinline!#\!'' begin parsing characters to form a character constant. The following forms are recognized:
+
+\begin{itemize}
+  \item ``\lstinline!#\nul!'', ``\lstinline!#\null!'' or ``\lstinline!#\0!'': NUL (ASCII 0), the next character must not be alphabetic.
+  \item ``\lstinline!#\backspace!'': backspace (\lstinline!U+0008!), the next character must not be alphabetic.
+  \item ``\lstinline!#\tab!'' or ``\lstinline!#\htab!'': horizontal tab (\lstinline!U+0009!), the next character must not be alphabetic.
+  \item ``\lstinline!#\newline!'' or ``\lstinline!#\linefeed!'': end-of-line (\lstinline!U+000A!), the next character must not be alphabetic.
+  \item ``\lstinline!#\vtab!'': vertical tab (\lstinline!U+000B!), the next character must not be alphabetic.
+  \item ``\lstinline!#\page!'': form feed (page break, \lstinline!U+000C!), the next character must not be alphabetic.
+  \item ``\lstinline[deletekeywords={return}]!#\return!'': carriage return (\lstinline!U+000D!), the next character must not be alphabetic.
+  \item ``\lstinline!#\space!'': space (\lstinline!U+0020!), the next character must not be alphabetic.
+  \item ``\lstinline!#\delete!'' or ``\lstinline!#\rubout!'': delete (\lstinline!U+007F!), the next character must not be alphabetic.
+  \item ``\lstinline!#\quote!'', ``\lstinline!#\squote!'' or ``\lstinline!#\'''!'': single quote (apostrophe, \lstinline!U+0027!), the next character must not be alphabetic after the former two forms.
+
+  \item ``\lstinline!#\x$nn$!'': Unicode for the hexadecimal number specified by $nn$, where each $n$ is a~‹$digit_{16}$›.
+  \item ``\lstinline!#\u$nnnn$!'': Unicode for the hexadecimal number specified by $nnnn$, where each $n$ is a~‹$digit_{16}$›, the character \lstinline!U+$nnnn$!.
+  \item ``\lstinline!#\U$nnnnnnnn$!'': Unicode for the hexadecimal number specified by $nnnnnnnn$, where each $n$ is a~‹$digit_{16}$›, the character \lstinline!U+$nnnnnnnn$!.
+  
+  \item ``\lstinline!#\u{$n_1 \ldots n_m$}!'': Unicode for the hexadecimal number specified by $n_1 \ldots n_m$, where each $n_i$ is a~‹$digit_{16}$› and $m < 8$, the character \lstinline!U+$n_1 \ldots n_m$!.
+  
+  \item ``\lstinline!#\'$c$'!'': the character $c$, which must be a single Unicode codepoint.
+\end{itemize}
 
 
 
