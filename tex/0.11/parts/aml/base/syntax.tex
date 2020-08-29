@@ -225,6 +225,10 @@ The forms ``\lstinline!#yes!'', ``\lstinline!#y!'', ``\lstinline!#true!'', ``\ls
 \subsection{Reading Pairs, Lists \& Arrays}
 \label{subsec:aml-base-lang-reader-lists}
 
+Sequences of input characters that start with ``\lstinline!(!'' or ``\lstinline![!'' begin parsing characters to form a pair or a list.\footnote{Note that in Lisp languages, not excluding \AmlBase, evaluating list forms does not necessarily produce a list - instead, many list forms are a function application form. To get a list data structure, one either needs to construct it with function applications, or quote the list form.}
+
+Parsing a pair or list form entails recursively parsing sub-forms until a matching ``\lstinline!(!'' or ``\lstinline![!'' (respectively, these are not interchangeable) is found. A delimited ``\lstinline!.!'' is handled specially.
+
 
 
 
