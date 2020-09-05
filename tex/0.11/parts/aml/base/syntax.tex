@@ -229,6 +229,32 @@ Sequences of input characters that start with ``\lstinline!(!'' or ``\lstinline!
 
 Parsing a pair or list form entails recursively parsing sub-forms until a matching ``\lstinline!(!'' or ``\lstinline![!'' (respectively, these are not interchangeable) is found. A delimited ``\lstinline!.!'' is handled specially.
 
+If there is no delimited ``\lstinline!.!'' among the forms between parentheses, then a list is formed, containing the results of the recursive reads, in the same order as they appear in the source text.
+
+If there is exactly one delimited ``\lstinline!.!'', it's not the first and also not the last sub-form, and there are two other sub-forms (the first and the last one), then a pair is formed. More generally, if there are more sub-forms before the delimited ``\lstinline!.!'', a pair is formed with the last of them, and recursively, a pair is formed with the preceding sub-form and the previously formed pair, thus forming nested pairs.
+
+If there are exactly two delimited ``\lstinline!.!'', none of which is the first and the last sub-form, and there is at least one other sub-form in between them, then the middle sub-form is put first in the resulting list, then the sub-forms before the first delimited ``\lstinline!.!'', and finally the sub-forms after the second delimited ``\lstinline!.!''. 
+
+If the sequences of input characters start with ``\lstinline![|!'' and end with ``\lstinline!|]!'', then an array is formed instead of a list.
+
+% TODO: specify that lists that use [ and ] have a property attached to their syntax object, or wrapped in a pair with a symbol representing the parentheses shape
+
+\example A few examples of parsing lists, pairs and arrays:
+
+\begin{tabular}{ r l }
+  \lstinline!()! & reads equal to \lstinline!(list)! \\
+  \lstinline!(1 2 3)! & reads equal to \lstinline!(list 1 2 3)! \\
+  \lstinline![1 2 3]! & reads equal to \lstinline!(list 1 2 3)! \\
+  \lstinline![|1 2 3|]! & reads equal to \lstinline!(array 1 2 3)! \\
+  \lstinline!(1 2 (3))! & reads equal to \lstinline!(list 1 2 (list 3))! \\
+  \lstinline!(1 . 2)! & reads equal to \lstinline!(pair 1 2)! \\
+  \lstinline!(1 2 3 . 4)! & reads equal to \lstinline!(pair 1 (pair 2 (pair 3 4)))! \\
+  \lstinline!(1 2 . ())! & reads equal to \lstinline!(pair 1 (pair 2 (list)))! \\
+  \lstinline!(1 . 2 . 3)! & reads equal to \lstinline!(list 2 1 3)! \\
+\end{tabular}
+
+
+
 
 
 
