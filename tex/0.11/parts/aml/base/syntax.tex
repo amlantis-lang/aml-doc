@@ -32,7 +32,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 \begin{longtable}{ r l }
   \lstinline!(! & starts a pair or list; see \nameref{subsec:aml-base-lang-reader-lists}. \\
   \lstinline![! & starts a pair, list, or array; see \nameref{subsec:aml-base-lang-reader-lists}. \\
-  \lstinline!{! & starts a structure; see \nameref{subsec:aml-base-lang-reader-structures}. \\
+  \lstinline!{! & starts a record; see \nameref{subsec:aml-base-lang-reader-records}. \\
   \lstinline!)! & matches \lstinline!(! or raises error. \\
   \lstinline!]! & matches \lstinline![! or raises error. \\
   \lstinline!}! & matches \lstinline!{! or raises error. \\
@@ -259,8 +259,33 @@ If the sequences of input characters start with ``\lstinline![|!'' and end with 
 
 
 
-\subsection{Reading Structures}
-\label{subsec:aml-base-lang-reader-structures}
+\subsection{Reading Records}
+\label{subsec:aml-base-lang-reader-records}
+
+Sequences of input characters that start with ``\lstinline!{!'' begin parsing characters to form a record.
+
+Parsing a record entails recursively parsing sub-forms, until a matching ``\lstinline!}!'' is found. 
+
+There are 3 different possible ordering of sub-forms:
+\begin{itemize}
+  \item Pairs of sub-forms, where first item is a record field, second is any form.
+  \item First sub-form is any form, followed by keyword ``\lstinline!#:with!'', followed by pairs of sub-forms, where first item is a record field, second is any form. This sequence of sub-forms can then optionally be followed by a keyword ``\lstinline!#:without!'', followed by record field sub-forms.
+  \item First sub-form is any form, followed by keyword ``\lstinline!#:without!'', followed by record field sub-forms.
+\end{itemize}
+
+A record field is such a form $f$ for which ``\lstinline!(record-field? $f$)!'' returns ``\lstinline!#yes!''.\footnote{Record fields are usually symbols, in case of ambiguities, such symbol may refer to a fully or partially qualified record field.}
+
+If the sequence of input characters start with ``\lstinline!{|!'' and end with ``\lstinline!|}!'', then an anonymous record is formed instead of a (regular) record.
+
+\example A few examples of parsing records:
+
+\begin{lstlisting}
+ { Fraction.numerator 17 denominator 3 }
+ { fr #:with numerator 16 }
+ { fr #:with numerator 16 #:without denominator }
+ { fr #:without denominator }
+\end{lstlisting}
+
 
 
 
