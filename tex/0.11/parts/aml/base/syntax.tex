@@ -431,6 +431,15 @@ A ``\lstinline@#! @'' (a ``\lstinline@#!@'' followed by a whitespace) or ``\lsti
 \subsection{Reading Vectors}
 \label{subsec:aml-base-lang-reader-vectors}
 
+The sequence ``\lstinline!#[!'' starts a vector. Following sub-forms are recursively read until a matching ``\lstinline!]!'' is found, same as for lists.
+
+\example An example of a vector:
+
+\begin{tabular}{ l l }
+  \lstinline!#[1 2 3]! & reads equal to \lstinline!(vector 1 2 3)! \\
+\end{tabular}
+
+
 
 
 
@@ -438,12 +447,30 @@ A ``\lstinline@#! @'' (a ``\lstinline@#!@'' followed by a whitespace) or ``\lsti
 \subsection{Reading Sets}
 \label{subsec:aml-base-lang-reader-sets}
 
+The sequence ``\lstinline!#(!'' starts a set. Following sub-forms are recursively read until a matching ``\lstinline!)!'' is found, same as for lists. The sequence ``\lstinline!#(|!'' starts a bag. Following sub-forms are recursively read until a matching ``\lstinline!|)!'' is found.
+
+\example Examples of sets:
+
+\begin{tabular}{ l l }
+  \lstinline!#(1 2 3)! & reads equal to \lstinline!(hash-set 1 2 3)! \\
+  \lstinline!#(|1 2 3|)! & reads equal to \lstinline!(hash-bag 1 2 3)! \\
+\end{tabular}
+
 
 
 
 
 \subsection{Reading Maps}
 \label{subsec:aml-base-lang-reader-maps}
+
+The sequence ``\lstinline!#{!'' starts a map. Following sub-forms are recursively read in pairs until a matching ``\lstinline!}!'' is found, similar to records. Sub-form pair can also be explicit pairs, same as for records. The sequence ``\lstinline!#(|!'' starts a multi-map. Following sub-forms are recursively read until a matching ``\lstinline!|)!'' is found, same as for maps.
+
+\example Examples of maps:
+
+\begin{tabular}{ l l }
+  \lstinline!#{"a" 5 "b" 7}! & reads equal to \lstinline!(hash-map ("a" . 5) ("b" . 7))! \\
+  \lstinline!#{|"a" 5 "b" 7|}! & reads equal to \lstinline!(hash-multi-map ("a" . 5) ("b" . 7))! \\
+\end{tabular}
 
 
 
@@ -469,6 +496,16 @@ The sequence ``\lstinline!#:!'' starts a keyword. The parsing is the same as for
 
 \subsection{Reading Polymorphic Tags}
 \label{subsec:aml-base-lang-reader-polytags}
+
+A ``\lstinline!`!'' starts either a quasiquote (see \nameref{subsec:aml-base-lang-reader-quotes}), or a polymorphic tag. If the form immediatelly following it is a plain symbol, a polymorphic tag is read.
+
+\example An example of a polymorphic tag:
+
+\begin{tabular}{ l l }
+  \lstinline!`RGBA! & reads equal to \lstinline!(polymorphic-variant-tag #'RGBA)! \\
+\end{tabular}
+
+
 
 
 
