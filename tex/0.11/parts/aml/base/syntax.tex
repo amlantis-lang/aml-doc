@@ -4,7 +4,7 @@
 \chapter{Syntax}
 \label{ch:aml-base-syntax}
 
-The syntax of \AmlBase is based on Lisp-1, the so-called ``S-Expressions'' (shorter for ``symbolic expressions''\footnote{Which we will not abbreviate further as ``sexprs''.}) and blatantly borrowing from languages such as Scheme, Racket or Clojure, while maintaining similarities with the \Aml and \AmlCore languages. 
+The syntax of \AmlBase is based on Lisp-1, the so-called ``S-expressions'' (shorter for ``symbolic expressions''\footnote{Which we will not abbreviate further as ``sexprs''.}) and blatantly borrowing from languages such as Scheme, Racket or Clojure, while maintaining similarities with the \Aml and \AmlCore languages. 
 
 
 
@@ -21,7 +21,7 @@ The syntax of \AmlBase is based on Lisp-1, the so-called ``S-Expressions'' (shor
 Along with whitespace (as defined by Unicode ``White\_Space'' property), the following characters are delimiters:
 
 \begin{lstlisting}
-  ( ) [ ] { } " ' ` ~ ;
+  ( ) [ ] { } " ' ` , ~ ;
 \end{lstlisting}
 
 The \lstinline@#@ character has got a special meaning, determined by the following character or characters; see below for details. 
@@ -40,7 +40,8 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 \pagebreak[2]
   \lstinline!"! & starts a string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
   \lstinline!'! & starts a quote or a type variable; see \nameref{subsec:aml-base-lang-reader-quotes}. \\
-  \lstinline!`! & starts a tag or symbol; see \nameref{subsec:aml-base-lang-reader-polytags} and \nameref{subsec:aml-base-lang-reader-symbols}. \\
+  \lstinline!,! & is ignored as whitespace. \\
+  \lstinline!`! & starts a tag, a symbol or a quote; see \nameref{subsec:aml-base-lang-reader-polytags} and \nameref{subsec:aml-base-lang-reader-symbols}. \\
   \lstinline!~! & starts a label; see \nameref{subsec:aml-base-lang-reader-labels}. \\
   \lstinline!;! & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   
@@ -75,7 +76,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
   \lstinline!#<<! & starts a string; see \nameref{subsec:aml-base-lang-reader-strings}. \\
   
   \lstinline!#|! & starts a block comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
-  \lstinline!#;! or \lstinline!#_! & starts an S-Expression comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
+  \lstinline!#;! or \lstinline!#_! & starts an S-expression comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   ``\lstinline@#! @'' & starts a line comment; note that the space is necessary; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   \lstinline@#!/@ & starts a line comment; see \nameref{subsec:aml-base-lang-reader-comments}. \\
   
@@ -325,7 +326,7 @@ Within a string sequence, the following ``escape sequences'' are recognized:
 
 When the sequence of input characters starts with ``\lstinline!#"!'' instead of just ``\lstinline!"!'', the parsed string form is a byte string. % TODO: add link to spec of byte strings
 
-Sequences of input characters that start with ``\lstinline!#<<!'' begin parsing characters to form a string, in this form called {\em here string}. The characters following ``\lstinline!#<<!'' until a newline character define a terminator for the string. The content of the resulting string form includes all characters between the line containing ``\lstinline!#<<!'' and a line whose entire content is the specified terminator. The first and last line of such form are not included in the resulting string form. No escape sequences are recognized in {\em here strings}. % TODO: Aml/Core and Aml may support more versions of here strings, including code interpolation
+Sequences of input characters that start with ``\lstinline!#<<!'' begin parsing characters to form a string, in this form called {\em here string}. The characters following ``\lstinline!#<<!'' until a newline character define a terminator for the string. The content of the resulting string form includes all characters between the line containing ``\lstinline!#<<!'' and a line whose entire content is the specified terminator (possibly preceded by whitespace). The first and last line of such form are not included in the resulting string form. No escape sequences are recognized in {\em here strings}. % TODO: Aml/Core and Aml may support more versions of here strings, including code interpolation
 
 
 
@@ -363,12 +364,56 @@ Sequences of input characters that start with ``\lstinline!#\!'' begin parsing c
 \subsection{Reading Quotes}
 \label{subsec:aml-base-lang-reader-quotes}
 
+Upon reading a ``\lstinline!'!'', the reader recursively reads next form. If that form is a symbol, a type variable is formed. Otherwise, a new list is formed containing the symbol ``\lstinline!#'quote!'' and the following form. 
+
+The reader recognizes a few other forms in the same way:
+
+\begin{tabular}{ l l }
+  \lstinline!'! & adds \lstinline!#'quote! if the following form is not a symbol \\
+  \lstinline!`! & adds \lstinline!#'quasiquote! if not followed by ``\lstinline!`!'' and the next form is not a symbol \\
+  \lstinline!#'! & adds \lstinline!#'quote! (always) \\
+  \lstinline!#`! & adds \lstinline!#'quasiquote! \\
+  \lstinline!#,! & adds \lstinline!#'unquote! \\
+  \lstinline!#,@! & adds \lstinline!#'unquote-splicing! \\
+  \lstinline!#s'! & adds \lstinline!#'syntax-quote! \\
+  \lstinline!#s`! & adds \lstinline!#'syntax-quasiquote! \\
+  \lstinline!#s,! & adds \lstinline!#'syntax-unquote! \\
+  \lstinline!#s,@! & adds \lstinline!#'syntax-unquote-splicing! \\
+\end{tabular}
+
+\example A few examples of parsing quotes:
+
+\begin{tabular}{ r l }
+  \lstinline!'(apple)! & reads equal to \lstinline!(list #'quote #'apple)! \\
+  \lstinline!#`(1 #,2)! & reads equal to \lstinline!(list #'quasiquote (list 1 (list #'unquote 2)))! \\
+\end{tabular}
+
 
 
 
 
 \subsection{Reading Comments}
 \label{subsec:aml-base-lang-reader-comments}
+
+A ``\lstinline!;!'' starts a line comment. When the reader encounters it, it discards all characters following it until the next new line. 
+
+A ``\lstinline!#|!'' starts a nestable block comment. When the reader encounters it, it discards all characters following it until a closing   ``\lstinline!|#!''. When discarding characters within the nestable block comment, another ``\lstinline!#|!'' begins recursive discarding, so that pairs of matching ``\lstinline!#|!'' and ``\lstinline!|#!'' can be nested (hence nestable block comments). 
+
+A ``\lstinline!#;!'' or a ``\lstinline!#_!'' starts an S-expression comment. When the reader encounters it, it recursively reads one following form, and discards it.
+
+A ``\lstinline@#! @'' (a ``\lstinline@#!@'' followed by a whitespace) or ``\lstinline@#!/@'' starts a line comment, much like ``\lstinline!;!'' does, except if the line ends with ``\lstinline!\!'', the discarding continues to the next line. 
+
+\example A few examples of comments:
+
+\begin{tabular}{ l l }
+  \lstinline!; comment! & reads equal to \textit{nothing} \\
+  \lstinline!#| a |# 1! & reads equal to \lstinline!1! \\
+  \lstinline!#| #| a |# 1 |# 2! & reads equal to \lstinline!2! \\
+  \lstinline!#_1 2! & reads equal to \lstinline!2! \\
+  \lstinline@#!/usr/bin/env amlc@ & reads equal to \textit{nothing} \\
+  \lstinline@#! /usr/bin/env amlc@ & reads equal to \textit{nothing} \\
+\end{tabular}
+
 
 
 
