@@ -103,7 +103,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 
 A sequence of source characters that does not start with any of the sequences defined in \nameref{subsec:aml-base-lang-reader-delimiters-dispatch} is parsed as either a symbol or a number. The sequence ``\lstinline!#~!''\footnote{We have decided to use ``\lstinline!#~!'' instead of ``\lstinline!#\%!'' for symbols as the resulting symbol appears easier to read.} also starts a symbol. A successful number parse takes precedence over symbol parse, see \nameref{subsec:aml-base-lang-reader-numbers}. 
 
-A sequence of source characters that starts with ``\lstinline!``!'' is parsed as a symbol until a matching ``\lstinline!``!'' is found. If a ``\lstinline!``!'' should appear inside the symbol, it has to be preceded by a ``\lstinline!\!'', and that character is the only character omitted from the resulting symbol.\footnote{This is why quasiquote must not be followed by another backtick.}
+A sequence of source characters that starts with ``\lstinline!``!'' is parsed as a (verbatim) symbol until a matching ``\lstinline!``!'' is found. If a ``\lstinline!``!'' should appear inside the symbol, it has to be preceded by a ``\lstinline!\!'', and that character is the only character omitted from the resulting symbol.\footnote{This is why quasiquote must not be followed by another backtick.}
 
 A symbol parse may continue with ``\lstinline!#!'' without dispatching on it, since the form does not start with it, and becoming a part of the symbol parse.
 
@@ -118,8 +118,10 @@ Symbols that consist entirely of ``operator'' characters (Unicode character clas
   \lstinline!#~Plum! & reads equal to \lstinline!(string->symbol "#~Plum")! \\
   \lstinline!string->symbol! & reads equal to \lstinline!(string->symbol "string->symbol")! \\
   \lstinline!``a long symbol``! & reads equal to \lstinline!(string->symbol "a long symbol")! \\
-  \lstinline!``this \`` is included``! & reads equal to \lstinline!(string->symbol "this `` is included")! \\
+  \lstinline[deletekeywords={is}]!``this \`` is included``! & reads equal to \lstinline[deletekeywords={is}]!(string->symbol "this `` is included")! \\
 \end{tabular}
+
+\pagebreak 
 
 
 
@@ -144,7 +146,7 @@ In the grammar below, each literal lowercase letter stands for both itself and i
   ‹$unsigned$-$rational_n$› & \lstinline!::=! ‹$unsigned$-$integer_n$› \\
   \nopagebreak[3] & \lstinline! | ! ‹$unsigned$-$integer_n$› ``\lstinline!/!'' ‹$unsigned$-$integer_n$› \\
   
-\pagebreak 
+\pagebreak[3] 
   ‹$exact$-$integer_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$unsigned$-$integer_n$› \\
   ‹$unsigned$-$integer_n$› & \lstinline!::=! ‹$digits_n$›\textsuperscript{+} \\
   
