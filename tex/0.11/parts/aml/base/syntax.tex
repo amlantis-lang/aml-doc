@@ -373,7 +373,7 @@ Sequences of input characters that start with ``\lstinline!#\!'' begin parsing c
 \subsection{Reading Quotes}
 \label{subsec:aml-base-lang-reader-quotes}
 
-Upon reading a ``\lstinline!'!'', the reader recursively reads next form. If that form is a symbol, a type variable is formed. Otherwise, a new list is formed containing the symbol ``\lstinline!#'quote!'' and the following form. 
+Upon reading a ``\lstinline!'!'', the reader recursively reads next form. If that form is a symbol, a type variable is formed.\footnote{A type variable is a symbol with meta data attached that is yet TBD.} Otherwise, a new list is formed containing the symbol ``\lstinline!#'quote!'' and the following form. 
 
 The reader recognizes a few other forms in the same way:
 
