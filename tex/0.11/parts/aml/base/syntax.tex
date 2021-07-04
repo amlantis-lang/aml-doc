@@ -105,6 +105,8 @@ A sequence of source characters that does not start with any of the sequences de
 
 A sequence of source characters that starts with ``\lstinline!``!'' is parsed as a (verbatim) symbol until a matching ``\lstinline!``!'' is found. If a ``\lstinline!``!'' should appear inside the symbol, it has to be preceded by a ``\lstinline!\!'', and that character is the only character omitted from the resulting symbol.\footnote{This is why quasiquote must not be followed by another backtick.}
 
+We define a `plain symbol' to be the result of a parse that was not prefixed by ``\lstinline!#~!'', and is not enclosed in matching ``\lstinline!``!''.
+
 A symbol parse may continue with ``\lstinline!#!'' without dispatching on it, since the form does not start with it, and becoming a part of the symbol parse.
 
 Symbols that consist entirely of ``operator'' characters (Unicode character classes Sm, So, except for \lstinline!U+0060!) are treated specially, TBD\footnote{This is yet to be properly defined, but generally a property will be added to the form marking it ``operator''.}.
@@ -373,7 +375,7 @@ Sequences of input characters that start with ``\lstinline!#\!'' begin parsing c
 \subsection{Reading Quotes}
 \label{subsec:aml-base-lang-reader-quotes}
 
-Upon reading a ``\lstinline!'!'', the reader recursively reads next form. If that form is a symbol, a type variable is formed.\footnote{A type variable is a symbol with meta data attached that is yet TBD.} Otherwise, a new list is formed containing the symbol ``\lstinline!#'quote!'' and the following form. 
+Upon reading a ``\lstinline!'!'', the reader recursively reads next form. If that form is a symbol, a type variable is formed.\footnote{A type variable is a symbol with metadata attached that is yet TBD.} Otherwise, a new list is formed containing the symbol ``\lstinline!#'quote!'' and the following form. 
 
 The reader recognizes a few other forms in the same way:
 
@@ -427,7 +429,6 @@ A ``\lstinline@#! @'' (a ``\lstinline@#!@'' followed by a whitespace) or ``\lsti
 
 
 
-
 \subsection{Reading Vectors}
 \label{subsec:aml-base-lang-reader-vectors}
 
@@ -438,7 +439,6 @@ The sequence ``\lstinline!#[!'' starts a vector. Following sub-forms are recursi
 \begin{tabular}{ l l }
   \lstinline!#[1 2 3]! & reads equal to \lstinline!(vector 1 2 3)! \\
 \end{tabular}
-
 
 
 
@@ -479,7 +479,7 @@ The sequence ``\lstinline!#{!'' starts a map. Following sub-forms are recursivel
 \subsection{Reading Keywords}
 \label{subsec:aml-base-lang-reader-keywords}
 
-The sequence ``\lstinline!#:!'' starts a keyword. The parsing is the same as for a symbol preceded by ``\lstinline!#~!'', except for this initial sequence, and the part after this initial sequence is never parsed as a number. 
+The sequence ``\lstinline!#:!'' starts a keyword. The parsing is the same as for a symbol preceded by ``\lstinline!#~!'', except for this initial sequence, and the part after this initial sequence is never parsed as a number.\footnote{Once we verify that it does not interfere with the rest of the language, keywords could be prefixed just with a double colon, without the leading hash.}
 
 \example A few examples of parsing a keyword:
 
@@ -487,8 +487,6 @@ The sequence ``\lstinline!#:!'' starts a keyword. The parsing is the same as for
   \lstinline!#:Plum! & reads equal to \lstinline!(string->keyword "Plum")! \\
   \lstinline!#:42! & reads equal to \lstinline!(string->keyword "42")! \\
 \end{tabular}
-
-
 
 
 
@@ -509,10 +507,16 @@ A ``\lstinline!`!'' starts either a quasiquote (see \nameref{subsec:aml-base-lan
 
 
 
-
-
 \subsection{Reading Labels}
 \label{subsec:aml-base-lang-reader-labels}
+
+A ``\lstinline!~!'' starts a label. The parsing is the same as for a symbol preceded by ``\lstinline!#~!'', except for this initial character, and the part after this initial sequence is never parsed as a number. 
+
+\example An example of parsing a label:
+
+\begin{tabular}{ r l }
+  \lstinline!~f! & reads equal to \lstinline!(string->label "f")! \\
+\end{tabular}
 
 
 
@@ -521,12 +525,24 @@ A ``\lstinline!`!'' starts either a quasiquote (see \nameref{subsec:aml-base-lan
 \subsection{Reading Metadata}
 \label{subsec:aml-base-lang-reader-metadata}
 
+The sequence ``\lstinline!#^!'' starts a metadata. When the reader encounters it, it recursively reads next form, which is expected to be a map without the leading ``\lstinline!#!'', or a plain symbol. In case of a plain symbol $s$, the metadata is constructed as \lstinline!#{(#:metadata . $s$)}!. After the metadata $m$ is read, the reader attaches it to the next recursively read form $f$: \lstinline!(with-metadata $f$ $m$)!.
+
+\example Examples of parsing metadata:
+
+\begin{tabular}{ l l }
+  \lstinline!#^{#:a 1 #:b 2} [1 2]! & reads equal to \lstinline!(with-metadata [1 2] #{#:a 1 #:b 2})! \\
+  \lstinline!#^str x! & reads equal to \lstinline!(with-metadata x #{#:metadata #'str})! \\
+\end{tabular}
+
+
 
 
 
 
 \subsection{Reading Parameterized Reads}
 \label{subsec:aml-base-lang-reader-parameterized-reads}
+
+% while not yet properly documented, it will allow to manipulate the readtable to the extent of its body
 
 
 
@@ -551,7 +567,9 @@ For compatibility with e.g. R\textsuperscript{6}RS, \lstinline@#!@ is an alias f
 
 
 
-\subsubsection{S-Expression Reader Language}
+\subsubsection{S-expression Reader Language}
+
+% defines initial bindings for the rest of the file from path, using simple s-exp grammar reader
 
 \begin{lstlisting}
 #lang s-exp $path$
@@ -562,6 +580,8 @@ For compatibility with e.g. R\textsuperscript{6}RS, \lstinline@#!@ is an alias f
 
 
 \subsubsection{Chaining Reader Language}
+
+% defines which reader structure to use for the rest of the file, and that reader must build a file structure
 
 \begin{lstlisting}
 #lang reader $path$
