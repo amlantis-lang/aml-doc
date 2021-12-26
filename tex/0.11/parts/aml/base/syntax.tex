@@ -484,7 +484,7 @@ The sequence ``\lstinline!#:!'' starts a keyword. The parsing is the same as for
 \subsection{Reading Metadata}
 \label{subsec:aml-base-lang-reader-metadata}
 
-The sequence ``\lstinline!^!'' starts a metadata. When the reader encounters it, it recursively reads next form, which is expected to be a map without the leading ``\lstinline!#!'', or a plain symbol. In case of a plain symbol $s$, the metadata is constructed as \lstinline!#{(#:metadata . $s$)}!. After the metadata $m$ is read, the reader attaches it to the next recursively read form $f$: \lstinline!(with-metadata $f$ $m$)!. If there is no non-whitespace read after the first ``\lstinline!^!'', an ordinary symbol is parsed with the contents being the ``\lstinline!^!''.
+The sequence ``\lstinline!^!'' starts a metadata. When the reader encounters it, it recursively reads next form, which is expected to be a map without the leading ``\lstinline!#!'', or a plain symbol. In case of a plain symbol $s$, the metadata is constructed as \lstinline!#{(#:metadata . $s$)}!. After the metadata $m$ is read, the reader attaches it to the next recursively read form $f$\thinspace: \lstinline!(with-metadata $f$ $m$)!. If there is no non-whitespace read after the first ``\lstinline!^!'', an ordinary symbol is parsed with the contents being the ``\lstinline!^!''.
 
 \example Examples of parsing metadata:
 
