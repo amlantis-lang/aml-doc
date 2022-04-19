@@ -503,6 +503,11 @@ The sequence ``\lstinline!^!'' starts a metadata. When the reader encounters it,
 \label{subsec:aml-base-lang-reader-parameterized-reads}
 
 % while not yet properly documented, it will allow to manipulate the readtable to the extent of its body
+% this basically means that the form should be able to add a new char to the readtable and map a function to it,
+% remap an existing char to a new function (quite dangerous, but delimited), or remove an existing char from 
+% the current readtable (converting the form to symbol)
+% generally the syntax would look like: ##c f1 f2, where c is the char, f1 is the function and f2 is the form
+% read with the modified readtable (so perhaps ### #%custom_dispatch (#:my_power_keyword) )
 
 (TBD)
 
