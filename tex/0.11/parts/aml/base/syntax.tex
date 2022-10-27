@@ -266,7 +266,7 @@ Sequences of input characters that start with ``\lstinline!{!'' begin parsing ch
 
 Parsing a record entails recursively parsing sub-forms, until a matching ``\lstinline!}!'' is found. 
 
-There are 3 different possible ordering of sub-forms:
+There are 3 different possible orderings of sub-forms:
 \begin{itemize}
   \item Pairs of sub-forms, where first item is a record field, second is any form.
   \item First sub-form is any form, followed by keyword ``\lstinline!#:with!'', followed by pairs of sub-forms, where first item is a record field, second is any form. This sequence of sub-forms can then optionally be followed by a keyword ``\lstinline!#:without!'', followed by record field sub-forms.
