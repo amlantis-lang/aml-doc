@@ -31,8 +31,8 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 \begin{table}
 \begin{longtable}{ r l }
   \lstinline!(! & starts a pair or list; see \nameref{subsec:aml-base-lang-reader-lists}. \\
-  \lstinline![! & starts a pair, list, or array; see \nameref{subsec:aml-base-lang-reader-lists}. \\
-  \lstinline!{! & starts a record; see \nameref{subsec:aml-base-lang-reader-records}. \\
+  \lstinline![! & starts a pair or list; see \nameref{subsec:aml-base-lang-reader-lists}. \\
+  \lstinline!{! & starts a pair or list; see \nameref{subsec:aml-base-lang-reader-lists}. \\
   \lstinline!)! & matches \lstinline!(! or raises error. \\
   \lstinline!]! & matches \lstinline![! or raises error. \\
   \lstinline!}! & matches \lstinline!{! or raises error. \\
@@ -99,7 +99,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 
 A sequence of source characters that does not start with any of the sequences defined in \nameref{subsec:aml-base-lang-reader-delimiters-dispatch} is parsed as either a symbol or a number. The sequence ``\lstinline!#%!'' also starts a symbol. A successful number parse takes precedence over symbol parse, see \nameref{subsec:aml-base-lang-reader-numbers}. 
 
-A sequence of source characters that starts with ``\lstinline!``!'' is parsed as a (verbatim) symbol until a matching ``\lstinline!``!'' is found. If a ``\lstinline!``!'' should appear inside the symbol, it has to be preceded by a ``\lstinline!\!'', and that character is the only character omitted from the resulting symbol.\footnote{This is why quasiquote must not be followed by another backtick.}
+A sequence of source characters that starts with ``\lstinline!`"!'' is parsed as a (verbatim) symbol until a matching ``\lstinline!"!'' is found. If a ``\lstinline!`!'' should appear inside the symbol, it has to be preceded by a ``\lstinline!\!'', and that character is the only character omitted from the resulting symbol.\footnote{This is why quasiquote must not be followed by another backtick.}
 
 Symbols that consist entirely of ``operator'' characters (Unicode character classes Sm, So, except for \lstinline!U+0060!) are treated specially, TBD\footnote{This is yet to be properly defined, but generally a property will be added to the form marking it ``operator''.}.
 
@@ -110,11 +110,14 @@ Symbols that consist entirely of ``operator'' characters (Unicode character clas
   \lstinline!Plu#m! & reads equal to \lstinline!(string->symbol "Plu#m")! \\
   \lstinline!Pl.um! & reads equal to \lstinline!(string->symbol "Pl.um")! \\
   \lstinline!#%Plum! & reads equal to \lstinline!(string->symbol "#%Plum")! \\
+  \lstinline!#%"Plum's good"! & reads equal to \lstinline!(string->symbol "#%Plum's good")! \\
   \lstinline!string->symbol! & reads equal to \lstinline!(string->symbol "string->symbol")! \\
-  \lstinline[deletekeywords={is}]!``the \`` is included``! & reads equal to \lstinline[deletekeywords={is}]!(string->symbol "the `` is included")! \\
+  \lstinline[deletekeywords={is}]!`"a long symbol"! & reads equal to \lstinline[deletekeywords={is}]!(string->symbol "a long symbol")! \\
+  \lstinline[deletekeywords={is}]!`"the \" is included"! & reads equal to \lstinline[deletekeywords={is}]!(string->symbol "the \" is included")! \\
 \end{tabular}
 
 \pagebreak 
+
 
 
 
@@ -225,9 +228,9 @@ The forms ``\lstinline!#yes!'', ``\lstinline!#y!'', ``\lstinline!#true!'', ``\ls
 \subsection{Reading Pairs, Lists \& Arrays}
 \label{subsec:aml-base-lang-reader-lists}
 
-Sequences of input characters that start with ``\lstinline!(!'' or ``\lstinline![!'' begin parsing characters to form a pair or a list.\footnote{Note that in Lisp languages, not excluding \AmlBase, evaluating list forms does not necessarily produce a list - instead, many list forms are a function application form. To get a list data structure, one either needs to construct it with function applications, or quote the list form.}
+Sequences of input characters that start with ``\lstinline!(!'', ``\lstinline![!'' or ``\lstinline!{!'' begin parsing characters to form a pair or a list.\footnote{Note that in Lisp languages, not excluding \AmlBase, evaluating list forms does not necessarily produce a list - instead, many list forms are a function application form. To get a list data structure, one either needs to construct it with function applications, or quote the list form.}
 
-Parsing a pair or list form entails recursively parsing sub-forms until a matching ``\lstinline!(!'' or ``\lstinline![!'' (respectively, these are not interchangeable) is found. A delimited ``\lstinline!.!'' is handled specially.
+Parsing a pair or list form entails recursively parsing sub-forms until a matching ``\lstinline!)!'', ``\lstinline!]!'' or ``\lstinline!}!'' (respectively, these are not interchangeable) is found. A delimited ``\lstinline!.!'' is handled specially.
 
 If there is no delimited ``\lstinline!.!'' among the forms between parentheses, then a list is formed, containing the results of the recursive reads, in the same order as they appear in the source text.
 
@@ -235,9 +238,7 @@ If there is exactly one delimited ``\lstinline!.!'', it's not the first and also
 
 If there are exactly two delimited ``\lstinline!.!'', none of which is the first and the last sub-form, and there is at least one other sub-form in between them, then the middle sub-form is put first in the resulting list, then the sub-forms before the first delimited ``\lstinline!.!'', and finally the sub-forms after the second delimited ``\lstinline!.!''. 
 
-If the sequences of input characters start with ``\lstinline![|!'' and end with ``\lstinline!|]!'', then an array is formed instead of a list.
-
-% TODO: specify that lists that use [ and ] have a property attached to their syntax object, or wrapped in a pair with a symbol representing the parentheses shape
+% TODO: specify that lists that use [] and {} have a property attached to their syntax object, or wrapped in a pair with a symbol representing the parentheses shape
 
 \example A few examples of parsing lists, pairs and arrays:
 
@@ -245,49 +246,13 @@ If the sequences of input characters start with ``\lstinline![|!'' and end with 
   \lstinline!()! & reads equal to \lstinline!(list)! \\
   \lstinline!(1 2 3)! & reads equal to \lstinline!(list 1 2 3)! \\
   \lstinline![1 2 3]! & reads equal to \lstinline!(list 1 2 3)! \\
-  \lstinline![|1 2 3|]! & reads equal to \lstinline!(array 1 2 3)! \\
+  \lstinline!{1 2 3}! & reads equal to \lstinline!(list 1 2 3)! \\
   \lstinline!(1 2 (3))! & reads equal to \lstinline!(list 1 2 (list 3))! \\
   \lstinline!(1 . 2)! & reads equal to \lstinline!(pair 1 2)! \\
   \lstinline!(1 2 3 . 4)! & reads equal to \lstinline!(pair 1 (pair 2 (pair 3 4)))! \\
   \lstinline!(1 2 . ())! & reads equal to \lstinline!(pair 1 (pair 2 (list)))! \\
   \lstinline!(1 . 2 . 3)! & reads equal to \lstinline!(list 2 1 3)! \\
 \end{tabular}
-
-
-
-
-
-
-
-\subsection{Reading Records}
-\label{subsec:aml-base-lang-reader-records}
-
-Sequences of input characters that start with ``\lstinline!{!'' begin parsing characters to form a record.
-
-Parsing a record entails recursively parsing sub-forms, until a matching ``\lstinline!}!'' is found. 
-
-There are 3 different possible orderings of sub-forms:
-\begin{itemize}
-  \item Pairs of sub-forms, where first item is a record field, second is any form.
-  \item First sub-form is any form, followed by keyword ``\lstinline!#:with!'', followed by pairs of sub-forms, where first item is a record field, second is any form. This sequence of sub-forms can then optionally be followed by a keyword ``\lstinline!#:without!'', followed by record field sub-forms.
-  \item First sub-form is any form, followed by keyword ``\lstinline!#:without!'', followed by record field sub-forms.
-\end{itemize}
-
-Alternatively, whenever a pair of two sub-forms is expected, a pair form can be used, see \nameref{subsec:aml-base-lang-reader-lists}.\footnote{This is the basic form of record expressions.}
-
-A record field is such a form $f$ for which ``\lstinline!(record-field-name? $f$)!'' returns ``\lstinline!#yes!''.\footnote{Record fields are usually symbols, in case of ambiguities, such symbol may refer to a fully or partially qualified record field.}
-
-If the sequence of input characters start with ``\lstinline!{|!'' and end with ``\lstinline!|}!'', then an anonymous record is formed instead of a (regular) record.
-
-\example A few examples of parsing records:
-
-\begin{lstlisting}[deletekeywords={with,without}]
- { Fraction.numerator 17 denominator 3 }
- { fr #:with numerator 16 }
- { fr #:with numerator 16 #:without denominator }
- { fr #:without denominator }
- { (Fraction.numerator . 17) (denominator . 3) }
-\end{lstlisting}
 
 
 
@@ -387,6 +352,13 @@ The reader recognizes a few other forms in the same way:
   \lstinline!'(apple)! & reads equal to \lstinline!(list 'quote 'apple)! \\
   \lstinline!`(1 #,2)! & reads equal to \lstinline!(list 'quasiquote (list 1 (list 'unquote 2)))! \\
 \end{tabular}
+
+% `(datum datumss datumsss) is a quasiquote, '(datum datums datumss) is a quote
+% '"a long symbol" is a quoted string
+% `"a long symbol" is a symbol, not a quasiquoted string (since there is nothing to splice)
+% according to Racket, (eq? (quote "hello") '"hello") is #t, and (eq? '"hello" "hello") is also #t
+% in Racket, 'symbol and `symbol are eq?, equal? and equal-always?, so it’s a duplicate syntax for the same thing; we need `symbol for polymorphic tags in Aml, it would be odd to have a disparity there between Aml/Base and Aml
+% in Aml/Base, we will have 'a meaning symbols, so that diverges from Aml, where 'a is a type variable; this might not be a problem though, because Aml will have its own quoting syntax.
 
 
 
