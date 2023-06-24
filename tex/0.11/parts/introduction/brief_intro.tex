@@ -8,7 +8,7 @@ Amlantis System is a collection of specifications of programming and data defini
 
 Those specifications do not always require particular implementations, but attempt to avoid undefined behaviours as much as possible. 
 
-Amlantis also provides an open source reference implementation of those specifications, but it is indeed possible for other people to write their own implementations or forks\footnote{Forks and pull requests are preferred way of help!} of this default implementation, probably focusing on optimising other aspects of the system, maybe exploring new options of future development to be pull-requested into the default implementation. 
+Amlantis also provides an open source reference implementation of those specifications, but it is indeed possible for other people to write their own implementations or forks\footnote{Forks and pull requests are the preferred way of help!} of this default implementation, probably focusing on optimising other aspects of the system, maybe exploring new options of future development to be pull-requested into the default implementation. 
 
 
 
@@ -32,12 +32,18 @@ The Amlantis System is a home to more than only one programming language -- in f
 The minimal Amlantis System contains these languages:
 
 \begin{itemize}
-  \item \AmlBase, a minimal Lisp-like\footnote{One might say that \AmlBase is a grandchild of Racket and Clojure.} language that is easy to parse and limited in functionality.
-  \item \AmlCore, an ML-like\footnote{One might say that \AmlCore is a grandchild of OCaml, SML and F\SharpSign.} language that is easier to read and harder to parse, fully featured in functionality.
-  \item \Aml, an ML-like\footnote{One might say that \Aml is a grandchild of \AmlCore, Haskell and Ada.} language that extends \AmlCore, is easier to read and the hardest one to parse, also fully featured in functionality, and introducing more grammar than its parent \AmlCore.
+  \item \AmlKernel, a minimal Lisp-like language that is the easiest to parse and limited in functionality.
+  
+  \item \AmlBase, a Lisp-like\footnote{One might say that \AmlBase is a grandchild of Scheme, Racket and Clojure.} language that is a superset of \AmlKernel, is easy to parse and almost fully featured in functionality.
+  
+  \item \AmlCore, an ML-like\footnote{One might say that \AmlCore is a grandchild of OCaml, Standard ML and F\#.} language that is easier to read and harder to parse, fully featured in functionality. \AmlCore is not a strict superset of \AmlBase, but there are similarities between the two.\footnote{This is akin to Lisp and \href{https://en.wikipedia.org/wiki/LISP_2}{Lisp 2}.}
+  
+  \item \Aml, an ML-like\footnote{One might say that \Aml is a grandchild of \AmlCore, Haskell, C\# and Ada.} language that is a superset of \AmlCore, is easier to read and the hardest one to parse, also fully featured in functionality, and introducing more grammar than its parent \AmlCore.
+  
 \end{itemize}
 
-More languages may be added to this list over time.
+More languages may be added to this list over time. If a language ``A'' is a superset of another language ``B'' from the list above, then a minimal Amlantis System may contain only the language ``A'' and implement language ``B'' as an alias to the language ``A''. This is possible if the supersets are strict. 
+% TODO: this is something that needs to be taken into consideration.
 
 
 
