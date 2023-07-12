@@ -1,0 +1,14 @@
+%!TEX TS-program = xelatex
+%!TEX encoding = UTF-8 Unicode
+
+\chapter[The Dynamic Software Update Tool -- amldsup]{The Dynamic Software Update Tool -- \lstinline!amldsup!}
+\label{ch:tools-amldsup}
+
+This chapter will describe the Amlantis System's "\href{https://en.wikipedia.org/wiki/Dynamic_software_updating#Implementation}{{\em Dynamic Software Updating}}" tool, which is a planned addition to the whole toolchain and also supposed to be accompanied by a GUI. The purpose of this tool is to enable users to create and maintain high-availability software. 
+
+{\em Informally speaking}, the \lstinline!amldsup! tool is supposed to enable runtime updates to existing programs. The idea here is that since Aml call stacks are supposed to be easily serializable and restorable, as well as any other Aml-managed object in memory, it should be possible to write code that manipulates this kind of data. And for DSU, we could mark certain data to be marshalled and transferred between two instances of a running Aml program, or even a domain within one, or even apply an update to a call stack as if it was just a regular Tuesday. The former case involves restarting a program with a new version, but saving the time it needed to build certain critical data, or better yet, preserve it if it would be otherwise impossible to recreate. The latter is a technical challenge. This tool should help do just that: things like instruct the Aml VM to load the new code, build a set of update files that would determine the way the update happens etc.
+
+
+
+
+
