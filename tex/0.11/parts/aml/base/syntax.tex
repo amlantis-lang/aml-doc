@@ -116,7 +116,7 @@ Symbols that consist entirely of ``operator'' characters (Unicode character clas
 \begin{tabular}{ r l }
   \lstinline!Plum! & reads equal to \lstinline!(string->symbol "Plum")! \\
   \lstinline!Plu#m! & reads equal to \lstinline!(string->symbol "Plu#m")! \\
-  \lstinline!Pl.um! & reads equal to \lstinline!(string->symbol "Pl.um")!\footnote{This makes the symbol a symbol path. TBD.} \\
+  \lstinline!Pl.um! & reads equal to \lstinline!(string->symbol "Pl.um")! \\
   \lstinline!#%Plum! & reads equal to \lstinline!(string->symbol "#%Plum")! \\
   \lstinline!#%|Plum's good|! & reads equal to \lstinline!(string->symbol "#%Plum's good")! \\
   \lstinline!string->symbol! & reads equal to \lstinline!(string->symbol "string->symbol")! \\
@@ -127,6 +127,9 @@ Symbols that consist entirely of ``operator'' characters (Unicode character clas
   \lstinline!<|! & reads equal to \lstinline!(string->symbol "<|")! \\
   \lstinline@hello| |world!@ & reads equal to \lstinline@(string->symbol "hello world!")@\footnote{This comes from Racket, and Aml guidelines would suggest to use the symbol delimiter ``\lstinline!|!'' around the whole symbol, not in the middle of it.} \\
 \end{tabular}
+
+% this used to be after Pl.um:
+% \footnote{This makes the symbol a symbol path. TBD.}
 
 \pagebreak 
 
@@ -147,79 +150,67 @@ In the grammar below, each literal lowercase letter stands for both itself and i
 
 \grammar
 \begin{longtable}{ r l }
-  ‹$number_n$› & \lstinline!::=! ‹$prefix_n$› ‹$exact_n$› | ‹$inexact_n$› \\
-  
-  ‹$exact_n$› & \lstinline!::=! ‹$exact$-$rational_n$› | ‹$exact$-$complex_n$› \\
-  ‹$exact$-$rational_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$unsigned$-$rational_n$› \\
-  ‹$unsigned$-$rational_n$› & \lstinline!::=! ‹$unsigned$-$integer_n$› \\
-  \nopagebreak[3] & \lstinline! | ! ‹$unsigned$-$integer_n$› ``\lstinline!/!'' ‹$unsigned$-$integer_n$› \\
+  \textit{‹number\txtsub{n}›}            & \lstinline!::=! [\textit{‹prefix\txtsub{n}›}] \textit{‹exact\txtsub{n}›} \\
+  \nopagebreak[3]                        & \lstinline! | ! [\textit{‹prefix\txtsub{n}›}] \textit{‹inexact\txtsub{n}›} \\
+  \textit{‹exact\txtsub{n}›}             & \lstinline!::=! \textit{‹exact-rational\txtsub{n}›} \lstinline! | ! \textit{‹exact-complex\txtsub{n}›} \\
+  \textit{‹exact-rational\txtsub{n}›}    & \lstinline!::=! [\textit{‹sign›}] \textit{‹unsigned-rational\txtsub{n}›} \\
+  \textit{‹unsigned-rational\txtsub{n}›} & \lstinline!::=! \textit{‹unsigned-integer\txtsub{n}›} [``\lstinline!/!'' \textit{‹unsigned-integer\txtsub{n}›}] \\
   
 \pagebreak[3] 
-  ‹$exact$-$integer_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$unsigned$-$integer_n$› \\
-  ‹$unsigned$-$integer_n$› & \lstinline!::=! ‹$digits_n$›\textsuperscript{+} \\
-  
-  ‹$exact$-$complex_n$› & \lstinline!::=! ‹$exact$-$rational_n$›\textsubscript{opt} ‹$sign$› ‹$unsigned$-$rational_n$› ``\lstinline!i!'' \\
+  \textit{‹exact-integer\txtsub{n}›}     & \lstinline!::=! [\textit{‹sign›}] \textit{‹unsigned-integer\txtsub{n}›} \\
+  \textit{‹unsigned-integer\txtsub{n}›}  & \lstinline!::=! \textit{‹digits\txtsub{n}›} \\
+  \textit{‹exact-complex\txtsub{n}›}     & \lstinline!::=! [\textit{‹exact-rational\txtsub{n}›}] \textit{‹sign›} [\textit{‹unsigned-rational\txtsub{n}›}] ``\lstinline!i!'' \\
     
 \pagebreak[3] 
-  ‹$inexact_n$› & \lstinline!::=! ‹$inexact$-$real_n$› | ‹$inexact$-$complex_n$› \\
-  ‹$inexact$-$real_n$› & \lstinline!::=! ‹$sign$›\textsubscript{opt} ‹$inexact$-$simple_n$› (‹$exp_n$› ‹$exact$-$integer_n$›)\textsubscript{opt} \\
-  ‹$inexact$-$unsigned_n$› & \lstinline!::=! ‹$inexact$-$simple_n$› \\
-  ‹$inexact$-$simple_n$› & \lstinline!::=! ‹$digits_n$› ``\lstinline!.!'' ‹$digits_n$› \\
-  \nopagebreak[3] & \lstinline! | ! ‹$digits_n$› ``\lstinline!/!'' ‹$digits_n$› \\
-    
-  ‹$inexact$-$complex_n$› & \lstinline!::=! ‹$inexact$-$real_n$›\textsubscript{opt} ‹$sign$› ‹$inexact$-$unsigned_n$› ``\lstinline!i!'' \\
-  
-  ‹$sign$› & \lstinline!::=! ``\lstinline!+!'' | ``\lstinline!-!'' \\
+  \textit{‹inexact\txtsub{n}›}           & \lstinline!::=! \textit{‹inexact-real\txtsub{n}›} \lstinline! | ! \textit{‹inexact-complex\txtsub{n}›} \\
+  \textit{‹inexact-real\txtsub{n}›}      & \lstinline!::=! [\textit{‹sign›}] \textit{‹inexact-simple\txtsub{n}›} [\textit{‹exp-mark\txtsub{n}›} \textit{‹exact-integer\txtsub{n}›}] \\
+  \textit{‹inexact-simple\txtsub{n}›}    & \lstinline!::=! \textit{‹digits\txtsub{n}›} ``\lstinline!.!'' \textit{‹digits\txtsub{n}›} \\
+  \nopagebreak[3]                        & \lstinline! | ! \textit{‹digits\txtsub{n}›} ``\lstinline!/!'' \textit{‹digits\txtsub{n}›} \\ 
+  \textit{‹inexact-complex\txtsub{n}›}   & \lstinline!::=! [\textit{‹inexact-real\txtsub{n}›}] \textit{‹sign›} \textit{‹digits\txtsub{n}›} ``\lstinline!i!'' \\
   
 \pagebreak[3] 
-  ‹$general$-$number_n$› & ‹$exactness$›\textsubscript{opt} ‹$number_n$› \\
-  ‹$exactness$› & \lstinline!::=! ``\lstinline!#e!'' | ``\lstinline!#i!'' \\
+  \textit{‹prefix\txtsub{n}›}            & \lstinline!::=! \textit{‹exactness›} [\textit{‹prefix-radix\txtsub{n}›}] \\
+  \nopagebreak[3]                        & \lstinline! | !  \textit{‹prefix-radix\txtsub{n}›} \textit{‹exactness›} \\ 
+  \textit{‹sign›}                        & \lstinline!::=! ``\lstinline!+!'' \lstinline! | ! ``\lstinline!-!'' \\
+  \textit{‹exactness›}                   & \lstinline!::=! ``\lstinline!#e!'' \lstinline! | ! ``\lstinline!#i!'' \\
 \end{longtable}
 
-In the table below, we define the parameterized $digits_n$, $exp_n$ and $prefix_n$ for all supported $n$s.
+In the table below, we define the parameterized \textit{digits\txtsub{n}}, \textit{exp\txtsub{n}} and \textit{prefix\txtsub{n}} for all supported $n$'s.
 
 \grammar
 \begin{longtable}{ r l }
   % hexadecimal
-  ‹$digit_{16}$› & \lstinline!::=! ‹$digit_{12}$› | ``\lstinline!c!'' | ``\lstinline!d!'' | ``\lstinline!e!'' | ``\lstinline!f!'' \\
-  ‹$prefix_{16}$› & \lstinline!::=! ``\lstinline!0x!'' \\
+  \textit{‹digit\txtsub{16}›}           & \lstinline!::=! \textit{‹digit\txtsub{12}›} %
+                                          \lstinline! | ! ``\lstinline!c!'' \lstinline! | ! ``\lstinline!d!'' \lstinline! | ! ``\lstinline!e!'' \lstinline! | ! %
+                                          ``\lstinline!f!'' \\
+  \textit{‹prefix-radix\txtsub{16}›}    & \lstinline!::=! ``\lstinline!#x!'' \lstinline! | ! ``\lstinline!0x!'' \\
   
   % duodecimal
-  ‹$digit_{12}$› & \lstinline!::=! ‹$digit_{10}$› | ``\lstinline!a!'' | ``\lstinline!b!'' \\
-  ‹$prefix_{12}$› & \lstinline!::=! ``\lstinline!0d!'' \\
+  \textit{‹digit\txtsub{12}›}           & \lstinline!::=! \textit{‹digit\txtsub{10}›} \lstinline! | ! ``\lstinline!a!'' \lstinline! | ! ``\lstinline!b!'' \\
+  \textit{‹prefix-radix\txtsub{12}›}    & \lstinline!::=! ``\lstinline!#dd!'' \lstinline! | ! ``\lstinline!0dd!'' \\
   
   % decimal
-  ‹$digit_{10}$› & \lstinline!::=! ‹$digit_8$› | ``\lstinline!8!'' | ``\lstinline!9!'' \\
-  ‹$prefix_{10}$› & \lstinline!::=! empty sequence \\
+  \textit{‹digit\txtsub{10}›}           & \lstinline!::=! \textit{‹digit\txtsub{8}›} \lstinline! | ! ``\lstinline!8!'' \lstinline! | ! ``\lstinline!9!'' \\
+  \textit{‹prefix-radix\txtsub{10}›}    & \lstinline!::=! [``\lstinline!#d!''] \\
   
   % octal
-  ‹$digit_8$› & \lstinline!::=! ‹$digit_2$› | ``\lstinline!2!'' | ``\lstinline!3!'' | ``\lstinline!4!'' | ``\lstinline!5!'' | ``\lstinline!6!'' | ``\lstinline!7!'' \\
-  ‹$prefix_8$› & \lstinline!::=! ``\lstinline!0o!'' \\
+  \textit{‹digit\txtsub{8}›}            & \lstinline!::=! \textit{‹digit\txtsub{2}›} %
+                                          \lstinline! | ! ``\lstinline!2!'' \lstinline! | ! ``\lstinline!3!'' \lstinline! | ! ``\lstinline!4!'' \lstinline! | ! %
+                                          ``\lstinline!5!'' \lstinline! | ! ``\lstinline!6!'' \lstinline! | ! ``\lstinline!7!'' \\
+  \textit{‹prefix-radix\txtsub{8}›}     & \lstinline!::=! ``\lstinline!#o!'' \lstinline! | ! ``\lstinline!0o!'' \\
   
   % binary
-  ‹$digit_2$› & \lstinline!::=! ``\lstinline!0!'' | ``\lstinline!1!'' \\
-  ‹$prefix_2$› & \lstinline!::=! ``\lstinline!0b!'' \\
+  \textit{‹digit\txtsub{2}›}            & \lstinline!::=! ``\lstinline!0!'' \lstinline! | ! ``\lstinline!1!'' \\
+  \textit{‹prefix-radix\txtsub{2}›}     & \lstinline!::=! ``\lstinline!#b!'' \lstinline! | ! ``\lstinline!0b!'' \\
   
-  ‹$exp_{16}$› & \lstinline!::=! ``\lstinline!p!'' \\
-  ‹$exp_{12}$› & \lstinline!::=! ‹$exp_{10}$› \\
-  ‹$exp_{10}$› & \lstinline!::=! ``\lstinline!e!'' \\
-  ‹$exp_8$› & \lstinline!::=! ‹$exp_{10}$› \\
-  ‹$exp_2$› & \lstinline!::=! ‹$exp_{10}$› \\
+  % exponent marks
+  \textit{‹exp-mark\txtsub{16}›}        & \lstinline!::=! ``\lstinline!p!'' \\
+  \textit{‹exp-mark\txtsub{12}›}        & \lstinline!::=! \textit{‹exp-mark\txtsub{10}›} \\
+  \textit{‹exp-mark\txtsub{10}›}        & \lstinline!::=! ``\lstinline!e!'' \\
+  \textit{‹exp-mark\txtsub{8}›}         & \lstinline!::=! \textit{‹exp-mark\txtsub{10}›} \\
+  \textit{‹exp-mark\txtsub{2}›}         & \lstinline!::=! \textit{‹exp-mark\txtsub{10}›} \\
   
-  ‹$digits_n$› & \lstinline!::=! ‹$digit_n$› (``\lstinline!_!''\textsubscript{opt} ‹$digit_n$›)\textsuperscript{*} \\
-\end{longtable}
-
-In the grammar below, we define the special case of sexagesimal numbers. Some of the rules here override those for non-sexagesimal numbers.
-
-\grammar
-\begin{longtable}{ r l }
-  % sexagesimal
-  ‹$digit_{60}$› & \lstinline!::=! (``\lstinline!0!'' | ``\lstinline!1!'' | ``\lstinline!2!'' | ``\lstinline!3!'' | ``\lstinline!4!'' | ``\lstinline!5!'')\textsubscript{opt} ‹$digit_{10}$› \\
-  ‹$prefix_{60}$› & \lstinline!::=! ``\lstinline!0s!'' \\
-  ‹$exp_{60}$› & \lstinline!::=! ‹$exp_{10}$› \\
-  
-  ‹$digits_{60}$› & \lstinline!::=! ‹$digit_{60}$› (``\lstinline!,!'' ‹$digit_{60}$›)\textsuperscript{*} \\
-  ‹$inexact$-$simple_{60}$› & \lstinline!::=! ‹$digits_{60}$› ``\lstinline!;!'' ‹$digits_{60}$› \\
+  \textit{‹digits\txtsub{n}›}           & \lstinline!::=! \textit{‹digit\txtsub{n}›} ([``\lstinline!_!''] ‹$digit_n$›)\txtsup{*} \\
 \end{longtable}
 
 % TODO: add examples of number parses
@@ -381,9 +372,9 @@ The reader recognizes a few other forms in the same way:
 
 A ``\lstinline!;!'' starts a line comment. When the reader encounters it, it discards all characters following it until the next new line. 
 
-A ``\lstinline!#|!'' starts a nestable block comment. When the reader encounters it, it discards all characters following it until a closing   ``\lstinline!|#!''. When discarding characters within the nestable block comment, another ``\lstinline!#|!'' begins recursive discarding, so that pairs of matching ``\lstinline!#|!'' and ``\lstinline!|#!'' can be nested (hence nestable block comments). 
+A ``\lstinline!#|!'' starts a nestable block comment. When the reader encounters it, it discards all characters following it until a closing   ``\lstinline!|#!''. When discarding characters within the nestable block comment, another ``\lstinline! \#| !'' begins recursive discarding, so that pairs of matching ``\lstinline! #| !'' and ``\lstinline! |# !'' can be nested (hence nestable block comments). 
 
-A ``\lstinline!#;!'' or a ``\lstinline!#_!'' starts an S-expression comment. When the reader encounters it, it recursively reads one following form, and discards it.
+A ``\lstinline! #; !'' or a ``\lstinline! #_ !'' starts an S-expression comment. When the reader encounters it, it recursively reads one following form, and discards it.
 
 A ``\lstinline@#! @'' (a ``\lstinline@#!@'' followed by a whitespace) or ``\lstinline@#!/@'' starts a line comment, much like ``\lstinline!;!'' does, except if the line ends with ``\lstinline!\!'', the discarding continues to the next line. 
 
@@ -470,7 +461,7 @@ The sequence ``\lstinline!#:!'' starts a keyword. The parsing is the same as for
 
 % TODO: make this a macro!!!
 
-The sequence ``\lstinline!^!'' starts a metadata. When the reader encounters it, it recursively reads next form, which is expected to be a map without the leading ``\lstinline!#!'', or a plain symbol. In case of a plain symbol $s$, the metadata is constructed as \lstinline!#{(#:metadata . $s$)}!. After the metadata $m$ is read, the reader attaches it to the next recursively read form $f$\thinspace: \lstinline!(with-metadata $f$ $m$)!. If there is no non-whitespace read after the first ``\lstinline!^!'', an ordinary symbol is parsed with the contents being the ``\lstinline!^!''.
+The sequence ``\lstinline!^!'' starts a metadata. When the reader encounters it, it recursively reads next form, which is expected to be a map without the leading ``\lstinline!#!'', or a plain symbol. In case of a plain symbol $s$, the metadata is constructed as \lstinline! \#{(\#:metadata . $s$)} !. After the metadata $m$ is read, the reader attaches it to the next recursively read form $f$\thinspace: \lstinline!(with-metadata $f$ $m$)!. If there is no non-whitespace read after the first ``\lstinline!^!'', an ordinary symbol is parsed with the contents being the ``\lstinline!^!''.
 
 \example Examples of parsing metadata:
 
