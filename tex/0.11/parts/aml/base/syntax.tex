@@ -159,14 +159,14 @@ In the grammar below, each literal lowercase letter stands for both itself and i
 \pagebreak[3] 
   \textit{‹exact-integer\txtsub{n}›}     & \lstinline!::=! [\textit{‹sign›}] \textit{‹unsigned-integer\txtsub{n}›} \\
   \textit{‹unsigned-integer\txtsub{n}›}  & \lstinline!::=! \textit{‹digits\txtsub{n}›} \\
-  \textit{‹exact-complex\txtsub{n}›}     & \lstinline!::=! [\textit{‹exact-rational\txtsub{n}›}] \textit{‹sign›} [\textit{‹unsigned-rational\txtsub{n}›}] ``\lstinline!i!'' \\
+  \textit{‹exact-complex\txtsub{n}›}     & \lstinline!::=! [\textit{‹exact-rational\txtsub{n}›}] \textit{‹sign›} [\textit{‹unsigned-rational\txtsub{n}›}] ``\lstinline!im!'' \\
     
 \pagebreak[3] 
   \textit{‹inexact\txtsub{n}›}           & \lstinline!::=! \textit{‹inexact-real\txtsub{n}›} \lstinline! | ! \textit{‹inexact-complex\txtsub{n}›} \\
   \textit{‹inexact-real\txtsub{n}›}      & \lstinline!::=! [\textit{‹sign›}] \textit{‹inexact-simple\txtsub{n}›} [\textit{‹exp-mark\txtsub{n}›} \textit{‹exact-integer\txtsub{n}›}] \\
   \textit{‹inexact-simple\txtsub{n}›}    & \lstinline!::=! \textit{‹digits\txtsub{n}›} ``\lstinline!.!'' \textit{‹digits\txtsub{n}›} \\
   \nopagebreak[3]                        & \lstinline! | ! \textit{‹digits\txtsub{n}›} ``\lstinline!/!'' \textit{‹digits\txtsub{n}›} \\ 
-  \textit{‹inexact-complex\txtsub{n}›}   & \lstinline!::=! [\textit{‹inexact-real\txtsub{n}›}] \textit{‹sign›} \textit{‹digits\txtsub{n}›} ``\lstinline!i!'' \\
+  \textit{‹inexact-complex\txtsub{n}›}   & \lstinline!::=! [\textit{‹inexact-real\txtsub{n}›}] \textit{‹sign›} \textit{‹digits\txtsub{n}›} ``\lstinline!im!'' \\
   
 \pagebreak[3] 
   \textit{‹prefix\txtsub{n}›}            & \lstinline!::=! \textit{‹exactness›} [\textit{‹prefix-radix\txtsub{n}›}] \\
@@ -213,7 +213,17 @@ In the table below, we define the parameterized \textit{digits\txtsub{n}}, \text
   \textit{‹digits\txtsub{n}›}           & \lstinline!::=! \textit{‹digit\txtsub{n}›} ([``\lstinline!_!''] ‹$digit_n$›)\txtsup{*} \\
 \end{longtable}
 
-% TODO: add examples of number parses
+\example A few examples of parsing numbers:
+
+\begin{tabular}{ r l }
+  \lstinline!1! & reads equal to \lstinline!1! \\
+  \lstinline!-1! & reads equal to \lstinline!-1! \\
+  \lstinline!1/2! & reads equal to \lstinline!(/ 1 2)! \\
+  \lstinline!1.0! & reads equal to \lstinline!(exact->inexact 1)! \\
+  \lstinline!1+2im! & reads equal to \lstinline!(complex 1 2)! \\
+  \lstinline!#b10_1010! & reads equal to \lstinline!42! \\
+\end{tabular}
+
 
 
 
