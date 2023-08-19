@@ -6,13 +6,11 @@
 
 %\RequirePackage{fourier}
 \usepackage[a4paper]{geometry}
-%\usepackage{amsmath}
 \usepackage{mathspec,xltxtra,xunicode,xspace,titling,ifpdf}
 \RequirePackage{color}
 \RequirePackage{colortbl}
 \usepackage[usenames,dvipsnames]{xcolor}
 \usepackage{fontspec}
-%\usepackage{unicode-math}
 \usepackage{longtable}
 
 \RequirePackage{a4}
@@ -109,7 +107,8 @@
 \setmonofont{Cascadia Code}[
   %BoldFont=Fira Code Bold,%
   Scale=MatchLowercase,%
-  Contextuals=Alternate % Activate the calt feature 
+  Mapping=,%
+  Contextuals=Alternate, % Activate the calt feature 
 ]
 \setmathfont(Digits,Latin,Greek)[Scale=MatchUppercase]{Linux Libertine O}
 \newfontfamily\headingfont[]{Alegreya}
@@ -510,7 +509,7 @@
     fontadjust=true,%
     columns=[c]fixed,%
     keepspaces=true,%
-    basewidth=0.6em,%
+    basewidth={0.58em, 0.53em},%
     tabsize=2,%
     basicstyle=\renewcommand{\baselinestretch}{0.95}\ttfamily,%
     commentstyle=\itshape\color{gray},%
