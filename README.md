@@ -1,3 +1,5 @@
+![Status Badge](https://img.shields.io/badge/status-wip-red?style=flat)
+
 # About this repository
 
 [Amlantis](http://amlantis-lang.org/) is a collection of specifications for a set of programming tools, languages and their reference implementations, all together aiming to provide programming environment friendly to the programmers, empowering them to make the world a better place.
