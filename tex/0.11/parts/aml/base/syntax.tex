@@ -26,7 +26,11 @@ Along with whitespace (as defined by Unicode ``White\_Space'' property), the fol
 
 The \lstinline@#@ character has got a special meaning, determined by the following character or characters; see below for details.
 
-The \lstinline@|@ character starts and ends a subsequence of characters to be included verbatim in the delimited sequence. It is never treated as a delimiter. If \AmlBase ever introduces case sensitiveness, the subsequence is not case-folded. The subsequence is terminated by another \lstinline@|@, and neither the first nor the last \lstinline@|@ is a part of the subsequence. See \nameref{subsec:aml-base-lang-reader-symbols} for details.
+The \lstinline@|@ character starts a subsequence of characters to be included verbatim in the delimited sequence. It is never treated as a delimiter. The subsequence is terminated by another \lstinline@|@, and neither the first nor the last \lstinline@|@ is a part of the subsequence. See \nameref{subsec:aml-base-lang-reader-symbols} for details.
+
+% FIXME: let’s not repeat previous Lisps’ mistakes and use @"" instead of || for the verbatim character sequences, in the "aml" flavour of the default readtable. It will allow us the same set of features and then some (think interpolation, but in symbols!), so it would be a superset of R7RS’s capabilities. This would also align more nicely with Aml (high level) and is already used by Zig, so it’s not a completely unknown syntax. 
+
+The \lstinline@\@ outside of a \lstinline@|@ pair causes the following character to be included verbatim in a delimited sequence. The \lstinline@\@ inside of a \lstinline@|@ pair causes the following \lstinline@|@ to be included verbatim in a delimited sequence (instead of matching with the first \lstinline@|@). 
 
 After skipping whitespace, the \AmlBase reader dispatches based on the next character or characters in the source port this way:
 
@@ -103,7 +107,7 @@ After skipping whitespace, the \AmlBase reader dispatches based on the next char
 
 A sequence of source characters that does not start with any of the sequences defined in \nameref{subsec:aml-base-lang-reader-delimiters-dispatch} is parsed as either a symbol or a number. The sequence ``\lstinline!#%!'' also starts a symbol. A successful number parse takes precedence over symbol parse, see \nameref{subsec:aml-base-lang-reader-numbers}. 
 
-A sequence of source characters that starts with ``\lstinline!|!'' is parsed as a (verbatim) symbol until a matching ``\lstinline!|!'' is found. If a ``\lstinline!|!'' should appear inside the symbol, it has to be preceded by a ``\lstinline!\!'', and that character is the only character omitted from the resulting symbol.\footnote{This is why quasiquote must not be followed by another backtick.}
+A sequence of source characters that starts with ``\lstinline!|!'' is parsed as a (verbatim) symbol until a matching ``\lstinline!|!'' is found. If a ``\lstinline!|!'' should appear inside the symbol, it has to be preceded by a ``\lstinline!\!'', and that character is the only character omitted from the resulting symbol.
 
 Symbols that consist entirely of ``operator'' characters (Unicode character classes Sm, So, except for \lstinline!U+0060!) are treated specially, TBD\footnote{This is yet to be properly defined, but generally a property will be added to the form marking it ``operator''.}. If a ``\lstinline!|!'' character is followed and/or preceded entirely by ``operator'' characters until a delimiter, then the ``\lstinline!|!'' is considered to be a part of the resulting symbol.
 
@@ -301,8 +305,6 @@ Within a string sequence, the following ``escape sequences'' are recognized:
   \item ``\lstinline!\!‹$newline$›'': elided, where ‹$newline$› is either an end-of-line, carriage return, or carriage return end-of-line combination. This sequence is not added to the string form.
 \end{itemize}
 
-When the sequence of input characters starts with ``\lstinline!#"!'' instead of just ``\lstinline!"!'', the parsed string form is a byte string. % TODO: add link to spec of byte strings
-
 Sequences of input characters that start with ``\lstinline!#<<!'' begin parsing characters to form a string, in this form called {\em here string}. The characters following ``\lstinline!#<<!'' until a newline character define a terminator for the string. The content of the resulting string form includes all characters between the line containing ``\lstinline!#<<!'' and a line whose entire content is the specified terminator (possibly preceded by whitespace). The first and last line of such form are not included in the resulting string form. No escape sequences are recognized in {\em here strings}. % TODO: Aml/Core and Aml may support more versions of here strings, including code interpolation
 
 
@@ -348,19 +350,20 @@ The reader recognizes a few other forms in the same way:
 \begin{tabular}{ l l }
   \lstinline!'! & adds \lstinline!'quote! \\
   \lstinline!`! & adds \lstinline!'quasiquote! \\
-  \lstinline!~! & adds \lstinline!'unquote! \\
-  \lstinline!~@! & adds \lstinline!'unquote-splicing! \\
+  \lstinline!~! & adds \lstinline!'unquote! only within a quasiquote \\
+  \lstinline!~@! & adds \lstinline!'unquote-splicing! only within a quasiquote \\
   \lstinline!#'! & adds \lstinline!'syntax-quote! \\
   \lstinline!#`! & adds \lstinline!'syntax-quasiquote! \\
-  \lstinline!#~! & adds \lstinline!'syntax-unquote! \\
-  \lstinline!#~@! & adds \lstinline!'syntax-unquote-splicing! \\
+  \lstinline!#~! & adds \lstinline!'syntax-unquote! only within a quasiquote \\
+  \lstinline!#~@! & adds \lstinline!'syntax-unquote-splicing! only within a quasiquote \\
 \end{tabular}
 
 \example A few examples of parsing quotes:
 
 \begin{tabular}{ r l }
-  \lstinline!'(apple)! & reads equal to \lstinline!(list 'quote 'apple)! \\
-  \lstinline!`(1 #,2)! & reads equal to \lstinline!(list 'quasiquote (list 1 (list 'unquote 2)))! \\
+  \lstinline!'apple! & reads equal to \lstinline!(list 'quote 'apple)! \\
+  \lstinline!'(apple)! & reads equal to \lstinline!(list 'quote (list 'apple))! \\
+  \lstinline!`(1 ~2)! & reads equal to \lstinline!(list 'quasiquote (list 1 (list 'unquote 2)))! \\
 \end{tabular}
 
 % `(datum datumss datumsss) is a quasiquote, '(datum datums datumss) is a quote
@@ -369,6 +372,8 @@ The reader recognizes a few other forms in the same way:
 % according to Racket, (eq? (quote "hello") '"hello") is #t, and (eq? '"hello" "hello") is also #t
 % in Racket, 'symbol and `symbol are eq?, equal? and equal-always?, so it’s a duplicate syntax for the same thing; we need `symbol for polymorphic tags in Aml, it would be odd to have a disparity there between Aml/Base and Aml
 % in Aml/Base, we will have 'a meaning symbols, so that diverges from Aml, where 'a is a type variable; this might not be a problem though, because Aml will have its own quoting syntax.
+
+Outside of a quasiquoted form, all unquote-starting forms are read as-is, as symbols. Inside of a quasiquoted form, a prefix of \lstinline!\! can be used to prevent unquote forms from being read as unquote forms, e.g. ``\lstinline!\~!'' to be read as ``\lstinline!~!'' and whatever consequences that read has (usually continues as \nameref{subsec:aml-base-lang-reader-symbols}). 
 
 
 
