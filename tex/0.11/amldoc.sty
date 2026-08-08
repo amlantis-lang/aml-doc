@@ -6,7 +6,7 @@
 
 %\RequirePackage{fourier}
 \usepackage[a4paper]{geometry}
-\usepackage{mathspec,xltxtra,xunicode,xspace,titling,ifpdf}
+\usepackage{xltxtra,xspace,titling,ifpdf}
 \RequirePackage{color}
 \RequirePackage{colortbl}
 \usepackage[usenames,dvipsnames]{xcolor}
@@ -97,7 +97,7 @@
 \renewcommand{\headrulewidth}{0.5pt}
 
 % set up typefaces
-\usepackage{libertine}[oldstyle]
+\usepackage[oldstyle]{libertinus-otf}
 \defaultfontfeatures{Mapping=tex-text,Ligatures=TeX,Numbers=OldStyle}
 %\setmainfont{Linux Libertine O}[Scale=0.96]
 %\setromanfont{Linux Libertine 0}[Scale=0.96]
@@ -108,10 +108,14 @@
   Scale=0.75,%
   Mapping=,%
 ]
-\setmathfont(Digits,Latin,Greek)[Scale=MatchLowercase]{Linux Libertine}
 \newfontfamily\headingfont[]{Alegreya}
 \newfontfamily\chapterfont[]{Alegreya Sans}
 \renewcommand{\maketitlehooka}{\headingfont}
+% Metavariables in prose and grammar: use \meta{name}, not $name$.
+% Text italic keeps the PDF text layer ASCII and searchable; math italic
+% becomes U+1D4xx MATHEMATICAL ITALIC, which PDF search cannot match.
+\newcommand{\meta}[1]{\textit{#1}}
+
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{8pt plus 2pt minus 2pt}
 
